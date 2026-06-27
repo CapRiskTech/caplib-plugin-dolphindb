@@ -1,0 +1,94 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: CM Analytics
+// =============================================================================
+// This script is stripped from test/test_cmanalytics.dos and keeps the core
+// factory, surface, market data, and pricing flow for commodity analytics.
+
+loadPlugin("PluginCaplib")
+
+currency = "CNY"
+underlying = "CU.SHFE"
+asOfDate = 2020.02.21
+underlyingPrice = 66380.00
+
+// Create the commodity IR curve used for discounting.
+irCurve = caplib::CreateIrYieldCurve(
+    asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+
+// Create the flat forward curve used by the CM vol surface builder.
+fwdCurve = caplib::CreateDividendCurve(
+    asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// Create analytical pricing settings for the CM examples.
+modelParams = [0.0]
+bsmModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+bsmSettings = caplib::CreatePricingSettings(
+    currency, "ANALYTICAL", 0, 0, bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+
+// Enable CM risk settings so pricers return structured results.
+cmRisk = caplib::CreateCmRiskSettings(1, 1, 1, 1, "CM_RISK", true)
+
+// Define the commodity volatility surface model.
+volDef = caplib::CreateVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-5, 1.0e-5, "CM_VOL_DEF", true)
+
+// Configure the CM vol surface builder.
+volBuildSettings = caplib::CreateVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", true)
+
+// Build the CM option quote matrix used to bootstrap implied volatilities.
+optionQuotes = caplib::CreateCmOptionQuoteMatrix(
+    "AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    [2020.03.12, 2020.04.13, 2020.05.12, 2020.06.12],
+    [
+        take("PUT", 13) join take("CALL", 14),
+        take("PUT", 13) join take("CALL", 14),
+        take("PUT", 13) join take("CALL", 14),
+        take("PUT", 11) join take("CALL", 15)
+    ],
+    [
+        [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+        [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+        [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+        [56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000, 82000]
+    ],
+    [
+        [14.00, 16.00, 20.00, 26.00, 38.00, 64.00, 86.00, 130.00, 198.00, 282.00, 400.00, 600.00, 878.00, 1070.00, 660.00, 394.00, 236.00, 142.00, 90.00, 52.00, 32.00, 22.00, 18.00, 14.00, 10.00, 6.00, 6.00],
+        [126.00, 126.00, 160.00, 200.00, 250.00, 312.00, 396.00, 478.00, 600.00, 776.00, 974.00, 1230.00, 1602.00, 1736.00, 1276.00, 910.00, 642.00, 460.00, 312.00, 212.00, 150.00, 110.00, 80.00, 58.00, 40.00, 28.00, 38.00],
+        [172.00, 192.00, 236.00, 292.00, 426.00, 478.00, 574.00, 702.00, 892.00, 1206.00, 1368.00, 1632.00, 2140.00, 2218.00, 1762.00, 1350.00, 1026.00, 762.00, 562.00, 404.00, 294.00, 210.00, 128.00, 102.00, 58.00, 56.00, 106.00],
+        [414.00, 486.00, 584.00, 700.00, 958.00, 1186.00, 1308.00, 1634.00, 2008.00, 2436.00, 2914.00, 2814.00, 2396.00, 2026.00, 1698.00, 1412.00, 758.00, 964.00, 446.00, 346.00, 256.00, 188.00, 138.00, 102.00, 82.00, 44.00]
+    ],
+    [
+        [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+        [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+        [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+        [56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000, 82000]
+    ],
+    underlying, "CM_OPTION_QUOTES", true)
+
+// Build the CM volatility surface from option quotes and curves.
+volSurface = caplib::BuildCmVolatilitySurface(
+    asOfDate, underlying, volDef[0], optionQuotes[0],
+    [66380.00, 66400.00, 66420.00], irCurve, fwdCurve,
+    volBuildSettings[0], "CM_VOL_SURF", true)
+
+// Assemble CM market data from curves, spot, and the built surface.
+mktData = caplib::CreateCmMktDataSet(
+    asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], "", "", 0.0, "CM_MKT", true)
+
+// Create a European option instrument and price it under CM settings.
+europeanOption = caplib::CreateEuropeanOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_EO", false)
+europeanResult = caplib::PriceCmEuropeanOption(
+    europeanOption, asOfDate, mktData[0], bsmSettings, cmRisk[0], "", "", true)
+print(europeanResult)

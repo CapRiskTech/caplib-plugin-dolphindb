@@ -1,0 +1,82 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: IR Analytics
+// =============================================================================
+// This script is stripped from test/test_iranalytics.dos and shows the native
+// IR curve, schedule, instrument, and pricing workflow.
+
+loadPlugin("PluginCaplib")
+
+asOfDate = 2022.03.09
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
+indexName = "shibor_3m"
+
+// Create the discount curve used by the IR instruments.
+irCurve = caplib::CreateIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, curveName, "IR_CURVE", false)
+
+// Create the IBOR index used by the floating leg.
+iborIndex = caplib::CreateIborIndex(
+    "3M", "ACT_360", currency, 1, "CAL_CFETS",
+    "MODIFIED_FOLLOWING", "NONE", "STANDARD_IBOR_INDEX",
+    indexName, "IR_IBOR_INDEX", false)
+
+// Create the fixed-leg calculation and payment schedules.
+fixedCalcSchedule = caplib::CreateInterestCalcScheduleDefinition(
+    "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "NONE", "IR_FIXED_CALC", false)
+fixedPaySchedule = caplib::CreateInterestPaymentScheduleDefinition(
+    "CAL_CFETS", "QUARTERLY", "IN_ARREAR", 0, "MODIFIED_FOLLOWING", "IR_FIXED_PAY", false)
+// Create the floating-leg calculation and payment schedules.
+floatCalcSchedule = caplib::CreateInterestCalcScheduleDefinition(
+    "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "NONE", "IR_FLOAT_CALC", false)
+floatPaySchedule = caplib::CreateInterestPaymentScheduleDefinition(
+    "CAL_CFETS", "QUARTERLY", "IN_ARREAR", 0, "MODIFIED_FOLLOWING", "IR_FLOAT_PAY", false)
+// Create the floating-rate fixing schedule.
+floatFixSchedule = caplib::CreateInterestRateFixingScheduleDefinition(
+    "CAL_CFETS", "QUARTERLY", 1, "IN_ADVANCE", -1, "MODIFIED_PRECEDING", "IR_FLOAT_FIX", false)
+
+// Define the fixed leg of the vanilla swap.
+fixedLeg = caplib::CreateIrLegDefinition(
+    "FIXED_LEG", currency, "ACT_365_FIXED", "",
+    "NO_DISCOUNT", "SIMPLE", "STANDARD", "CURRENT",
+    "INVALID_NOTIONAL_EXCHANGE", 0, 0, 0,
+    fixedCalcSchedule, fixedPaySchedule, "", "IR_FIXED_LEG", false)
+// Define the floating leg of the vanilla swap.
+floatingLeg = caplib::CreateIrLegDefinition(
+    "FLOATING_LEG", currency, "ACT_360", iborIndex,
+    "NO_DISCOUNT", "SIMPLE", "STANDARD", "CURRENT",
+    "INVALID_NOTIONAL_EXCHANGE", 0, 0, 0,
+    floatCalcSchedule, floatPaySchedule, floatFixSchedule, "IR_FLOATING_LEG", false)
+
+// Package the legs into a swap template.
+swapTemplate = caplib::CreateIrVanillaInstrumentTemplate(
+    "IR_VANILLA_SWAP", curveName, "SPOTSTART", 1,
+    [fixedLeg, floatingLeg], "IR_SWAP_TEMPLATE", false)
+
+// Build a swap instrument from the template.
+swap = caplib::BuildIrVanillaInstrument(
+    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+    swapTemplate, 1000000.0, "", "IR_SWAP", false)
+
+// Create pricing settings for the vanilla swap.
+pricingModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "IR_MODEL", false)
+pricingSettings = caplib::CreatePricingSettings(
+    currency, "ANALYTICAL", 1, 1, pricingModel, "", "", "IR_PRICING", false)
+
+// Create IR risk settings for the pricing wrapper.
+irCurveRisk = caplib::CreateIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "IR_CURVE_RISK", false)
+thetaRisk = caplib::CreateThetaRiskSettings(1, 1, 1.0 / 365.0, "IR_THETA_RISK", false)
+irRisk = caplib::CreateIrRiskSettings(irCurveRisk, thetaRisk, "IR_RISK", true)
+
+// Create the IR market data set used by the pricer.
+mktData = caplib::CreateIrMktDataSet(
+    asOfDate, irCurve, [indexName], [irCurve], "IR_MKT", true)
+
+// Price the swap and print the pricing-result handle plus JSON.
+swapPricingResult = caplib::PriceIrVanillaInstrument(
+    swap, asOfDate, mktData[0], pricingSettings, irRisk[0], "", "", true)
+print(swapPricingResult)

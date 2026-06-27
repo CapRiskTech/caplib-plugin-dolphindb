@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documentation Overview | CAPLIB</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="alternate" hreflang="zh-CN" href="zh/index.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">User Guide and API Reference</span><span class="lang-switch"><span class="lang-active">EN</span><a href="zh/index.html">中文</a></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child active" href="index.html#user-guide">Introduction</a><a class="nav-child" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child" href="commodity.html#user-guide">Commodity</a><a class="nav-child" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child" href="shared.html#api-reference">Common <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>64</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib plugin</p>
+        <h1>Documentation Overview</h1>
+        <p class="lede">API reference, user guide, and examples for all CAPLIB plugin functions.</p>
+      </header>
+      <section class="panel"><h2>Documentation tree</h2><p>Use the asset-class pages for focused API reference. Each page has a filterable function list and parameter/type/description tables.</p><div class="domain-grid"><a class="domain-tile" href="fixed-income.html"><span>Fixed Income</span><strong>60</strong><em>Rates, bonds, credit, cross-currency IR, FI market data, and risk settings.</em></a><a class="domain-tile" href="currency.html"><span>Currency</span><strong>39</strong><em>FX calculators, quote matrices, volatility surfaces, cash products, and option pricing.</em></a><a class="domain-tile" href="commodity.html"><span>Commodity</span><strong>25</strong><em>Commodity and precious-metal market data, quote matrices, volatility surfaces, and pricing.</em></a><a class="domain-tile" href="equity.html"><span>Equity</span><strong>36</strong><em>Equity market data, dividend curves, volatility surfaces, option instruments, and EQ pricing.</em></a><a class="domain-tile" href="shared.html"><span>Common</span><strong>21</strong><em>Cross-asset utilities, static-data service helpers, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</em></a></div></section><section id="user-guide" class="panel"><h2>User Guide</h2><div class="workflow-grid"><article class="workflow-card"><h3>1. Create objects</h3><p>Use factory functions to create curves, quotes, templates, settings, market data, and instruments in ObjectCache.</p></article><article class="workflow-card"><h3>2. Pass handles</h3><p>Builder and pricing wrappers take handle strings from previous calls instead of repeated serialized protobuf bytes.</p></article><article class="workflow-card"><h3>3. Price consistently</h3><p>Native pricing wrappers use the same seven data arguments, optionally followed by <code>returnJson BOOL</code>: instrument, pricing date, market data, pricing settings, risk settings, scenario settings, mode, and returnJson.</p></article><article class="workflow-card"><h3>4. Visualize JSON</h3><p>Omit <code>returnJson</code> or set it to <code>false</code> for handle-only output; set it to <code>true</code> for <code>[handle, protobufJson]</code> inspection output.</p></article></div></section><section class="panel example"><h2>Return pattern</h2><pre><code>pricingResult = caplib::PriceEqEuropeanOption(inst, date, mkt, settings, risk, &quot;&quot;, &quot;&quot;, true)
+pricingHandle = pricingResult[0]
+pricingJson = pricingResult[1]</code></pre></section>
+    </main>
+  </div>
+</body>
+</html>

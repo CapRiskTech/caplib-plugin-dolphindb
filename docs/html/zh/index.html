@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文档概览 | CAPLIB</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="alternate" hreflang="en" href="../index.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../index.html">English</a><span class="lang-active">中文</span></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child active" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="shared.html#api-reference">通用 <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>64</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib 插件</p>
+        <h1>文档概览</h1>
+        <p class="lede">覆盖所有 CAPLIB插件函数的 API 参考、用户指南和示例。</p>
+      </header>
+      <section class="panel"><h2>文档结构</h2><p>按资产类别查看聚焦的 API 参考。每个页面都提供可筛选的函数列表，以及参数、类型和说明表。</p><div class="domain-grid"><a class="domain-tile" href="fixed-income.html"><span>固定收益</span><strong>60</strong><em>利率、债券、信用、跨币种利率、固定收益市场数据与风险设置。</em></a><a class="domain-tile" href="currency.html"><span>外汇</span><strong>39</strong><em>外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。</em></a><a class="domain-tile" href="commodity.html"><span>商品</span><strong>25</strong><em>商品与贵金属市场数据、报价矩阵、波动率曲面和定价。</em></a><a class="domain-tile" href="equity.html"><span>权益</span><strong>36</strong><em>权益市场数据、股息曲线、波动率曲面、期权工具和权益定价。</em></a><a class="domain-tile" href="shared.html"><span>通用</span><strong>21</strong><em>跨资产工具、静态数据服务辅助函数、定价设置、风险设置、情景设置以及共享 protobuf 工具。</em></a></div></section><section id="user-guide" class="panel"><h2>用户指南</h2><div class="workflow-grid"><article class="workflow-card"><h3>1. 创建对象</h3><p>使用工厂函数在 内存对象 中创建曲线、报价、模板、设置、市场数据和工具对象。</p></article><article class="workflow-card"><h3>2. 传递句柄</h3><p>构建器和定价封装函数接收前序调用返回的句柄字符串，避免重复传递序列化 protobuf 字节。</p></article><article class="workflow-card"><h3>3. 统一定价调用</h3><p>原生定价封装使用一致的七个数据参数，并可追加 <code>returnJson BOOL</code>：工具、定价日、市场数据、定价设置、风险设置、情景设置、模式以及 returnJson。</p></article><article class="workflow-card"><h3>4. 查看 JSON</h3><p>省略 <code>returnJson</code> 或设置为 <code>false</code> 时仅返回句柄；设置为 <code>true</code> 时返回 <code>[handle, protobufJson]</code>，便于检查和可视化。</p></article></div></section><section class="panel example"><h2>返回值模式</h2><pre><code>pricingResult = caplib::PriceEqEuropeanOption(inst, date, mkt, settings, risk, &quot;&quot;, &quot;&quot;, true)
+pricingHandle = pricingResult[0]
+pricingJson = pricingResult[1]</code></pre></section>
+    </main>
+  </div>
+</body>
+</html>

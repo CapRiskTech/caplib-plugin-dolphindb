@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>权益 | CAPLIB</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="alternate" hreflang="en" href="../equity.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../equity.html">English</a><span class="lang-active">中文</span></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child active" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="shared.html#api-reference">通用 <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>64</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child active" href="equity.html#api-reference">权益 <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib 插件</p>
+        <h1>权益</h1>
+        <p class="lede">权益市场数据、股息曲线、波动率曲面、期权工具和权益定价。</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>权益市场数据、股息曲线、波动率曲面、期权工具和权益定价。 本页包含 36 个函数。可按函数名、返回类型、参数或说明进行筛选。</p></section><section class="panel example"><h2>示例</h2><pre><code>eqRisk = caplib::CreateEqRiskSettings(0, 0, 0, 0, &quot;EQ_NO_RISK&quot;, true);
+eqMkt = caplib::CreateEqMktDataSet(
+    2025.01.02, &quot;EQ_UNDERLYING&quot;, 100.0,
+    &quot;USD_DISC&quot;, &quot;EQ_DIV&quot;, &quot;EQ_VOL&quot;, &quot;&quot;, &quot;&quot;, 0.0, &quot;EQ_MKT&quot;, true);
+
+pricingResult = caplib::PriceEqEuropeanOption(
+    &quot;EO_INST&quot;, 2025.01.02, eqMkt[0], &quot;BSM_ANALYTICAL&quot;, eqRisk[0], &quot;&quot;, &quot;&quot;, true);
+resultJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+<section class="api-group"><h2>权益分析与工具</h2>
+
+<article class="api-card" data-search="buildeqindexdividendcurve build and cache an equity index dividend curve from futures or option quotes. asofdate date, termdates date[], futureprices double[], optionprices table, spot double, discountcurvehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildeqindexdividendcurve"></a>
+      <h3><code>BuildEqIndexDividendCurve</code></h3>
+      <p class="api-description">构建股指股息收益率曲线。</p>
+      <p class="full-signature"><code>caplib::BuildEqIndexDividendCurve(asOfDate DATE, termDates DATE[], futurePrices DOUBLE[], optionPrices TABLE, spot DOUBLE, discountCurveHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>报价期限对应的到期日期数组。</td></tr><tr><td><code>futurePrices</code></td><td>DOUBLE[]</td><td>期货价格数组。</td></tr><tr><td><code>optionPrices</code></td><td>TABLE</td><td>期权价格矩阵或表。</td></tr><tr><td><code>spot</code></td><td>DOUBLE</td><td>当前现货价格。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildeqvolatilitysurface build and cache an equity volatility surface from definition, quote matrix, rates, dividend curve, and build settings. referencedate date, underlying string, definitionhandle string, quotematrixhandle string, underlyingprices double[], discountcurvehandle string, dividendcurvehandle string, buildsettingshandle string, pricingsettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildeqvolatilitysurface"></a>
+      <h3><code>BuildEqVolatilitySurface</code></h3>
+      <p class="api-description">构建权益波动率曲面。</p>
+      <p class="full-signature"><code>caplib::BuildEqVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE[], discountCurveHandle STRING, dividendCurveHandle STRING, buildSettingsHandle STRING, pricingSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>期权报价矩阵 内存对象 句柄。</td></tr><tr><td><code>underlyingPrices</code></td><td>DOUBLE[]</td><td>与报价期限或校准行对齐的标的价格数组。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>dividendCurveHandle</code></td><td>STRING</td><td>股息曲线 内存对象 句柄。</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>构建设置 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeqoptionquotematrix create and cache an equity option quote matrix using absolute term and absolute strike quotes. exercisetype string, underlyingtype string, asofdate date, termdates date[], payofftypes string matrix/vector, optionprices double matrix/vector, optionstrikes double matrix/vector, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeqoptionquotematrix"></a>
+      <h3><code>CreateEqOptionQuoteMatrix</code></h3>
+      <p class="api-description">创建并缓存权益期权报价矩阵。</p>
+      <p class="full-signature"><code>caplib::CreateEqOptionQuoteMatrix(exerciseType STRING, underlyingType STRING, asOfDate DATE, termDates DATE[], payoffTypes STRING matrix/vector, optionPrices DOUBLE matrix/vector, optionStrikes DOUBLE matrix/vector, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>exerciseType</code></td><td>STRING</td><td>期权行权风格。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>报价期限对应的到期日期数组。</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>与报价值对齐的收益类型矩阵或向量。</td></tr><tr><td><code>optionPrices</code></td><td>DOUBLE matrix/vector</td><td>期权价格矩阵或表。</td></tr><tr><td><code>optionStrikes</code></td><td>DOUBLE matrix/vector</td><td>期权行权价矩阵或向量。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqeuropeanoption price an equity european option using the standard eq pricing wrapper. eqpricing7(europeanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqeuropeanoption"></a>
+      <h3><code>PriceEqEuropeanOption</code></h3>
+      <p class="api-description">定价权益欧式期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqEuropeanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeqmktdataset create and cache an equity market-data set. asofdate date, underlying string, underlyingprice double, dchandle string, divhandle string, volhandle string, quantodchandle string, quantofxvolhandle string, quantocorrelation double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeqmktdataset"></a>
+      <h3><code>CreateEqMktDataSet</code></h3>
+      <p class="api-description">创建并缓存权益市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateEqMktDataSet(asOfDate DATE, underlying STRING, underlyingPrice DOUBLE, dcHandle STRING, divHandle STRING, volHandle STRING, quantoDcHandle STRING, quantoFxVolHandle STRING, quantoCorrelation DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>underlyingPrice</code></td><td>DOUBLE</td><td>当前标的价格。</td></tr><tr><td><code>dcHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>divHandle</code></td><td>STRING</td><td>股息曲线 内存对象 句柄。</td></tr><tr><td><code>volHandle</code></td><td>STRING</td><td>波动率设置或曲面 内存对象 句柄。</td></tr><tr><td><code>quantoDcHandle</code></td><td>STRING</td><td>Quanto 贴现曲线 内存对象 句柄。</td></tr><tr><td><code>quantoFxVolHandle</code></td><td>STRING</td><td>Quanto 外汇波动率曲线 内存对象 句柄。</td></tr><tr><td><code>quantoCorrelation</code></td><td>DOUBLE</td><td>Quanto 调整相关系数。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeqrisksettings create and cache equity 风险设置。 irdelta bool, pricedelta bool, volvega bool, theta bool, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeqrisksettings"></a>
+      <h3><code>CreateEqRiskSettings</code></h3>
+      <p class="api-description">创建并缓存权益风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateEqRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta BOOL, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irDelta</code></td><td>BOOL</td><td>是否计算利率 Delta 风险。</td></tr><tr><td><code>priceDelta</code></td><td>BOOL</td><td>是否计算标的价格 Delta 风险。</td></tr><tr><td><code>volVega</code></td><td>BOOL</td><td>是否计算波动率 Vega 风险。</td></tr><tr><td><code>theta</code></td><td>BOOL</td><td>是否计算 Theta 风险。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeuropeanoption create and cache a european option instrument. payofftype string, strike double, expiry date, delivery date, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeuropeanoption"></a>
+      <h3><code>CreateEuropeanOption</code></h3>
+      <p class="api-description">创建并缓存欧式期权。</p>
+      <p class="full-signature"><code>caplib::CreateEuropeanOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createamericanoption create and cache an american option instrument. payofftype string, strike double, expiry date, delivery date, settlementdays int, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createamericanoption"></a>
+      <h3><code>CreateAmericanOption</code></h3>
+      <p class="api-description">创建并缓存美式期权。</p>
+      <p class="full-signature"><code>caplib::CreateAmericanOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdigitaloption create and cache a 数字期权 instrument. payofftype string, strike double, expiry date, delivery date, cash double, asset double, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdigitaloption"></a>
+      <h3><code>CreateDigitalOption</code></h3>
+      <p class="api-description">创建并缓存数字期权。</p>
+      <p class="full-signature"><code>caplib::CreateDigitalOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, cash DOUBLE, asset DOUBLE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>现金收益或现金返还金额。</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>资产收益或资产返还金额。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createasianoption create and cache an asian option instrument. asianoptionargs13[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createasianoption"></a>
+      <h3><code>CreateAsianOption</code></h3>
+      <p class="api-description">创建并缓存亚式期权。</p>
+      <p class="full-signature"><code>caplib::CreateAsianOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, strikeType STRING, avgMethod STRING, obsType STRING, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>strikeType</code></td><td>STRING</td><td>行权价类型。</td></tr><tr><td><code>avgMethod</code></td><td>STRING</td><td>平均价格或平均观察值计算方法。</td></tr><tr><td><code>obsType</code></td><td>STRING</td><td>观察方式。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createonetouchoption create and cache a 单触碰期权 instrument. onetouchargs15[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createonetouchoption"></a>
+      <h3><code>CreateOneTouchOption</code></h3>
+      <p class="api-description">创建并缓存单触碰期权。</p>
+      <p class="full-signature"><code>caplib::CreateOneTouchOption(expiry DATE, delivery DATE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>障碍方向或类型枚举。</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>返还或障碍支付时点类型。</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>现金收益或现金返还金额。</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>资产收益或资产返还金额。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdoubletouchoption create and cache a 双触碰期权 instrument. doubletouchargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdoubletouchoption"></a>
+      <h3><code>CreateDoubleTouchOption</code></h3>
+      <p class="api-description">创建并缓存双触碰期权。</p>
+      <p class="full-signature"><code>caplib::CreateDoubleTouchOption(expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>lowerBarrierType</code></td><td>STRING</td><td>下障碍类型。</td></tr><tr><td><code>lowerBarrierValue</code></td><td>DOUBLE</td><td>下障碍水平。</td></tr><tr><td><code>upperBarrierType</code></td><td>STRING</td><td>上障碍类型。</td></tr><tr><td><code>upperBarrierValue</code></td><td>DOUBLE</td><td>上障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>返还或障碍支付时点类型。</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>现金收益或现金返还金额。</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>资产收益或资产返还金额。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createsinglebarrieroption create and cache a 单障碍期权 instrument. singlebarrierargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createsinglebarrieroption"></a>
+      <h3><code>CreateSingleBarrierOption</code></h3>
+      <p class="api-description">创建并缓存单障碍期权。</p>
+      <p class="full-signature"><code>caplib::CreateSingleBarrierOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cashRebate DOUBLE, assetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>障碍方向或类型枚举。</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>返还或障碍支付时点类型。</td></tr><tr><td><code>cashRebate</code></td><td>DOUBLE</td><td>现金返还金额。</td></tr><tr><td><code>assetRebate</code></td><td>DOUBLE</td><td>资产返还金额。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdoublebarrieroption create and cache a 双障碍期权 instrument. doublebarrierargs21[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdoublebarrieroption"></a>
+      <h3><code>CreateDoubleBarrierOption</code></h3>
+      <p class="api-description">创建并缓存双障碍期权。</p>
+      <p class="full-signature"><code>caplib::CreateDoubleBarrierOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, lowerCashRebate DOUBLE, lowerAssetRebate DOUBLE, upperCashRebate DOUBLE, upperAssetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>lowerBarrierType</code></td><td>STRING</td><td>下障碍类型。</td></tr><tr><td><code>lowerBarrierValue</code></td><td>DOUBLE</td><td>下障碍水平。</td></tr><tr><td><code>upperBarrierType</code></td><td>STRING</td><td>上障碍类型。</td></tr><tr><td><code>upperBarrierValue</code></td><td>DOUBLE</td><td>上障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>返还或障碍支付时点类型。</td></tr><tr><td><code>lowerCashRebate</code></td><td>DOUBLE</td><td>下障碍现金返还金额。</td></tr><tr><td><code>lowerAssetRebate</code></td><td>DOUBLE</td><td>下障碍资产返还金额。</td></tr><tr><td><code>upperCashRebate</code></td><td>DOUBLE</td><td>上障碍现金返还金额。</td></tr><tr><td><code>upperAssetRebate</code></td><td>DOUBLE</td><td>上障碍资产返还金额。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcollaroption create and cache a collar option instrument. payofftype string, lowergearing double, uppergearing double, lowerstrike double, upperstrike double, expiry date, delivery date, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcollaroption"></a>
+      <h3><code>CreateCollarOption</code></h3>
+      <p class="api-description">创建并缓存领口期权。</p>
+      <p class="full-signature"><code>caplib::CreateCollarOption(payoffType STRING, lowerGearing DOUBLE, upperGearing DOUBLE, lowerStrike DOUBLE, upperStrike DOUBLE, expiry DATE, delivery DATE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>lowerGearing</code></td><td>DOUBLE</td><td>下行收益杠杆。</td></tr><tr><td><code>upperGearing</code></td><td>DOUBLE</td><td>上行收益杠杆。</td></tr><tr><td><code>lowerStrike</code></td><td>DOUBLE</td><td>下行权价。</td></tr><tr><td><code>upperStrike</code></td><td>DOUBLE</td><td>上行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createsinglesharkfinoption create and cache a single shark-fin option instrument. singlesharkfinargs19[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createsinglesharkfinoption"></a>
+      <h3><code>CreateSingleSharkFinOption</code></h3>
+      <p class="api-description">创建并缓存单鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::CreateSingleSharkFinOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, gearing DOUBLE, performanceType STRING, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cashRebate DOUBLE, assetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>gearing</code></td><td>DOUBLE</td><td>收益杠杆。</td></tr><tr><td><code>performanceType</code></td><td>STRING</td><td>收益表现计算类型。</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>障碍方向或类型枚举。</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>返还或障碍支付时点类型。</td></tr><tr><td><code>cashRebate</code></td><td>DOUBLE</td><td>现金返还金额。</td></tr><tr><td><code>assetRebate</code></td><td>DOUBLE</td><td>资产返还金额。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdoublesharkfinoption create and cache a double shark-fin option instrument. doublesharkfinargs22[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdoublesharkfinoption"></a>
+      <h3><code>CreateDoubleSharkFinOption</code></h3>
+      <p class="api-description">创建并缓存双鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::CreateDoubleSharkFinOption(lowerStrike DOUBLE, upperStrike DOUBLE, expiry DATE, delivery DATE, lowerParticipation DOUBLE, upperParticipation DOUBLE, performanceType STRING, lowerBarrier DOUBLE, upperBarrier DOUBLE, barrierObsType STRING, paymentType STRING, lowerCashRebate DOUBLE, lowerAssetRebate DOUBLE, upperCashRebate DOUBLE, upperAssetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>lowerStrike</code></td><td>DOUBLE</td><td>下行权价。</td></tr><tr><td><code>upperStrike</code></td><td>DOUBLE</td><td>上行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>lowerParticipation</code></td><td>DOUBLE</td><td>下行参与率。</td></tr><tr><td><code>upperParticipation</code></td><td>DOUBLE</td><td>上行参与率。</td></tr><tr><td><code>performanceType</code></td><td>STRING</td><td>收益表现计算类型。</td></tr><tr><td><code>lowerBarrier</code></td><td>DOUBLE</td><td>下障碍水平。</td></tr><tr><td><code>upperBarrier</code></td><td>DOUBLE</td><td>上障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>返还或障碍支付时点类型。</td></tr><tr><td><code>lowerCashRebate</code></td><td>DOUBLE</td><td>下障碍现金返还金额。</td></tr><tr><td><code>lowerAssetRebate</code></td><td>DOUBLE</td><td>下障碍资产返还金额。</td></tr><tr><td><code>upperCashRebate</code></td><td>DOUBLE</td><td>上障碍现金返还金额。</td></tr><tr><td><code>upperAssetRebate</code></td><td>DOUBLE</td><td>上障碍资产返还金额。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createrangeaccrualoption create and cache a 区间累计期权 instrument. rangeaccrualargs12[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createrangeaccrualoption"></a>
+      <h3><code>CreateRangeAccrualOption</code></h3>
+      <p class="api-description">创建并缓存区间累计期权。</p>
+      <p class="full-signature"><code>caplib::CreateRangeAccrualOption(expiry DATE, delivery DATE, asset DOUBLE, cash DOUBLE, lowerBarrier DOUBLE, upperBarrier DOUBLE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>资产收益或资产返还金额。</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>现金收益或现金返还金额。</td></tr><tr><td><code>lowerBarrier</code></td><td>DOUBLE</td><td>下障碍水平。</td></tr><tr><td><code>upperBarrier</code></td><td>DOUBLE</td><td>上障碍水平。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createairbagoption create and cache an 安全气囊期权 instrument. airbagargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createairbagoption"></a>
+      <h3><code>CreateAirbagOption</code></h3>
+      <p class="api-description">创建并缓存安全气囊期权。</p>
+      <p class="full-signature"><code>caplib::CreateAirbagOption(payoffType STRING, expiry DATE, delivery DATE, lowerStrike DOUBLE, upperStrike DOUBLE, lowerGearing DOUBLE, upperGearing DOUBLE, knockInStrike DOUBLE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>收益类型，例如 CALL 或 PUT。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>lowerStrike</code></td><td>DOUBLE</td><td>下行权价。</td></tr><tr><td><code>upperStrike</code></td><td>DOUBLE</td><td>上行权价。</td></tr><tr><td><code>lowerGearing</code></td><td>DOUBLE</td><td>下行收益杠杆。</td></tr><tr><td><code>upperGearing</code></td><td>DOUBLE</td><td>上行收益杠杆。</td></tr><tr><td><code>knockInStrike</code></td><td>DOUBLE</td><td>敲入后使用的行权价。</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>障碍方向或类型枚举。</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpingpongoption create and cache a 乒乓期权 instrument. pingpongargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpingpongoption"></a>
+      <h3><code>CreatePingPongOption</code></h3>
+      <p class="api-description">创建并缓存乒乓期权。</p>
+      <p class="full-signature"><code>caplib::CreatePingPongOption(expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>lowerBarrierType</code></td><td>STRING</td><td>下障碍类型。</td></tr><tr><td><code>lowerBarrierValue</code></td><td>DOUBLE</td><td>下障碍水平。</td></tr><tr><td><code>upperBarrierType</code></td><td>STRING</td><td>上障碍类型。</td></tr><tr><td><code>upperBarrierValue</code></td><td>DOUBLE</td><td>上障碍水平。</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>障碍观察约定。</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>返还或障碍支付时点类型。</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>现金收益或现金返还金额。</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>资产收益或资产返还金额。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>与观察日期对齐的定盘值数组。</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createphoenixautocallablenote create and cache a phoenix autocallable note. phoenixargs22[, autocallschedule6] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createphoenixautocallablenote"></a>
+      <h3><code>CreatePhoenixAutoCallableNote</code></h3>
+      <p class="api-description">创建并缓存凤凰自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::CreatePhoenixAutoCallableNote(couponPayoffType STRING, couponStrike DOUBLE, couponRate DOUBLE, dayCount STRING, startDate DATE, couponDates DATE[], knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE[], knockOutValues DOUBLE[], knockOutWeights DOUBLE[], knockInDates DATE[], knockInValues DOUBLE[], knockInWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>couponPayoffType</code></td><td>STRING</td><td>票息收益类型。</td></tr><tr><td><code>couponStrike</code></td><td>DOUBLE</td><td>票息条件使用的行权价。</td></tr><tr><td><code>couponRate</code></td><td>DOUBLE</td><td>票息率。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>起始日期。</td></tr><tr><td><code>couponDates</code></td><td>DATE[]</td><td>票息支付日期数组。</td></tr><tr><td><code>knockOutBarrierType</code></td><td>STRING</td><td>敲出障碍类型。</td></tr><tr><td><code>knockOutBarrierValue</code></td><td>DOUBLE</td><td>敲出障碍水平。</td></tr><tr><td><code>knockInBarrierType</code></td><td>STRING</td><td>敲入障碍类型。</td></tr><tr><td><code>knockInBarrierValue</code></td><td>DOUBLE</td><td>敲入障碍水平。</td></tr><tr><td><code>longShort</code></td><td>STRING</td><td>多空方向。</td></tr><tr><td><code>knockInPayoffType</code></td><td>STRING</td><td>敲入后收益类型。</td></tr><tr><td><code>knockInPayoffStrike</code></td><td>DOUBLE</td><td>敲入后收益使用的行权价。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>knockOutDates</code></td><td>DATE[]</td><td>敲出观察日期数组。</td></tr><tr><td><code>knockOutValues</code></td><td>DOUBLE[]</td><td>与敲出日期对齐的敲出观察值数组。</td></tr><tr><td><code>knockOutWeights</code></td><td>DOUBLE[]</td><td>敲出观察权重数组。</td></tr><tr><td><code>knockInDates</code></td><td>DATE[]</td><td>敲入观察日期数组。</td></tr><tr><td><code>knockInValues</code></td><td>DOUBLE[]</td><td>与敲入日期对齐的敲入观察值数组。</td></tr><tr><td><code>knockInWeights</code></td><td>DOUBLE[]</td><td>敲入观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createsnowballautocallablenote create and cache a snowball autocallable note. snowballargs22[, autocallschedule6] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createsnowballautocallablenote"></a>
+      <h3><code>CreateSnowballAutoCallableNote</code></h3>
+      <p class="api-description">创建并缓存雪球自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::CreateSnowballAutoCallableNote(couponRate DOUBLE, startDate DATE, couponDates DATE[], dayCount STRING, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, knockInPayoffGearing DOUBLE, referencePrice DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE[], knockOutValues DOUBLE[], knockOutWeights DOUBLE[], knockInDates DATE[], knockInValues DOUBLE[], knockInWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>couponRate</code></td><td>DOUBLE</td><td>票息率。</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>起始日期。</td></tr><tr><td><code>couponDates</code></td><td>DATE[]</td><td>票息支付日期数组。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>knockOutBarrierType</code></td><td>STRING</td><td>敲出障碍类型。</td></tr><tr><td><code>knockOutBarrierValue</code></td><td>DOUBLE</td><td>敲出障碍水平。</td></tr><tr><td><code>knockInBarrierType</code></td><td>STRING</td><td>敲入障碍类型。</td></tr><tr><td><code>knockInBarrierValue</code></td><td>DOUBLE</td><td>敲入障碍水平。</td></tr><tr><td><code>longShort</code></td><td>STRING</td><td>多空方向。</td></tr><tr><td><code>knockInPayoffType</code></td><td>STRING</td><td>敲入后收益类型。</td></tr><tr><td><code>knockInPayoffStrike</code></td><td>DOUBLE</td><td>敲入后收益使用的行权价。</td></tr><tr><td><code>knockInPayoffGearing</code></td><td>DOUBLE</td><td>敲入收益杠杆。</td></tr><tr><td><code>referencePrice</code></td><td>DOUBLE</td><td>收益结构使用的参考价格。</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>收益支付币种。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>标的资产币种。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>knockOutDates</code></td><td>DATE[]</td><td>敲出观察日期数组。</td></tr><tr><td><code>knockOutValues</code></td><td>DOUBLE[]</td><td>与敲出日期对齐的敲出观察值数组。</td></tr><tr><td><code>knockOutWeights</code></td><td>DOUBLE[]</td><td>敲出观察权重数组。</td></tr><tr><td><code>knockInDates</code></td><td>DATE[]</td><td>敲入观察日期数组。</td></tr><tr><td><code>knockInValues</code></td><td>DOUBLE[]</td><td>与敲入日期对齐的敲入观察值数组。</td></tr><tr><td><code>knockInWeights</code></td><td>DOUBLE[]</td><td>敲入观察权重数组。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqamericanoption price an equity american option. eqpricing7(americanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqamericanoption"></a>
+      <h3><code>PriceEqAmericanOption</code></h3>
+      <p class="api-description">定价权益美式期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqAmericanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqasianoption price an equity asian option. eqpricing7(asianoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqasianoption"></a>
+      <h3><code>PriceEqAsianOption</code></h3>
+      <p class="api-description">定价权益亚式期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdigitaloption price an equity 数字期权. eqpricing7(digitaloption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdigitaloption"></a>
+      <h3><code>PriceEqDigitalOption</code></h3>
+      <p class="api-description">定价权益数字期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqDigitalOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqonetouchoption price an equity 单触碰期权. eqpricing7(onetouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqonetouchoption"></a>
+      <h3><code>PriceEqOneTouchOption</code></h3>
+      <p class="api-description">定价权益单触碰期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqOneTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdoubletouchoption price an equity 双触碰期权. eqpricing7(doubletouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdoubletouchoption"></a>
+      <h3><code>PriceEqDoubleTouchOption</code></h3>
+      <p class="api-description">定价权益双触碰期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqsinglebarrieroption price an equity 单障碍期权. eqpricing7(singlebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqsinglebarrieroption"></a>
+      <h3><code>PriceEqSingleBarrierOption</code></h3>
+      <p class="api-description">定价权益单障碍期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqSingleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdoublebarrieroption price an equity 双障碍期权. eqpricing7(doublebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdoublebarrieroption"></a>
+      <h3><code>PriceEqDoubleBarrierOption</code></h3>
+      <p class="api-description">定价权益双障碍期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqDoubleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqsinglesharkfinoption price an equity single shark-fin option. eqpricing7(singlesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqsinglesharkfinoption"></a>
+      <h3><code>PriceEqSingleSharkFinOption</code></h3>
+      <p class="api-description">定价权益单鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdoublesharkfinoption price an equity double shark-fin option. eqpricing7(doublesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdoublesharkfinoption"></a>
+      <h3><code>PriceEqDoubleSharkFinOption</code></h3>
+      <p class="api-description">定价权益双鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqDoubleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqpingpongoption price an equity 乒乓期权. eqpricing7(pingpongoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqpingpongoption"></a>
+      <h3><code>PriceEqPingPongOption</code></h3>
+      <p class="api-description">定价权益乒乓期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqPingPongOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqairbagoption price an equity 安全气囊期权. eqpricing7(airbagoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqairbagoption"></a>
+      <h3><code>PriceEqAirbagOption</code></h3>
+      <p class="api-description">定价权益安全气囊期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqrangeaccrualoption price an equity 区间累计期权. eqpricing7(rangeaccrualoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqrangeaccrualoption"></a>
+      <h3><code>PriceEqRangeAccrualOption</code></h3>
+      <p class="api-description">定价权益区间累计期权。</p>
+      <p class="full-signature"><code>caplib::PriceEqRangeAccrualOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqphoenixautocallablenote price an equity phoenix autocallable note. eqpricing7(phoenixautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqphoenixautocallablenote"></a>
+      <h3><code>PriceEqPhoenixAutoCallableNote</code></h3>
+      <p class="api-description">定价权益凤凰自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::PriceEqPhoenixAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqsnowballautocallablenote price an equity snowball autocallable note. eqpricing7(snowballautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqsnowballautocallablenote"></a>
+      <h3><code>PriceEqSnowballAutoCallableNote</code></h3>
+      <p class="api-description">定价权益雪球自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::PriceEqSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `显示 ${visible} / ${cards.length} 个函数`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

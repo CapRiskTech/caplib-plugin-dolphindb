@@ -1,0 +1,29 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: Bond Pricing
+// =============================================================================
+// This script demonstrates how to price a vanilla bond, calculate yield to
+// maturity, and Z-spread using the caplib plugin.
+
+// Load the plugin
+loadPlugin("PluginCaplib")
+
+// Prerequisites: You need a yield curve and bond instrument resource.
+// These would typically be created using buildIrYieldCurve and a bond
+// instrument builder.
+
+// Step 1: Price a vanilla bond
+// pricingDate = 2024.01.15
+// results = caplib::priceVanillaBond(pricingDate, bondInstrument, mktData)
+// print("Bond NPV: " + string(results["npv"]))
+
+// Step 2: Calculate Yield to Maturity
+// ytm = caplib::calcYieldToMaturity(pricingDate, bondInstrument, mktData)
+// print("Yield to Maturity: " + string(ytm))
+
+// Step 3: Calculate Z-Spread
+// zSpread = caplib::calcZSpread(pricingDate, bondInstrument, mktData)
+// print("Z-Spread: " + string(zSpread))
+
+// Step 4: Build a bond yield curve
+// bondCurve = caplib::buildBondYieldCurve(pricingDate, buildSettings)
+// print("Bond yield curve: " + string(bondCurve))

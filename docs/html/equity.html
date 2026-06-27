@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Equity | CAPLIB</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="alternate" hreflang="zh-CN" href="zh/equity.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">User Guide and API Reference</span><span class="lang-switch"><span class="lang-active">EN</span><a href="zh/equity.html">中文</a></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child" href="index.html#user-guide">Introduction</a><a class="nav-child" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child" href="commodity.html#user-guide">Commodity</a><a class="nav-child active" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child" href="shared.html#api-reference">Common <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>64</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child active" href="equity.html#api-reference">Equity <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib plugin</p>
+        <h1>Equity</h1>
+        <p class="lede">Equity market data, dividend curves, volatility surfaces, option instruments, and EQ pricing.</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Equity market data, dividend curves, volatility surfaces, option instruments, and EQ pricing. This page contains 36 functions. Use the filter to narrow by function name, return type, parameter, or description.</p></section><section class="panel example"><h2>Example</h2><pre><code>eqRisk = caplib::CreateEqRiskSettings(0, 0, 0, 0, &quot;EQ_NO_RISK&quot;, true);
+eqMkt = caplib::CreateEqMktDataSet(
+    2025.01.02, &quot;EQ_UNDERLYING&quot;, 100.0,
+    &quot;USD_DISC&quot;, &quot;EQ_DIV&quot;, &quot;EQ_VOL&quot;, &quot;&quot;, &quot;&quot;, 0.0, &quot;EQ_MKT&quot;, true);
+
+pricingResult = caplib::PriceEqEuropeanOption(
+    &quot;EO_INST&quot;, 2025.01.02, eqMkt[0], &quot;BSM_ANALYTICAL&quot;, eqRisk[0], &quot;&quot;, &quot;&quot;, true);
+resultJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
+<section class="api-group"><h2>Equity analytics and instruments</h2>
+
+<article class="api-card" data-search="buildeqindexdividendcurve build and cache an equity index dividend curve from futures or option quotes. asofdate date, termdates date[], futureprices double[], optionprices table, spot double, discountcurvehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildeqindexdividendcurve"></a>
+      <h3><code>BuildEqIndexDividendCurve</code></h3>
+      <p class="api-description">Build and cache an equity index dividend curve from futures or option quotes.</p>
+      <p class="full-signature"><code>caplib::BuildEqIndexDividendCurve(asOfDate DATE, termDates DATE[], futurePrices DOUBLE[], optionPrices TABLE, spot DOUBLE, discountCurveHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>Absolute quote term or expiry dates aligned with quote rows.</td></tr><tr><td><code>futurePrices</code></td><td>DOUBLE[]</td><td>Futures prices aligned with term dates for dividend-curve building.</td></tr><tr><td><code>optionPrices</code></td><td>TABLE</td><td>Option price matrix or nested vector aligned by term and strike.</td></tr><tr><td><code>spot</code></td><td>DOUBLE</td><td>Spot price of the underlying asset.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildeqvolatilitysurface build and cache an equity volatility surface from definition, quote matrix, rates, dividend curve, and build settings. referencedate date, underlying string, definitionhandle string, quotematrixhandle string, underlyingprices double[], discountcurvehandle string, dividendcurvehandle string, buildsettingshandle string, pricingsettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildeqvolatilitysurface"></a>
+      <h3><code>BuildEqVolatilitySurface</code></h3>
+      <p class="api-description">Build and cache an equity volatility surface from definition, quote matrix, rates, dividend curve, and build settings.</p>
+      <p class="full-signature"><code>caplib::BuildEqVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE[], discountCurveHandle STRING, dividendCurveHandle STRING, buildSettingsHandle STRING, pricingSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>ObjectCache handle for the definition object.</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>ObjectCache handle for the option quote matrix.</td></tr><tr><td><code>underlyingPrices</code></td><td>DOUBLE[]</td><td>Underlying prices aligned with quote terms or calibration rows.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>dividendCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the dividend or forward-yield curve.</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for the build settings object.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeqoptionquotematrix create and cache an equity option quote matrix using absolute term and absolute strike quotes. exercisetype string, underlyingtype string, asofdate date, termdates date[], payofftypes string matrix/vector, optionprices double matrix/vector, optionstrikes double matrix/vector, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeqoptionquotematrix"></a>
+      <h3><code>CreateEqOptionQuoteMatrix</code></h3>
+      <p class="api-description">Create and cache an equity option quote matrix using absolute term and absolute strike quotes.</p>
+      <p class="full-signature"><code>caplib::CreateEqOptionQuoteMatrix(exerciseType STRING, underlyingType STRING, asOfDate DATE, termDates DATE[], payoffTypes STRING matrix/vector, optionPrices DOUBLE matrix/vector, optionStrikes DOUBLE matrix/vector, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>exerciseType</code></td><td>STRING</td><td>Exercise style of the option, such as European or American.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>Absolute quote term or expiry dates aligned with quote rows.</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>Payoff type matrix or vector aligned with option quote values.</td></tr><tr><td><code>optionPrices</code></td><td>DOUBLE matrix/vector</td><td>Option price matrix or nested vector aligned by term and strike.</td></tr><tr><td><code>optionStrikes</code></td><td>DOUBLE matrix/vector</td><td>Option strike matrix or nested vector aligned by term and quote.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqeuropeanoption price an equity european option using the standard eq pricing wrapper. eqpricing7(europeanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqeuropeanoption"></a>
+      <h3><code>PriceEqEuropeanOption</code></h3>
+      <p class="api-description">Price an equity European option using the standard EQ pricing wrapper.</p>
+      <p class="full-signature"><code>caplib::PriceEqEuropeanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeqmktdataset create and cache an equity market-data set. asofdate date, underlying string, underlyingprice double, dchandle string, divhandle string, volhandle string, quantodchandle string, quantofxvolhandle string, quantocorrelation double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeqmktdataset"></a>
+      <h3><code>CreateEqMktDataSet</code></h3>
+      <p class="api-description">Create and cache an equity market-data set.</p>
+      <p class="full-signature"><code>caplib::CreateEqMktDataSet(asOfDate DATE, underlying STRING, underlyingPrice DOUBLE, dcHandle STRING, divHandle STRING, volHandle STRING, quantoDcHandle STRING, quantoFxVolHandle STRING, quantoCorrelation DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>underlyingPrice</code></td><td>DOUBLE</td><td>Current underlying spot or forward price.</td></tr><tr><td><code>dcHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>divHandle</code></td><td>STRING</td><td>ObjectCache handle for the dividend or forward-yield curve.</td></tr><tr><td><code>volHandle</code></td><td>STRING</td><td>ObjectCache handle for volatility curve or surface.</td></tr><tr><td><code>quantoDcHandle</code></td><td>STRING</td><td>ObjectCache handle for quanto discount curve.</td></tr><tr><td><code>quantoFxVolHandle</code></td><td>STRING</td><td>ObjectCache handle for quanto FX volatility curve.</td></tr><tr><td><code>quantoCorrelation</code></td><td>DOUBLE</td><td>Correlation used for quanto adjustment.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeqrisksettings create and cache equity risk settings. irdelta bool, pricedelta bool, volvega bool, theta bool, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeqrisksettings"></a>
+      <h3><code>CreateEqRiskSettings</code></h3>
+      <p class="api-description">Create and cache equity risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateEqRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta BOOL, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>irDelta</code></td><td>BOOL</td><td>Whether interest-rate delta risk should be calculated.</td></tr><tr><td><code>priceDelta</code></td><td>BOOL</td><td>Whether underlying price delta risk should be calculated.</td></tr><tr><td><code>volVega</code></td><td>BOOL</td><td>Whether volatility vega risk should be calculated.</td></tr><tr><td><code>theta</code></td><td>BOOL</td><td>Whether theta risk should be calculated.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createeuropeanoption create and cache a european option instrument. payofftype string, strike double, expiry date, delivery date, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createeuropeanoption"></a>
+      <h3><code>CreateEuropeanOption</code></h3>
+      <p class="api-description">Create and cache a European option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateEuropeanOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createamericanoption create and cache an american option instrument. payofftype string, strike double, expiry date, delivery date, settlementdays int, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createamericanoption"></a>
+      <h3><code>CreateAmericanOption</code></h3>
+      <p class="api-description">Create and cache an American option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateAmericanOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdigitaloption create and cache a digital option instrument. payofftype string, strike double, expiry date, delivery date, cash double, asset double, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdigitaloption"></a>
+      <h3><code>CreateDigitalOption</code></h3>
+      <p class="api-description">Create and cache a digital option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateDigitalOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, cash DOUBLE, asset DOUBLE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>Cash rebate or cash payoff amount used by the option payoff definition.</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>Asset rebate or asset payoff amount used by the option payoff definition.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createasianoption create and cache an asian option instrument. asianoptionargs13[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createasianoption"></a>
+      <h3><code>CreateAsianOption</code></h3>
+      <p class="api-description">Create and cache an Asian option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateAsianOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, strikeType STRING, avgMethod STRING, obsType STRING, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>strikeType</code></td><td>STRING</td><td>Strike convention used by the option payoff.</td></tr><tr><td><code>avgMethod</code></td><td>STRING</td><td>Averaging method for Asian-option observations.</td></tr><tr><td><code>obsType</code></td><td>STRING</td><td>Observation schedule type for Asian or path-dependent options.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createonetouchoption create and cache a one-touch option instrument. onetouchargs15[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createonetouchoption"></a>
+      <h3><code>CreateOneTouchOption</code></h3>
+      <p class="api-description">Create and cache a one-touch option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateOneTouchOption(expiry DATE, delivery DATE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>Barrier direction/type enum used by the structured option payoff.</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>Barrier level used by the structured option payoff.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>Payment timing/type enum for rebate or barrier payments.</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>Cash rebate or cash payoff amount used by the option payoff definition.</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>Asset rebate or asset payoff amount used by the option payoff definition.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdoubletouchoption create and cache a double-touch option instrument. doubletouchargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdoubletouchoption"></a>
+      <h3><code>CreateDoubleTouchOption</code></h3>
+      <p class="api-description">Create and cache a double-touch option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateDoubleTouchOption(expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>lowerBarrierType</code></td><td>STRING</td><td>Barrier direction/type enum for the lower barrier.</td></tr><tr><td><code>lowerBarrierValue</code></td><td>DOUBLE</td><td>Lower barrier level.</td></tr><tr><td><code>upperBarrierType</code></td><td>STRING</td><td>Barrier direction/type enum for the upper barrier.</td></tr><tr><td><code>upperBarrierValue</code></td><td>DOUBLE</td><td>Upper barrier level.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>Payment timing/type enum for rebate or barrier payments.</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>Cash rebate or cash payoff amount used by the option payoff definition.</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>Asset rebate or asset payoff amount used by the option payoff definition.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createsinglebarrieroption create and cache a single-barrier option instrument. singlebarrierargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createsinglebarrieroption"></a>
+      <h3><code>CreateSingleBarrierOption</code></h3>
+      <p class="api-description">Create and cache a single-barrier option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateSingleBarrierOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cashRebate DOUBLE, assetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>Barrier direction/type enum used by the structured option payoff.</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>Barrier level used by the structured option payoff.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>Payment timing/type enum for rebate or barrier payments.</td></tr><tr><td><code>cashRebate</code></td><td>DOUBLE</td><td>Cash rebate amount paid when the barrier payoff condition is met.</td></tr><tr><td><code>assetRebate</code></td><td>DOUBLE</td><td>Numeric input for asset rebate.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdoublebarrieroption create and cache a double-barrier option instrument. doublebarrierargs21[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdoublebarrieroption"></a>
+      <h3><code>CreateDoubleBarrierOption</code></h3>
+      <p class="api-description">Create and cache a double-barrier option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateDoubleBarrierOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, lowerCashRebate DOUBLE, lowerAssetRebate DOUBLE, upperCashRebate DOUBLE, upperAssetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>lowerBarrierType</code></td><td>STRING</td><td>Barrier direction/type enum for the lower barrier.</td></tr><tr><td><code>lowerBarrierValue</code></td><td>DOUBLE</td><td>Lower barrier level.</td></tr><tr><td><code>upperBarrierType</code></td><td>STRING</td><td>Barrier direction/type enum for the upper barrier.</td></tr><tr><td><code>upperBarrierValue</code></td><td>DOUBLE</td><td>Upper barrier level.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>Payment timing/type enum for rebate or barrier payments.</td></tr><tr><td><code>lowerCashRebate</code></td><td>DOUBLE</td><td>Cash rebate paid at the lower barrier.</td></tr><tr><td><code>lowerAssetRebate</code></td><td>DOUBLE</td><td>Asset rebate paid at the lower barrier.</td></tr><tr><td><code>upperCashRebate</code></td><td>DOUBLE</td><td>Cash rebate paid at the upper barrier.</td></tr><tr><td><code>upperAssetRebate</code></td><td>DOUBLE</td><td>Asset rebate paid at the upper barrier.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcollaroption create and cache a collar option instrument. payofftype string, lowergearing double, uppergearing double, lowerstrike double, upperstrike double, expiry date, delivery date, nominal double, payoffcurrency string, underlyingtype string, underlyingcurrency string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcollaroption"></a>
+      <h3><code>CreateCollarOption</code></h3>
+      <p class="api-description">Create and cache a collar option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateCollarOption(payoffType STRING, lowerGearing DOUBLE, upperGearing DOUBLE, lowerStrike DOUBLE, upperStrike DOUBLE, expiry DATE, delivery DATE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>lowerGearing</code></td><td>DOUBLE</td><td>Gearing multiplier applied below the lower strike.</td></tr><tr><td><code>upperGearing</code></td><td>DOUBLE</td><td>Gearing multiplier applied above the upper strike.</td></tr><tr><td><code>lowerStrike</code></td><td>DOUBLE</td><td>Lower strike level.</td></tr><tr><td><code>upperStrike</code></td><td>DOUBLE</td><td>Upper strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createsinglesharkfinoption create and cache a single shark-fin option instrument. singlesharkfinargs19[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createsinglesharkfinoption"></a>
+      <h3><code>CreateSingleSharkFinOption</code></h3>
+      <p class="api-description">Create and cache a single shark-fin option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateSingleSharkFinOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, gearing DOUBLE, performanceType STRING, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cashRebate DOUBLE, assetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>gearing</code></td><td>DOUBLE</td><td>Participation or gearing multiplier applied to payoff performance.</td></tr><tr><td><code>performanceType</code></td><td>STRING</td><td>Type label or enum value for performance.</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>Barrier direction/type enum used by the structured option payoff.</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>Barrier level used by the structured option payoff.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>Payment timing/type enum for rebate or barrier payments.</td></tr><tr><td><code>cashRebate</code></td><td>DOUBLE</td><td>Cash rebate amount paid when the barrier payoff condition is met.</td></tr><tr><td><code>assetRebate</code></td><td>DOUBLE</td><td>Numeric input for asset rebate.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdoublesharkfinoption create and cache a double shark-fin option instrument. doublesharkfinargs22[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdoublesharkfinoption"></a>
+      <h3><code>CreateDoubleSharkFinOption</code></h3>
+      <p class="api-description">Create and cache a double shark-fin option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateDoubleSharkFinOption(lowerStrike DOUBLE, upperStrike DOUBLE, expiry DATE, delivery DATE, lowerParticipation DOUBLE, upperParticipation DOUBLE, performanceType STRING, lowerBarrier DOUBLE, upperBarrier DOUBLE, barrierObsType STRING, paymentType STRING, lowerCashRebate DOUBLE, lowerAssetRebate DOUBLE, upperCashRebate DOUBLE, upperAssetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>lowerStrike</code></td><td>DOUBLE</td><td>Lower strike level.</td></tr><tr><td><code>upperStrike</code></td><td>DOUBLE</td><td>Upper strike level.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>lowerParticipation</code></td><td>DOUBLE</td><td>Participation rate applied below the lower strike or barrier.</td></tr><tr><td><code>upperParticipation</code></td><td>DOUBLE</td><td>Participation rate applied above the upper strike or barrier.</td></tr><tr><td><code>performanceType</code></td><td>STRING</td><td>Type label or enum value for performance.</td></tr><tr><td><code>lowerBarrier</code></td><td>DOUBLE</td><td>Lower barrier level.</td></tr><tr><td><code>upperBarrier</code></td><td>DOUBLE</td><td>Upper barrier level.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>Payment timing/type enum for rebate or barrier payments.</td></tr><tr><td><code>lowerCashRebate</code></td><td>DOUBLE</td><td>Cash rebate paid at the lower barrier.</td></tr><tr><td><code>lowerAssetRebate</code></td><td>DOUBLE</td><td>Asset rebate paid at the lower barrier.</td></tr><tr><td><code>upperCashRebate</code></td><td>DOUBLE</td><td>Cash rebate paid at the upper barrier.</td></tr><tr><td><code>upperAssetRebate</code></td><td>DOUBLE</td><td>Asset rebate paid at the upper barrier.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createrangeaccrualoption create and cache a range-accrual option instrument. rangeaccrualargs12[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createrangeaccrualoption"></a>
+      <h3><code>CreateRangeAccrualOption</code></h3>
+      <p class="api-description">Create and cache a range-accrual option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateRangeAccrualOption(expiry DATE, delivery DATE, asset DOUBLE, cash DOUBLE, lowerBarrier DOUBLE, upperBarrier DOUBLE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>Asset rebate or asset payoff amount used by the option payoff definition.</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>Cash rebate or cash payoff amount used by the option payoff definition.</td></tr><tr><td><code>lowerBarrier</code></td><td>DOUBLE</td><td>Lower barrier level.</td></tr><tr><td><code>upperBarrier</code></td><td>DOUBLE</td><td>Upper barrier level.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createairbagoption create and cache an airbag option instrument. airbagargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createairbagoption"></a>
+      <h3><code>CreateAirbagOption</code></h3>
+      <p class="api-description">Create and cache an airbag option instrument.</p>
+      <p class="full-signature"><code>caplib::CreateAirbagOption(payoffType STRING, expiry DATE, delivery DATE, lowerStrike DOUBLE, upperStrike DOUBLE, lowerGearing DOUBLE, upperGearing DOUBLE, knockInStrike DOUBLE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payoffType</code></td><td>STRING</td><td>Payoff type label, such as CALL or PUT.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>lowerStrike</code></td><td>DOUBLE</td><td>Lower strike level.</td></tr><tr><td><code>upperStrike</code></td><td>DOUBLE</td><td>Upper strike level.</td></tr><tr><td><code>lowerGearing</code></td><td>DOUBLE</td><td>Gearing multiplier applied below the lower strike.</td></tr><tr><td><code>upperGearing</code></td><td>DOUBLE</td><td>Gearing multiplier applied above the upper strike.</td></tr><tr><td><code>knockInStrike</code></td><td>DOUBLE</td><td>Strike used after a knock-in event.</td></tr><tr><td><code>barrierType</code></td><td>STRING</td><td>Barrier direction/type enum used by the structured option payoff.</td></tr><tr><td><code>barrierValue</code></td><td>DOUBLE</td><td>Barrier level used by the structured option payoff.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpingpongoption create and cache a ping-pong option instrument. pingpongargs17[, fixingschedule3] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpingpongoption"></a>
+      <h3><code>CreatePingPongOption</code></h3>
+      <p class="api-description">Create and cache a ping-pong option instrument.</p>
+      <p class="full-signature"><code>caplib::CreatePingPongOption(expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE[], fixingValues DOUBLE[], fixingWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>lowerBarrierType</code></td><td>STRING</td><td>Barrier direction/type enum for the lower barrier.</td></tr><tr><td><code>lowerBarrierValue</code></td><td>DOUBLE</td><td>Lower barrier level.</td></tr><tr><td><code>upperBarrierType</code></td><td>STRING</td><td>Barrier direction/type enum for the upper barrier.</td></tr><tr><td><code>upperBarrierValue</code></td><td>DOUBLE</td><td>Upper barrier level.</td></tr><tr><td><code>barrierObsType</code></td><td>STRING</td><td>Barrier observation convention, such as continuous or discrete observation.</td></tr><tr><td><code>paymentType</code></td><td>STRING</td><td>Payment timing/type enum for rebate or barrier payments.</td></tr><tr><td><code>cash</code></td><td>DOUBLE</td><td>Cash rebate or cash payoff amount used by the option payoff definition.</td></tr><tr><td><code>asset</code></td><td>DOUBLE</td><td>Asset rebate or asset payoff amount used by the option payoff definition.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>fixingValues</code></td><td>DOUBLE[]</td><td>Observed fixing values aligned with fixing dates.</td></tr><tr><td><code>fixingWeights</code></td><td>DOUBLE[]</td><td>Weights applied to fixing observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createphoenixautocallablenote create and cache a phoenix autocallable note. phoenixargs22[, autocallschedule6] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createphoenixautocallablenote"></a>
+      <h3><code>CreatePhoenixAutoCallableNote</code></h3>
+      <p class="api-description">Create and cache a phoenix autocallable note.</p>
+      <p class="full-signature"><code>caplib::CreatePhoenixAutoCallableNote(couponPayoffType STRING, couponStrike DOUBLE, couponRate DOUBLE, dayCount STRING, startDate DATE, couponDates DATE[], knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE[], knockOutValues DOUBLE[], knockOutWeights DOUBLE[], knockInDates DATE[], knockInValues DOUBLE[], knockInWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>couponPayoffType</code></td><td>STRING</td><td>Payoff type used for coupon payments.</td></tr><tr><td><code>couponStrike</code></td><td>DOUBLE</td><td>Strike level used by the coupon payoff condition.</td></tr><tr><td><code>couponRate</code></td><td>DOUBLE</td><td>Coupon rate applied by the instrument or note payoff.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>Start date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>couponDates</code></td><td>DATE[]</td><td>Coupon payment dates for autocallable or coupon-bearing products.</td></tr><tr><td><code>knockOutBarrierType</code></td><td>STRING</td><td>Knock-out barrier direction/type enum.</td></tr><tr><td><code>knockOutBarrierValue</code></td><td>DOUBLE</td><td>Knock-out barrier level.</td></tr><tr><td><code>knockInBarrierType</code></td><td>STRING</td><td>Knock-in barrier direction/type enum.</td></tr><tr><td><code>knockInBarrierValue</code></td><td>DOUBLE</td><td>Knock-in barrier level.</td></tr><tr><td><code>longShort</code></td><td>STRING</td><td>Long/short direction of the payoff or note position.</td></tr><tr><td><code>knockInPayoffType</code></td><td>STRING</td><td>Payoff type used after a knock-in event.</td></tr><tr><td><code>knockInPayoffStrike</code></td><td>DOUBLE</td><td>Strike used by the knock-in payoff.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>knockOutDates</code></td><td>DATE[]</td><td>Knock-out observation dates.</td></tr><tr><td><code>knockOutValues</code></td><td>DOUBLE[]</td><td>Knock-out observation barrier levels aligned with knock-out dates.</td></tr><tr><td><code>knockOutWeights</code></td><td>DOUBLE[]</td><td>Weights applied to knock-out observations.</td></tr><tr><td><code>knockInDates</code></td><td>DATE[]</td><td>Knock-in observation dates.</td></tr><tr><td><code>knockInValues</code></td><td>DOUBLE[]</td><td>Knock-in observation barrier levels aligned with knock-in dates.</td></tr><tr><td><code>knockInWeights</code></td><td>DOUBLE[]</td><td>Weights applied to knock-in observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createsnowballautocallablenote create and cache a snowball autocallable note. snowballargs22[, autocallschedule6] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createsnowballautocallablenote"></a>
+      <h3><code>CreateSnowballAutoCallableNote</code></h3>
+      <p class="api-description">Create and cache a snowball autocallable note.</p>
+      <p class="full-signature"><code>caplib::CreateSnowballAutoCallableNote(couponRate DOUBLE, startDate DATE, couponDates DATE[], dayCount STRING, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, knockInPayoffGearing DOUBLE, referencePrice DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE[], knockOutValues DOUBLE[], knockOutWeights DOUBLE[], knockInDates DATE[], knockInValues DOUBLE[], knockInWeights DOUBLE[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>couponRate</code></td><td>DOUBLE</td><td>Coupon rate applied by the instrument or note payoff.</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>Start date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>couponDates</code></td><td>DATE[]</td><td>Coupon payment dates for autocallable or coupon-bearing products.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>knockOutBarrierType</code></td><td>STRING</td><td>Knock-out barrier direction/type enum.</td></tr><tr><td><code>knockOutBarrierValue</code></td><td>DOUBLE</td><td>Knock-out barrier level.</td></tr><tr><td><code>knockInBarrierType</code></td><td>STRING</td><td>Knock-in barrier direction/type enum.</td></tr><tr><td><code>knockInBarrierValue</code></td><td>DOUBLE</td><td>Knock-in barrier level.</td></tr><tr><td><code>longShort</code></td><td>STRING</td><td>Long/short direction of the payoff or note position.</td></tr><tr><td><code>knockInPayoffType</code></td><td>STRING</td><td>Payoff type used after a knock-in event.</td></tr><tr><td><code>knockInPayoffStrike</code></td><td>DOUBLE</td><td>Strike used by the knock-in payoff.</td></tr><tr><td><code>knockInPayoffGearing</code></td><td>DOUBLE</td><td>Gearing applied to the knock-in payoff.</td></tr><tr><td><code>referencePrice</code></td><td>DOUBLE</td><td>Reference underlying price used by the note payoff.</td></tr><tr><td><code>expiry</code></td><td>DATE</td><td>Option expiry date.</td></tr><tr><td><code>delivery</code></td><td>DATE</td><td>Settlement or delivery date for the option payoff.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>payoffCurrency</code></td><td>STRING</td><td>Currency in which the payoff is paid.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>underlyingCurrency</code></td><td>STRING</td><td>Currency of the underlying asset.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>knockOutDates</code></td><td>DATE[]</td><td>Knock-out observation dates.</td></tr><tr><td><code>knockOutValues</code></td><td>DOUBLE[]</td><td>Knock-out observation barrier levels aligned with knock-out dates.</td></tr><tr><td><code>knockOutWeights</code></td><td>DOUBLE[]</td><td>Weights applied to knock-out observations.</td></tr><tr><td><code>knockInDates</code></td><td>DATE[]</td><td>Knock-in observation dates.</td></tr><tr><td><code>knockInValues</code></td><td>DOUBLE[]</td><td>Knock-in observation barrier levels aligned with knock-in dates.</td></tr><tr><td><code>knockInWeights</code></td><td>DOUBLE[]</td><td>Weights applied to knock-in observations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqamericanoption price an equity american option. eqpricing7(americanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqamericanoption"></a>
+      <h3><code>PriceEqAmericanOption</code></h3>
+      <p class="api-description">Price an equity American option.</p>
+      <p class="full-signature"><code>caplib::PriceEqAmericanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqasianoption price an equity asian option. eqpricing7(asianoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqasianoption"></a>
+      <h3><code>PriceEqAsianOption</code></h3>
+      <p class="api-description">Price an equity Asian option.</p>
+      <p class="full-signature"><code>caplib::PriceEqAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdigitaloption price an equity digital option. eqpricing7(digitaloption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdigitaloption"></a>
+      <h3><code>PriceEqDigitalOption</code></h3>
+      <p class="api-description">Price an equity digital option.</p>
+      <p class="full-signature"><code>caplib::PriceEqDigitalOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqonetouchoption price an equity one-touch option. eqpricing7(onetouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqonetouchoption"></a>
+      <h3><code>PriceEqOneTouchOption</code></h3>
+      <p class="api-description">Price an equity one-touch option.</p>
+      <p class="full-signature"><code>caplib::PriceEqOneTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdoubletouchoption price an equity double-touch option. eqpricing7(doubletouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdoubletouchoption"></a>
+      <h3><code>PriceEqDoubleTouchOption</code></h3>
+      <p class="api-description">Price an equity double-touch option.</p>
+      <p class="full-signature"><code>caplib::PriceEqDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqsinglebarrieroption price an equity single-barrier option. eqpricing7(singlebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqsinglebarrieroption"></a>
+      <h3><code>PriceEqSingleBarrierOption</code></h3>
+      <p class="api-description">Price an equity single-barrier option.</p>
+      <p class="full-signature"><code>caplib::PriceEqSingleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdoublebarrieroption price an equity double-barrier option. eqpricing7(doublebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdoublebarrieroption"></a>
+      <h3><code>PriceEqDoubleBarrierOption</code></h3>
+      <p class="api-description">Price an equity double-barrier option.</p>
+      <p class="full-signature"><code>caplib::PriceEqDoubleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqsinglesharkfinoption price an equity single shark-fin option. eqpricing7(singlesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqsinglesharkfinoption"></a>
+      <h3><code>PriceEqSingleSharkFinOption</code></h3>
+      <p class="api-description">Price an equity single shark-fin option.</p>
+      <p class="full-signature"><code>caplib::PriceEqSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqdoublesharkfinoption price an equity double shark-fin option. eqpricing7(doublesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqdoublesharkfinoption"></a>
+      <h3><code>PriceEqDoubleSharkFinOption</code></h3>
+      <p class="api-description">Price an equity double shark-fin option.</p>
+      <p class="full-signature"><code>caplib::PriceEqDoubleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqpingpongoption price an equity ping-pong option. eqpricing7(pingpongoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqpingpongoption"></a>
+      <h3><code>PriceEqPingPongOption</code></h3>
+      <p class="api-description">Price an equity ping-pong option.</p>
+      <p class="full-signature"><code>caplib::PriceEqPingPongOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqairbagoption price an equity airbag option. eqpricing7(airbagoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqairbagoption"></a>
+      <h3><code>PriceEqAirbagOption</code></h3>
+      <p class="api-description">Price an equity airbag option.</p>
+      <p class="full-signature"><code>caplib::PriceEqAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqrangeaccrualoption price an equity range-accrual option. eqpricing7(rangeaccrualoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqrangeaccrualoption"></a>
+      <h3><code>PriceEqRangeAccrualOption</code></h3>
+      <p class="api-description">Price an equity range-accrual option.</p>
+      <p class="full-signature"><code>caplib::PriceEqRangeAccrualOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqphoenixautocallablenote price an equity phoenix autocallable note. eqpricing7(phoenixautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqphoenixautocallablenote"></a>
+      <h3><code>PriceEqPhoenixAutoCallableNote</code></h3>
+      <p class="api-description">Price an equity phoenix autocallable note.</p>
+      <p class="full-signature"><code>caplib::PriceEqPhoenixAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceeqsnowballautocallablenote price an equity snowball autocallable note. eqpricing7(snowballautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceeqsnowballautocallablenote"></a>
+      <h3><code>PriceEqSnowballAutoCallableNote</code></h3>
+      <p class="api-description">Price an equity snowball autocallable note.</p>
+      <p class="full-signature"><code>caplib::PriceEqSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `${visible} of ${cards.length} functions`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

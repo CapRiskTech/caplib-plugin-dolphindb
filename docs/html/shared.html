@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Common | CAPLIB</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="alternate" hreflang="zh-CN" href="zh/shared.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">User Guide and API Reference</span><span class="lang-switch"><span class="lang-active">EN</span><a href="zh/shared.html">中文</a></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child" href="index.html#user-guide">Introduction</a><a class="nav-child" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child" href="commodity.html#user-guide">Commodity</a><a class="nav-child" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child active" href="shared.html#api-reference">Common <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>64</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib plugin</p>
+        <h1>Common</h1>
+        <p class="lede">Cross-asset utilities, static-data service helpers, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Cross-asset utilities, static-data service helpers, pricing settings, risk settings, scenario settings, and shared protobuf tooling. This page contains 21 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. If omitted or <code>false</code>, the function returns only the handle. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p></section><section class="panel example"><h2>Example</h2><pre><code>settings = caplib::CreatePricingSettings(
+    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0,
+    &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
+
+json = caplib::GetObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
+<section class="api-group"><h2>Core and utility</h2>
+
+
+<article class="api-card" data-search="calcyearfraction calculate year fraction for a date pair and day-count convention. startdate date, enddate date, daycountconvention string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcyearfraction"></a>
+      <h3><code>CalcYearFraction</code></h3>
+      <p class="api-description">Calculate year fraction for a date pair and day-count convention.</p>
+      <p class="full-signature"><code>caplib::CalcYearFraction(startDate DATE, endDate DATE, dayCountConvention STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>startDate</code></td><td>DATE</td><td>Start date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>endDate</code></td><td>DATE</td><td>End date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcalendar create and register a calendar static-data object from a name and optional holiday vectors. calname string, holidays date[]|int[], specialbusinessdays date[]|int[] scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="createcalendar"></a>
+      <h3><code>CreateCalendar</code></h3>
+      <p class="api-description">Create and register a calendar static-data object from a name and optional holiday vectors.</p>
+      <p class="full-signature"><code>caplib::CreateCalendar(calName STRING[, holidays DATE[]|INT[][, specialBusinessDays DATE[]|INT[]]])</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calName</code></td><td>STRING</td><td>Calendar name to register in caplib static data.</td></tr><tr><td><code>holidays</code></td><td>DATE[] or INT[]</td><td>Optional holiday dates. DATE values are converted to the Python-style ordinal serials expected by the calendar protobuf.</td></tr><tr><td><code>specialBusinessDays</code></td><td>DATE[] or INT[]</td><td>Optional special business-day dates. DATE values are converted to the Python-style ordinal serials expected by the calendar protobuf.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createstaticdata create a caplib static-data object from serialized protobuf bytes. staticdatatype string, staticdatabytes string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="createstaticdata"></a>
+      <h3><code>CreateStaticData</code></h3>
+      <p class="api-description">Create a caplib static-data object from serialized protobuf bytes.</p>
+      <p class="full-signature"><code>caplib::CreateStaticData(staticDataType STRING, staticDataBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>staticDataType</code></td><td>STRING</td><td>Static data enum label such as <code>SDT_CALENDAR</code> or <code>SDT_IBOR_INDEX</code>.</td></tr><tr><td><code>staticDataBytes</code></td><td>STRING</td><td>Serialized protobuf bytes for the static-data payload to register in caplib.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="getobjectcachejson read a cached protobuf object back as json. protobuftype string, handle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="getobjectcachejson"></a>
+      <h3><code>GetObjectCacheJson</code></h3>
+      <p class="api-description">Read a cached protobuf object back as JSON.</p>
+      <p class="full-signature"><code>caplib::GetObjectCacheJson(protobufType STRING, handle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>protobufType</code></td><td>STRING</td><td>Type label or enum value for protobuf.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Shared market data and settings</h2>
+
+<article class="api-card" data-search="createdividendcurve create and cache a dividend or forward-yield curve. referencedate date, pillardates date[], pillarvalues double[], yieldstartdate date, dividendtype string, dcc string, interp string, extrap string, compounding string, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdividendcurve"></a>
+      <h3><code>CreateDividendCurve</code></h3>
+      <p class="api-description">Create and cache a dividend or forward-yield curve.</p>
+      <p class="full-signature"><code>caplib::CreateDividendCurve(referenceDate DATE, pillarDates DATE[], pillarValues DOUBLE[], yieldStartDate DATE, dividendType STRING, dcc STRING, interp STRING, extrap STRING, compounding STRING, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>Curve pillar dates aligned with pillar values.</td></tr><tr><td><code>pillarValues</code></td><td>DOUBLE[]</td><td>Curve pillar values aligned with pillar dates.</td></tr><tr><td><code>yieldStartDate</code></td><td>DATE</td><td>Date value for yield start.</td></tr><tr><td><code>dividendType</code></td><td>STRING</td><td>Dividend curve type or forward-yield convention.</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>Day-count convention used by the curve.</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>Interpolation method used between curve pillars.</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>Extrapolation method used outside curve pillar range.</td></tr><tr><td><code>compounding</code></td><td>STRING</td><td>Compounding convention for yield or discount calculations.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolatilitycurve create and cache a one-dimensional volatility curve. referencedate date, pillardates date[], vols double[], dcc string, interp string, extrap string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolatilitycurve"></a>
+      <h3><code>CreateVolatilityCurve</code></h3>
+      <p class="api-description">Create and cache a one-dimensional volatility curve.</p>
+      <p class="full-signature"><code>caplib::CreateVolatilityCurve(referenceDate DATE, pillarDates DATE[], vols DOUBLE[], dcc STRING, interp STRING, extrap STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>Curve pillar dates aligned with pillar values.</td></tr><tr><td><code>vols</code></td><td>DOUBLE[]</td><td>Volatility quote matrix aligned with terms and strikes.</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>Day-count convention used by the curve.</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>Interpolation method used between curve pillars.</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>Extrapolation method used outside curve pillar range.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolatilitysurface create and cache a volatility surface from a volatility-surface definition and cached volatility smiles. definitionhandle string, referencedate date, volsmilehandles string[], termdates date[], underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolatilitysurface"></a>
+      <h3><code>CreateVolatilitySurface</code></h3>
+      <p class="api-description">Create and cache a volatility surface from a volatility-surface definition and cached volatility smiles.</p>
+      <p class="full-signature"><code>caplib::CreateVolatilitySurface(definitionHandle STRING, referenceDate DATE, volSmileHandles STRING[], termDates DATE[], underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>definitionHandle</code></td><td>STRING</td><td>ObjectCache handle for the VolatilitySurfaceDefinition copied into the surface.</td></tr><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>volSmileHandles</code></td><td>STRING[]</td><td>ObjectCache handles for the volatility smiles copied into the surface.</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>Term dates aligned one-for-one with volSmileHandles.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createoptionquotematrix create and cache a generic option quote matrix. quotevaluetype string, quotetermtype string, quotestriketype string, exercisetype string, optionunderlyingtype string, asofdate date, terms string[], termdates date[], payofftypes string matrix/vector, values double matrix/vector, strikes double matrix/vector, assetname string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createoptionquotematrix"></a>
+      <h3><code>CreateOptionQuoteMatrix</code></h3>
+      <p class="api-description">Create and cache a generic option quote matrix.</p>
+      <p class="full-signature"><code>caplib::CreateOptionQuoteMatrix(quoteValueType STRING, quoteTermType STRING, quoteStrikeType STRING, exerciseType STRING, optionUnderlyingType STRING, asOfDate DATE, terms STRING[], termDates DATE[], payoffTypes STRING matrix/vector, values DOUBLE matrix/vector, strikes DOUBLE matrix/vector, assetName STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>quoteValueType</code></td><td>STRING</td><td>Quote value type, such as price or volatility.</td></tr><tr><td><code>quoteTermType</code></td><td>STRING</td><td>Term quoting convention used by the option quote matrix.</td></tr><tr><td><code>quoteStrikeType</code></td><td>STRING</td><td>Strike quoting convention used by the option quote matrix.</td></tr><tr><td><code>exerciseType</code></td><td>STRING</td><td>Exercise style of the option, such as European or American.</td></tr><tr><td><code>optionUnderlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option quote matrix.</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>Relative quote terms aligned with quote rows.</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>Absolute quote term or expiry dates aligned with quote rows.</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>Payoff type matrix or vector aligned with option quote values.</td></tr><tr><td><code>values</code></td><td>DOUBLE matrix/vector</td><td>Quote values aligned with payoff types and strikes.</td></tr><tr><td><code>strikes</code></td><td>DOUBLE matrix/vector</td><td>Strike levels aligned with option quotes or volatility rows.</td></tr><tr><td><code>assetName</code></td><td>STRING</td><td>Optional asset or underlying name stored on the quote matrix.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolatilitysurfacedefinition create and cache a reusable volatility-surface definition. volsmiletype string, smilemethod string, smileextrapmethod string, timeinterpmethod string, timeextrapmethod string, daycountconvention string, voltype string, wingstriketype string, lower double, upper double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolatilitysurfacedefinition"></a>
+      <h3><code>CreateVolatilitySurfaceDefinition</code></h3>
+      <p class="api-description">Create and cache a reusable volatility-surface definition.</p>
+      <p class="full-signature"><code>caplib::CreateVolatilitySurfaceDefinition(volSmileType STRING, smileMethod STRING, smileExtrapMethod STRING, timeInterpMethod STRING, timeExtrapMethod STRING, dayCountConvention STRING, volType STRING, wingStrikeType STRING, lower DOUBLE, upper DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>volSmileType</code></td><td>STRING</td><td>Volatility smile type used by the surface definition.</td></tr><tr><td><code>smileMethod</code></td><td>STRING</td><td>Smile interpolation or construction method.</td></tr><tr><td><code>smileExtrapMethod</code></td><td>STRING</td><td>Smile extrapolation method.</td></tr><tr><td><code>timeInterpMethod</code></td><td>STRING</td><td>Volatility time interpolation method.</td></tr><tr><td><code>timeExtrapMethod</code></td><td>STRING</td><td>Volatility time extrapolation method.</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>volType</code></td><td>STRING</td><td>Volatility type used by the surface definition.</td></tr><tr><td><code>wingStrikeType</code></td><td>STRING</td><td>Strike convention used for volatility smile wings.</td></tr><tr><td><code>lower</code></td><td>DOUBLE</td><td>Lower bound or lower wing parameter used by the definition.</td></tr><tr><td><code>upper</code></td><td>DOUBLE</td><td>Upper bound or upper wing parameter used by the definition.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolsurfbuildsettings create and cache generic volatility-surface build settings. fixedparamindex int, fixedparamvalue double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolsurfbuildsettings"></a>
+      <h3><code>CreateVolSurfBuildSettings</code></h3>
+      <p class="api-description">Create and cache generic volatility-surface build settings.</p>
+      <p class="full-signature"><code>caplib::CreateVolSurfBuildSettings(fixedParamIndex INT, fixedParamValue DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>fixedParamIndex</code></td><td>INT</td><td>Function-specific input for fixed param index.</td></tr><tr><td><code>fixedParamValue</code></td><td>DOUBLE</td><td>Numeric input for fixed param value.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricingmodelsettings create and cache pricing-model settings. modelname string, asset string, calibrated bool, constantparams double[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricingmodelsettings"></a>
+      <h3><code>CreatePricingModelSettings</code></h3>
+      <p class="api-description">Create and cache pricing-model settings.</p>
+      <p class="full-signature"><code>caplib::CreatePricingModelSettings(modelName STRING, asset STRING, calibrated BOOL, constantParams DOUBLE[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>modelName</code></td><td>STRING</td><td>Pricing model name.</td></tr><tr><td><code>asset</code></td><td>STRING</td><td>Asset rebate or asset payoff amount used by the option payoff definition.</td></tr><tr><td><code>calibrated</code></td><td>BOOL</td><td>Boolean flag controlling calibrated.</td></tr><tr><td><code>constantParams</code></td><td>DOUBLE[]</td><td>Constant model parameters used by the pricing model settings.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpdesettings create and cache pde settings. tsize int, xsize int, xmin double, xmax double, xminmaxtype int, ysize int, ymin double, ymax double, yminmaxtype int, zsize int, zmin double, zmax double, zminmaxtype int, xdensity double, ydensity double, zdensity double, xgridtype int, ygridtype int, zgridtype int, xinterp int, yinterp int, zinterp int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpdesettings"></a>
+      <h3><code>CreatePdeSettings</code></h3>
+      <p class="api-description">Create and cache PDE settings.</p>
+      <p class="full-signature"><code>caplib::CreatePdeSettings(tSize INT, xSize INT, xMin DOUBLE, xMax DOUBLE, xMinMaxType INT, ySize INT, yMin DOUBLE, yMax DOUBLE, yMinMaxType INT, zSize INT, zMin DOUBLE, zMax DOUBLE, zMinMaxType INT, xDensity DOUBLE, yDensity DOUBLE, zDensity DOUBLE, xGridType INT, yGridType INT, zGridType INT, xInterp INT, yInterp INT, zInterp INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>tSize</code></td><td>INT</td><td>Number of grid points in the time dimension.</td></tr><tr><td><code>xSize</code></td><td>INT</td><td>Number of grid points in the X dimension.</td></tr><tr><td><code>xMin</code></td><td>DOUBLE</td><td>Minimum X grid boundary.</td></tr><tr><td><code>xMax</code></td><td>DOUBLE</td><td>Maximum X grid boundary.</td></tr><tr><td><code>xMinMaxType</code></td><td>INT</td><td>Boundary interpretation for X min/max values.</td></tr><tr><td><code>ySize</code></td><td>INT</td><td>Number of grid points in the Y dimension.</td></tr><tr><td><code>yMin</code></td><td>DOUBLE</td><td>Minimum Y grid boundary.</td></tr><tr><td><code>yMax</code></td><td>DOUBLE</td><td>Maximum Y grid boundary.</td></tr><tr><td><code>yMinMaxType</code></td><td>INT</td><td>Boundary interpretation for Y min/max values.</td></tr><tr><td><code>zSize</code></td><td>INT</td><td>Number of grid points in the Z dimension.</td></tr><tr><td><code>zMin</code></td><td>DOUBLE</td><td>Minimum Z grid boundary.</td></tr><tr><td><code>zMax</code></td><td>DOUBLE</td><td>Maximum Z grid boundary.</td></tr><tr><td><code>zMinMaxType</code></td><td>INT</td><td>Boundary interpretation for Z min/max values.</td></tr><tr><td><code>xDensity</code></td><td>DOUBLE</td><td>Grid density parameter in the X dimension.</td></tr><tr><td><code>yDensity</code></td><td>DOUBLE</td><td>Grid density parameter in the Y dimension.</td></tr><tr><td><code>zDensity</code></td><td>DOUBLE</td><td>Grid density parameter in the Z dimension.</td></tr><tr><td><code>xGridType</code></td><td>INT</td><td>Grid type selector in the X dimension.</td></tr><tr><td><code>yGridType</code></td><td>INT</td><td>Grid type selector in the Y dimension.</td></tr><tr><td><code>zGridType</code></td><td>INT</td><td>Grid type selector in the Z dimension.</td></tr><tr><td><code>xInterp</code></td><td>INT</td><td>Interpolation method selector in the X dimension.</td></tr><tr><td><code>yInterp</code></td><td>INT</td><td>Interpolation method selector in the Y dimension.</td></tr><tr><td><code>zInterp</code></td><td>INT</td><td>Interpolation method selector in the Z dimension.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createmontecarlosettings create and cache monte carlo settings. numsimulations int, uniformnumbertype int, seed int, wienerbuildmethod int, gaussianmethod int, useantithetic bool, numsteps int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createmontecarlosettings"></a>
+      <h3><code>CreateMonteCarloSettings</code></h3>
+      <p class="api-description">Create and cache Monte Carlo settings.</p>
+      <p class="full-signature"><code>caplib::CreateMonteCarloSettings(numSimulations INT, uniformNumberType INT, seed INT, wienerBuildMethod INT, gaussianMethod INT, useAntithetic BOOL, numSteps INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>numSimulations</code></td><td>INT</td><td>Number of Monte Carlo simulation paths.</td></tr><tr><td><code>uniformNumberType</code></td><td>INT</td><td>Uniform random-number generator type for Monte Carlo simulation.</td></tr><tr><td><code>seed</code></td><td>INT</td><td>Random seed used by Monte Carlo simulation.</td></tr><tr><td><code>wienerBuildMethod</code></td><td>INT</td><td>Wiener-process construction method for Monte Carlo simulation.</td></tr><tr><td><code>gaussianMethod</code></td><td>INT</td><td>Gaussian random-number generation method for Monte Carlo simulation.</td></tr><tr><td><code>useAntithetic</code></td><td>BOOL</td><td>Whether antithetic variates are used in Monte Carlo simulation.</td></tr><tr><td><code>numSteps</code></td><td>INT</td><td>Number of time steps in the Monte Carlo simulation.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricingsettings create and cache pricing settings that reference model, pde, and monte carlo handles. currency string, pricingmethod string, inccurrent bool, cashflows bool, modelhandle string, pdehandle string, mchandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricingsettings"></a>
+      <h3><code>CreatePricingSettings</code></h3>
+      <p class="api-description">Create and cache pricing settings that reference model, PDE, and Monte Carlo handles.</p>
+      <p class="full-signature"><code>caplib::CreatePricingSettings(currency STRING, pricingMethod STRING, incCurrent BOOL, cashFlows BOOL, modelHandle STRING, pdeHandle STRING, mcHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>pricingMethod</code></td><td>STRING</td><td>Pricing method enum, such as analytical, PDE, or Monte Carlo.</td></tr><tr><td><code>incCurrent</code></td><td>BOOL</td><td>Whether current cash flows should be included in valuation output.</td></tr><tr><td><code>cashFlows</code></td><td>BOOL</td><td>Whether detailed cash-flow output should be included in pricing results.</td></tr><tr><td><code>modelHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing model settings.</td></tr><tr><td><code>pdeHandle</code></td><td>STRING</td><td>ObjectCache handle for PDE settings.</td></tr><tr><td><code>mcHandle</code></td><td>STRING</td><td>ObjectCache handle for Monte Carlo settings.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdividendcurverisksettings create and cache dividend-curve risk settings. delta bool, gamma bool, shift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdividendcurverisksettings"></a>
+      <h3><code>CreateDividendCurveRiskSettings</code></h3>
+      <p class="api-description">Create and cache dividend-curve risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateDividendCurveRiskSettings(delta BOOL, gamma BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>Whether first-order delta risk should be calculated.</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>Whether second-order gamma risk should be calculated.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>method</code></td><td>INT</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>Risk bucket or shift granularity.</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>Scaling factor applied to risk shifts.</td></tr><tr><td><code>threading</code></td><td>INT</td><td>Threading mode selector used by risk calculations.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricerisksettings create and cache underlying-price risk settings. delta bool, gamma bool, curvature bool, shift double, curvatureshift double, method int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricerisksettings"></a>
+      <h3><code>CreatePriceRiskSettings</code></h3>
+      <p class="api-description">Create and cache underlying-price risk settings.</p>
+      <p class="full-signature"><code>caplib::CreatePriceRiskSettings(delta BOOL, gamma BOOL, curvature BOOL, shift DOUBLE, curvatureShift DOUBLE, method INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>Whether first-order delta risk should be calculated.</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>Whether second-order gamma risk should be calculated.</td></tr><tr><td><code>curvature</code></td><td>BOOL</td><td>Whether curvature risk should be calculated.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>curvatureShift</code></td><td>DOUBLE</td><td>Shift size used for curvature risk calculations.</td></tr><tr><td><code>method</code></td><td>INT</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>Scaling factor applied to risk shifts.</td></tr><tr><td><code>threading</code></td><td>INT</td><td>Threading mode selector used by risk calculations.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolrisksettings create and cache volatility risk settings. vega bool, volga bool, shift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolrisksettings"></a>
+      <h3><code>CreateVolRiskSettings</code></h3>
+      <p class="api-description">Create and cache volatility risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateVolRiskSettings(vega BOOL, volga BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>vega</code></td><td>BOOL</td><td>Whether volatility vega risk should be calculated.</td></tr><tr><td><code>volga</code></td><td>BOOL</td><td>Whether volatility second-order risk should be calculated.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>method</code></td><td>INT</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>Risk bucket or shift granularity.</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>Scaling factor applied to risk shifts.</td></tr><tr><td><code>threading</code></td><td>INT</td><td>Threading mode selector used by risk calculations.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricevolrisksettings create and cache cross price-volatility risk settings. vanna bool, priceshift double, volshift double, method int, granularity int, pricescaling double, volscaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricevolrisksettings"></a>
+      <h3><code>CreatePriceVolRiskSettings</code></h3>
+      <p class="api-description">Create and cache cross price-volatility risk settings.</p>
+      <p class="full-signature"><code>caplib::CreatePriceVolRiskSettings(vanna BOOL, priceShift DOUBLE, volShift DOUBLE, method INT, granularity INT, priceScaling DOUBLE, volScaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>vanna</code></td><td>BOOL</td><td>Whether price-volatility cross risk should be calculated.</td></tr><tr><td><code>priceShift</code></td><td>DOUBLE</td><td>Underlying price shift used for price-volatility cross risk.</td></tr><tr><td><code>volShift</code></td><td>DOUBLE</td><td>Volatility shift used for price-volatility cross risk.</td></tr><tr><td><code>method</code></td><td>INT</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>Risk bucket or shift granularity.</td></tr><tr><td><code>priceScaling</code></td><td>DOUBLE</td><td>Scaling factor applied to price risk shifts.</td></tr><tr><td><code>volScaling</code></td><td>DOUBLE</td><td>Numeric input for vol scaling.</td></tr><tr><td><code>threading</code></td><td>INT</td><td>Threading mode selector used by risk calculations.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createthetarisksettings create and cache theta risk settings. theta bool, shift int, scaling double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createthetarisksettings"></a>
+      <h3><code>CreateThetaRiskSettings</code></h3>
+      <p class="api-description">Create and cache theta risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateThetaRiskSettings(theta BOOL, shift INT, scaling DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>theta</code></td><td>BOOL</td><td>Whether theta risk should be calculated.</td></tr><tr><td><code>shift</code></td><td>INT</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>Scaling factor applied to risk shifts.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createscnsettings create and cache one-dimensional scenario settings. min double, max double, size int, scngentype int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createscnsettings"></a>
+      <h3><code>CreateScnSettings</code></h3>
+      <p class="api-description">Create and cache one-dimensional scenario settings.</p>
+      <p class="full-signature"><code>caplib::CreateScnSettings(min DOUBLE, max DOUBLE, size INT, scnGenType INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>min</code></td><td>DOUBLE</td><td>Minimum scenario value.</td></tr><tr><td><code>max</code></td><td>DOUBLE</td><td>Maximum scenario value.</td></tr><tr><td><code>size</code></td><td>INT</td><td>Number of generated scenario points.</td></tr><tr><td><code>scnGenType</code></td><td>INT</td><td>Scenario generation method selector.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createscnanalysissettings create and cache scenario-analysis settings. scntype string, pricehandle string, volhandle string, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createscnanalysissettings"></a>
+      <h3><code>CreateScnAnalysisSettings</code></h3>
+      <p class="api-description">Create and cache scenario-analysis settings.</p>
+      <p class="full-signature"><code>caplib::CreateScnAnalysisSettings(scnType STRING, priceHandle STRING, volHandle STRING, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>scnType</code></td><td>STRING</td><td>Scenario-analysis type.</td></tr><tr><td><code>priceHandle</code></td><td>STRING</td><td>ObjectCache handle for price scenario settings.</td></tr><tr><td><code>volHandle</code></td><td>STRING</td><td>ObjectCache handle for volatility curve or surface.</td></tr><tr><td><code>threading</code></td><td>INT</td><td>Threading mode selector used by risk calculations.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `${visible} of ${cards.length} functions`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

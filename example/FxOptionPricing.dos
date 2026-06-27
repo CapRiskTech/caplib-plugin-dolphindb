@@ -1,0 +1,27 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: FX Option Pricing
+// =============================================================================
+// This script demonstrates how to price FX options and forwards using
+// the caplib plugin.
+
+// Load the plugin
+loadPlugin("PluginCaplib")
+
+// Prerequisites: You need discount curves, FX spot rate, and vol surface resources.
+
+// Step 1: Calculate FX forward rate
+// pricingDate = 2024.01.15
+// fwdRate = caplib::calcFxForwardRate(pricingDate, fxSpotRate, curves)
+// print("FX Forward Rate: " + string(fwdRate))
+
+// Step 2: Build FX volatility surface
+// volSurface = caplib::buildFxVolSurface(pricingDate, quoteMatrix, discountCurve, forwardCurve)
+// print("FX Vol Surface: " + string(volSurface))
+
+// Step 3: Price an FX European option
+// optionResults = caplib::priceFxEuropeanOption(pricingDate, fxOption, mktData)
+// print("Option NPV: " + string(optionResults["npv"]))
+
+// Step 4: Price an FX forward
+// fwdResults = caplib::priceFxForward(pricingDate, fxForward, mktData)
+// print("Forward NPV: " + string(fwdResults["npv"]))

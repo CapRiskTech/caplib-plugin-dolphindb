@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>通用 | CAPLIB</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="alternate" hreflang="en" href="../shared.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../shared.html">English</a><span class="lang-active">中文</span></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child active" href="shared.html#api-reference">通用 <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>64</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib 插件</p>
+        <h1>通用</h1>
+        <p class="lede">跨资产工具、静态数据服务辅助函数、定价设置、风险设置、情景设置以及共享 protobuf 工具。</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>跨资产工具、静态数据服务辅助函数、定价设置、风险设置、情景设置以及共享 protobuf 工具。 本页包含 21 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p>所有会向 内存对象 写入对象的函数都支持可选的最后一个参数 <code>returnJson BOOL</code>。省略或传入 <code>false</code> 时仅返回句柄；传入 <code>true</code> 时返回 <code>[handle, protobufJson]</code>。</p></section><section class="panel example"><h2>示例</h2><pre><code>settings = caplib::CreatePricingSettings(
+    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0,
+    &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
+
+json = caplib::GetObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+<section class="api-group"><h2>核心与工具</h2>
+
+
+<article class="api-card" data-search="calcyearfraction calculate year fraction for a date pair and day-count convention. startdate date, enddate date, daycountconvention string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcyearfraction"></a>
+      <h3><code>CalcYearFraction</code></h3>
+      <p class="api-description">计算两个日期之间的年化日计数因子。</p>
+      <p class="full-signature"><code>caplib::CalcYearFraction(startDate DATE, endDate DATE, dayCountConvention STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>startDate</code></td><td>DATE</td><td>起始日期。</td></tr><tr><td><code>endDate</code></td><td>DATE</td><td>结束日期。</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>日计数约定。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcalendar create and register a calendar static-data object from a name and optional holiday vectors. calname string, holidays date[]|int[], specialbusinessdays date[]|int[] scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="createcalendar"></a>
+      <h3><code>CreateCalendar</code></h3>
+      <p class="api-description">创建并注册交易日历。</p>
+      <p class="full-signature"><code>caplib::CreateCalendar(calName STRING[, holidays DATE[]|INT[][, specialBusinessDays DATE[]|INT[]]])</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calName</code></td><td>STRING</td><td>日历名称。</td></tr><tr><td><code>holidays</code></td><td>DATE[] or INT[]</td><td>节假日日期数组。</td></tr><tr><td><code>specialBusinessDays</code></td><td>DATE[] or INT[]</td><td>特殊工作日日期数组。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createstaticdata create a caplib static-data object from serialized protobuf bytes. staticdatatype string, staticdatabytes string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="createstaticdata"></a>
+      <h3><code>CreateStaticData</code></h3>
+      <p class="api-description">创建并注册静态数据对象。</p>
+      <p class="full-signature"><code>caplib::CreateStaticData(staticDataType STRING, staticDataBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>staticDataType</code></td><td>STRING</td><td>静态数据类型标签。</td></tr><tr><td><code>staticDataBytes</code></td><td>STRING</td><td>静态数据 protobuf 字节。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="getobjectcachejson read a cached protobuf object back as json. protobuftype string, handle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="getobjectcachejson"></a>
+      <h3><code>GetObjectCacheJson</code></h3>
+      <p class="api-description">将 内存对象 中的 protobuf 对象导出为 JSON。</p>
+      <p class="full-signature"><code>caplib::GetObjectCacheJson(protobufType STRING, handle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>protobufType</code></td><td>STRING</td><td>protobuf 类型标签。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>共享市场数据与设置</h2>
+
+<article class="api-card" data-search="createdividendcurve create and cache a dividend or forward-yield curve. referencedate date, pillardates date[], pillarvalues double[], yieldstartdate date, dividendtype string, dcc string, interp string, extrap string, compounding string, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdividendcurve"></a>
+      <h3><code>CreateDividendCurve</code></h3>
+      <p class="api-description">创建并缓存股息或远期收益曲线。</p>
+      <p class="full-signature"><code>caplib::CreateDividendCurve(referenceDate DATE, pillarDates DATE[], pillarValues DOUBLE[], yieldStartDate DATE, dividendType STRING, dcc STRING, interp STRING, extrap STRING, compounding STRING, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>曲线节点日期数组。</td></tr><tr><td><code>pillarValues</code></td><td>DOUBLE[]</td><td>曲线节点值数组。</td></tr><tr><td><code>yieldStartDate</code></td><td>DATE</td><td>日期或日期数组。</td></tr><tr><td><code>dividendType</code></td><td>STRING</td><td>股息曲线类型。</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>插值方法。</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>外推方法。</td></tr><tr><td><code>compounding</code></td><td>STRING</td><td>复利约定。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolatilitycurve create and cache a one-dimensional volatility curve. referencedate date, pillardates date[], vols double[], dcc string, interp string, extrap string, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolatilitycurve"></a>
+      <h3><code>CreateVolatilityCurve</code></h3>
+      <p class="api-description">创建并缓存一维波动率曲线。</p>
+      <p class="full-signature"><code>caplib::CreateVolatilityCurve(referenceDate DATE, pillarDates DATE[], vols DOUBLE[], dcc STRING, interp STRING, extrap STRING, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>曲线节点日期数组。</td></tr><tr><td><code>vols</code></td><td>DOUBLE[]</td><td>波动率节点值数组。</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>插值方法。</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>外推方法。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolatilitysurface create and cache a volatility surface from a volatility-surface definition and cached volatility smiles. definitionhandle string, referencedate date, volsmilehandles string[], termdates date[], underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolatilitysurface"></a>
+      <h3><code>CreateVolatilitySurface</code></h3>
+      <p class="api-description">创建并缓存波动率曲面。</p>
+      <p class="full-signature"><code>caplib::CreateVolatilitySurface(definitionHandle STRING, referenceDate DATE, volSmileHandles STRING[], termDates DATE[], underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>volSmileHandles</code></td><td>STRING[]</td><td>波动率微笑对象 内存对象 句柄数组。</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>报价期限对应的到期日期数组。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createoptionquotematrix create and cache a generic 期权报价矩阵。 quotevaluetype string, quotetermtype string, quotestriketype string, exercisetype string, optionunderlyingtype string, asofdate date, terms string[], termdates date[], payofftypes string matrix/vector, values double matrix/vector, strikes double matrix/vector, assetname string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createoptionquotematrix"></a>
+      <h3><code>CreateOptionQuoteMatrix</code></h3>
+      <p class="api-description">创建并缓存通用期权报价矩阵。</p>
+      <p class="full-signature"><code>caplib::CreateOptionQuoteMatrix(quoteValueType STRING, quoteTermType STRING, quoteStrikeType STRING, exerciseType STRING, optionUnderlyingType STRING, asOfDate DATE, terms STRING[], termDates DATE[], payoffTypes STRING matrix/vector, values DOUBLE matrix/vector, strikes DOUBLE matrix/vector, assetName STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>quoteValueType</code></td><td>STRING</td><td>报价值类型，例如价格或波动率。</td></tr><tr><td><code>quoteTermType</code></td><td>STRING</td><td>报价期限类型。</td></tr><tr><td><code>quoteStrikeType</code></td><td>STRING</td><td>报价行权价类型。</td></tr><tr><td><code>exerciseType</code></td><td>STRING</td><td>期权行权风格。</td></tr><tr><td><code>optionUnderlyingType</code></td><td>STRING</td><td>期权标的类型。</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>报价期限数组。</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>报价期限对应的到期日期数组。</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>与报价值对齐的收益类型矩阵或向量。</td></tr><tr><td><code>values</code></td><td>DOUBLE matrix/vector</td><td>报价值矩阵或向量。</td></tr><tr><td><code>strikes</code></td><td>DOUBLE matrix/vector</td><td>行权价数组或矩阵。</td></tr><tr><td><code>assetName</code></td><td>STRING</td><td>资产或标的名称。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolatilitysurfacedefinition create and cache a reusable 波动率曲面定义。 volsmiletype string, smilemethod string, smileextrapmethod string, timeinterpmethod string, timeextrapmethod string, daycountconvention string, voltype string, wingstriketype string, lower double, upper double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolatilitysurfacedefinition"></a>
+      <h3><code>CreateVolatilitySurfaceDefinition</code></h3>
+      <p class="api-description">创建并缓存波动率曲面定义。</p>
+      <p class="full-signature"><code>caplib::CreateVolatilitySurfaceDefinition(volSmileType STRING, smileMethod STRING, smileExtrapMethod STRING, timeInterpMethod STRING, timeExtrapMethod STRING, dayCountConvention STRING, volType STRING, wingStrikeType STRING, lower DOUBLE, upper DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>volSmileType</code></td><td>STRING</td><td>波动率微笑类型。</td></tr><tr><td><code>smileMethod</code></td><td>STRING</td><td>微笑构建或插值方法。</td></tr><tr><td><code>smileExtrapMethod</code></td><td>STRING</td><td>微笑外推方法。</td></tr><tr><td><code>timeInterpMethod</code></td><td>STRING</td><td>期限方向插值方法。</td></tr><tr><td><code>timeExtrapMethod</code></td><td>STRING</td><td>期限方向外推方法。</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>volType</code></td><td>STRING</td><td>波动率类型。</td></tr><tr><td><code>wingStrikeType</code></td><td>STRING</td><td>翼部行权价类型。</td></tr><tr><td><code>lower</code></td><td>DOUBLE</td><td>下界参数。</td></tr><tr><td><code>upper</code></td><td>DOUBLE</td><td>上界参数。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolsurfbuildsettings create and cache generic 波动率曲面构建设置。 fixedparamindex int, fixedparamvalue double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolsurfbuildsettings"></a>
+      <h3><code>CreateVolSurfBuildSettings</code></h3>
+      <p class="api-description">创建并缓存波动率曲面构建设置。</p>
+      <p class="full-signature"><code>caplib::CreateVolSurfBuildSettings(fixedParamIndex INT, fixedParamValue DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>fixedParamIndex</code></td><td>INT</td><td>需要固定的模型参数索引。</td></tr><tr><td><code>fixedParamValue</code></td><td>DOUBLE</td><td>固定模型参数取值。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricingmodelsettings create and cache pricing-model settings. modelname string, asset string, calibrated bool, constantparams double[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricingmodelsettings"></a>
+      <h3><code>CreatePricingModelSettings</code></h3>
+      <p class="api-description">创建并缓存定价模型设置。</p>
+      <p class="full-signature"><code>caplib::CreatePricingModelSettings(modelName STRING, asset STRING, calibrated BOOL, constantParams DOUBLE[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>modelName</code></td><td>STRING</td><td>定价模型名称。</td></tr><tr><td><code>asset</code></td><td>STRING</td><td>资产收益或资产返还金额。</td></tr><tr><td><code>calibrated</code></td><td>BOOL</td><td>模型参数是否已校准。</td></tr><tr><td><code>constantParams</code></td><td>DOUBLE[]</td><td>模型常数参数数组。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpdesettings create and cache pde settings. tsize int, xsize int, xmin double, xmax double, xminmaxtype int, ysize int, ymin double, ymax double, yminmaxtype int, zsize int, zmin double, zmax double, zminmaxtype int, xdensity double, ydensity double, zdensity double, xgridtype int, ygridtype int, zgridtype int, xinterp int, yinterp int, zinterp int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpdesettings"></a>
+      <h3><code>CreatePdeSettings</code></h3>
+      <p class="api-description">创建并缓存 PDE 网格设置。</p>
+      <p class="full-signature"><code>caplib::CreatePdeSettings(tSize INT, xSize INT, xMin DOUBLE, xMax DOUBLE, xMinMaxType INT, ySize INT, yMin DOUBLE, yMax DOUBLE, yMinMaxType INT, zSize INT, zMin DOUBLE, zMax DOUBLE, zMinMaxType INT, xDensity DOUBLE, yDensity DOUBLE, zDensity DOUBLE, xGridType INT, yGridType INT, zGridType INT, xInterp INT, yInterp INT, zInterp INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>tSize</code></td><td>INT</td><td>时间维网格点数量。</td></tr><tr><td><code>xSize</code></td><td>INT</td><td>X 维网格点数量。</td></tr><tr><td><code>xMin</code></td><td>DOUBLE</td><td>X 维网格下界。</td></tr><tr><td><code>xMax</code></td><td>DOUBLE</td><td>X 维网格上界。</td></tr><tr><td><code>xMinMaxType</code></td><td>INT</td><td>X 维边界解释方式。</td></tr><tr><td><code>ySize</code></td><td>INT</td><td>Y 维网格点数量。</td></tr><tr><td><code>yMin</code></td><td>DOUBLE</td><td>Y 维网格下界。</td></tr><tr><td><code>yMax</code></td><td>DOUBLE</td><td>Y 维网格上界。</td></tr><tr><td><code>yMinMaxType</code></td><td>INT</td><td>Y 维边界解释方式。</td></tr><tr><td><code>zSize</code></td><td>INT</td><td>Z 维网格点数量。</td></tr><tr><td><code>zMin</code></td><td>DOUBLE</td><td>Z 维网格下界。</td></tr><tr><td><code>zMax</code></td><td>DOUBLE</td><td>Z 维网格上界。</td></tr><tr><td><code>zMinMaxType</code></td><td>INT</td><td>Z 维边界解释方式。</td></tr><tr><td><code>xDensity</code></td><td>DOUBLE</td><td>X 维网格密度参数。</td></tr><tr><td><code>yDensity</code></td><td>DOUBLE</td><td>Y 维网格密度参数。</td></tr><tr><td><code>zDensity</code></td><td>DOUBLE</td><td>Z 维网格密度参数。</td></tr><tr><td><code>xGridType</code></td><td>INT</td><td>X 维网格类型。</td></tr><tr><td><code>yGridType</code></td><td>INT</td><td>Y 维网格类型。</td></tr><tr><td><code>zGridType</code></td><td>INT</td><td>Z 维网格类型。</td></tr><tr><td><code>xInterp</code></td><td>INT</td><td>X 维插值方法。</td></tr><tr><td><code>yInterp</code></td><td>INT</td><td>Y 维插值方法。</td></tr><tr><td><code>zInterp</code></td><td>INT</td><td>Z 维插值方法。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createmontecarlosettings create and cache monte carlo settings. numsimulations int, uniformnumbertype int, seed int, wienerbuildmethod int, gaussianmethod int, useantithetic bool, numsteps int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createmontecarlosettings"></a>
+      <h3><code>CreateMonteCarloSettings</code></h3>
+      <p class="api-description">创建并缓存蒙特卡洛模拟设置。</p>
+      <p class="full-signature"><code>caplib::CreateMonteCarloSettings(numSimulations INT, uniformNumberType INT, seed INT, wienerBuildMethod INT, gaussianMethod INT, useAntithetic BOOL, numSteps INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>numSimulations</code></td><td>INT</td><td>蒙特卡洛模拟路径数量。</td></tr><tr><td><code>uniformNumberType</code></td><td>INT</td><td>均匀随机数生成器类型。</td></tr><tr><td><code>seed</code></td><td>INT</td><td>随机数种子。</td></tr><tr><td><code>wienerBuildMethod</code></td><td>INT</td><td>维纳过程构建方法。</td></tr><tr><td><code>gaussianMethod</code></td><td>INT</td><td>高斯随机数生成方法。</td></tr><tr><td><code>useAntithetic</code></td><td>BOOL</td><td>是否使用反向变量。</td></tr><tr><td><code>numSteps</code></td><td>INT</td><td>蒙特卡洛时间步数。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricingsettings create and cache pricing settings that reference model, pde, and monte carlo handles. currency string, pricingmethod string, inccurrent bool, cashflows bool, modelhandle string, pdehandle string, mchandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricingsettings"></a>
+      <h3><code>CreatePricingSettings</code></h3>
+      <p class="api-description">创建并缓存定价设置。</p>
+      <p class="full-signature"><code>caplib::CreatePricingSettings(currency STRING, pricingMethod STRING, incCurrent BOOL, cashFlows BOOL, modelHandle STRING, pdeHandle STRING, mcHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>pricingMethod</code></td><td>STRING</td><td>定价方法。</td></tr><tr><td><code>incCurrent</code></td><td>BOOL</td><td>估值输出中是否包含当前现金流。</td></tr><tr><td><code>cashFlows</code></td><td>BOOL</td><td>定价结果中是否包含详细现金流输出。</td></tr><tr><td><code>modelHandle</code></td><td>STRING</td><td>定价模型设置 内存对象 句柄。</td></tr><tr><td><code>pdeHandle</code></td><td>STRING</td><td>PDE 设置 内存对象 句柄。</td></tr><tr><td><code>mcHandle</code></td><td>STRING</td><td>蒙特卡洛设置 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdividendcurverisksettings create and cache dividend-curve 风险设置。 delta bool, gamma bool, shift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdividendcurverisksettings"></a>
+      <h3><code>CreateDividendCurveRiskSettings</code></h3>
+      <p class="api-description">创建并缓存股息曲线风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateDividendCurveRiskSettings(delta BOOL, gamma BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>是否计算 Delta 风险或 Delta 数值。</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>是否计算 Gamma 风险。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>method</code></td><td>INT</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>风险桶或扰动粒度。</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>风险扰动缩放因子。</td></tr><tr><td><code>threading</code></td><td>INT</td><td>线程模式选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricerisksettings create and cache underlying-price 风险设置。 delta bool, gamma bool, curvature bool, shift double, curvatureshift double, method int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricerisksettings"></a>
+      <h3><code>CreatePriceRiskSettings</code></h3>
+      <p class="api-description">创建并缓存标的价格风险设置。</p>
+      <p class="full-signature"><code>caplib::CreatePriceRiskSettings(delta BOOL, gamma BOOL, curvature BOOL, shift DOUBLE, curvatureShift DOUBLE, method INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>是否计算 Delta 风险或 Delta 数值。</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>是否计算 Gamma 风险。</td></tr><tr><td><code>curvature</code></td><td>BOOL</td><td>是否计算曲率风险。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>curvatureShift</code></td><td>DOUBLE</td><td>曲率风险使用的扰动大小。</td></tr><tr><td><code>method</code></td><td>INT</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>风险扰动缩放因子。</td></tr><tr><td><code>threading</code></td><td>INT</td><td>线程模式选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvolrisksettings create and cache volatility 风险设置。 vega bool, volga bool, shift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvolrisksettings"></a>
+      <h3><code>CreateVolRiskSettings</code></h3>
+      <p class="api-description">创建并缓存波动率风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateVolRiskSettings(vega BOOL, volga BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>vega</code></td><td>BOOL</td><td>是否计算 Vega 风险。</td></tr><tr><td><code>volga</code></td><td>BOOL</td><td>是否计算 Volga 风险。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>method</code></td><td>INT</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>风险桶或扰动粒度。</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>风险扰动缩放因子。</td></tr><tr><td><code>threading</code></td><td>INT</td><td>线程模式选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpricevolrisksettings create and cache cross price-volatility 风险设置。 vanna bool, priceshift double, volshift double, method int, granularity int, pricescaling double, volscaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpricevolrisksettings"></a>
+      <h3><code>CreatePriceVolRiskSettings</code></h3>
+      <p class="api-description">创建并缓存价格-波动率交叉风险设置。</p>
+      <p class="full-signature"><code>caplib::CreatePriceVolRiskSettings(vanna BOOL, priceShift DOUBLE, volShift DOUBLE, method INT, granularity INT, priceScaling DOUBLE, volScaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>vanna</code></td><td>BOOL</td><td>是否计算 Vanna 风险。</td></tr><tr><td><code>priceShift</code></td><td>DOUBLE</td><td>价格风险扰动大小。</td></tr><tr><td><code>volShift</code></td><td>DOUBLE</td><td>波动率风险扰动大小。</td></tr><tr><td><code>method</code></td><td>INT</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>风险桶或扰动粒度。</td></tr><tr><td><code>priceScaling</code></td><td>DOUBLE</td><td>价格风险缩放因子。</td></tr><tr><td><code>volScaling</code></td><td>DOUBLE</td><td>波动率风险缩放因子。</td></tr><tr><td><code>threading</code></td><td>INT</td><td>线程模式选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createthetarisksettings create and cache Theta 风险设置。 theta bool, shift int, scaling double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createthetarisksettings"></a>
+      <h3><code>CreateThetaRiskSettings</code></h3>
+      <p class="api-description">创建并缓存 Theta 风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateThetaRiskSettings(theta BOOL, shift INT, scaling DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>theta</code></td><td>BOOL</td><td>是否计算 Theta 风险。</td></tr><tr><td><code>shift</code></td><td>INT</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>风险扰动缩放因子。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createscnsettings create and cache one-dimensional scenario settings. min double, max double, size int, scngentype int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createscnsettings"></a>
+      <h3><code>CreateScnSettings</code></h3>
+      <p class="api-description">创建并缓存一维情景设置。</p>
+      <p class="full-signature"><code>caplib::CreateScnSettings(min DOUBLE, max DOUBLE, size INT, scnGenType INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>min</code></td><td>DOUBLE</td><td>情景网格下界。</td></tr><tr><td><code>max</code></td><td>DOUBLE</td><td>情景网格上界。</td></tr><tr><td><code>size</code></td><td>INT</td><td>情景网格点数量。</td></tr><tr><td><code>scnGenType</code></td><td>INT</td><td>情景生成类型。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createscnanalysissettings create and cache scenario-analysis settings. scntype string, pricehandle string, volhandle string, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createscnanalysissettings"></a>
+      <h3><code>CreateScnAnalysisSettings</code></h3>
+      <p class="api-description">创建并缓存情景分析设置。</p>
+      <p class="full-signature"><code>caplib::CreateScnAnalysisSettings(scnType STRING, priceHandle STRING, volHandle STRING, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>scnType</code></td><td>STRING</td><td>情景分析类型。</td></tr><tr><td><code>priceHandle</code></td><td>STRING</td><td>价格情景设置 内存对象 句柄。</td></tr><tr><td><code>volHandle</code></td><td>STRING</td><td>波动率设置或曲面 内存对象 句柄。</td></tr><tr><td><code>threading</code></td><td>INT</td><td>线程模式选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `显示 ${visible} / ${cards.length} 个函数`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

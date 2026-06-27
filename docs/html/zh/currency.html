@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>外汇 | CAPLIB</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="alternate" hreflang="en" href="../currency.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../currency.html">English</a><span class="lang-active">中文</span></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child active" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="shared.html#api-reference">通用 <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>64</span></a><a class="nav-child active" href="currency.html#api-reference">外汇 <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib 插件</p>
+        <h1>外汇</h1>
+        <p class="lede">外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。 本页包含 39 个函数。可按函数名、返回类型、参数或说明进行筛选。</p></section><section class="panel example"><h2>示例</h2><pre><code>fxMkt = caplib::CreateFxMktDataSet(
+    2025.01.02, &quot;USD_DISC&quot;, &quot;EUR_DISC&quot;, &quot;EURUSD_SPOT&quot;, &quot;EURUSD_VOL&quot;, &quot;FX_MKT&quot;, &quot;FX_MKT&quot;, true);
+
+pricingResult = caplib::PriceFxEuropeanOption(
+    &quot;EURUSD_CALL&quot;, 2025.01.02, fxMkt[0], &quot;FX_ANALYTICAL&quot;, &quot;FX_RISK&quot;, &quot;&quot;, &quot;&quot;, true);
+pricingHandle = pricingResult[0];
+pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+<section class="api-group"><h2>外汇分析</h2>
+
+<article class="api-card" data-search="calcfxforwardrate calculate an fx forward rate from spot and discount curves. calculationdate date, leftccy string, rightccy string, deliverydate date, spotrate double, baseccy string, targetccy string, refdate date, spotdate date, domesticdiscountcurvebytes string, foreigndiscountcurvebytes string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcfxforwardrate"></a>
+      <h3><code>CalcFxForwardRate</code></h3>
+      <p class="api-description">根据即期汇率和贴现曲线计算外汇远期汇率。</p>
+      <p class="full-signature"><code>caplib::CalcFxForwardRate(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, spotRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, domesticDiscountCurveBytes STRING, foreignDiscountCurveBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>spotRate</code></td><td>DOUBLE</td><td>当前即期汇率。</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>domesticDiscountCurveBytes</code></td><td>STRING</td><td>本币贴现曲线输入或 内存对象 句柄。</td></tr><tr><td><code>foreignDiscountCurveBytes</code></td><td>STRING</td><td>外币贴现曲线输入或 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcfxswappoint calculate an fx swap point using the same inputs as `calcfxforwardrate`. same args as calcfxforwardrate scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcfxswappoint"></a>
+      <h3><code>CalcFxSwapPoint</code></h3>
+      <p class="api-description">计算外汇掉期点。</p>
+      <p class="full-signature"><code>caplib::CalcFxSwapPoint(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, spotRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, domesticDiscountCurveBytes STRING, foreignDiscountCurveBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>spotRate</code></td><td>DOUBLE</td><td>当前即期汇率。</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>domesticDiscountCurveBytes</code></td><td>STRING</td><td>本币贴现曲线输入或 内存对象 句柄。</td></tr><tr><td><code>foreignDiscountCurveBytes</code></td><td>STRING</td><td>外币贴现曲线输入或 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcfxprice convert a currency amount into a target-currency price using an fx rate. amount double, currency string, destccy string, fxrate double, baseccy string, targetccy string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcfxprice"></a>
+      <h3><code>CalcFxPrice</code></h3>
+      <p class="api-description">按给定汇率计算目标币种价格。</p>
+      <p class="full-signature"><code>caplib::CalcFxPrice(amount DOUBLE, currency STRING, destCcy STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>amount</code></td><td>DOUBLE</td><td>金额。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>destCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>外汇汇率输入值。</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcfxatmstrike calculate an fx atm strike. atmtype string, expirydate date, spotrate double, baseccy string, targetccy string, refdate date, spotdate date, domesticdiscountcurvebytes string, foreigndiscountcurvebytes string, volsurfacebytes string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcfxatmstrike"></a>
+      <h3><code>CalcFxAtmStrike</code></h3>
+      <p class="api-description">计算外汇 ATM 行权价。</p>
+      <p class="full-signature"><code>caplib::CalcFxAtmStrike(atmType STRING, expiryDate DATE, spotRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, domesticDiscountCurveBytes STRING, foreignDiscountCurveBytes STRING, volSurfaceBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>atmType</code></td><td>STRING</td><td>ATM 报价类型。</td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>spotRate</code></td><td>DOUBLE</td><td>当前即期汇率。</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>domesticDiscountCurveBytes</code></td><td>STRING</td><td>本币贴现曲线输入或 内存对象 句柄。</td></tr><tr><td><code>foreignDiscountCurveBytes</code></td><td>STRING</td><td>外币贴现曲线输入或 内存对象 句柄。</td></tr><tr><td><code>volSurfaceBytes</code></td><td>STRING</td><td>波动率曲面 protobuf 字节或 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcfxdeltatostrike convert fx option delta to strike. deltatype string, delta double, optiontype string, expirydate date, spotrate double, baseccy string, targetccy string, refdate date, spotdate date, domesticdiscountcurvebytes string, foreigndiscountcurvebytes string, volsurfacebytes string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcfxdeltatostrike"></a>
+      <h3><code>CalcFxDeltaToStrike</code></h3>
+      <p class="api-description">将外汇期权 Delta 转换为行权价。</p>
+      <p class="full-signature"><code>caplib::CalcFxDeltaToStrike(deltaType STRING, delta DOUBLE, optionType STRING, expiryDate DATE, spotRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, domesticDiscountCurveBytes STRING, foreignDiscountCurveBytes STRING, volSurfaceBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>deltaType</code></td><td>STRING</td><td>Delta 报价类型。</td></tr><tr><td><code>delta</code></td><td>DOUBLE</td><td>是否计算 Delta 风险或 Delta 数值。</td></tr><tr><td><code>optionType</code></td><td>STRING</td><td>期权类型，例如看涨或看跌。</td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>spotRate</code></td><td>DOUBLE</td><td>当前即期汇率。</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>domesticDiscountCurveBytes</code></td><td>STRING</td><td>本币贴现曲线输入或 内存对象 句柄。</td></tr><tr><td><code>foreignDiscountCurveBytes</code></td><td>STRING</td><td>外币贴现曲线输入或 内存对象 句柄。</td></tr><tr><td><code>volSurfaceBytes</code></td><td>STRING</td><td>波动率曲面 protobuf 字节或 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxoptionquotematrix create and cache an fx 期权报价矩阵。 leftccy string, rightccy string, asofdate date, terms string[], quotenames string[], quotes double matrix, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxoptionquotematrix"></a>
+      <h3><code>CreateFxOptionQuoteMatrix</code></h3>
+      <p class="api-description">创建并缓存外汇期权报价矩阵。</p>
+      <p class="full-signature"><code>caplib::CreateFxOptionQuoteMatrix(leftCcy STRING, rightCcy STRING, asOfDate DATE, terms STRING[], quoteNames STRING[], quotes DOUBLE matrix, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>leftCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>报价期限数组。</td></tr><tr><td><code>quoteNames</code></td><td>STRING[]</td><td>报价名称或微笑报价标签。</td></tr><tr><td><code>quotes</code></td><td>DOUBLE matrix</td><td>市场报价值数组。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createflatfxvolatilitysurface create and cache a flat fx volatility surface. referencedate date, currencypair string, vol double, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createflatfxvolatilitysurface"></a>
+      <h3><code>CreateFlatFxVolatilitySurface</code></h3>
+      <p class="api-description">创建并缓存平坦外汇波动率曲面。</p>
+      <p class="full-signature"><code>caplib::CreateFlatFxVolatilitySurface(referenceDate DATE, currencyPair STRING, vol DOUBLE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。</td></tr><tr><td><code>vol</code></td><td>DOUBLE</td><td>波动率数值。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxvolatilitysurface create and cache an fx volatility surface from explicit term dates and smile rows. referencedate date, leftccy string, rightccy string, termdates date[], strikes double matrix/vector, volatilities double matrix/vector, definitionhandle string, marketconventionshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxvolatilitysurface"></a>
+      <h3><code>CreateFxVolatilitySurface</code></h3>
+      <p class="api-description">创建并缓存外汇波动率曲面。</p>
+      <p class="full-signature"><code>caplib::CreateFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE[], strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>报价期限对应的到期日期数组。</td></tr><tr><td><code>strikes</code></td><td>DOUBLE matrix/vector</td><td>行权价数组或矩阵。</td></tr><tr><td><code>volatilities</code></td><td>DOUBLE matrix/vector</td><td>波动率数组或矩阵。</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>marketConventionsHandle</code></td><td>STRING</td><td>市场惯例 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildfxvolatilitysurface build and cache an fx volatility surface from quote matrix, spot, curves, and conventions. referencedate date, leftccy string, rightccy string, marketconventionshandle string, quotematrixhandle string, spotrate double, spotrefdate date, spotdate date, domesticdiscountcurvehandle string, foreigndiscountcurvehandle string, definitionhandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildfxvolatilitysurface"></a>
+      <h3><code>BuildFxVolatilitySurface</code></h3>
+      <p class="api-description">构建外汇波动率曲面。</p>
+      <p class="full-signature"><code>caplib::BuildFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>marketConventionsHandle</code></td><td>STRING</td><td>市场惯例 内存对象 句柄。</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>期权报价矩阵 内存对象 句柄。</td></tr><tr><td><code>spotRate</code></td><td>DOUBLE</td><td>当前即期汇率。</td></tr><tr><td><code>spotRefDate</code></td><td>DATE</td><td>日期或日期数组。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>本币贴现曲线 内存对象 句柄。</td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>外币贴现曲线 内存对象 句柄。</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxforward price an fx forward. fxcashpricing7(fxforward) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxforward"></a>
+      <h3><code>PriceFxForward</code></h3>
+      <p class="api-description">定价外汇远期工具。</p>
+      <p class="full-signature"><code>caplib::PriceFxForward(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxswap price an fx swap. fxcashpricing7(fxswap) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxswap"></a>
+      <h3><code>PriceFxSwap</code></h3>
+      <p class="api-description">定价外汇掉期工具。</p>
+      <p class="full-signature"><code>caplib::PriceFxSwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxnondeliverableforward price an fx non-deliverable forward. fxcashpricing7(fxnondeliverableforward) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxnondeliverableforward"></a>
+      <h3><code>PriceFxNonDeliverableForward</code></h3>
+      <p class="api-description">定价外汇无本金交割远期工具。</p>
+      <p class="full-signature"><code>caplib::PriceFxNonDeliverableForward(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxtimeoption price an fx time option. fxcashpricing7(fxtimeoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxtimeoption"></a>
+      <h3><code>PriceFxTimeOption</code></h3>
+      <p class="api-description">定价外汇时间期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxTimeOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxeuropeanoption price an fx european option. fxoptionpricing7(europeanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxeuropeanoption"></a>
+      <h3><code>PriceFxEuropeanOption</code></h3>
+      <p class="api-description">定价外汇欧式期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxEuropeanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxamericanoption price an fx american option. fxoptionpricing7(americanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxamericanoption"></a>
+      <h3><code>PriceFxAmericanOption</code></h3>
+      <p class="api-description">定价外汇美式期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxAmericanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxasianoption price an fx asian option. fxoptionpricing7(asianoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxasianoption"></a>
+      <h3><code>PriceFxAsianOption</code></h3>
+      <p class="api-description">定价外汇亚式期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxdigitaloption price an fx 数字期权. fxoptionpricing7(digitaloption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxdigitaloption"></a>
+      <h3><code>PriceFxDigitalOption</code></h3>
+      <p class="api-description">定价外汇数字期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxDigitalOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxonetouchoption price an fx 单触碰期权. fxoptionpricing7(onetouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxonetouchoption"></a>
+      <h3><code>PriceFxOneTouchOption</code></h3>
+      <p class="api-description">定价外汇单触碰期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxOneTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxdoubletouchoption price an fx 双触碰期权. fxoptionpricing7(doubletouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxdoubletouchoption"></a>
+      <h3><code>PriceFxDoubleTouchOption</code></h3>
+      <p class="api-description">定价外汇双触碰期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxsinglebarrieroption price an fx 单障碍期权. fxoptionpricing7(singlebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxsinglebarrieroption"></a>
+      <h3><code>PriceFxSingleBarrierOption</code></h3>
+      <p class="api-description">定价外汇单障碍期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxSingleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxdoublebarrieroption price an fx 双障碍期权. fxoptionpricing7(doublebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxdoublebarrieroption"></a>
+      <h3><code>PriceFxDoubleBarrierOption</code></h3>
+      <p class="api-description">定价外汇双障碍期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxDoubleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxsinglesharkfinoption price an fx single shark-fin option. fxoptionpricing7(singlesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxsinglesharkfinoption"></a>
+      <h3><code>PriceFxSingleSharkFinOption</code></h3>
+      <p class="api-description">定价外汇单鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxdoublesharkfinoption price an fx double shark-fin option. fxoptionpricing7(doublesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxdoublesharkfinoption"></a>
+      <h3><code>PriceFxDoubleSharkFinOption</code></h3>
+      <p class="api-description">定价外汇双鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxDoubleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxpingpongoption price an fx 乒乓期权. fxoptionpricing7(pingpongoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxpingpongoption"></a>
+      <h3><code>PriceFxPingPongOption</code></h3>
+      <p class="api-description">定价外汇乒乓期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxPingPongOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxairbagoption price an fx 安全气囊期权. fxoptionpricing7(airbagoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxairbagoption"></a>
+      <h3><code>PriceFxAirbagOption</code></h3>
+      <p class="api-description">定价外汇安全气囊期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxrangeaccrualoption price an fx 区间累计期权. fxoptionpricing7(rangeaccrualoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxrangeaccrualoption"></a>
+      <h3><code>PriceFxRangeAccrualOption</code></h3>
+      <p class="api-description">定价外汇区间累计期权。</p>
+      <p class="full-signature"><code>caplib::PriceFxRangeAccrualOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxphoenixautocallablenote price an fx phoenix autocallable note. fxoptionpricing7(phoenixautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxphoenixautocallablenote"></a>
+      <h3><code>PriceFxPhoenixAutoCallableNote</code></h3>
+      <p class="api-description">定价外汇凤凰自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::PriceFxPhoenixAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricefxsnowballautocallablenote price an fx snowball autocallable note. fxoptionpricing7(snowballautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricefxsnowballautocallablenote"></a>
+      <h3><code>PriceFxSnowballAutoCallableNote</code></h3>
+      <p class="api-description">定价外汇雪球自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::PriceFxSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>外汇市场对象工厂</h2>
+
+<article class="api-card" data-search="createfxspottemplate create and cache an fx spot template and register it as sdt_fx_spot static data. instname string, currencypair string, spotdayconvention string, calendars string or string[], spotdelay string or int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxspottemplate"></a>
+      <h3><code>CreateFxSpotTemplate</code></h3>
+      <p class="api-description">创建并缓存外汇即期模板。</p>
+      <p class="full-signature"><code>caplib::CreateFxSpotTemplate(instName STRING, currencyPair STRING, spotDayConvention STRING, calendars STRING or STRING[], spotDelay STRING or INT[, handle STRING][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。</td></tr><tr><td><code>spotDayConvention</code></td><td>STRING</td><td>即期日调整约定。</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>spotDelay</code></td><td>STRING or INT</td><td>即期结算延迟。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxspotrate create and cache an fx spot-rate object. value double, basecurrency string, targetcurrency string, refdate date, spotdate date, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxspotrate"></a>
+      <h3><code>CreateFxSpotRate</code></h3>
+      <p class="api-description">创建并缓存外汇即期汇率。</p>
+      <p class="full-signature"><code>caplib::CreateFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRING, refDate DATE, spotDate DATE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>value</code></td><td>DOUBLE</td><td>报价、利率或即期汇率数值。</td></tr><tr><td><code>baseCurrency</code></td><td>STRING</td><td>外汇货币对中的基准币种。</td></tr><tr><td><code>targetCurrency</code></td><td>STRING</td><td>外汇货币对中的目标币种。</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxforwardtemplate create and cache an fx forward template and register it as sdt_fx_forward static data. instname string, fixingoffset string or int, currencypair string, deliverydayconvention string, fixingdayconvention string, calendars string or string[] handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxforwardtemplate"></a>
+      <h3><code>CreateFxForwardTemplate</code></h3>
+      <p class="api-description">创建并缓存外汇远期模板。</p>
+      <p class="full-signature"><code>caplib::CreateFxForwardTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING[][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>fixingOffset</code></td><td>STRING or INT</td><td>定盘偏移期限。</td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。</td></tr><tr><td><code>deliveryDayConvention</code></td><td>STRING</td><td>交割日调整约定。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxswaptemplate create and cache an fx swap template and register it as sdt_fx_swap static data. instname string, startconvention string, currencypair string, calendars string or string[], startdayconvention string, enddayconvention string, fixingoffset string or int, fixingdayconvention string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxswaptemplate"></a>
+      <h3><code>CreateFxSwapTemplate</code></h3>
+      <p class="api-description">创建并缓存外汇掉期模板。</p>
+      <p class="full-signature"><code>caplib::CreateFxSwapTemplate(instName STRING, startConvention STRING, currencyPair STRING, calendars STRING or STRING[], startDayConvention STRING, endDayConvention STRING, fixingOffset STRING or INT, fixingDayConvention STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>startConvention</code></td><td>STRING</td><td>工具起息约定。</td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>startDayConvention</code></td><td>STRING</td><td>起始日调整约定。</td></tr><tr><td><code>endDayConvention</code></td><td>STRING</td><td>结束日调整约定。</td></tr><tr><td><code>fixingOffset</code></td><td>STRING or INT</td><td>定盘偏移期限。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxndftemplate create and cache an fx ndf template and register it as sdt_fx_ndf static data. instname string, fixingoffset string or int, currencypair string, deliverydayconvention string, fixingdayconvention string, calendars string or string[], settlementcurrency string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxndftemplate"></a>
+      <h3><code>CreateFxNdfTemplate</code></h3>
+      <p class="api-description">创建并缓存外汇无本金交割远期模板。</p>
+      <p class="full-signature"><code>caplib::CreateFxNdfTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING[], settlementCurrency STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>fixingOffset</code></td><td>STRING or INT</td><td>定盘偏移期限。</td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。</td></tr><tr><td><code>deliveryDayConvention</code></td><td>STRING</td><td>交割日调整约定。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>settlementCurrency</code></td><td>STRING</td><td>结算币种。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxforward create and cache an fx forward instrument. buycurrency string, buyamount double, sellcurrency string, sellamount double, deliverydate date, expirydate date, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxforward"></a>
+      <h3><code>CreateFxForward</code></h3>
+      <p class="api-description">创建并缓存外汇远期工具。</p>
+      <p class="full-signature"><code>caplib::CreateFxForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, deliveryDate DATE, expiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>buyCurrency</code></td><td>STRING</td><td>买入币种。</td></tr><tr><td><code>buyAmount</code></td><td>DOUBLE</td><td>买入金额。</td></tr><tr><td><code>sellCurrency</code></td><td>STRING</td><td>卖出币种。</td></tr><tr><td><code>sellAmount</code></td><td>DOUBLE</td><td>卖出金额。</td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxswap create and cache an fx swap instrument. nearbuycurrency string, nearbuyamount double, nearsellcurrency string, nearsellamount double, neardeliverydate date, nearexpirydate date, farbuycurrency string, farbuyamount double, farsellcurrency string, farsellamount double, fardeliverydate date, farexpirydate date, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxswap"></a>
+      <h3><code>CreateFxSwap</code></h3>
+      <p class="api-description">创建并缓存外汇掉期工具。</p>
+      <p class="full-signature"><code>caplib::CreateFxSwap(nearBuyCurrency STRING, nearBuyAmount DOUBLE, nearSellCurrency STRING, nearSellAmount DOUBLE, nearDeliveryDate DATE, nearExpiryDate DATE, farBuyCurrency STRING, farBuyAmount DOUBLE, farSellCurrency STRING, farSellAmount DOUBLE, farDeliveryDate DATE, farExpiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>nearBuyCurrency</code></td><td>STRING</td><td>近端买入币种。</td></tr><tr><td><code>nearBuyAmount</code></td><td>DOUBLE</td><td>近端买入金额。</td></tr><tr><td><code>nearSellCurrency</code></td><td>STRING</td><td>近端卖出币种。</td></tr><tr><td><code>nearSellAmount</code></td><td>DOUBLE</td><td>近端卖出金额。</td></tr><tr><td><code>nearDeliveryDate</code></td><td>DATE</td><td>日期或日期数组。</td></tr><tr><td><code>nearExpiryDate</code></td><td>DATE</td><td>日期或日期数组。</td></tr><tr><td><code>farBuyCurrency</code></td><td>STRING</td><td>远端买入币种。</td></tr><tr><td><code>farBuyAmount</code></td><td>DOUBLE</td><td>远端买入金额。</td></tr><tr><td><code>farSellCurrency</code></td><td>STRING</td><td>远端卖出币种。</td></tr><tr><td><code>farSellAmount</code></td><td>DOUBLE</td><td>远端卖出金额。</td></tr><tr><td><code>farDeliveryDate</code></td><td>DATE</td><td>日期或日期数组。</td></tr><tr><td><code>farExpiryDate</code></td><td>DATE</td><td>日期或日期数组。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxnondeliverableforward create and cache an fx non-deliverable forward instrument. buycurrency string, buyamount double, sellcurrency string, sellamount double, settlementcurrency string, deliverydate date, expirydate date, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxnondeliverableforward"></a>
+      <h3><code>CreateFxNonDeliverableForward</code></h3>
+      <p class="api-description">创建并缓存外汇无本金交割远期工具。</p>
+      <p class="full-signature"><code>caplib::CreateFxNonDeliverableForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, settlementCurrency STRING, deliveryDate DATE, expiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>buyCurrency</code></td><td>STRING</td><td>买入币种。</td></tr><tr><td><code>buyAmount</code></td><td>DOUBLE</td><td>买入金额。</td></tr><tr><td><code>sellCurrency</code></td><td>STRING</td><td>卖出币种。</td></tr><tr><td><code>sellAmount</code></td><td>DOUBLE</td><td>卖出金额。</td></tr><tr><td><code>settlementCurrency</code></td><td>STRING</td><td>结算币种。</td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>交割或结算日期。</td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>到期日期。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>资产域市场数据与设置</h2>
+
+<article class="api-card" data-search="createfxmktconventions create and cache fx market conventions. ccypair string, atmtype string, shortdeltatype string, longdeltatype string, deltacutoff string, riskreversal string, smilequotetype string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxmktconventions"></a>
+      <h3><code>CreateFxMktConventions</code></h3>
+      <p class="api-description">创建并缓存外汇市场惯例。</p>
+      <p class="full-signature"><code>caplib::CreateFxMktConventions(ccyPair STRING, atmType STRING, shortDeltaType STRING, longDeltaType STRING, deltaCutoff STRING, riskReversal STRING, smileQuoteType STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>ccyPair</code></td><td>STRING</td><td>货币对标识。</td></tr><tr><td><code>atmType</code></td><td>STRING</td><td>ATM 报价类型。</td></tr><tr><td><code>shortDeltaType</code></td><td>STRING</td><td>短期限 Delta 报价类型。</td></tr><tr><td><code>longDeltaType</code></td><td>STRING</td><td>长期限 Delta 报价类型。</td></tr><tr><td><code>deltaCutoff</code></td><td>STRING</td><td>Delta 报价切换阈值。</td></tr><tr><td><code>riskReversal</code></td><td>STRING</td><td>设置对象的缓存句柄或配置值。</td></tr><tr><td><code>smileQuoteType</code></td><td>STRING</td><td>波动率微笑报价类型。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxmktdataset create and cache an fx market-data set. asofdate date, domdiscountcurve string, fordiscountcurve string, spot string, volsurface string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxmktdataset"></a>
+      <h3><code>CreateFxMktDataSet</code></h3>
+      <p class="api-description">创建并缓存外汇市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateFxMktDataSet(asOfDate DATE, domDiscountCurve STRING, forDiscountCurve STRING, spot STRING, volSurface STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>domDiscountCurve</code></td><td>STRING</td><td>本币贴现曲线 内存对象 句柄。</td></tr><tr><td><code>forDiscountCurve</code></td><td>STRING</td><td>外币贴现曲线 内存对象 句柄。</td></tr><tr><td><code>spot</code></td><td>STRING</td><td>当前现货价格。</td></tr><tr><td><code>volSurface</code></td><td>STRING</td><td>波动率曲面 内存对象 句柄。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfxrisksettings create and cache fx 风险设置。 ircurvesettings string, pricesettings string, volsettings string, pricevolsettings string, thetasettings string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfxrisksettings"></a>
+      <h3><code>CreateFxRiskSettings</code></h3>
+      <p class="api-description">创建并缓存外汇风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateFxRiskSettings(irCurveSettings STRING, priceSettings STRING, volSettings STRING, priceVolSettings STRING, thetaSettings STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irCurveSettings</code></td><td>STRING</td><td>利率曲线风险设置 内存对象 句柄。</td></tr><tr><td><code>priceSettings</code></td><td>STRING</td><td>价格风险设置 内存对象 句柄。</td></tr><tr><td><code>volSettings</code></td><td>STRING</td><td>波动率风险设置 内存对象 句柄。</td></tr><tr><td><code>priceVolSettings</code></td><td>STRING</td><td>价格-波动率联合风险设置 内存对象 句柄。</td></tr><tr><td><code>thetaSettings</code></td><td>STRING</td><td>设置对象的缓存句柄或配置值。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `显示 ${visible} / ${cards.length} 个函数`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

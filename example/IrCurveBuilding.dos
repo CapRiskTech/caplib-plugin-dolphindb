@@ -1,0 +1,31 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: IR Curve Building
+// =============================================================================
+// This script demonstrates how to build an IR par rate curve and bootstrap
+// a yield curve using the caplib plugin.
+
+// Load the plugin
+loadPlugin("PluginCaplib")
+
+// Step 1: Create an IR Par Rate Curve
+// Define the market instruments
+asOfDate = 2024.01.15
+currency = "USD"
+curveName = "USD.SOFR"
+instNames = ["SOFR_ON", "SOFR_1W", "SOFR_1M", "SOFR_3M", "SOFR_6M", "SOFR_1Y", "SOFR_2Y", "SOFR_3Y", "SOFR_5Y", "SOFR_10Y"]
+instTypes = ["DEPO", "DEPO", "FRA", "FRA", "SWAP", "SWAP", "SWAP", "SWAP", "SWAP", "SWAP"]
+instTerms = ["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "3Y", "5Y", "10Y"]
+quotes = [5.33, 5.32, 5.30, 5.25, 5.10, 4.85, 4.50, 4.30, 4.15, 4.10] \ 100.0
+
+// Create the par rate curve resource
+parCurve = caplib::createIrParRateCurve(asOfDate, currency, curveName, instNames, instTypes, instTerms, , quotes)
+print("Par rate curve created: " + string(parCurve))
+
+// Step 2: Build (bootstrap) the yield curve from the par rate curve
+yieldCurve = caplib::buildIrSingleCurrencyCurve(asOfDate, parCurve)
+print("Yield curve built: " + string(yieldCurve))
+
+// Step 3: Query the curve (via the returned resource handle)
+// zr = caplib::...zeroRate(2025.01.15)
+// df = caplib::...discountFactor(2025.01.15)
+// fwd = caplib::...forwardRate(2025.01.15, 2025.07.15)

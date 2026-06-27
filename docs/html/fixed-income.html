@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fixed Income | CAPLIB</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="alternate" hreflang="zh-CN" href="zh/fixed-income.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">User Guide and API Reference</span><span class="lang-switch"><span class="lang-active">EN</span><a href="zh/fixed-income.html">中文</a></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child" href="index.html#user-guide">Introduction</a><a class="nav-child active" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child" href="commodity.html#user-guide">Commodity</a><a class="nav-child" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child" href="shared.html#api-reference">Common <span>21</span></a><a class="nav-child active" href="fixed-income.html#api-reference">Fixed Income <span>64</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib plugin</p>
+        <h1>Fixed Income</h1>
+        <p class="lede">Rates, bonds, credit, cross-currency IR, FI market data, and risk settings.</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Rates, bonds, credit, cross-currency IR, FI market data, and risk settings. This page contains 60 functions. Use the filter to narrow by function name, return type, parameter, or description.</p></section><section class="panel example"><h2>Example</h2><pre><code>asOfDate = 2025.01.02;
+usdCurve = caplib::CreateIrYieldCurve(
+    asOfDate,
+    [2025.07.02, 2026.01.02, 2027.01.02],
+    [0.0200, 0.0215, 0.0230],
+    &quot;ZERO_RATE&quot;, &quot;ACT_365_FIXED&quot;, &quot;LINEAR_INTERP&quot;, &quot;FLAT_EXTRAP&quot;,
+    &quot;CONTINUOUS_COMPOUNDING&quot;, &quot;USD&quot;, &quot;USD_DISCOUNT&quot;, &quot;USD_DISC&quot;, false);
+
+pricingResult = caplib::PriceIrVanillaInstrument(
+    &quot;IR_SWAP&quot;, asOfDate, &quot;IR_MKT&quot;, &quot;IR_PRICING&quot;, &quot;IR_RISK&quot;, &quot;&quot;, &quot;&quot;, true);
+pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
+<section class="api-group"><h2>Shared market data and settings</h2>
+
+<article class="api-card" data-search="createiryieldcurve create and cache an ir yield curve. referencedate date, pillardates date[], pillarvalues double[], curvetype string, dcc string, interp string, extrap string, compounding string, currency string, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createiryieldcurve"></a>
+      <h3><code>CreateIrYieldCurve</code></h3>
+      <p class="api-description">Create and cache an IR yield curve.</p>
+      <p class="full-signature"><code>caplib::CreateIrYieldCurve(referenceDate DATE, pillarDates DATE[], pillarValues DOUBLE[], curveType STRING, dcc STRING, interp STRING, extrap STRING, compounding STRING, currency STRING, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>Curve pillar dates aligned with pillar values.</td></tr><tr><td><code>pillarValues</code></td><td>DOUBLE[]</td><td>Curve pillar values aligned with pillar dates.</td></tr><tr><td><code>curveType</code></td><td>STRING</td><td>Curve value type, such as zero-rate, discount-factor, or spread curve.</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>Day-count convention used by the curve.</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>Interpolation method used between curve pillars.</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>Extrapolation method used outside curve pillar range.</td></tr><tr><td><code>compounding</code></td><td>STRING</td><td>Compounding convention for yield or discount calculations.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcreditcurve create and cache a credit curve. referencedate date, pillardates date[], spreads double[], dcc string, interp string, extrap string, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcreditcurve"></a>
+      <h3><code>CreateCreditCurve</code></h3>
+      <p class="api-description">Create and cache a credit curve.</p>
+      <p class="full-signature"><code>caplib::CreateCreditCurve(referenceDate DATE, pillarDates DATE[], spreads DOUBLE[], dcc STRING, interp STRING, extrap STRING, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>Curve pillar dates aligned with pillar values.</td></tr><tr><td><code>spreads</code></td><td>DOUBLE[]</td><td>Credit or spread values aligned with curve pillar dates.</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>Day-count convention used by the curve.</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>Interpolation method used between curve pillars.</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>Extrapolation method used outside curve pillar range.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createircurverisksettings create and cache ir-curve risk settings. delta bool, gamma bool, curvature bool, shift double, curvatureshift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createircurverisksettings"></a>
+      <h3><code>CreateIrCurveRiskSettings</code></h3>
+      <p class="api-description">Create and cache IR-curve risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateIrCurveRiskSettings(delta BOOL, gamma BOOL, curvature BOOL, shift DOUBLE, curvatureShift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>Whether first-order delta risk should be calculated.</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>Whether second-order gamma risk should be calculated.</td></tr><tr><td><code>curvature</code></td><td>BOOL</td><td>Whether curvature risk should be calculated.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>curvatureShift</code></td><td>DOUBLE</td><td>Shift size used for curvature risk calculations.</td></tr><tr><td><code>method</code></td><td>INT</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>Risk bucket or shift granularity.</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>Scaling factor applied to risk shifts.</td></tr><tr><td><code>threading</code></td><td>INT</td><td>Threading mode selector used by risk calculations.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcreditcurverisksettings create and cache credit-curve risk settings. delta bool, gamma bool, shift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcreditcurverisksettings"></a>
+      <h3><code>CreateCreditCurveRiskSettings</code></h3>
+      <p class="api-description">Create and cache credit-curve risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateCreditCurveRiskSettings(delta BOOL, gamma BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>Whether first-order delta risk should be calculated.</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>Whether second-order gamma risk should be calculated.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>method</code></td><td>INT</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>Risk bucket or shift granularity.</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>Scaling factor applied to risk shifts.</td></tr><tr><td><code>threading</code></td><td>INT</td><td>Threading mode selector used by risk calculations.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Interest-rate analytics</h2>
+
+<article class="api-card" data-search="calcirvanillaswaprate calculate a vanilla swap rate. calculationdate date, swaptemplatehandle string, tenor string, discountcurvehandle string, forwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcirvanillaswaprate"></a>
+      <h3><code>CalcIrVanillaSwapRate</code></h3>
+      <p class="api-description">Calculate a vanilla swap rate.</p>
+      <p class="full-signature"><code>caplib::CalcIrVanillaSwapRate(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, discountCurveHandle STRING, forwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date on which the calculation is evaluated.</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the swap template.</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>Tenor string, such as 3M, 6M, 1Y, or 5Y.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the forward curve.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calciborindexrate calculate ibor fixings from an index definition and yield curve. fixingdates date[], iborindexhandle string, iryieldcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calciborindexrate"></a>
+      <h3><code>CalcIborIndexRate</code></h3>
+      <p class="api-description">Calculate IBOR fixings from an index definition and yield curve.</p>
+      <p class="full-signature"><code>caplib::CalcIborIndexRate(fixingDates DATE[], iborIndexHandle STRING, irYieldCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>Observation or fixing dates aligned with fixing values.</td></tr><tr><td><code>iborIndexHandle</code></td><td>STRING</td><td>ObjectCache handle for the IBOR index.</td></tr><tr><td><code>irYieldCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the IR yield curve.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calctenorbasisswapspread calculate a tenor-basis swap spread. calculationdate date, swaptemplatehandle string, tenor string, discountcurvehandle string, shortforwardcurvehandle string, longforwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calctenorbasisswapspread"></a>
+      <h3><code>CalcTenorBasisSwapSpread</code></h3>
+      <p class="api-description">Calculate a tenor-basis swap spread.</p>
+      <p class="full-signature"><code>caplib::CalcTenorBasisSwapSpread(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, discountCurveHandle STRING, shortForwardCurveHandle STRING, longForwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date on which the calculation is evaluated.</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the swap template.</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>Tenor string, such as 3M, 6M, 1Y, or 5Y.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>shortForwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the short-tenor forward curve.</td></tr><tr><td><code>longForwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the long-tenor forward curve.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calccrosscurrencyswaprate calculate a cross-currency swap rate. calculationdate date, swaptemplatehandle string, tenor string, fxrate double, baseccy string, targetccy string, refdate date, spotdate date, targetdiscountcurvehandle string, basediscountcurvehandle string, baseforwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calccrosscurrencyswaprate"></a>
+      <h3><code>CalcCrossCurrencySwapRate</code></h3>
+      <p class="api-description">Calculate a cross-currency swap rate.</p>
+      <p class="full-signature"><code>caplib::CalcCrossCurrencySwapRate(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, targetDiscountCurveHandle STRING, baseDiscountCurveHandle STRING, baseForwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date on which the calculation is evaluated.</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the swap template.</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>Tenor string, such as 3M, 6M, 1Y, or 5Y.</td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>Numeric input for fx rate.</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>Base currency in the FX or cross-currency calculation.</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>Target currency in the FX or cross-currency calculation.</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>Reference date of the FX spot-rate object.</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>Spot settlement date.</td></tr><tr><td><code>targetDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the target-currency discount curve.</td></tr><tr><td><code>baseDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the base-currency discount curve.</td></tr><tr><td><code>baseForwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the base-currency forward curve.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calccrosscurrencybasisswapspread calculate a cross-currency basis spread. calculationdate date, swaptemplatehandle string, tenor string, fxrate double, baseccy string, targetccy string, refdate date, spotdate date, targetdiscountcurvehandle string, targetforwardcurvehandle string, basediscountcurvehandle string, baseforwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calccrosscurrencybasisswapspread"></a>
+      <h3><code>CalcCrossCurrencyBasisSwapSpread</code></h3>
+      <p class="api-description">Calculate a cross-currency basis spread.</p>
+      <p class="full-signature"><code>caplib::CalcCrossCurrencyBasisSwapSpread(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, targetDiscountCurveHandle STRING, targetForwardCurveHandle STRING, baseDiscountCurveHandle STRING, baseForwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date on which the calculation is evaluated.</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the swap template.</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>Tenor string, such as 3M, 6M, 1Y, or 5Y.</td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>Numeric input for fx rate.</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>Base currency in the FX or cross-currency calculation.</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>Target currency in the FX or cross-currency calculation.</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>Reference date of the FX spot-rate object.</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>Spot settlement date.</td></tr><tr><td><code>targetDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the target-currency discount curve.</td></tr><tr><td><code>targetForwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the target-currency forward curve.</td></tr><tr><td><code>baseDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the base-currency discount curve.</td></tr><tr><td><code>baseForwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the base-currency forward curve.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirparratecurve create and cache an ir par-rate curve input object. asofdate date, currency string, curvename string, instnames string[], insttypes string[], instterms string[], factors double[], quotes double[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirparratecurve"></a>
+      <h3><code>CreateIrParRateCurve</code></h3>
+      <p class="api-description">Create and cache an IR par-rate curve input object.</p>
+      <p class="full-signature"><code>caplib::CreateIrParRateCurve(asOfDate DATE, currency STRING, curveName STRING, instNames STRING[], instTypes STRING[], instTerms STRING[], factors DOUBLE[], quotes DOUBLE[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>instNames</code></td><td>STRING[]</td><td>Instrument names aligned with instrument types, terms, and quotes.</td></tr><tr><td><code>instTypes</code></td><td>STRING[]</td><td>Instrument type labels aligned with instrument names.</td></tr><tr><td><code>instTerms</code></td><td>STRING[]</td><td>Instrument tenors or terms aligned with instrument names.</td></tr><tr><td><code>factors</code></td><td>DOUBLE[]</td><td>Scaling factors aligned with instruments or quotes.</td></tr><tr><td><code>quotes</code></td><td>DOUBLE[]</td><td>Market quote values aligned with instruments, terms, strikes, or deltas.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createiryieldcurvebuildsettings create and cache ir yield-curve build settings. curvename string, useontnfxswap bool, discountcurrencynames string[], discountcurvenames string[], forwardindexnames string[], forwardcurvenames string[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createiryieldcurvebuildsettings"></a>
+      <h3><code>CreateIrYieldCurveBuildSettings</code></h3>
+      <p class="api-description">Create and cache IR yield-curve build settings.</p>
+      <p class="full-signature"><code>caplib::CreateIrYieldCurveBuildSettings(curveName STRING, useOnTnFxSwap BOOL, discountCurrencyNames STRING[], discountCurveNames STRING[], forwardIndexNames STRING[], forwardCurveNames STRING[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>useOnTnFxSwap</code></td><td>BOOL</td><td>Whether ON/TN FX swap instruments are used in curve construction.</td></tr><tr><td><code>discountCurrencyNames</code></td><td>STRING[]</td><td>Currency names associated with discount curves.</td></tr><tr><td><code>discountCurveNames</code></td><td>STRING[]</td><td>Names of discount curves used by the build settings.</td></tr><tr><td><code>forwardIndexNames</code></td><td>STRING[]</td><td>Forward index names associated with forward curves.</td></tr><tr><td><code>forwardCurveNames</code></td><td>STRING[]</td><td>Names of forward curves used by the build settings.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildirsinglecurrencycurve build a single-currency ir curve set. referencedate date, targetcurvenames string[], buildsettingshandles string[], parcurvehandles string[], daycountconvention string, compoundingtype string, frequency string, othercurvehandles string[], buildingmethod string, calcjacobian bool, shift double, finitedifferencemethod string, threadingmode string, targetcurvehandles string[], outputhandle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildirsinglecurrencycurve"></a>
+      <h3><code>BuildIrSingleCurrencyCurve</code></h3>
+      <p class="api-description">Build a single-currency IR curve set.</p>
+      <p class="full-signature"><code>caplib::BuildIrSingleCurrencyCurve(referenceDate DATE, targetCurveNames STRING[], buildSettingsHandles STRING[], parCurveHandles STRING[], dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING[], buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING[], outputHandle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>targetCurveNames</code></td><td>STRING[]</td><td>Names of target curves to build.</td></tr><tr><td><code>buildSettingsHandles</code></td><td>STRING[]</td><td>ObjectCache handles for build settings objects.</td></tr><tr><td><code>parCurveHandles</code></td><td>STRING[]</td><td>ObjectCache handles for par curves aligned with target curves.</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>Day-count convention applied to every target curve, matching the Python API.</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>Compounding convention applied to every target curve, matching the Python API.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment or compounding frequency applied to every target curve, matching the Python API.</td></tr><tr><td><code>otherCurveHandles</code></td><td>STRING[]</td><td>Additional curve handles required by the curve build.</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>Curve or surface building algorithm name.</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>Whether to calculate and return calibration Jacobian information.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>finiteDifferenceMethod</code></td><td>STRING</td><td>Finite-difference method used for calibration shifts or risk calculations.</td></tr><tr><td><code>threadingMode</code></td><td>STRING</td><td>Threading mode used by curve or surface building.</td></tr><tr><td><code>targetCurveHandles</code></td><td>STRING[]</td><td>Output handles for target curves produced by the build.</td></tr><tr><td><code>outputHandle</code></td><td>STRING</td><td>ObjectCache key assigned to the build output object.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildircrosscurrencycurve build a cross-currency ir curve set. referencedate date, targetcurvenames string[], buildsettingshandles string[], parcurvehandles string[], daycountconvention string, compoundingtype string, frequency string, othercurvehandles string[], fxspothandle string, buildingmethod string, calcjacobian bool, shift double, finitedifferencemethod string, threadingmode string, targetcurvehandles string[], outputhandle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildircrosscurrencycurve"></a>
+      <h3><code>BuildIrCrossCurrencyCurve</code></h3>
+      <p class="api-description">Build a cross-currency IR curve set.</p>
+      <p class="full-signature"><code>caplib::BuildIrCrossCurrencyCurve(referenceDate DATE, targetCurveNames STRING[], buildSettingsHandles STRING[], parCurveHandles STRING[], dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING[], fxSpotHandle STRING, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING[], outputHandle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>targetCurveNames</code></td><td>STRING[]</td><td>Names of target curves to build.</td></tr><tr><td><code>buildSettingsHandles</code></td><td>STRING[]</td><td>ObjectCache handles for build settings objects.</td></tr><tr><td><code>parCurveHandles</code></td><td>STRING[]</td><td>ObjectCache handles for par curves aligned with target curves.</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>Day-count convention applied to every target curve, matching the Python API.</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>Compounding convention applied to every target curve, matching the Python API.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment or compounding frequency applied to every target curve, matching the Python API.</td></tr><tr><td><code>otherCurveHandles</code></td><td>STRING[]</td><td>Additional curve handles required by the curve build.</td></tr><tr><td><code>fxSpotHandle</code></td><td>STRING</td><td>ObjectCache handle for the fx spot object.</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>Curve or surface building algorithm name.</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>Whether to calculate and return calibration Jacobian information.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>finiteDifferenceMethod</code></td><td>STRING</td><td>Finite-difference method used for calibration shifts or risk calculations.</td></tr><tr><td><code>threadingMode</code></td><td>STRING</td><td>Threading mode used by curve or surface building.</td></tr><tr><td><code>targetCurveHandles</code></td><td>STRING[]</td><td>Output handles for target curves produced by the build.</td></tr><tr><td><code>outputHandle</code></td><td>STRING</td><td>ObjectCache key assigned to the build output object.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createircapfloorquotematrix create and cache an ir cap-floor quote matrix. asofdate date, terms string[], strikes double vector, vols double matrix, instname string, factor double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createircapfloorquotematrix"></a>
+      <h3><code>CreateIrCapFloorQuoteMatrix</code></h3>
+      <p class="api-description">Create and cache an IR cap-floor quote matrix.</p>
+      <p class="full-signature"><code>caplib::CreateIrCapFloorQuoteMatrix(asOfDate DATE, terms STRING[], strikes DOUBLE vector, vols DOUBLE matrix, instName STRING, factor DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>Relative quote terms aligned with quote rows.</td></tr><tr><td><code>strikes</code></td><td>DOUBLE vector</td><td>Strike levels aligned with option quotes or volatility rows.</td></tr><tr><td><code>vols</code></td><td>DOUBLE matrix</td><td>Volatility quote matrix aligned with terms and strikes.</td></tr><tr><td><code>instName</code></td><td>STRING</td><td>Instrument business name.</td></tr><tr><td><code>factor</code></td><td>DOUBLE</td><td>Scaling factor applied to quotes or instruments.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildircapfloorvolatilitysurface build and cache an ir cap-floor volatility surface. iborindex string, referencedate date, quotematrixhandle string, discountcurvehandle string, forwardcurvehandle string, definitionhandle string, displacement double, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildircapfloorvolatilitysurface"></a>
+      <h3><code>BuildIrCapFloorVolatilitySurface</code></h3>
+      <p class="api-description">Build and cache an IR cap-floor volatility surface.</p>
+      <p class="full-signature"><code>caplib::BuildIrCapFloorVolatilitySurface(iborIndex STRING, referenceDate DATE, quoteMatrixHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, definitionHandle STRING, displacement DOUBLE, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>iborIndex</code></td><td>STRING</td><td>IBOR index name or handle used by the cap/floor surface.</td></tr><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>ObjectCache handle for the option quote matrix.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the forward curve.</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>ObjectCache handle for the definition object.</td></tr><tr><td><code>displacement</code></td><td>DOUBLE</td><td>Displacement parameter used by shifted-lognormal volatility models.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirswaptionquotecube create and cache an ir swaption quote cube from serialized request bytes. inputbytes string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirswaptionquotecube"></a>
+      <h3><code>CreateIrSwaptionQuoteCube</code></h3>
+      <p class="api-description">Create and cache an IR swaption quote cube from serialized request bytes.</p>
+      <p class="full-signature"><code>caplib::CreateIrSwaptionQuoteCube(inputBytes STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>inputBytes</code></td><td>STRING</td><td>Serialized CreateIrSwaptionQuoteCubeInput protobuf request bytes.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created quote cube and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildirswaptionvolatilitysurface build and cache an ir swaption volatility surface. instname string, referencedate date, quotecubehandle string, discountcurvehandle string, forwardcurvehandle string, definitionhandle string, buildsettingshandle string, underlyingswaptemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildirswaptionvolatilitysurface"></a>
+      <h3><code>BuildIrSwaptionVolatilitySurface</code></h3>
+      <p class="api-description">Build and cache an IR swaption volatility surface.</p>
+      <p class="full-signature"><code>caplib::BuildIrSwaptionVolatilitySurface(instName STRING, referenceDate DATE, quoteCubeHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, underlyingSwapTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>Instrument business name.</td></tr><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>quoteCubeHandle</code></td><td>STRING</td><td>ObjectCache handle for the swaption quote cube.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the forward curve.</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>ObjectCache handle for the definition object.</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for the build settings object.</td></tr><tr><td><code>underlyingSwapTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the underlying swap template.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirmktdataset create and cache an ir market-data set. asofdate date, discountcurvehandle string, underlyinginterestrates string[], forwardcurvehandles string[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirmktdataset"></a>
+      <h3><code>CreateIrMktDataSet</code></h3>
+      <p class="api-description">Create and cache an IR market-data set.</p>
+      <p class="full-signature"><code>caplib::CreateIrMktDataSet(asOfDate DATE, discountCurveHandle STRING, underlyingInterestRates STRING[], forwardCurveHandles STRING[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>underlyingInterestRates</code></td><td>STRING[]</td><td>Underlying IR index names aligned with forward curve handles.</td></tr><tr><td><code>forwardCurveHandles</code></td><td>STRING[]</td><td>ObjectCache handles for forward curves aligned with underlying rates or indexes.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createircrossccymktdataset create and cache a cross-currency ir market-data set. asofdate date, basediscountcurvehandle string, underlyinginterestrates string[], forwardcurvehandles string[], crossccydiscountcurvehandle string, fxspothandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createircrossccymktdataset"></a>
+      <h3><code>CreateIrCrossCcyMktDataSet</code></h3>
+      <p class="api-description">Create and cache a cross-currency IR market-data set.</p>
+      <p class="full-signature"><code>caplib::CreateIrCrossCcyMktDataSet(asOfDate DATE, baseDiscountCurveHandle STRING, underlyingInterestRates STRING[], forwardCurveHandles STRING[], crossCcyDiscountCurveHandle STRING, fxSpotHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>baseDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the base-currency discount curve.</td></tr><tr><td><code>underlyingInterestRates</code></td><td>STRING[]</td><td>Underlying IR index names aligned with forward curve handles.</td></tr><tr><td><code>forwardCurveHandles</code></td><td>STRING[]</td><td>ObjectCache handles for forward curves aligned with underlying rates or indexes.</td></tr><tr><td><code>crossCcyDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the cross-currency discount curve.</td></tr><tr><td><code>fxSpotHandle</code></td><td>STRING</td><td>ObjectCache handle for the fx spot object.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirrisksettings create and cache ir risk settings. ircurverisksettingshandle string, thetarisksettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirrisksettings"></a>
+      <h3><code>CreateIrRiskSettings</code></h3>
+      <p class="api-description">Create and cache IR risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateIrRiskSettings(irCurveRiskSettingsHandle STRING, thetaRiskSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>irCurveRiskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for IR-curve risk settings.</td></tr><tr><td><code>thetaRiskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for theta risk settings.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createxccyirrisksettings create and cache cross-currency ir risk settings. ircurverisksettingshandle string, fxrisksettingshandle string, thetarisksettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createxccyirrisksettings"></a>
+      <h3><code>CreateXccyIrRiskSettings</code></h3>
+      <p class="api-description">Create and cache cross-currency IR risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateXccyIrRiskSettings(irCurveRiskSettingsHandle STRING, fxRiskSettingsHandle STRING, thetaRiskSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>irCurveRiskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for IR-curve risk settings.</td></tr><tr><td><code>fxRiskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for the fx risk settings object.</td></tr><tr><td><code>thetaRiskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for theta risk settings.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceirvanillainstrument price an ir vanilla instrument. irpricing7(irvanillainstrument, irmktdataset, irrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceirvanillainstrument"></a>
+      <h3><code>PriceIrVanillaInstrument</code></h3>
+      <p class="api-description">Price an IR vanilla instrument.</p>
+      <p class="full-signature"><code>caplib::PriceIrVanillaInstrument(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceircrosscurrencyswap price an ir cross-currency swap. irpricing7(irvanillainstrument, ircrossccymktdataset, xccyirrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceircrosscurrencyswap"></a>
+      <h3><code>PriceIrCrossCurrencySwap</code></h3>
+      <p class="api-description">Price an IR cross-currency swap.</p>
+      <p class="full-signature"><code>caplib::PriceIrCrossCurrencySwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceirmtmcrosscurrencyswap price an ir mark-to-market cross-currency swap. irpricing7(irvanillainstrument, ircrossccymktdataset, xccyirrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceirmtmcrosscurrencyswap"></a>
+      <h3><code>PriceIrMtmCrossCurrencySwap</code></h3>
+      <p class="api-description">Price an IR mark-to-market cross-currency swap.</p>
+      <p class="full-signature"><code>caplib::PriceIrMtmCrossCurrencySwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceircapfloor price an ir cap or floor. irpricing7(ircapfloor, irmktdataset, irrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceircapfloor"></a>
+      <h3><code>PriceIrCapFloor</code></h3>
+      <p class="api-description">Price an IR cap or floor.</p>
+      <p class="full-signature"><code>caplib::PriceIrCapFloor(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceireuropeanswaption price an ir european swaption. irpricing7(ireuropeanswaption, irmktdataset, irrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceireuropeanswaption"></a>
+      <h3><code>PriceIrEuropeanSwaption</code></h3>
+      <p class="api-description">Price an IR European swaption.</p>
+      <p class="full-signature"><code>caplib::PriceIrEuropeanSwaption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Fixed-income analytics</h2>
+
+<article class="api-card" data-search="createbondparcurve create and cache a bond par-curve input object from instrument names and quotes. referencedate date, currency string, instrumentnames string[], quotes double[], quotetype string, curvename string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondparcurve"></a>
+      <h3><code>CreateBondParCurve</code></h3>
+      <p class="api-description">Create and cache a bond par-curve input object from instrument names and quotes.</p>
+      <p class="full-signature"><code>caplib::CreateBondParCurve(referenceDate DATE, currency STRING, instrumentNames STRING[], quotes DOUBLE[], quoteType STRING, curveName STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>instrumentNames</code></td><td>STRING[]</td><td>Instrument names aligned with quote values.</td></tr><tr><td><code>quotes</code></td><td>DOUBLE[]</td><td>Market quote values aligned with instruments, terms, strikes, or deltas.</td></tr><tr><td><code>quoteType</code></td><td>STRING</td><td>Market quote type used by the par curve.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildbondyieldcurve build and cache a bond yield curve from cached build settings and par curve objects. referencedate date, buildsettingshandle string, curvename string, parcurvehandle string, daycount string, compoundingtype string, frequency string, buildingmethod string, calcjacobian bool, forwardcurvehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildbondyieldcurve"></a>
+      <h3><code>BuildBondYieldCurve</code></h3>
+      <p class="api-description">Build and cache a bond yield curve from cached build settings and par curve objects.</p>
+      <p class="full-signature"><code>caplib::BuildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCount STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian BOOL, forwardCurveHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the curve build request.</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for a BondYieldCurveBuildSettings object.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the target yield curve.</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for a BondParCurve object.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention for the built curve.</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>Compounding convention for the built curve.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Compounding or coupon frequency for the built curve.</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>Curve building algorithm, such as BOOTSTRAPPING_METHOD.</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>Whether to calculate calibration Jacobian information.</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for an IR forward curve; pass an empty string when not used.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the built yield curve and returned with JSON.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildbondcreditspreadcurve build and cache a bond credit-spread curve from cached par and discount curve objects. referencedate date, curvename string, parcurvehandle string, discountcurvehandle string, forwardcurvehandle string, buildingmethod string, calcjacobian bool, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildbondcreditspreadcurve"></a>
+      <h3><code>BuildBondCreditSpreadCurve</code></h3>
+      <p class="api-description">Build and cache a bond credit-spread curve from cached par and discount curve objects.</p>
+      <p class="full-signature"><code>caplib::BuildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian BOOL, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the curve build request.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the credit spread curve.</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for a BondParCurve object.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount IrYieldCurve.</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for an IR forward curve; pass an empty string when not used.</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>Curve building algorithm, such as BOOTSTRAPPING_METHOD.</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>Whether to calculate calibration Jacobian information.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the built credit spread curve and returned with JSON.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcconversionfactor calculate a bond future conversion factor. bondcouponrate double, bondcpnfreq string, nominalcpnrate double, bondmaturity date, settlementdate date, lastcpndate date scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcconversionfactor"></a>
+      <h3><code>CalcConversionFactor</code></h3>
+      <p class="api-description">Calculate a bond future conversion factor.</p>
+      <p class="full-signature"><code>caplib::CalcConversionFactor(bondCouponRate DOUBLE, bondCpnFreq STRING, nominalCpnRate DOUBLE, bondMaturity DATE, settlementDate DATE, lastCpnDate DATE)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>bondCouponRate</code></td><td>DOUBLE</td><td>Coupon rate of the bond instrument.</td></tr><tr><td><code>bondCpnFreq</code></td><td>STRING</td><td>Coupon frequency of the bond instrument.</td></tr><tr><td><code>nominalCpnRate</code></td><td>DOUBLE</td><td>Nominal coupon rate used by the bond-future conversion-factor calculation.</td></tr><tr><td><code>bondMaturity</code></td><td>DATE</td><td>Bond maturity date.</td></tr><tr><td><code>settlementDate</code></td><td>DATE</td><td>Settlement date of the instrument or calculation.</td></tr><tr><td><code>lastCpnDate</code></td><td>DATE</td><td>Last coupon date before the settlement or calculation date.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcimpliedreporate calculate implied repo rate. futprice double, conversionfactor double, bondcleanprice double, bondcpnrate double, asofdate date, lastcpndate date, settlementdate date, daycount string, nextcpndate date, cpnfreq string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcimpliedreporate"></a>
+      <h3><code>CalcImpliedRepoRate</code></h3>
+      <p class="api-description">Calculate implied repo rate.</p>
+      <p class="full-signature"><code>caplib::CalcImpliedRepoRate(futPrice DOUBLE, conversionFactor DOUBLE, bondCleanPrice DOUBLE, bondCpnRate DOUBLE, asOfDate DATE, lastCpnDate DATE, settlementDate DATE, dayCount STRING, nextCpnDate DATE, cpnFreq STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>futPrice</code></td><td>DOUBLE</td><td>Futures price used in the implied repo calculation.</td></tr><tr><td><code>conversionFactor</code></td><td>DOUBLE</td><td>Numeric input for conversion factor.</td></tr><tr><td><code>bondCleanPrice</code></td><td>DOUBLE</td><td>Clean bond price used by the repo or yield calculation.</td></tr><tr><td><code>bondCpnRate</code></td><td>DOUBLE</td><td>Numeric input for bond cpn rate.</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>lastCpnDate</code></td><td>DATE</td><td>Last coupon date before the settlement or calculation date.</td></tr><tr><td><code>settlementDate</code></td><td>DATE</td><td>Settlement date of the instrument or calculation.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>nextCpnDate</code></td><td>DATE</td><td>Next coupon date after the settlement or calculation date.</td></tr><tr><td><code>cpnFreq</code></td><td>STRING</td><td>Coupon frequency used by the bond calculation.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calczspread calculate z-spread for a bond. npv double, calculationdate date, bondbytes string, discountcurvebytes string, spreadcurvebytes string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calczspread"></a>
+      <h3><code>CalcZSpread</code></h3>
+      <p class="api-description">Calculate Z-spread for a bond.</p>
+      <p class="full-signature"><code>caplib::CalcZSpread(npv DOUBLE, calculationDate DATE, bondBytes STRING, discountCurveBytes STRING, spreadCurveBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>npv</code></td><td>DOUBLE</td><td>Numeric input for npv.</td></tr><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date on which the calculation is evaluated.</td></tr><tr><td><code>bondBytes</code></td><td>STRING</td><td>Serialized bond instrument protobuf bytes.</td></tr><tr><td><code>discountCurveBytes</code></td><td>STRING</td><td>Serialized discount-curve protobuf bytes.</td></tr><tr><td><code>spreadCurveBytes</code></td><td>STRING</td><td>Serialized spread-curve protobuf bytes.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcyieldtomaturity calculate bond yield to maturity from cached bond and optional forward curve objects. calculationdate date, compoundingtype string, bondhandle string, forwardcurvehandle string, price double, pricetype string, frequency string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcyieldtomaturity"></a>
+      <h3><code>CalcYieldToMaturity</code></h3>
+      <p class="api-description">Calculate bond yield to maturity from cached bond and optional forward curve objects.</p>
+      <p class="full-signature"><code>caplib::CalcYieldToMaturity(calculationDate DATE, compoundingType STRING, bondHandle STRING, forwardCurveHandle STRING, price DOUBLE, priceType STRING, frequency STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date on which the calculation is evaluated.</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>Type label or enum value for compounding.</td></tr><tr><td><code>bondHandle</code></td><td>STRING</td><td>ObjectCache handle for a VanillaBond object.</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for an IR forward curve; pass an empty string when not used.</td></tr><tr><td><code>price</code></td><td>DOUBLE</td><td>Price input used by the calculation.</td></tr><tr><td><code>priceType</code></td><td>STRING</td><td>Type label or enum value for price.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment, coupon, or reset frequency.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcfixedcpnbondparrate calculate fixed-coupon bond par rate from cached bond and curve objects. calculationdate date, bondhandle string, discountcurvehandle string, spreadcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcfixedcpnbondparrate"></a>
+      <h3><code>CalcFixedCpnBondParRate</code></h3>
+      <p class="api-description">Calculate fixed-coupon bond par rate from cached bond and curve objects.</p>
+      <p class="full-signature"><code>caplib::CalcFixedCpnBondParRate(calculationDate DATE, bondHandle STRING, discountCurveHandle STRING, spreadCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date on which the calculation is evaluated.</td></tr><tr><td><code>bondHandle</code></td><td>STRING</td><td>ObjectCache handle for a VanillaBond object.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount IrYieldCurve.</td></tr><tr><td><code>spreadCurveHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for the credit spread curve; pass an empty string when not used.</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricevanillabond price a vanilla bond through the native fi handle workflow. fipricing7(vanillabond, fimktdataset, firisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricevanillabond"></a>
+      <h3><code>PriceVanillaBond</code></h3>
+      <p class="api-description">Price a vanilla bond through the native FI handle workflow.</p>
+      <p class="full-signature"><code>caplib::PriceVanillaBond(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</section>
+<section class="api-group"><h2>Credit analytics</h2>
+
+<article class="api-card" data-search="createcreditparcurve create and cache a credit par-curve input object. asofdate date, currency string, curvename string, instrumentnames string[], instrumenttypes string[], maturities string[], quotes double[], startconventions string[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcreditparcurve"></a>
+      <h3><code>CreateCreditParCurve</code></h3>
+      <p class="api-description">Create and cache a credit par-curve input object.</p>
+      <p class="full-signature"><code>caplib::CreateCreditParCurve(asOfDate DATE, currency STRING, curveName STRING, instrumentNames STRING[], instrumentTypes STRING[], maturities STRING[], quotes DOUBLE[], startConventions STRING[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>instrumentNames</code></td><td>STRING[]</td><td>Instrument names aligned with quote values.</td></tr><tr><td><code>instrumentTypes</code></td><td>STRING[]</td><td>Instrument type labels aligned with maturities and quotes.</td></tr><tr><td><code>maturities</code></td><td>STRING[]</td><td>Maturities aligned with credit instruments and quotes.</td></tr><tr><td><code>quotes</code></td><td>DOUBLE[]</td><td>Market quote values aligned with instruments, terms, strikes, or deltas.</td></tr><tr><td><code>startConventions</code></td><td>STRING[]</td><td>Start-date conventions aligned with credit instruments.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildcreditcurve build and cache a credit curve. asofdate date, parcurvehandle string, discountcurvehandle string, curvename string, method string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildcreditcurve"></a>
+      <h3><code>BuildCreditCurve</code></h3>
+      <p class="api-description">Build and cache a credit curve.</p>
+      <p class="full-signature"><code>caplib::BuildCreditCurve(asOfDate DATE, parCurveHandle STRING, discountCurveHandle STRING, curveName STRING, method STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the par-curve input object.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>method</code></td><td>STRING</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecreditdefaultswap price a credit default swap. creditpricing7(creditdefaultswap, crmktdataset, crrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecreditdefaultswap"></a>
+      <h3><code>PriceCreditDefaultSwap</code></h3>
+      <p class="api-description">Price a credit default swap.</p>
+      <p class="full-signature"><code>caplib::PriceCreditDefaultSwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Interest-rate market factories</h2>
+
+<article class="api-card" data-search="createinterestcalcscheduledefinition create a schedule definition for interest calculation. calendars string, frequency string, interestdayconvention string, stubpolicy string, brokenperiodtype string, daterollconvention string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createinterestcalcscheduledefinition"></a>
+      <h3><code>CreateInterestCalcScheduleDefinition</code></h3>
+      <p class="api-description">Create a schedule definition for interest calculation.</p>
+      <p class="full-signature"><code>caplib::CreateInterestCalcScheduleDefinition(calendars STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, dateRollConvention STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calendars</code></td><td>STRING</td><td>Business calendar names used for date generation or adjustment.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment, coupon, or reset frequency.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>Business-day convention used for interest schedule dates.</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>Stub-period policy used by schedule generation.</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>Broken-period handling convention for irregular schedule periods.</td></tr><tr><td><code>dateRollConvention</code></td><td>STRING</td><td>String input for date roll convention.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createinterestpaymentscheduledefinition create a schedule definition for interest payment timing. calendars string, frequency string, paydaymode string, paydayoffset int, paydayconvention string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createinterestpaymentscheduledefinition"></a>
+      <h3><code>CreateInterestPaymentScheduleDefinition</code></h3>
+      <p class="api-description">Create a schedule definition for interest payment timing.</p>
+      <p class="full-signature"><code>caplib::CreateInterestPaymentScheduleDefinition(calendars STRING, frequency STRING, payDayMode STRING, payDayOffset INT, payDayConvention STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calendars</code></td><td>STRING</td><td>Business calendar names used for date generation or adjustment.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment, coupon, or reset frequency.</td></tr><tr><td><code>payDayMode</code></td><td>STRING</td><td>Rule used to locate payment dates relative to schedule dates.</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>Business-day offset used for payment dates.</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>Business-day convention used for payment dates.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createinterestratefixingscheduledefinition create a schedule definition for floating-rate fixings. calendars string, frequency string, frequencyratio int, fixingdaymode string, fixingdayoffset int, fixingdayconvention string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createinterestratefixingscheduledefinition"></a>
+      <h3><code>CreateInterestRateFixingScheduleDefinition</code></h3>
+      <p class="api-description">Create a schedule definition for floating-rate fixings.</p>
+      <p class="full-signature"><code>caplib::CreateInterestRateFixingScheduleDefinition(calendars STRING, frequency STRING, frequencyRatio INT, fixingDayMode STRING, fixingDayOffset INT, fixingDayConvention STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calendars</code></td><td>STRING</td><td>Business calendar names used for date generation or adjustment.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment, coupon, or reset frequency.</td></tr><tr><td><code>frequencyRatio</code></td><td>INT</td><td>Ratio used when deriving fixing frequency from payment frequency.</td></tr><tr><td><code>fixingDayMode</code></td><td>STRING</td><td>Rule used to locate fixing dates relative to schedule dates.</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>Business-day offset used to locate fixing dates.</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>Business-day convention used for fixing dates.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createiborindex create cache and register an ibor index as sdt_ibor_index static data indexname string indextenor string indexccy string calendarlist string or string[] startdelay int daycount string interestdayconvention string daterollconvention string ibortype string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createiborindex"></a>
+      <h3><code>CreateIborIndex</code></h3>
+      <p class="api-description">Create, cache, and register an IBOR index as <code>SDT_IBOR_INDEX</code> static data.</p>
+      <p class="full-signature"><code>caplib::CreateIborIndex(indexName STRING, indexTenor STRING, indexCcy STRING, calendarList STRING or STRING[], startDelay INT[, dayCount STRING[, interestDayConvention STRING[, dateRollConvention STRING[, iborType STRING]]]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>indexName</code></td><td>STRING</td><td>IBOR index name. The cached handle and static-data name are normalized to uppercase.</td></tr><tr><td><code>indexTenor</code></td><td>STRING</td><td>Index tenor, such as <code>3M</code>.</td></tr><tr><td><code>indexCcy</code></td><td>STRING</td><td>Index currency.</td></tr><tr><td><code>calendarList</code></td><td>STRING or STRING[]</td><td>Business calendars used for index date adjustment.</td></tr><tr><td><code>startDelay</code></td><td>INT</td><td>Start delay in business days.</td></tr><tr><td><code>dayCount</code></td><td>STRING, optional</td><td>Accrual day-count convention. Defaults to <code>ACT_360</code>.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING, optional</td><td>Business-day convention. Defaults to <code>MODIFIED_FOLLOWING</code>.</td></tr><tr><td><code>dateRollConvention</code></td><td>STRING, optional</td><td>Date-roll convention. Defaults to <code>INVALID_DATE_ROLL_CONVENTION</code>.</td></tr><tr><td><code>iborType</code></td><td>STRING, optional</td><td>IBOR index type. Defaults to <code>STANDARD_IBOR_INDEX</code>.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirlegdefinition create and cache an ir leg definition python style inline schedule arguments handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirlegdefinition"></a>
+      <h3><code>CreateIrLegDefinition</code></h3>
+      <p class="api-description">Create and cache an IR leg definition using Python-style inline schedule arguments.</p>
+      <p class="full-signature"><code>caplib::CreateIrLegDefinition(legType STRING, currency STRING, dayCount STRING, refIndex STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, notionalExchange STRING, spread BOOL, fxConvert BOOL, fxReset BOOL, calendar STRING or STRING[], freq STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingCalendars STRING or STRING[], fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>legType</code></td><td>STRING</td><td>IR leg type, such as fixed or floating.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>Reference index name or handle for the floating leg.</td></tr><tr><td><code>payDiscountMethod</code></td><td>STRING</td><td>Discounting method used by the payment leg.</td></tr><tr><td><code>interestCalcMethod</code></td><td>STRING</td><td>Interest calculation method for the IR leg.</td></tr><tr><td><code>interestRateCalcMethod</code></td><td>STRING</td><td>Interest-rate calculation method for the IR leg.</td></tr><tr><td><code>brokenRateCalcMethod</code></td><td>STRING</td><td>Rate-calculation method for broken periods.</td></tr><tr><td><code>notionalExchange</code></td><td>STRING</td><td>Notional-exchange convention for the IR leg.</td></tr><tr><td><code>isSpread</code></td><td>BOOL</td><td>Whether the leg rate is represented as a spread.</td></tr><tr><td><code>isFxConvert</code></td><td>BOOL</td><td>Whether FX conversion applies to the IR leg.</td></tr><tr><td><code>isFxReset</code></td><td>BOOL</td><td>Whether FX reset applies to the IR leg.</td></tr><tr><td><code>calcSched</code></td><td>STRING</td><td>Boolean flag controlling calc sched.</td></tr><tr><td><code>paySched</code></td><td>STRING</td><td>String input for pay sched.</td></tr><tr><td><code>fixingSched</code></td><td>STRING</td><td>ObjectCache handle for the fixing schedule definition.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfixedlegdefinition fixed ir leg definition create_fixed_leg_definition handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfixedlegdefinition"></a>
+      <h3><code>CreateFixedLegDefinition</code></h3>
+      <p class="api-description">Create and cache a fixed IR leg definition following Python <code>create_fixed_leg_definition</code>.</p>
+      <p class="full-signature"><code>caplib::CreateFixedLegDefinition(currency STRING, calendar STRING or STRING[], freq STRING, dayCount STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, notionalExchange STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>currency</code></td><td>STRING</td><td>Leg currency.</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>Business calendars used by calculation and payment schedules.</td></tr><tr><td><code>freq</code></td><td>STRING</td><td>Coupon/payment frequency.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Accrual day-count convention.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>Business-day convention for interest schedule dates.</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>Stub-period policy.</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>Broken-period handling convention.</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>Payment-date offset in business days.</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>Payment-date business-day convention.</td></tr><tr><td><code>notionalExchange</code></td><td>STRING</td><td>Notional-exchange convention.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache handle for the leg definition.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfloatinglegdefinition floating ir leg definition create_floating_leg_definition handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfloatinglegdefinition"></a>
+      <h3><code>CreateFloatingLegDefinition</code></h3>
+      <p class="api-description">Create and cache a floating IR leg definition following Python <code>create_floating_leg_definition</code>.</p>
+      <p class="full-signature"><code>caplib::CreateFloatingLegDefinition(currency STRING, refIndex STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING, fixingFreq STRING, dayCount STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, spread BOOL, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT[, notionalExchange STRING], tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>currency</code></td><td>STRING</td><td>Leg currency.</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>Reference IBOR index handle or name.</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>Business calendars used by calculation and payment schedules.</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING or STRING[]</td><td>Business calendars used by the fixing schedule.</td></tr><tr><td><code>freq</code></td><td>STRING</td><td>Coupon/payment frequency.</td></tr><tr><td><code>fixingFreq</code></td><td>STRING</td><td>Fixing frequency.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Accrual day-count convention.</td></tr><tr><td><code>paymentDiscountMethod</code></td><td>STRING</td><td>Payment discounting method.</td></tr><tr><td><code>rateCalcMethod</code></td><td>STRING</td><td>Interest-rate calculation method.</td></tr><tr><td><code>spread</code></td><td>BOOL</td><td>Whether the floating rate is represented as a spread.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>Business-day convention for interest dates.</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>Stub-period policy.</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>Broken-period handling convention.</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>Payment-date offset in business days.</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>Payment-date business-day convention.</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>Fixing-date business-day convention.</td></tr><tr><td><code>fixingMode</code></td><td>STRING</td><td>Fixing date mode, such as <code>IN_ADVANCE</code>.</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>Fixing-date offset in business days.</td></tr><tr><td><code>notionalExchange</code></td><td>STRING, optional</td><td>Notional-exchange convention. Defaults to <code>INVALID_NOTIONAL_EXCHANGE</code>.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache handle for the leg definition.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirvanillainstrumenttemplate create cache register generic vanilla ir instrument template static data handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirvanillainstrumenttemplate"></a>
+      <h3><code>CreateIrVanillaInstrumentTemplate</code></h3>
+      <p class="api-description">Create, cache, and register a generic vanilla IR instrument template as <code>SDT_IR_VANILLA_INSTRUMENT</code> static data.</p>
+      <p class="full-signature"><code>caplib::CreateIrVanillaInstrumentTemplate(instType STRING, instName STRING, startConvention STRING, startDelay INT, legDefinitions STRING[], tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instType</code></td><td>STRING</td><td>Instrument type label.</td></tr><tr><td><code>instName</code></td><td>STRING</td><td>Instrument business name.</td></tr><tr><td><code>startConvention</code></td><td>STRING</td><td>Start-date convention used by the instrument template.</td></tr><tr><td><code>startDelay</code></td><td>INT</td><td>Business-day delay used to derive the start date.</td></tr><tr><td><code>legDefinitions</code></td><td>STRING[]</td><td>ObjectCache handles for leg definitions included in the template.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdepotemplate deposit template create_depo_template sdt_ir_vanilla_instrument handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdepotemplate"></a>
+      <h3><code>CreateDepoTemplate</code></h3>
+      <p class="api-description">Create, cache, and register an IR deposit template following Python <code>create_depo_template</code>.</p>
+      <p class="full-signature"><code>caplib::CreateDepoTemplate(instName STRING, currency STRING, calendar STRING or STRING[][, startDelay INT[, dayCount STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, startConvention STRING]]]]]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>Template name and ObjectCache handle, normalized to uppercase.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Template currency.</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>Business calendars used by the deposit leg.</td></tr><tr><td><code>startDelay</code></td><td>INT, optional</td><td>Spot-start delay in business days. Defaults to <code>1</code>.</td></tr><tr><td><code>dayCount</code></td><td>STRING, optional</td><td>Accrual day-count convention. Defaults to <code>ACT_360</code>.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING, optional</td><td>Interest-date business-day convention. Defaults to <code>MODIFIED_FOLLOWING</code>.</td></tr><tr><td><code>payDayOffset</code></td><td>INT, optional</td><td>Payment-date offset in business days. Defaults to <code>0</code>.</td></tr><tr><td><code>payDayConvention</code></td><td>STRING, optional</td><td>Payment-date business-day convention. Defaults to <code>MODIFIED_FOLLOWING</code>.</td></tr><tr><td><code>startConvention</code></td><td>STRING, optional</td><td>Instrument start convention. Defaults to <code>SPOTSTART</code>.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfratemplate fra template create_fra_template sdt_ir_vanilla_instrument handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfratemplate"></a>
+      <h3><code>CreateFraTemplate</code></h3>
+      <p class="api-description">Create, cache, and register an FRA template following Python <code>create_fra_template</code>.</p>
+      <p class="full-signature"><code>caplib::CreateFraTemplate(instName STRING, refIndex STRING, currency STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING[, dayCount STRING[, paymentDiscountMethod STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, fixingDayConvention STRING[, fixingDayOffset INT]]]]]]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>Template name and ObjectCache handle, normalized to uppercase.</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>Reference IBOR index handle or name.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Template currency.</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>Business calendars used by calculation and payment schedules.</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING or STRING[]</td><td>Business calendars used by the fixing schedule.</td></tr><tr><td><code>freq</code></td><td>STRING</td><td>FRA accrual and fixing frequency.</td></tr><tr><td><code>dayCount</code></td><td>STRING, optional</td><td>Accrual day-count convention. Defaults to <code>ACT_360</code>.</td></tr><tr><td><code>paymentDiscountMethod</code></td><td>STRING, optional</td><td>Payment discounting method. Defaults to <code>DISCOUNT_AT_FLOATING_RATE</code>.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING, optional</td><td>Interest-date business-day convention. Defaults to <code>MODIFIED_FOLLOWING</code>.</td></tr><tr><td><code>payDayOffset</code></td><td>INT, optional</td><td>Payment-date offset in business days. Defaults to <code>0</code>.</td></tr><tr><td><code>payDayConvention</code></td><td>STRING, optional</td><td>Payment-date business-day convention. Defaults to <code>MODIFIED_FOLLOWING</code>.</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING, optional</td><td>Fixing-date business-day convention. Defaults to <code>MODIFIED_PRECEDING</code>.</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT, optional</td><td>Fixing-date offset in business days. Defaults to <code>-1</code>.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirvanillaswaptemplate vanilla swap template create_ir_vanilla_swap_template sdt_ir_vanilla_instrument handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirvanillaswaptemplate"></a>
+      <h3><code>CreateIrVanillaSwapTemplate</code></h3>
+      <p class="api-description">Create, cache, and register a vanilla IR swap template following Python <code>create_ir_vanilla_swap_template</code>.</p>
+      <p class="full-signature"><code>caplib::CreateIrVanillaSwapTemplate(instName STRING, startDelay INT or STRING, leg1Definition STRING, leg2Definition STRING, startConvention STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>Template name and ObjectCache handle, normalized to uppercase.</td></tr><tr><td><code>startDelay</code></td><td>INT or STRING</td><td>Start delay in days or period form.</td></tr><tr><td><code>leg1Definition</code></td><td>STRING</td><td>ObjectCache handle for the first leg definition.</td></tr><tr><td><code>leg2Definition</code></td><td>STRING</td><td>ObjectCache handle for the second leg definition.</td></tr><tr><td><code>startConvention</code></td><td>STRING</td><td>Instrument start convention, such as <code>SPOTSTART</code>.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildirvanillainstrument build and cache a vanilla ir instrument from a template. payreceive string, cpnrate double, spread double, startdate date, maturitydate date, insttemplate string, nominal double, legfixings string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildirvanillainstrument"></a>
+      <h3><code>BuildIrVanillaInstrument</code></h3>
+      <p class="api-description">Build and cache a vanilla IR instrument from a template.</p>
+      <p class="full-signature"><code>caplib::BuildIrVanillaInstrument(payReceive STRING, cpnRate DOUBLE, spread DOUBLE, startDate DATE, maturityDate DATE, instTemplate STRING, nominal DOUBLE, legFixings STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>payReceive</code></td><td>STRING</td><td>Pay/receive direction of the leg or swap.</td></tr><tr><td><code>cpnRate</code></td><td>DOUBLE</td><td>Coupon rate used to build the IR instrument.</td></tr><tr><td><code>spread</code></td><td>DOUBLE</td><td>Spread applied to the floating or credit leg.</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>Start date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>maturityDate</code></td><td>DATE</td><td>Instrument maturity date.</td></tr><tr><td><code>instTemplate</code></td><td>STRING</td><td>ObjectCache handle for the instrument template.</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>legFixings</code></td><td>STRING</td><td>Fixing data or handle used when building the IR instrument.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildircapfloor build and cache an ir cap or floor. type string, strike double, startdate date, enddate date, currency string, notionalamount double, insttemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildircapfloor"></a>
+      <h3><code>BuildIrCapFloor</code></h3>
+      <p class="api-description">Build and cache an IR cap or floor.</p>
+      <p class="full-signature"><code>caplib::BuildIrCapFloor(type STRING, strike DOUBLE, startDate DATE, endDate DATE, currency STRING, notionalAmount DOUBLE, instTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>type</code></td><td>STRING</td><td>Instrument or payoff type label.</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>Option strike level.</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>Start date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>endDate</code></td><td>DATE</td><td>End date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>notionalAmount</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>instTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument template.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildireuropeanswaption build and cache an ir european swaption. exercisedate date, settlementdate date, settlementtype string, swapmaturity date, fixedrate double, payreceive string, currency string, notionalamount double, insttemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildireuropeanswaption"></a>
+      <h3><code>BuildIrEuropeanSwaption</code></h3>
+      <p class="api-description">Build and cache an IR European swaption.</p>
+      <p class="full-signature"><code>caplib::BuildIrEuropeanSwaption(exerciseDate DATE, settlementDate DATE, settlementType STRING, swapMaturity DATE, fixedRate DOUBLE, payReceive STRING, currency STRING, notionalAmount DOUBLE, instTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>exerciseDate</code></td><td>DATE</td><td>Exercise date of the option or swaption.</td></tr><tr><td><code>settlementDate</code></td><td>DATE</td><td>Settlement date of the instrument or calculation.</td></tr><tr><td><code>settlementType</code></td><td>STRING</td><td>Settlement type enum.</td></tr><tr><td><code>swapMaturity</code></td><td>DATE</td><td>Maturity date of the underlying swap.</td></tr><tr><td><code>fixedRate</code></td><td>DOUBLE</td><td>Numeric input for fixed rate.</td></tr><tr><td><code>payReceive</code></td><td>STRING</td><td>Pay/receive direction of the leg or swap.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>notionalAmount</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>instTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument template.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Fixed-income market factories</h2>
+
+<article class="api-card" data-search="createbondlegdefinition create and cache a bond leg definition. bondtype string, settlementdays int, currency string, daycount string, calendar string, frequency string, interestdayconvention string, stubpolicy string, brokenperiodtype string, paydayoffset int, paydayconvention string, refindex string, fixingcalendars string, fixingfreq string, fixingdayconvention string, fixingmode string, fixingdayoffset int, instname string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondlegdefinition"></a>
+      <h3><code>CreateBondLegDefinition</code></h3>
+      <p class="api-description">Create and cache a bond leg definition.</p>
+      <p class="full-signature"><code>caplib::CreateBondLegDefinition(bondType STRING, settlementDays INT, currency STRING, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, instName STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>bondType</code></td><td>STRING</td><td>Bond leg type or coupon structure label.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of business days from trade or exercise to settlement.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>calendar</code></td><td>STRING</td><td>Business calendar name used for date adjustment.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment, coupon, or reset frequency.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>Business-day convention used for interest schedule dates.</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>Stub-period policy used by schedule generation.</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>Broken-period handling convention for irregular schedule periods.</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>Business-day offset used for payment dates.</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>Business-day convention used for payment dates.</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>Reference index name or handle for the floating leg.</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING</td><td>Calendars used to generate or adjust fixing dates.</td></tr><tr><td><code>fixingFreq</code></td><td>STRING</td><td>Fixing frequency.</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>Business-day convention used for fixing dates.</td></tr><tr><td><code>fixingMode</code></td><td>STRING</td><td>String input for fixing mode.</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>Business-day offset used to locate fixing dates.</td></tr><tr><td><code>instName</code></td><td>STRING</td><td>Instrument business name.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvanillabondtemplate create and cache a vanilla-bond template and register sdt_vanilla_bond static data. instname string, vanillabondtype string, issuedate date, settlementdays int, startdate date, maturity string, rate double, currency string, issueprice double, daycount string, calendar string, frequency string, interestdayconvention string, stubpolicy string, brokenperiodtype string, paydayoffset int, paydayconvention string, refindex string, fixingcalendars string or string[], fixingfreq string, fixingdayconvention string, fixingmode string, fixingdayoffset int, excouponperiod string, excouponcalendar string, excoupondayconvention string, excouponendofmonth bool, notionaltype string, recoveryrate double handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvanillabondtemplate"></a>
+      <h3><code>CreateVanillaBondTemplate</code></h3>
+      <p class="api-description">Create and cache a vanilla-bond template and register it as <code>SDT_VANILLA_BOND</code> static data.</p>
+      <p class="full-signature"><code>caplib::CreateVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE, settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING, issuePrice DOUBLE, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING or STRING[], fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING, exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL[, notionalType STRING[, recoveryRate DOUBLE]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>Instrument name. The cached handle and template instrument name are normalized to uppercase.</td></tr><tr><td><code>vanillaBondType</code></td><td>STRING</td><td>Bond type enum, such as <code>FIXED_COUPON_BOND</code>, <code>FLOATING_COUPON_BOND</code>, or <code>ZERO_COUPON_BOND</code>.</td></tr><tr><td><code>issueDate</code></td><td>DATE</td><td>Bond issue date.</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>Number of settlement days used by the template.</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>Accrual schedule start date.</td></tr><tr><td><code>maturity</code></td><td>STRING</td><td>Bond maturity tenor, for example <code>5Y</code>.</td></tr><tr><td><code>rate</code></td><td>DOUBLE</td><td>Coupon rate stored on the vanilla-bond template.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Leg currency, for example <code>CNY</code>.</td></tr><tr><td><code>issuePrice</code></td><td>DOUBLE</td><td>Bond issue price.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Interest accrual day-count convention.</td></tr><tr><td><code>calendar</code></td><td>STRING</td><td>Business calendar used by the calculation and payment schedules.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Coupon, payment, and fixing frequency label, such as <code>ANNUAL</code>.</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>Business-day convention for interest schedule adjustment.</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>Stub policy for irregular schedule periods.</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>Broken-period type for the interest schedule.</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>Payment-date offset in business days.</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>Business-day convention for payment dates.</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>Reference index for floating-rate bonds. Use an empty string for fixed-rate bonds.</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING or STRING[]</td><td>Calendar or calendar list used by the fixing schedule.</td></tr><tr><td><code>fixingFreq</code></td><td>STRING</td><td>Fixing frequency.</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>Business-day convention for fixing dates.</td></tr><tr><td><code>fixingMode</code></td><td>STRING</td><td>Fixing timing mode, such as <code>IN_ADVANCE</code>.</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>Fixing-date offset in business days.</td></tr><tr><td><code>exCouponPeriod</code></td><td>STRING</td><td>Ex-coupon period, for example <code>0d</code>.</td></tr><tr><td><code>exCouponCalendar</code></td><td>STRING</td><td>Calendar used to adjust ex-coupon dates.</td></tr><tr><td><code>exCouponDayConvention</code></td><td>STRING</td><td>Business-day convention used for ex-coupon dates.</td></tr><tr><td><code>exCouponEndOfMonth</code></td><td>BOOL</td><td>Whether end-of-month handling applies to ex-coupon dates.</td></tr><tr><td><code>notionalType</code></td><td>STRING, optional</td><td>Notional type enum. Defaults to <code>CONST_NOTIONAL</code>.</td></tr><tr><td><code>recoveryRate</code></td><td>DOUBLE, optional</td><td>Recovery rate used by downstream bond analytics. Defaults to <code>0.0</code>.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildvanillabond build and cache a vanilla bond from a template. nominal double, insttemplate string, fixings string, startdate date, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildvanillabond"></a>
+      <h3><code>BuildVanillaBond</code></h3>
+      <p class="api-description">Build and cache a vanilla bond from a template.</p>
+      <p class="full-signature"><code>caplib::BuildVanillaBond(nominal DOUBLE, instTemplate STRING, fixings STRING, startDate DATE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>instTemplate</code></td><td>STRING</td><td>ObjectCache handle for the instrument template.</td></tr><tr><td><code>fixings</code></td><td>STRING</td><td>String input for fixings.</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>Start date of the schedule, accrual period, or instrument.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Credit and commodity market factories</h2>
+
+<article class="api-card" data-search="createcdstemplate create and cache a cds template and register it as sdt_credit_instrument static data. instname string, startdelay string or int, settlementtype string, referenceprice double, leverage double, creditprotectiontype string, recoveryrate double, creditpremiumtype string, daycount string, frequency string, businessdayconvention string, calendars string or string[], rebateaccrual bool or int handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcdstemplate"></a>
+      <h3><code>CreateCdsTemplate</code></h3>
+      <p class="api-description">Create and cache a CDS template and register it as <code>SDT_CREDIT_INSTRUMENT</code> static data.</p>
+      <p class="full-signature"><code>caplib::CreateCdsTemplate(instName STRING, startDelay STRING or INT, settlementType STRING, referencePrice DOUBLE, leverage DOUBLE, creditProtectionType STRING, recoveryRate DOUBLE, creditPremiumType STRING, dayCount STRING, frequency STRING, businessDayConvention STRING, calendars STRING or STRING[], rebateAccrual BOOL or INT[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>Instrument business name and ObjectCache handle for the created template.</td></tr><tr><td><code>startDelay</code></td><td>STRING or INT</td><td>Start-delay period such as <code>1d</code>, or an integer number of days for backward compatibility.</td></tr><tr><td><code>settlementType</code></td><td>STRING</td><td>Settlement type enum, such as <code>CASH_SETTLEMENT</code> or <code>PHYSICAL_SETTLEMENT</code>.</td></tr><tr><td><code>referencePrice</code></td><td>DOUBLE</td><td>Reference price used by the CDS protection leg.</td></tr><tr><td><code>leverage</code></td><td>DOUBLE</td><td>Leverage factor applied to the credit protection leg.</td></tr><tr><td><code>creditProtectionType</code></td><td>STRING</td><td>Protection-leg convention, such as <code>PAY_PROTECTION_AT_MATURITY</code>.</td></tr><tr><td><code>recoveryRate</code></td><td>DOUBLE</td><td>Recovery rate used for credit or bond valuation.</td></tr><tr><td><code>creditPremiumType</code></td><td>STRING</td><td>Premium-leg convention, such as <code>PAY_PREMIUM_UPTO_CURRENT_PERIOD</code>.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment, coupon, or reset frequency.</td></tr><tr><td><code>businessDayConvention</code></td><td>STRING</td><td>Business-day adjustment convention.</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>Business calendar names used for date generation or adjustment; scalar strings may contain comma- or semicolon-delimited calendar names.</td></tr><tr><td><code>rebateAccrual</code></td><td>BOOL or INT</td><td>Whether accrued premium rebate is included.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildcreditdefaultswap build and cache a cds instrument. nominal double, currency string, issuedate date, maturity date, protectionlegpayreceive string, protectionlegsettlementtype string, protectionlegreferenceprice double, protectionlegleverage double, creditprotectiontype string, protectionlegrecoveryrate double, couponrate double, creditpremiumtype string, daycountconvention string, frequency string, businessdayconvention string, calendars string, upfrontrate double, rebateaccrual bool, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildcreditdefaultswap"></a>
+      <h3><code>BuildCreditDefaultSwap</code></h3>
+      <p class="api-description">Build and cache a CDS instrument.</p>
+      <p class="full-signature"><code>caplib::BuildCreditDefaultSwap(nominal DOUBLE, currency STRING, issueDate DATE, maturity DATE, protectionLegPayReceive STRING, protectionLegSettlementType STRING, protectionLegReferencePrice DOUBLE, protectionLegLeverage DOUBLE, creditProtectionType STRING, protectionLegRecoveryRate DOUBLE, couponRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING, upfrontRate DOUBLE, rebateAccrual BOOL, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>nominal</code></td><td>DOUBLE</td><td>Notional amount of the instrument.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>issueDate</code></td><td>DATE</td><td>Issue date of the bond or credit instrument.</td></tr><tr><td><code>maturity</code></td><td>DATE</td><td>Instrument maturity tenor or maturity date label.</td></tr><tr><td><code>protectionLegPayReceive</code></td><td>STRING</td><td>Pay/receive direction of the CDS protection leg.</td></tr><tr><td><code>protectionLegSettlementType</code></td><td>STRING</td><td>Settlement type of the CDS protection leg.</td></tr><tr><td><code>protectionLegReferencePrice</code></td><td>DOUBLE</td><td>Reference price used by the CDS protection leg.</td></tr><tr><td><code>protectionLegLeverage</code></td><td>DOUBLE</td><td>Leverage factor applied to the CDS protection leg.</td></tr><tr><td><code>creditProtectionType</code></td><td>STRING</td><td>Protection-leg convention for the CDS contract.</td></tr><tr><td><code>protectionLegRecoveryRate</code></td><td>DOUBLE</td><td>Recovery rate used by the CDS protection leg.</td></tr><tr><td><code>couponRate</code></td><td>DOUBLE</td><td>Coupon rate applied by the instrument or note payoff.</td></tr><tr><td><code>creditPremiumType</code></td><td>STRING</td><td>Premium-leg convention for CDS premium payments.</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>Payment, coupon, or reset frequency.</td></tr><tr><td><code>businessDayConvention</code></td><td>STRING</td><td>Business-day adjustment convention.</td></tr><tr><td><code>calendars</code></td><td>STRING</td><td>Business calendar names used for date generation or adjustment.</td></tr><tr><td><code>upfrontRate</code></td><td>DOUBLE</td><td>Upfront rate paid on the CDS contract.</td></tr><tr><td><code>rebateAccrual</code></td><td>BOOL</td><td>Whether accrued premium rebate is included.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Domain market data and settings</h2>
+
+<article class="api-card" data-search="createbondyieldcurvebuildsettings create and cache bond yield-curve build settings. curvename string, curvetype string, interpmethod string, extrapmethod string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondyieldcurvebuildsettings"></a>
+      <h3><code>CreateBondYieldCurveBuildSettings</code></h3>
+      <p class="api-description">Create and cache bond yield-curve build settings.</p>
+      <p class="full-signature"><code>caplib::CreateBondYieldCurveBuildSettings(curveName STRING, curveType STRING, interpMethod STRING, extrapMethod STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>curveType</code></td><td>STRING</td><td>Curve value type, such as zero-rate, discount-factor, or spread curve.</td></tr><tr><td><code>interpMethod</code></td><td>STRING</td><td>Interpolation method used between curve pillars.</td></tr><tr><td><code>extrapMethod</code></td><td>STRING</td><td>Extrapolation method used outside curve pillar range.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfimktdataset create and cache a fixed-income market-data set. asofdate date, discountcurve string, creditcurve string, underlyingdiscountcurve string, underlyingincomecurve string, underlyingforwardcurve string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfimktdataset"></a>
+      <h3><code>CreateFiMktDataSet</code></h3>
+      <p class="api-description">Create and cache a fixed-income market-data set.</p>
+      <p class="full-signature"><code>caplib::CreateFiMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, underlyingDiscountCurve STRING, underlyingIncomeCurve STRING, underlyingForwardCurve STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>creditCurve</code></td><td>STRING</td><td>ObjectCache handle for the credit curve.</td></tr><tr><td><code>underlyingDiscountCurve</code></td><td>STRING</td><td>ObjectCache handle for the underlying discount curve.</td></tr><tr><td><code>underlyingIncomeCurve</code></td><td>STRING</td><td>ObjectCache handle for the underlying income curve.</td></tr><tr><td><code>underlyingForwardCurve</code></td><td>STRING</td><td>ObjectCache handle for the underlying forward curve.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createbondmktdataset create and cache a bond market-data set. asofdate date, discountcurve string, creditcurve string, forwardcurve string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondmktdataset"></a>
+      <h3><code>CreateBondMktDataSet</code></h3>
+      <p class="api-description">Create and cache a bond market-data set.</p>
+      <p class="full-signature"><code>caplib::CreateBondMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, forwardCurve STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>creditCurve</code></td><td>STRING</td><td>ObjectCache handle for the credit curve.</td></tr><tr><td><code>forwardCurve</code></td><td>STRING</td><td>ObjectCache handle for the forward curve.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfirisksettings create and cache fixed-income risk settings. ircurvesettings string, cscurvesettings string, thetasettings string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfirisksettings"></a>
+      <h3><code>CreateFiRiskSettings</code></h3>
+      <p class="api-description">Create and cache fixed-income risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateFiRiskSettings(irCurveSettings STRING, csCurveSettings STRING, thetaSettings STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>irCurveSettings</code></td><td>STRING</td><td>ObjectCache handle for IR-curve risk settings.</td></tr><tr><td><code>csCurveSettings</code></td><td>STRING</td><td>String input for cs curve settings.</td></tr><tr><td><code>thetaSettings</code></td><td>STRING</td><td>ObjectCache handle for theta risk settings.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvanillabondrisksettings create and cache vanilla-bond risk settings. dv01 string, cs01 string, theta bool, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvanillabondrisksettings"></a>
+      <h3><code>CreateVanillaBondRiskSettings</code></h3>
+      <p class="api-description">Create and cache vanilla-bond risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateVanillaBondRiskSettings(dv01 STRING, cs01 STRING, theta BOOL, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>dv01</code></td><td>STRING</td><td>Risk-settings handle or flag controlling DV01 calculation.</td></tr><tr><td><code>cs01</code></td><td>STRING</td><td>String input for cs01.</td></tr><tr><td><code>theta</code></td><td>BOOL</td><td>Whether theta risk should be calculated.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcdspricingsettings create and cache cds pricing settings. pricingcurrency string, includecurrentflow bool, cashflows bool, includesettlementflow bool, numericalfix string, accrualbias string, fwdsincpnperiod string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcdspricingsettings"></a>
+      <h3><code>CreateCdsPricingSettings</code></h3>
+      <p class="api-description">Create and cache CDS pricing settings.</p>
+      <p class="full-signature"><code>caplib::CreateCdsPricingSettings(pricingCurrency STRING, includeCurrentFlow BOOL, cashFlows BOOL, includeSettlementFlow BOOL, numericalFix STRING, accrualBias STRING, fwdsInCpnPeriod STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>pricingCurrency</code></td><td>STRING</td><td>Currency used for pricing output.</td></tr><tr><td><code>includeCurrentFlow</code></td><td>BOOL</td><td>Whether current cash flows should be included in valuation output.</td></tr><tr><td><code>cashFlows</code></td><td>BOOL</td><td>Whether detailed cash-flow output should be included in pricing results.</td></tr><tr><td><code>includeSettlementFlow</code></td><td>BOOL</td><td>Whether settlement cash flows should be included in valuation output.</td></tr><tr><td><code>numericalFix</code></td><td>STRING</td><td>Numerical fixing convention used by CDS pricing.</td></tr><tr><td><code>accrualBias</code></td><td>STRING</td><td>String input for accrual bias.</td></tr><tr><td><code>fwdsInCpnPeriod</code></td><td>STRING</td><td>Convention controlling forward-rate handling inside coupon periods.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcrmktdataset create and cache a credit market-data set. asofdate date, discountcurve string, creditcurve string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcrmktdataset"></a>
+      <h3><code>CreateCrMktDataSet</code></h3>
+      <p class="api-description">Create and cache a credit market-data set.</p>
+      <p class="full-signature"><code>caplib::CreateCrMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>creditCurve</code></td><td>STRING</td><td>ObjectCache handle for the credit curve.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcrrisksettings create and cache credit risk settings. ircurvesettings string, cscurvesettings string, thetasettings string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcrrisksettings"></a>
+      <h3><code>CreateCrRiskSettings</code></h3>
+      <p class="api-description">Create and cache credit risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateCrRiskSettings(irCurveSettings STRING, csCurveSettings STRING, thetaSettings STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>irCurveSettings</code></td><td>STRING</td><td>ObjectCache handle for IR-curve risk settings.</td></tr><tr><td><code>csCurveSettings</code></td><td>STRING</td><td>String input for cs curve settings.</td></tr><tr><td><code>thetaSettings</code></td><td>STRING</td><td>ObjectCache handle for theta risk settings.</td></tr><tr><td><code>name</code></td><td>STRING</td><td>Business name stored on the created object.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `${visible} of ${cards.length} functions`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

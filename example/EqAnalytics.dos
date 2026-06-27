@@ -1,0 +1,105 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: EQ Analytics
+// =============================================================================
+// This script is stripped from test/test_eqanalytics.dos and kept as an
+// executable usage example for the main EQ factory and pricing flows.
+
+loadPlugin("PluginCaplib")
+
+currency = "CNY"
+underlying = "50ETF.SSE"
+asOfDate = 2020.02.21
+underlyingPrice = 2.958
+
+// Create the equity IR curve used by the EQ fixtures.
+irCurve = caplib::CreateIrYieldCurve(
+    asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+
+// Create the dividend curve used as the EQ forward curve.
+divCurve = caplib::CreateDividendCurve(
+    asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "DIVIDEND_CURVE_50ETF", "EQ_DIV_CURVE", false)
+
+// Create analytical pricing settings for the vanilla EQ examples.
+modelParams = [0.0]
+bsmModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmSettings = caplib::CreatePricingSettings(
+    currency, "ANALYTICAL", 0, 0, bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+
+// Enable EQ risk settings so pricing returns a structured result handle.
+eqRisk = caplib::CreateEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true)
+
+dailyObsDates = 2020.02.22..2020.08.19;
+dailyObsValues = take(0.0, size(dailyObsDates));
+dailyObsWeights = take(1.0, size(dailyObsDates));
+
+// Define the vol surface model used by EQ volatility builders.
+volDef = caplib::CreateVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-5, 1.0e-5, "EQ_VOL_DEF", true)
+
+// Configure the EQ vol surface builder.
+volBuildSettings = caplib::CreateVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", true)
+
+// Build a quote matrix from strike, payoff, and price grids.
+quoteMatrix = caplib::CreateEqOptionQuoteMatrix(
+    "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [
+        ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+        ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+        ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+        ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"]
+    ],
+    [
+        [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+        [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+        [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+        [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]
+    ],
+    [
+        [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+        [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+        [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+        [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]
+    ],
+    underlying, "EQ_OPTION_QUOTES", true)
+
+// Build an EQ volatility surface from quotes, curves, and build settings.
+volSurface = caplib::BuildEqVolatilitySurface(
+    asOfDate, underlying, volDef[0], quoteMatrix[0],
+    [2.958, 2.960, 2.962],
+    irCurve, divCurve, volBuildSettings[0], bsmSettings, "EQ_VOL_SURFACE", true)
+
+// Assemble EQ market data from spot, curves, and volatility surface.
+mktData = caplib::CreateEqMktDataSet(
+    asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], "", "", 0.0, "EQ_MKT", true)
+
+// Create a European option instrument and price it.
+europeanOption = caplib::CreateEuropeanOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    1000000.0, currency, "SPOT", currency, underlying, "EQ_EO", false)
+europeanResult = caplib::PriceEqEuropeanOption(
+    europeanOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
+print(europeanResult)
+
+// Create an Asian option instrument and price it with Monte Carlo settings.
+asianOption = caplib::CreateAsianOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE",
+    1000000.0, "SPOT", currency, underlying, "EQ_ASIAN",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+asianResult = caplib::PriceEqAsianOption(
+    asianOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
+print(asianResult)

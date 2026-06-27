@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>商品 | CAPLIB</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="alternate" hreflang="en" href="../commodity.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../commodity.html">English</a><span class="lang-active">中文</span></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child active" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="shared.html#api-reference">通用 <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>64</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>39</span></a><a class="nav-child active" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib 插件</p>
+        <h1>商品</h1>
+        <p class="lede">商品与贵金属市场数据、报价矩阵、波动率曲面和定价。</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>商品与贵金属市场数据、报价矩阵、波动率曲面和定价。 本页包含 25 个函数。可按函数名、返回类型、参数或说明进行筛选。</p></section><section class="panel example"><h2>示例</h2><pre><code>cmQuoteMatrix = caplib::CreateCmOptionQuoteMatrix(
+    &quot;EUROPEAN&quot;, &quot;FUTURE_UNDERLYING_TYPE&quot;, 2025.01.02,
+    [2025.07.02, 2026.01.02], [[&quot;CALL&quot;, &quot;PUT&quot;], [&quot;CALL&quot;, &quot;PUT&quot;]],
+    [[100.0, 100.0], [105.0, 105.0]], [[7.1, 6.8], [8.4, 8.0]],
+    &quot;AU&quot;, &quot;CM_QUOTES&quot;, true);
+
+pricingResult = caplib::PriceCmEuropeanOption(
+    &quot;CM_EUROPEAN&quot;, 2025.01.02, &quot;CM_MKT&quot;, &quot;CM_ANALYTICAL&quot;, &quot;CM_RISK&quot;, &quot;&quot;, &quot;&quot;, true);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+<section class="api-group"><h2>商品与贵金属分析</h2>
+
+<article class="api-card" data-search="buildcmvolatilitysurface build and cache a commodity volatility surface. referencedate date, underlying string, definitionhandle string, quotematrixhandle string, underlyingprices double[], discountcurvehandle string, fwdcurvehandle string, buildsettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildcmvolatilitysurface"></a>
+      <h3><code>BuildCmVolatilitySurface</code></h3>
+      <p class="api-description">构建商品波动率曲面。</p>
+      <p class="full-signature"><code>caplib::BuildCmVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE[], discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>期权报价矩阵 内存对象 句柄。</td></tr><tr><td><code>underlyingPrices</code></td><td>DOUBLE[]</td><td>与报价期限或校准行对齐的标的价格数组。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>fwdCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>构建设置 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildpmyieldcurve build and cache a precious-metal yield curve. referencedate date, parcurvehandle string, discountcurvehandle string, pmtemplatehandle string, spotprice double, calcjacobian bool, daycount string, interpmethod string, extrapmethod string, curvetype string, curvename string, shift double, method string, mode string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildpmyieldcurve"></a>
+      <h3><code>BuildPmYieldCurve</code></h3>
+      <p class="api-description">构建贵金属收益率曲线。</p>
+      <p class="full-signature"><code>caplib::BuildPmYieldCurve(referenceDate DATE, parCurveHandle STRING, discountCurveHandle STRING, pmTemplateHandle STRING, spotPrice DOUBLE, calcJacobian BOOL, dayCount STRING, interpMethod STRING, extrapMethod STRING, curveType STRING, curveName STRING, shift DOUBLE, method STRING, mode STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>平价曲线输入对象 内存对象 句柄。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>pmTemplateHandle</code></td><td>STRING</td><td>贵金属模板 内存对象 句柄。</td></tr><tr><td><code>spotPrice</code></td><td>DOUBLE</td><td>标的或贵金属的即期价格。</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>是否计算并返回校准雅可比信息。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>interpMethod</code></td><td>STRING</td><td>插值方法。</td></tr><tr><td><code>extrapMethod</code></td><td>STRING</td><td>外推方法。</td></tr><tr><td><code>curveType</code></td><td>STRING</td><td>曲线值类型，例如零利率、贴现因子或利差。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>method</code></td><td>STRING</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildpmvolatilitysurface build and cache a precious-metal volatility surface. referencedate date, underlying string, definitionhandle string, quotematrixhandle string, underlyingprice double, discountcurvehandle string, fwdcurvehandle string, buildsettingshandle string, marketconventionshandle string, spottemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildpmvolatilitysurface"></a>
+      <h3><code>BuildPmVolatilitySurface</code></h3>
+      <p class="api-description">构建贵金属波动率曲面。</p>
+      <p class="full-signature"><code>caplib::BuildPmVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrice DOUBLE, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, marketConventionsHandle STRING, spotTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>期权报价矩阵 内存对象 句柄。</td></tr><tr><td><code>underlyingPrice</code></td><td>DOUBLE</td><td>当前标的价格。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>fwdCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>构建设置 内存对象 句柄。</td></tr><tr><td><code>marketConventionsHandle</code></td><td>STRING</td><td>市场惯例 内存对象 句柄。</td></tr><tr><td><code>spotTemplateHandle</code></td><td>STRING</td><td>即期模板 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcmmktdataset create and cache a commodity market-data set. asofdate date, underlying string, underlyingprice double, discountcurve string, dividendcurve string, volsurface string, quantodiscountcurve string, quantofxvolcurve string, quantocorrelation double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcmmktdataset"></a>
+      <h3><code>CreateCmMktDataSet</code></h3>
+      <p class="api-description">创建并缓存商品市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateCmMktDataSet(asOfDate DATE, underlying STRING, underlyingPrice DOUBLE, discountCurve STRING, dividendCurve STRING, volSurface STRING, quantoDiscountCurve STRING, quantoFxVolCurve STRING, quantoCorrelation DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>underlyingPrice</code></td><td>DOUBLE</td><td>当前标的价格。</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>dividendCurve</code></td><td>STRING</td><td>股息或远期收益曲线 内存对象 句柄。</td></tr><tr><td><code>volSurface</code></td><td>STRING</td><td>波动率曲面 内存对象 句柄。</td></tr><tr><td><code>quantoDiscountCurve</code></td><td>STRING</td><td>Quanto 贴现曲线 内存对象 句柄。</td></tr><tr><td><code>quantoFxVolCurve</code></td><td>STRING</td><td>Quanto 外汇波动率曲线 内存对象 句柄。</td></tr><tr><td><code>quantoCorrelation</code></td><td>DOUBLE</td><td>Quanto 调整相关系数。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcmrisksettings create and cache commodity 风险设置。 irdelta bool, pricedelta bool, volvega bool, theta bool, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcmrisksettings"></a>
+      <h3><code>CreateCmRiskSettings</code></h3>
+      <p class="api-description">创建并缓存商品风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateCmRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta BOOL, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irDelta</code></td><td>BOOL</td><td>是否计算利率 Delta 风险。</td></tr><tr><td><code>priceDelta</code></td><td>BOOL</td><td>是否计算标的价格 Delta 风险。</td></tr><tr><td><code>volVega</code></td><td>BOOL</td><td>是否计算波动率 Vega 风险。</td></tr><tr><td><code>theta</code></td><td>BOOL</td><td>是否计算 Theta 风险。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmeuropeanoption price a commodity european option. cmpricing7(europeanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmeuropeanoption"></a>
+      <h3><code>PriceCmEuropeanOption</code></h3>
+      <p class="api-description">定价商品欧式期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmEuropeanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmamericanoption price a commodity american option. cmpricing7(americanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmamericanoption"></a>
+      <h3><code>PriceCmAmericanOption</code></h3>
+      <p class="api-description">定价商品美式期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmAmericanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmasianoption price a commodity asian option. cmpricing7(asianoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmasianoption"></a>
+      <h3><code>PriceCmAsianOption</code></h3>
+      <p class="api-description">定价商品亚式期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdigitaloption price a commodity 数字期权. cmpricing7(digitaloption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdigitaloption"></a>
+      <h3><code>PriceCmDigitalOption</code></h3>
+      <p class="api-description">定价商品数字期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmDigitalOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmonetouchoption price a commodity 单触碰期权. cmpricing7(onetouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmonetouchoption"></a>
+      <h3><code>PriceCmOneTouchOption</code></h3>
+      <p class="api-description">定价商品单触碰期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmOneTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdoubletouchoption price a commodity 双触碰期权. cmpricing7(doubletouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdoubletouchoption"></a>
+      <h3><code>PriceCmDoubleTouchOption</code></h3>
+      <p class="api-description">定价商品双触碰期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmsinglebarrieroption price a commodity 单障碍期权. cmpricing7(singlebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmsinglebarrieroption"></a>
+      <h3><code>PriceCmSingleBarrierOption</code></h3>
+      <p class="api-description">定价商品单障碍期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmSingleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdoublebarrieroption price a commodity 双障碍期权. cmpricing7(doublebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdoublebarrieroption"></a>
+      <h3><code>PriceCmDoubleBarrierOption</code></h3>
+      <p class="api-description">定价商品双障碍期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmDoubleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmsinglesharkfinoption price a commodity single shark-fin option. cmpricing7(singlesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmsinglesharkfinoption"></a>
+      <h3><code>PriceCmSingleSharkFinOption</code></h3>
+      <p class="api-description">定价商品单鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdoublesharkfinoption price a commodity double shark-fin option. cmpricing7(doublesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdoublesharkfinoption"></a>
+      <h3><code>PriceCmDoubleSharkFinOption</code></h3>
+      <p class="api-description">定价商品双鲨鱼鳍期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmDoubleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmpingpongoption price a commodity 乒乓期权. cmpricing7(pingpongoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmpingpongoption"></a>
+      <h3><code>PriceCmPingPongOption</code></h3>
+      <p class="api-description">定价商品乒乓期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmPingPongOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmairbagoption price a commodity 安全气囊期权. cmpricing7(airbagoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmairbagoption"></a>
+      <h3><code>PriceCmAirbagOption</code></h3>
+      <p class="api-description">定价商品安全气囊期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmrangeaccrualoption price a commodity 区间累计期权. cmpricing7(rangeaccrualoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmrangeaccrualoption"></a>
+      <h3><code>PriceCmRangeAccrualOption</code></h3>
+      <p class="api-description">定价商品区间累计期权。</p>
+      <p class="full-signature"><code>caplib::PriceCmRangeAccrualOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmphoenixautocallablenote price a commodity phoenix autocallable note. cmpricing7(phoenixautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmphoenixautocallablenote"></a>
+      <h3><code>PriceCmPhoenixAutoCallableNote</code></h3>
+      <p class="api-description">定价商品凤凰自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::PriceCmPhoenixAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmsnowballautocallablenote price a commodity snowball autocallable note. cmpricing7(snowballautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmsnowballautocallablenote"></a>
+      <h3><code>PriceCmSnowballAutoCallableNote</code></h3>
+      <p class="api-description">定价商品雪球自动赎回票据。</p>
+      <p class="full-signature"><code>caplib::PriceCmSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>信用与商品市场对象工厂</h2>
+
+<article class="api-card" data-search="createpmcashtemplate create and cache a precious-metal cash template and register it as sdt_pm_cash static data. instname string, startdelay int, deliverydayconvention string, calendars string or string[], daycount string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmcashtemplate"></a>
+      <h3><code>CreatePmCashTemplate</code></h3>
+      <p class="api-description">创建并缓存贵金属现金工具模板。</p>
+      <p class="full-signature"><code>caplib::CreatePmCashTemplate(instName STRING, startDelay INT, deliveryDayConvention STRING, calendars STRING or STRING[], dayCount STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>startDelay</code></td><td>INT</td><td>起息或交割延迟天数。</td></tr><tr><td><code>deliveryDayConvention</code></td><td>STRING</td><td>交割日调整约定。</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>资产域市场数据与设置</h2>
+
+<article class="api-card" data-search="createpmparratecurve create and cache a precious-metal par-rate curve input object. asofdate date, currency string, curvename string, pillarstable matrix/table, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmparratecurve"></a>
+      <h3><code>CreatePmParRateCurve</code></h3>
+      <p class="api-description">创建并缓存贵金属平价利率曲线输入。</p>
+      <p class="full-signature"><code>caplib::CreatePmParRateCurve(asOfDate DATE, currency STRING, curveName STRING, pillarsTable MATRIX/TABLE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>pillarsTable</code></td><td>MATRIX/TABLE</td><td>曲线节点输入表。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpmmktconventions create and cache precious-metal market conventions. atmtype string, shortdeltatype string, longdeltatype string, deltacutoff string, riskreversal string, smilequotetype string, underlying string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmmktconventions"></a>
+      <h3><code>CreatePmMktConventions</code></h3>
+      <p class="api-description">创建并缓存贵金属市场惯例。</p>
+      <p class="full-signature"><code>caplib::CreatePmMktConventions(atmType STRING, shortDeltaType STRING, longDeltaType STRING, deltaCutoff STRING, riskReversal STRING, smileQuoteType STRING, underlying STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>atmType</code></td><td>STRING</td><td>ATM 报价类型。</td></tr><tr><td><code>shortDeltaType</code></td><td>STRING</td><td>短期限 Delta 报价类型。</td></tr><tr><td><code>longDeltaType</code></td><td>STRING</td><td>长期限 Delta 报价类型。</td></tr><tr><td><code>deltaCutoff</code></td><td>STRING</td><td>Delta 报价切换阈值。</td></tr><tr><td><code>riskReversal</code></td><td>STRING</td><td>设置对象的缓存句柄或配置值。</td></tr><tr><td><code>smileQuoteType</code></td><td>STRING</td><td>波动率微笑报价类型。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpmoptionquotematrix create and cache a precious-metal option quote matrix using volatility, relative term, and delta strike quoting. underlying string, asofdate date, terms string[], payofftypes string matrix/vector, deltas double matrix/vector, quotes double matrix/vector, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmoptionquotematrix"></a>
+      <h3><code>CreatePmOptionQuoteMatrix</code></h3>
+      <p class="api-description">创建并缓存贵金属期权报价矩阵。</p>
+      <p class="full-signature"><code>caplib::CreatePmOptionQuoteMatrix(underlying STRING, asOfDate DATE, terms STRING[], payoffTypes STRING matrix/vector, deltas DOUBLE matrix/vector, quotes DOUBLE matrix/vector, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>报价期限数组。</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>与报价值对齐的收益类型矩阵或向量。</td></tr><tr><td><code>deltas</code></td><td>DOUBLE matrix/vector</td><td>Delta 行权价矩阵或向量。</td></tr><tr><td><code>quotes</code></td><td>DOUBLE matrix/vector</td><td>市场报价值数组。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcmoptionquotematrix create and cache a commodity option quote matrix using price, absolute term, and absolute strike quoting. exercisetype string, underlyingtype string, asofdate date, termdates date[], payofftypes string matrix/vector, strikes double matrix/vector, prices double matrix/vector, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcmoptionquotematrix"></a>
+      <h3><code>CreateCmOptionQuoteMatrix</code></h3>
+      <p class="api-description">创建并缓存商品期权报价矩阵。</p>
+      <p class="full-signature"><code>caplib::CreateCmOptionQuoteMatrix(exerciseType STRING, underlyingType STRING, asOfDate DATE, termDates DATE[], payoffTypes STRING matrix/vector, strikes DOUBLE matrix/vector, prices DOUBLE matrix/vector, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>exerciseType</code></td><td>STRING</td><td>期权行权风格。</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>标的类型枚举。</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>报价期限对应的到期日期数组。</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>与报价值对齐的收益类型矩阵或向量。</td></tr><tr><td><code>strikes</code></td><td>DOUBLE matrix/vector</td><td>行权价数组或矩阵。</td></tr><tr><td><code>prices</code></td><td>DOUBLE matrix/vector</td><td>期权价格矩阵或报价数组。</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>标的资产、指数、商品或货币对标识。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `显示 ${visible} / ${cards.length} 个函数`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

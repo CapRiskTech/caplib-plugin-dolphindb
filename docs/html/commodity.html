@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Commodity | CAPLIB</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="alternate" hreflang="zh-CN" href="zh/commodity.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">User Guide and API Reference</span><span class="lang-switch"><span class="lang-active">EN</span><a href="zh/commodity.html">中文</a></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child" href="index.html#user-guide">Introduction</a><a class="nav-child" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child active" href="commodity.html#user-guide">Commodity</a><a class="nav-child" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child" href="shared.html#api-reference">Common <span>21</span></a><a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>64</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>39</span></a><a class="nav-child active" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib plugin</p>
+        <h1>Commodity</h1>
+        <p class="lede">Commodity and precious-metal market data, quote matrices, volatility surfaces, and pricing.</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Commodity and precious-metal market data, quote matrices, volatility surfaces, and pricing. This page contains 25 functions. Use the filter to narrow by function name, return type, parameter, or description.</p></section><section class="panel example"><h2>Example</h2><pre><code>cmQuoteMatrix = caplib::CreateCmOptionQuoteMatrix(
+    &quot;EUROPEAN&quot;, &quot;FUTURE_UNDERLYING_TYPE&quot;, 2025.01.02,
+    [2025.07.02, 2026.01.02], [[&quot;CALL&quot;, &quot;PUT&quot;], [&quot;CALL&quot;, &quot;PUT&quot;]],
+    [[100.0, 100.0], [105.0, 105.0]], [[7.1, 6.8], [8.4, 8.0]],
+    &quot;AU&quot;, &quot;CM_QUOTES&quot;, true);
+
+pricingResult = caplib::PriceCmEuropeanOption(
+    &quot;CM_EUROPEAN&quot;, 2025.01.02, &quot;CM_MKT&quot;, &quot;CM_ANALYTICAL&quot;, &quot;CM_RISK&quot;, &quot;&quot;, &quot;&quot;, true);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
+<section class="api-group"><h2>Commodity and precious-metal analytics</h2>
+
+<article class="api-card" data-search="buildcmvolatilitysurface build and cache a commodity volatility surface. referencedate date, underlying string, definitionhandle string, quotematrixhandle string, underlyingprices double[], discountcurvehandle string, fwdcurvehandle string, buildsettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildcmvolatilitysurface"></a>
+      <h3><code>BuildCmVolatilitySurface</code></h3>
+      <p class="api-description">Build and cache a commodity volatility surface.</p>
+      <p class="full-signature"><code>caplib::BuildCmVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE[], discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>ObjectCache handle for the definition object.</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>ObjectCache handle for the option quote matrix.</td></tr><tr><td><code>underlyingPrices</code></td><td>DOUBLE[]</td><td>Underlying prices aligned with quote terms or calibration rows.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>fwdCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the fwd curve object.</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for the build settings object.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildpmyieldcurve build and cache a precious-metal yield curve. referencedate date, parcurvehandle string, discountcurvehandle string, pmtemplatehandle string, spotprice double, calcjacobian bool, daycount string, interpmethod string, extrapmethod string, curvetype string, curvename string, shift double, method string, mode string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildpmyieldcurve"></a>
+      <h3><code>BuildPmYieldCurve</code></h3>
+      <p class="api-description">Build and cache a precious-metal yield curve.</p>
+      <p class="full-signature"><code>caplib::BuildPmYieldCurve(referenceDate DATE, parCurveHandle STRING, discountCurveHandle STRING, pmTemplateHandle STRING, spotPrice DOUBLE, calcJacobian BOOL, dayCount STRING, interpMethod STRING, extrapMethod STRING, curveType STRING, curveName STRING, shift DOUBLE, method STRING, mode STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the par-curve input object.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>pmTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the pm template object.</td></tr><tr><td><code>spotPrice</code></td><td>DOUBLE</td><td>Spot price of the underlying or precious metal.</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>Whether to calculate and return calibration Jacobian information.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>interpMethod</code></td><td>STRING</td><td>Interpolation method used between curve pillars.</td></tr><tr><td><code>extrapMethod</code></td><td>STRING</td><td>Extrapolation method used outside curve pillar range.</td></tr><tr><td><code>curveType</code></td><td>STRING</td><td>Curve value type, such as zero-rate, discount-factor, or spread curve.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>Shift size used by curve build or risk calculations.</td></tr><tr><td><code>method</code></td><td>STRING</td><td>Calculation, calibration, or finite-difference method selector.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildpmvolatilitysurface build and cache a precious-metal volatility surface. referencedate date, underlying string, definitionhandle string, quotematrixhandle string, underlyingprice double, discountcurvehandle string, fwdcurvehandle string, buildsettingshandle string, marketconventionshandle string, spottemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildpmvolatilitysurface"></a>
+      <h3><code>BuildPmVolatilitySurface</code></h3>
+      <p class="api-description">Build and cache a precious-metal volatility surface.</p>
+      <p class="full-signature"><code>caplib::BuildPmVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrice DOUBLE, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, marketConventionsHandle STRING, spotTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>Reference date for the created curve, surface, or build request.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>ObjectCache handle for the definition object.</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>ObjectCache handle for the option quote matrix.</td></tr><tr><td><code>underlyingPrice</code></td><td>DOUBLE</td><td>Current underlying spot or forward price.</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>fwdCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for the fwd curve object.</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for the build settings object.</td></tr><tr><td><code>marketConventionsHandle</code></td><td>STRING</td><td>ObjectCache handle for market conventions.</td></tr><tr><td><code>spotTemplateHandle</code></td><td>STRING</td><td>ObjectCache handle for the spot template.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcmmktdataset create and cache a commodity market-data set. asofdate date, underlying string, underlyingprice double, discountcurve string, dividendcurve string, volsurface string, quantodiscountcurve string, quantofxvolcurve string, quantocorrelation double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcmmktdataset"></a>
+      <h3><code>CreateCmMktDataSet</code></h3>
+      <p class="api-description">Create and cache a commodity market-data set.</p>
+      <p class="full-signature"><code>caplib::CreateCmMktDataSet(asOfDate DATE, underlying STRING, underlyingPrice DOUBLE, discountCurve STRING, dividendCurve STRING, volSurface STRING, quantoDiscountCurve STRING, quantoFxVolCurve STRING, quantoCorrelation DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>underlyingPrice</code></td><td>DOUBLE</td><td>Current underlying spot or forward price.</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>ObjectCache handle for the discount curve.</td></tr><tr><td><code>dividendCurve</code></td><td>STRING</td><td>ObjectCache handle for the dividend or forward-yield curve.</td></tr><tr><td><code>volSurface</code></td><td>STRING</td><td>ObjectCache handle for volatility surface.</td></tr><tr><td><code>quantoDiscountCurve</code></td><td>STRING</td><td>ObjectCache handle for quanto discount curve.</td></tr><tr><td><code>quantoFxVolCurve</code></td><td>STRING</td><td>ObjectCache handle for quanto FX volatility curve.</td></tr><tr><td><code>quantoCorrelation</code></td><td>DOUBLE</td><td>Correlation used for quanto adjustment.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcmrisksettings create and cache commodity risk settings. irdelta bool, pricedelta bool, volvega bool, theta bool, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcmrisksettings"></a>
+      <h3><code>CreateCmRiskSettings</code></h3>
+      <p class="api-description">Create and cache commodity risk settings.</p>
+      <p class="full-signature"><code>caplib::CreateCmRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta BOOL, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>irDelta</code></td><td>BOOL</td><td>Whether interest-rate delta risk should be calculated.</td></tr><tr><td><code>priceDelta</code></td><td>BOOL</td><td>Whether underlying price delta risk should be calculated.</td></tr><tr><td><code>volVega</code></td><td>BOOL</td><td>Whether volatility vega risk should be calculated.</td></tr><tr><td><code>theta</code></td><td>BOOL</td><td>Whether theta risk should be calculated.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmeuropeanoption price a commodity european option. cmpricing7(europeanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmeuropeanoption"></a>
+      <h3><code>PriceCmEuropeanOption</code></h3>
+      <p class="api-description">Price a commodity European option.</p>
+      <p class="full-signature"><code>caplib::PriceCmEuropeanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmamericanoption price a commodity american option. cmpricing7(americanoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmamericanoption"></a>
+      <h3><code>PriceCmAmericanOption</code></h3>
+      <p class="api-description">Price a commodity American option.</p>
+      <p class="full-signature"><code>caplib::PriceCmAmericanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmasianoption price a commodity asian option. cmpricing7(asianoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmasianoption"></a>
+      <h3><code>PriceCmAsianOption</code></h3>
+      <p class="api-description">Price a commodity Asian option.</p>
+      <p class="full-signature"><code>caplib::PriceCmAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdigitaloption price a commodity digital option. cmpricing7(digitaloption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdigitaloption"></a>
+      <h3><code>PriceCmDigitalOption</code></h3>
+      <p class="api-description">Price a commodity digital option.</p>
+      <p class="full-signature"><code>caplib::PriceCmDigitalOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmonetouchoption price a commodity one-touch option. cmpricing7(onetouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmonetouchoption"></a>
+      <h3><code>PriceCmOneTouchOption</code></h3>
+      <p class="api-description">Price a commodity one-touch option.</p>
+      <p class="full-signature"><code>caplib::PriceCmOneTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdoubletouchoption price a commodity double-touch option. cmpricing7(doubletouchoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdoubletouchoption"></a>
+      <h3><code>PriceCmDoubleTouchOption</code></h3>
+      <p class="api-description">Price a commodity double-touch option.</p>
+      <p class="full-signature"><code>caplib::PriceCmDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmsinglebarrieroption price a commodity single-barrier option. cmpricing7(singlebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmsinglebarrieroption"></a>
+      <h3><code>PriceCmSingleBarrierOption</code></h3>
+      <p class="api-description">Price a commodity single-barrier option.</p>
+      <p class="full-signature"><code>caplib::PriceCmSingleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdoublebarrieroption price a commodity double-barrier option. cmpricing7(doublebarrieroption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdoublebarrieroption"></a>
+      <h3><code>PriceCmDoubleBarrierOption</code></h3>
+      <p class="api-description">Price a commodity double-barrier option.</p>
+      <p class="full-signature"><code>caplib::PriceCmDoubleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmsinglesharkfinoption price a commodity single shark-fin option. cmpricing7(singlesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmsinglesharkfinoption"></a>
+      <h3><code>PriceCmSingleSharkFinOption</code></h3>
+      <p class="api-description">Price a commodity single shark-fin option.</p>
+      <p class="full-signature"><code>caplib::PriceCmSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmdoublesharkfinoption price a commodity double shark-fin option. cmpricing7(doublesharkfinoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmdoublesharkfinoption"></a>
+      <h3><code>PriceCmDoubleSharkFinOption</code></h3>
+      <p class="api-description">Price a commodity double shark-fin option.</p>
+      <p class="full-signature"><code>caplib::PriceCmDoubleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmpingpongoption price a commodity ping-pong option. cmpricing7(pingpongoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmpingpongoption"></a>
+      <h3><code>PriceCmPingPongOption</code></h3>
+      <p class="api-description">Price a commodity ping-pong option.</p>
+      <p class="full-signature"><code>caplib::PriceCmPingPongOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmairbagoption price a commodity airbag option. cmpricing7(airbagoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmairbagoption"></a>
+      <h3><code>PriceCmAirbagOption</code></h3>
+      <p class="api-description">Price a commodity airbag option.</p>
+      <p class="full-signature"><code>caplib::PriceCmAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmrangeaccrualoption price a commodity range-accrual option. cmpricing7(rangeaccrualoption) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmrangeaccrualoption"></a>
+      <h3><code>PriceCmRangeAccrualOption</code></h3>
+      <p class="api-description">Price a commodity range-accrual option.</p>
+      <p class="full-signature"><code>caplib::PriceCmRangeAccrualOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmphoenixautocallablenote price a commodity phoenix autocallable note. cmpricing7(phoenixautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmphoenixautocallablenote"></a>
+      <h3><code>PriceCmPhoenixAutoCallableNote</code></h3>
+      <p class="api-description">Price a commodity phoenix autocallable note.</p>
+      <p class="full-signature"><code>caplib::PriceCmPhoenixAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecmsnowballautocallablenote price a commodity snowball autocallable note. cmpricing7(snowballautocallablenote) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecmsnowballautocallablenote"></a>
+      <h3><code>PriceCmSnowballAutoCallableNote</code></h3>
+      <p class="api-description">Price a commodity snowball autocallable note.</p>
+      <p class="full-signature"><code>caplib::PriceCmSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Credit and commodity market factories</h2>
+
+<article class="api-card" data-search="createpmcashtemplate create and cache a precious-metal cash template and register it as sdt_pm_cash static data. instname string, startdelay int, deliverydayconvention string, calendars string or string[], daycount string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmcashtemplate"></a>
+      <h3><code>CreatePmCashTemplate</code></h3>
+      <p class="api-description">Create and cache a precious-metal cash template and register it as <code>SDT_PM_CASH</code> static data.</p>
+      <p class="full-signature"><code>caplib::CreatePmCashTemplate(instName STRING, startDelay INT, deliveryDayConvention STRING, calendars STRING or STRING[], dayCount STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>Instrument business name and ObjectCache handle for the created template.</td></tr><tr><td><code>startDelay</code></td><td>INT</td><td>Business-day delay used to derive the start date.</td></tr><tr><td><code>deliveryDayConvention</code></td><td>STRING</td><td>Business-day convention used for delivery date adjustment.</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>Business calendar names used for date adjustment; scalar strings may contain comma- or semicolon-delimited calendar names.</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>Day-count convention used for accrual or rate calculations.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>Domain market data and settings</h2>
+
+<article class="api-card" data-search="createpmparratecurve create and cache a precious-metal par-rate curve input object. asofdate date, currency string, curvename string, pillarstable matrix/table, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmparratecurve"></a>
+      <h3><code>CreatePmParRateCurve</code></h3>
+      <p class="api-description">Create and cache a precious-metal par-rate curve input object.</p>
+      <p class="full-signature"><code>caplib::CreatePmParRateCurve(asOfDate DATE, currency STRING, curveName STRING, pillarsTable MATRIX/TABLE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>Business name assigned to the curve.</td></tr><tr><td><code>pillarsTable</code></td><td>MATRIX/TABLE</td><td>Table or matrix containing precious-metal par-curve pillars.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpmmktconventions create and cache precious-metal market conventions. atmtype string, shortdeltatype string, longdeltatype string, deltacutoff string, riskreversal string, smilequotetype string, underlying string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmmktconventions"></a>
+      <h3><code>CreatePmMktConventions</code></h3>
+      <p class="api-description">Create and cache precious-metal market conventions.</p>
+      <p class="full-signature"><code>caplib::CreatePmMktConventions(atmType STRING, shortDeltaType STRING, longDeltaType STRING, deltaCutoff STRING, riskReversal STRING, smileQuoteType STRING, underlying STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>atmType</code></td><td>STRING</td><td>ATM quote convention used by the FX or precious-metal volatility market.</td></tr><tr><td><code>shortDeltaType</code></td><td>STRING</td><td>Short-tenor delta convention used by smile quotes.</td></tr><tr><td><code>longDeltaType</code></td><td>STRING</td><td>Long-tenor delta convention used by smile quotes.</td></tr><tr><td><code>deltaCutoff</code></td><td>STRING</td><td>Delta cutoff convention used by the smile market conventions.</td></tr><tr><td><code>riskReversal</code></td><td>STRING</td><td>Risk-reversal quote convention used by smile market conventions.</td></tr><tr><td><code>smileQuoteType</code></td><td>STRING</td><td>Smile quote representation used by market conventions.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>ObjectCache key or tag used to retrieve the created object later.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createpmoptionquotematrix create and cache a precious-metal option quote matrix using volatility, relative term, and delta strike quoting. underlying string, asofdate date, terms string[], payofftypes string matrix/vector, deltas double matrix/vector, quotes double matrix/vector, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createpmoptionquotematrix"></a>
+      <h3><code>CreatePmOptionQuoteMatrix</code></h3>
+      <p class="api-description">Create and cache a precious-metal option quote matrix using volatility, relative term, and delta strike quoting.</p>
+      <p class="full-signature"><code>caplib::CreatePmOptionQuoteMatrix(underlying STRING, asOfDate DATE, terms STRING[], payoffTypes STRING matrix/vector, deltas DOUBLE matrix/vector, quotes DOUBLE matrix/vector, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>Relative quote terms aligned with quote rows.</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>Payoff type matrix or vector aligned with option quote values.</td></tr><tr><td><code>deltas</code></td><td>DOUBLE matrix/vector</td><td>Numeric input for deltas.</td></tr><tr><td><code>quotes</code></td><td>DOUBLE matrix/vector</td><td>Market quote values aligned with instruments, terms, strikes, or deltas.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcmoptionquotematrix create and cache a commodity option quote matrix using price, absolute term, and absolute strike quoting. exercisetype string, underlyingtype string, asofdate date, termdates date[], payofftypes string matrix/vector, strikes double matrix/vector, prices double matrix/vector, underlying string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcmoptionquotematrix"></a>
+      <h3><code>CreateCmOptionQuoteMatrix</code></h3>
+      <p class="api-description">Create and cache a commodity option quote matrix using price, absolute term, and absolute strike quoting.</p>
+      <p class="full-signature"><code>caplib::CreateCmOptionQuoteMatrix(exerciseType STRING, underlyingType STRING, asOfDate DATE, termDates DATE[], payoffTypes STRING matrix/vector, strikes DOUBLE matrix/vector, prices DOUBLE matrix/vector, underlying STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>exerciseType</code></td><td>STRING</td><td>Exercise style of the option, such as European or American.</td></tr><tr><td><code>underlyingType</code></td><td>STRING</td><td>Underlying type enum used by the option instrument.</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>Market-data as-of date or valuation reference date for the created object.</td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>Absolute quote term or expiry dates aligned with quote rows.</td></tr><tr><td><code>payoffTypes</code></td><td>STRING matrix/vector</td><td>Payoff type matrix or vector aligned with option quote values.</td></tr><tr><td><code>strikes</code></td><td>DOUBLE matrix/vector</td><td>Strike levels aligned with option quotes or volatility rows.</td></tr><tr><td><code>prices</code></td><td>DOUBLE matrix/vector</td><td>Option prices or market prices aligned with strikes and maturities.</td></tr><tr><td><code>underlying</code></td><td>STRING</td><td>Underlying asset, index, commodity, or currency-pair identifier.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key assigned to the created object and returned by the function.</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `${visible} of ${cards.length} functions`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

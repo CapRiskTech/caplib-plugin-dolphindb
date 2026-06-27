@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>固定收益 | CAPLIB</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="alternate" hreflang="en" href="../fixed-income.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../fixed-income.html">English</a><span class="lang-active">中文</span></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child" href="index.html#user-guide">介绍</a><a class="nav-child active" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="shared.html#api-reference">通用 <span>21</span></a><a class="nav-child active" href="fixed-income.html#api-reference">固定收益 <span>64</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib 插件</p>
+        <h1>固定收益</h1>
+        <p class="lede">利率、债券、信用、跨币种利率、固定收益市场数据与风险设置。</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>利率、债券、信用、跨币种利率、固定收益市场数据与风险设置。 本页包含 60 个函数。可按函数名、返回类型、参数或说明进行筛选。</p></section><section class="panel example"><h2>示例</h2><pre><code>asOfDate = 2025.01.02;
+usdCurve = caplib::CreateIrYieldCurve(
+    asOfDate,
+    [2025.07.02, 2026.01.02, 2027.01.02],
+    [0.0200, 0.0215, 0.0230],
+    &quot;ZERO_RATE&quot;, &quot;ACT_365_FIXED&quot;, &quot;LINEAR_INTERP&quot;, &quot;FLAT_EXTRAP&quot;,
+    &quot;CONTINUOUS_COMPOUNDING&quot;, &quot;USD&quot;, &quot;USD_DISCOUNT&quot;, &quot;USD_DISC&quot;, false);
+
+pricingResult = caplib::PriceIrVanillaInstrument(
+    &quot;IR_SWAP&quot;, asOfDate, &quot;IR_MKT&quot;, &quot;IR_PRICING&quot;, &quot;IR_RISK&quot;, &quot;&quot;, &quot;&quot;, true);
+pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+<section class="api-group"><h2>共享市场数据与设置</h2>
+
+<article class="api-card" data-search="createiryieldcurve create and cache an ir yield curve. referencedate date, pillardates date[], pillarvalues double[], curvetype string, dcc string, interp string, extrap string, compounding string, currency string, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createiryieldcurve"></a>
+      <h3><code>CreateIrYieldCurve</code></h3>
+      <p class="api-description">创建并缓存利率收益率曲线。</p>
+      <p class="full-signature"><code>caplib::CreateIrYieldCurve(referenceDate DATE, pillarDates DATE[], pillarValues DOUBLE[], curveType STRING, dcc STRING, interp STRING, extrap STRING, compounding STRING, currency STRING, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>曲线节点日期数组。</td></tr><tr><td><code>pillarValues</code></td><td>DOUBLE[]</td><td>曲线节点值数组。</td></tr><tr><td><code>curveType</code></td><td>STRING</td><td>曲线值类型，例如零利率、贴现因子或利差。</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>插值方法。</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>外推方法。</td></tr><tr><td><code>compounding</code></td><td>STRING</td><td>复利约定。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcreditcurve create and cache 信用曲线。 referencedate date, pillardates date[], spreads double[], dcc string, interp string, extrap string, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcreditcurve"></a>
+      <h3><code>CreateCreditCurve</code></h3>
+      <p class="api-description">创建并缓存信用曲线。</p>
+      <p class="full-signature"><code>caplib::CreateCreditCurve(referenceDate DATE, pillarDates DATE[], spreads DOUBLE[], dcc STRING, interp STRING, extrap STRING, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>pillarDates</code></td><td>DATE[]</td><td>曲线节点日期数组。</td></tr><tr><td><code>spreads</code></td><td>DOUBLE[]</td><td>信用利差或曲线利差数组。</td></tr><tr><td><code>dcc</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>interp</code></td><td>STRING</td><td>插值方法。</td></tr><tr><td><code>extrap</code></td><td>STRING</td><td>外推方法。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createircurverisksettings create and cache ir-curve 风险设置。 delta bool, gamma bool, curvature bool, shift double, curvatureshift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createircurverisksettings"></a>
+      <h3><code>CreateIrCurveRiskSettings</code></h3>
+      <p class="api-description">创建并缓存利率曲线风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateIrCurveRiskSettings(delta BOOL, gamma BOOL, curvature BOOL, shift DOUBLE, curvatureShift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>是否计算 Delta 风险或 Delta 数值。</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>是否计算 Gamma 风险。</td></tr><tr><td><code>curvature</code></td><td>BOOL</td><td>是否计算曲率风险。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>curvatureShift</code></td><td>DOUBLE</td><td>曲率风险使用的扰动大小。</td></tr><tr><td><code>method</code></td><td>INT</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>风险桶或扰动粒度。</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>风险扰动缩放因子。</td></tr><tr><td><code>threading</code></td><td>INT</td><td>线程模式选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcreditcurverisksettings create and cache credit-curve 风险设置。 delta bool, gamma bool, shift double, method int, granularity int, scaling double, threading int, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcreditcurverisksettings"></a>
+      <h3><code>CreateCreditCurveRiskSettings</code></h3>
+      <p class="api-description">创建并缓存信用曲线风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateCreditCurveRiskSettings(delta BOOL, gamma BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>delta</code></td><td>BOOL</td><td>是否计算 Delta 风险或 Delta 数值。</td></tr><tr><td><code>gamma</code></td><td>BOOL</td><td>是否计算 Gamma 风险。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>method</code></td><td>INT</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>granularity</code></td><td>INT</td><td>风险桶或扰动粒度。</td></tr><tr><td><code>scaling</code></td><td>DOUBLE</td><td>风险扰动缩放因子。</td></tr><tr><td><code>threading</code></td><td>INT</td><td>线程模式选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>利率分析</h2>
+
+<article class="api-card" data-search="calcirvanillaswaprate calculate a vanilla swap rate. calculationdate date, swaptemplatehandle string, tenor string, discountcurvehandle string, forwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcirvanillaswaprate"></a>
+      <h3><code>CalcIrVanillaSwapRate</code></h3>
+      <p class="api-description">计算标准利率互换利率。</p>
+      <p class="full-signature"><code>caplib::CalcIrVanillaSwapRate(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, discountCurveHandle STRING, forwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>互换模板 内存对象 句柄。</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>期限字符串，例如 3M、6M、1Y 或 5Y。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calciborindexrate calculate ibor fixings from an index definition and yield curve. fixingdates date[], iborindexhandle string, iryieldcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calciborindexrate"></a>
+      <h3><code>CalcIborIndexRate</code></h3>
+      <p class="api-description">根据 IBOR 指数和收益率曲线计算定盘利率。</p>
+      <p class="full-signature"><code>caplib::CalcIborIndexRate(fixingDates DATE[], iborIndexHandle STRING, irYieldCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>fixingDates</code></td><td>DATE[]</td><td>观察或定盘日期数组。</td></tr><tr><td><code>iborIndexHandle</code></td><td>STRING</td><td>IBOR 指数 内存对象 句柄。</td></tr><tr><td><code>irYieldCurveHandle</code></td><td>STRING</td><td>利率收益率曲线 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calctenorbasisswapspread calculate a tenor-basis swap spread. calculationdate date, swaptemplatehandle string, tenor string, discountcurvehandle string, shortforwardcurvehandle string, longforwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calctenorbasisswapspread"></a>
+      <h3><code>CalcTenorBasisSwapSpread</code></h3>
+      <p class="api-description">计算期限基差互换利差。</p>
+      <p class="full-signature"><code>caplib::CalcTenorBasisSwapSpread(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, discountCurveHandle STRING, shortForwardCurveHandle STRING, longForwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>互换模板 内存对象 句柄。</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>期限字符串，例如 3M、6M、1Y 或 5Y。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>shortForwardCurveHandle</code></td><td>STRING</td><td>短期限远期曲线 内存对象 句柄。</td></tr><tr><td><code>longForwardCurveHandle</code></td><td>STRING</td><td>长期限远期曲线 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calccrosscurrencyswaprate calculate a cross-currency swap rate. calculationdate date, swaptemplatehandle string, tenor string, fxrate double, baseccy string, targetccy string, refdate date, spotdate date, targetdiscountcurvehandle string, basediscountcurvehandle string, baseforwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calccrosscurrencyswaprate"></a>
+      <h3><code>CalcCrossCurrencySwapRate</code></h3>
+      <p class="api-description">计算跨币种互换利率。</p>
+      <p class="full-signature"><code>caplib::CalcCrossCurrencySwapRate(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, targetDiscountCurveHandle STRING, baseDiscountCurveHandle STRING, baseForwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>互换模板 内存对象 句柄。</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>期限字符串，例如 3M、6M、1Y 或 5Y。</td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>外汇汇率输入值。</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>targetDiscountCurveHandle</code></td><td>STRING</td><td>目标币种贴现曲线 内存对象 句柄。</td></tr><tr><td><code>baseDiscountCurveHandle</code></td><td>STRING</td><td>基准币种贴现曲线 内存对象 句柄。</td></tr><tr><td><code>baseForwardCurveHandle</code></td><td>STRING</td><td>基准币种远期曲线 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calccrosscurrencybasisswapspread calculate a cross-currency basis spread. calculationdate date, swaptemplatehandle string, tenor string, fxrate double, baseccy string, targetccy string, refdate date, spotdate date, targetdiscountcurvehandle string, targetforwardcurvehandle string, basediscountcurvehandle string, baseforwardcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calccrosscurrencybasisswapspread"></a>
+      <h3><code>CalcCrossCurrencyBasisSwapSpread</code></h3>
+      <p class="api-description">计算跨币种基差互换利差。</p>
+      <p class="full-signature"><code>caplib::CalcCrossCurrencyBasisSwapSpread(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, targetDiscountCurveHandle STRING, targetForwardCurveHandle STRING, baseDiscountCurveHandle STRING, baseForwardCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>swapTemplateHandle</code></td><td>STRING</td><td>互换模板 内存对象 句柄。</td></tr><tr><td><code>tenor</code></td><td>STRING</td><td>期限字符串，例如 3M、6M、1Y 或 5Y。</td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>外汇汇率输入值。</td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。</td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。</td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。</td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。</td></tr><tr><td><code>targetDiscountCurveHandle</code></td><td>STRING</td><td>目标币种贴现曲线 内存对象 句柄。</td></tr><tr><td><code>targetForwardCurveHandle</code></td><td>STRING</td><td>目标币种远期曲线 内存对象 句柄。</td></tr><tr><td><code>baseDiscountCurveHandle</code></td><td>STRING</td><td>基准币种贴现曲线 内存对象 句柄。</td></tr><tr><td><code>baseForwardCurveHandle</code></td><td>STRING</td><td>基准币种远期曲线 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirparratecurve create and cache an ir par-rate curve input object. asofdate date, currency string, curvename string, instnames string[], insttypes string[], instterms string[], factors double[], quotes double[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirparratecurve"></a>
+      <h3><code>CreateIrParRateCurve</code></h3>
+      <p class="api-description">创建并缓存利率平价利率曲线输入。</p>
+      <p class="full-signature"><code>caplib::CreateIrParRateCurve(asOfDate DATE, currency STRING, curveName STRING, instNames STRING[], instTypes STRING[], instTerms STRING[], factors DOUBLE[], quotes DOUBLE[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>instNames</code></td><td>STRING[]</td><td>与工具类型、期限和报价对齐的工具名称。</td></tr><tr><td><code>instTypes</code></td><td>STRING[]</td><td>构建曲线使用的工具类型数组。</td></tr><tr><td><code>instTerms</code></td><td>STRING[]</td><td>与工具名称对齐的工具期限。</td></tr><tr><td><code>factors</code></td><td>DOUBLE[]</td><td>与工具或报价对齐的缩放因子。</td></tr><tr><td><code>quotes</code></td><td>DOUBLE[]</td><td>市场报价值数组。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createiryieldcurvebuildsettings create and cache ir yield-curve build settings. curvename string, useontnfxswap bool, discountcurrencynames string[], discountcurvenames string[], forwardindexnames string[], forwardcurvenames string[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createiryieldcurvebuildsettings"></a>
+      <h3><code>CreateIrYieldCurveBuildSettings</code></h3>
+      <p class="api-description">创建并缓存利率收益率曲线构建设置。</p>
+      <p class="full-signature"><code>caplib::CreateIrYieldCurveBuildSettings(curveName STRING, useOnTnFxSwap BOOL, discountCurrencyNames STRING[], discountCurveNames STRING[], forwardIndexNames STRING[], forwardCurveNames STRING[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>useOnTnFxSwap</code></td><td>BOOL</td><td>是否使用 ON/TN 外汇掉期工具构建曲线。</td></tr><tr><td><code>discountCurrencyNames</code></td><td>STRING[]</td><td>币种代码。</td></tr><tr><td><code>discountCurveNames</code></td><td>STRING[]</td><td>贴现曲线名称数组。</td></tr><tr><td><code>forwardIndexNames</code></td><td>STRING[]</td><td>远期指数名称数组。</td></tr><tr><td><code>forwardCurveNames</code></td><td>STRING[]</td><td>远期曲线名称数组。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildirsinglecurrencycurve build a single-currency ir curve set. referencedate date, targetcurvenames string[], buildsettingshandles string[], parcurvehandles string[], daycountconvention string, compoundingtype string, frequency string, othercurvehandles string[], buildingmethod string, calcjacobian bool, shift double, finitedifferencemethod string, threadingmode string, targetcurvehandles string[], outputhandle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildirsinglecurrencycurve"></a>
+      <h3><code>BuildIrSingleCurrencyCurve</code></h3>
+      <p class="api-description">构建单币种利率曲线组。</p>
+      <p class="full-signature"><code>caplib::BuildIrSingleCurrencyCurve(referenceDate DATE, targetCurveNames STRING[], buildSettingsHandles STRING[], parCurveHandles STRING[], dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING[], buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING[], outputHandle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>targetCurveNames</code></td><td>STRING[]</td><td>待构建目标曲线名称数组。</td></tr><tr><td><code>buildSettingsHandles</code></td><td>STRING[]</td><td>曲线构建设置 内存对象 句柄数组。</td></tr><tr><td><code>parCurveHandles</code></td><td>STRING[]</td><td>平价曲线输入对象 内存对象 句柄数组。</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>复利类型。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>otherCurveHandles</code></td><td>STRING[]</td><td>构建所需的其他曲线 内存对象 句柄数组。</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>曲线或曲面构建算法名称。</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>是否计算并返回校准雅可比信息。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>finiteDifferenceMethod</code></td><td>STRING</td><td>有限差分方法。</td></tr><tr><td><code>threadingMode</code></td><td>STRING</td><td>线程模式。</td></tr><tr><td><code>targetCurveHandles</code></td><td>STRING[]</td><td>构建输出的目标曲线句柄数组。</td></tr><tr><td><code>outputHandle</code></td><td>STRING</td><td>构建输出对象的缓存句柄。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildircrosscurrencycurve build a cross-currency ir curve set. referencedate date, targetcurvenames string[], buildsettingshandles string[], parcurvehandles string[], daycountconvention string, compoundingtype string, frequency string, othercurvehandles string[], fxspothandle string, buildingmethod string, calcjacobian bool, shift double, finitedifferencemethod string, threadingmode string, targetcurvehandles string[], outputhandle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildircrosscurrencycurve"></a>
+      <h3><code>BuildIrCrossCurrencyCurve</code></h3>
+      <p class="api-description">构建跨币种利率曲线组。</p>
+      <p class="full-signature"><code>caplib::BuildIrCrossCurrencyCurve(referenceDate DATE, targetCurveNames STRING[], buildSettingsHandles STRING[], parCurveHandles STRING[], dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING[], fxSpotHandle STRING, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING[], outputHandle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>targetCurveNames</code></td><td>STRING[]</td><td>待构建目标曲线名称数组。</td></tr><tr><td><code>buildSettingsHandles</code></td><td>STRING[]</td><td>曲线构建设置 内存对象 句柄数组。</td></tr><tr><td><code>parCurveHandles</code></td><td>STRING[]</td><td>平价曲线输入对象 内存对象 句柄数组。</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>复利类型。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>otherCurveHandles</code></td><td>STRING[]</td><td>构建所需的其他曲线 内存对象 句柄数组。</td></tr><tr><td><code>fxSpotHandle</code></td><td>STRING</td><td>外汇即期汇率 内存对象 句柄。</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>曲线或曲面构建算法名称。</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>是否计算并返回校准雅可比信息。</td></tr><tr><td><code>shift</code></td><td>DOUBLE</td><td>风险或校准计算使用的扰动大小。</td></tr><tr><td><code>finiteDifferenceMethod</code></td><td>STRING</td><td>有限差分方法。</td></tr><tr><td><code>threadingMode</code></td><td>STRING</td><td>线程模式。</td></tr><tr><td><code>targetCurveHandles</code></td><td>STRING[]</td><td>构建输出的目标曲线句柄数组。</td></tr><tr><td><code>outputHandle</code></td><td>STRING</td><td>构建输出对象的缓存句柄。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createircapfloorquotematrix create and cache an ir cap-floor quote matrix. asofdate date, terms string[], strikes double vector, vols double matrix, instname string, factor double, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createircapfloorquotematrix"></a>
+      <h3><code>CreateIrCapFloorQuoteMatrix</code></h3>
+      <p class="api-description">创建并缓存利率上限/下限报价矩阵。</p>
+      <p class="full-signature"><code>caplib::CreateIrCapFloorQuoteMatrix(asOfDate DATE, terms STRING[], strikes DOUBLE vector, vols DOUBLE matrix, instName STRING, factor DOUBLE, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>报价期限数组。</td></tr><tr><td><code>strikes</code></td><td>DOUBLE vector</td><td>行权价数组或矩阵。</td></tr><tr><td><code>vols</code></td><td>DOUBLE matrix</td><td>波动率节点值数组。</td></tr><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>factor</code></td><td>DOUBLE</td><td>报价或工具缩放因子。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildircapfloorvolatilitysurface build and cache an ir cap-floor volatility surface. iborindex string, referencedate date, quotematrixhandle string, discountcurvehandle string, forwardcurvehandle string, definitionhandle string, displacement double, name string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildircapfloorvolatilitysurface"></a>
+      <h3><code>BuildIrCapFloorVolatilitySurface</code></h3>
+      <p class="api-description">构建利率上限/下限波动率曲面。</p>
+      <p class="full-signature"><code>caplib::BuildIrCapFloorVolatilitySurface(iborIndex STRING, referenceDate DATE, quoteMatrixHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, definitionHandle STRING, displacement DOUBLE, name STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>iborIndex</code></td><td>STRING</td><td>IBOR 指数名称或句柄。</td></tr><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>期权报价矩阵 内存对象 句柄。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>displacement</code></td><td>DOUBLE</td><td>移位对数正态模型使用的位移参数。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirswaptionquotecube create and cache an ir swaption quote cube from serialized request bytes. inputbytes string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirswaptionquotecube"></a>
+      <h3><code>CreateIrSwaptionQuoteCube</code></h3>
+      <p class="api-description">创建并缓存利率互换期权报价立方体。</p>
+      <p class="full-signature"><code>caplib::CreateIrSwaptionQuoteCube(inputBytes STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>inputBytes</code></td><td>STRING</td><td>输入对象 protobuf 字节。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildirswaptionvolatilitysurface build and cache an ir swaption volatility surface. instname string, referencedate date, quotecubehandle string, discountcurvehandle string, forwardcurvehandle string, definitionhandle string, buildsettingshandle string, underlyingswaptemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildirswaptionvolatilitysurface"></a>
+      <h3><code>BuildIrSwaptionVolatilitySurface</code></h3>
+      <p class="api-description">构建利率互换期权波动率曲面。</p>
+      <p class="full-signature"><code>caplib::BuildIrSwaptionVolatilitySurface(instName STRING, referenceDate DATE, quoteCubeHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, underlyingSwapTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>quoteCubeHandle</code></td><td>STRING</td><td>报价立方体 内存对象 句柄。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>构建设置 内存对象 句柄。</td></tr><tr><td><code>underlyingSwapTemplateHandle</code></td><td>STRING</td><td>标的互换模板 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirmktdataset create and cache an ir market-data set. asofdate date, discountcurvehandle string, underlyinginterestrates string[], forwardcurvehandles string[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirmktdataset"></a>
+      <h3><code>CreateIrMktDataSet</code></h3>
+      <p class="api-description">创建并缓存利率市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateIrMktDataSet(asOfDate DATE, discountCurveHandle STRING, underlyingInterestRates STRING[], forwardCurveHandles STRING[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>underlyingInterestRates</code></td><td>STRING[]</td><td>标的利率指数名称数组。</td></tr><tr><td><code>forwardCurveHandles</code></td><td>STRING[]</td><td>远期曲线 内存对象 句柄数组。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createircrossccymktdataset create and cache a cross-currency ir market-data set. asofdate date, basediscountcurvehandle string, underlyinginterestrates string[], forwardcurvehandles string[], crossccydiscountcurvehandle string, fxspothandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createircrossccymktdataset"></a>
+      <h3><code>CreateIrCrossCcyMktDataSet</code></h3>
+      <p class="api-description">创建并缓存跨币种利率市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateIrCrossCcyMktDataSet(asOfDate DATE, baseDiscountCurveHandle STRING, underlyingInterestRates STRING[], forwardCurveHandles STRING[], crossCcyDiscountCurveHandle STRING, fxSpotHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>baseDiscountCurveHandle</code></td><td>STRING</td><td>基准币种贴现曲线 内存对象 句柄。</td></tr><tr><td><code>underlyingInterestRates</code></td><td>STRING[]</td><td>标的利率指数名称数组。</td></tr><tr><td><code>forwardCurveHandles</code></td><td>STRING[]</td><td>远期曲线 内存对象 句柄数组。</td></tr><tr><td><code>crossCcyDiscountCurveHandle</code></td><td>STRING</td><td>跨币种贴现曲线 内存对象 句柄。</td></tr><tr><td><code>fxSpotHandle</code></td><td>STRING</td><td>外汇即期汇率 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirrisksettings create and cache ir 风险设置。 ircurverisksettingshandle string, thetarisksettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirrisksettings"></a>
+      <h3><code>CreateIrRiskSettings</code></h3>
+      <p class="api-description">创建并缓存利率风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateIrRiskSettings(irCurveRiskSettingsHandle STRING, thetaRiskSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irCurveRiskSettingsHandle</code></td><td>STRING</td><td>利率曲线风险设置 内存对象 句柄。</td></tr><tr><td><code>thetaRiskSettingsHandle</code></td><td>STRING</td><td>Theta 风险设置 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createxccyirrisksettings create and cache cross-currency ir 风险设置。 ircurverisksettingshandle string, fxrisksettingshandle string, thetarisksettingshandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createxccyirrisksettings"></a>
+      <h3><code>CreateXccyIrRiskSettings</code></h3>
+      <p class="api-description">创建并缓存跨币种利率风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateXccyIrRiskSettings(irCurveRiskSettingsHandle STRING, fxRiskSettingsHandle STRING, thetaRiskSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irCurveRiskSettingsHandle</code></td><td>STRING</td><td>利率曲线风险设置 内存对象 句柄。</td></tr><tr><td><code>fxRiskSettingsHandle</code></td><td>STRING</td><td>外汇风险设置 内存对象 句柄。</td></tr><tr><td><code>thetaRiskSettingsHandle</code></td><td>STRING</td><td>Theta 风险设置 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceirvanillainstrument price an ir vanilla instrument. irpricing7(irvanillainstrument, irmktdataset, irrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceirvanillainstrument"></a>
+      <h3><code>PriceIrVanillaInstrument</code></h3>
+      <p class="api-description">执行定价并返回定价结果。</p>
+      <p class="full-signature"><code>caplib::PriceIrVanillaInstrument(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceircrosscurrencyswap price an ir cross-currency swap. irpricing7(irvanillainstrument, ircrossccymktdataset, xccyirrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceircrosscurrencyswap"></a>
+      <h3><code>PriceIrCrossCurrencySwap</code></h3>
+      <p class="api-description">执行定价并返回定价结果。</p>
+      <p class="full-signature"><code>caplib::PriceIrCrossCurrencySwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceirmtmcrosscurrencyswap price an ir mark-to-market cross-currency swap. irpricing7(irvanillainstrument, ircrossccymktdataset, xccyirrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceirmtmcrosscurrencyswap"></a>
+      <h3><code>PriceIrMtmCrossCurrencySwap</code></h3>
+      <p class="api-description">执行定价并返回定价结果。</p>
+      <p class="full-signature"><code>caplib::PriceIrMtmCrossCurrencySwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceircapfloor price an ir cap or floor. irpricing7(ircapfloor, irmktdataset, irrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceircapfloor"></a>
+      <h3><code>PriceIrCapFloor</code></h3>
+      <p class="api-description">执行定价并返回定价结果。</p>
+      <p class="full-signature"><code>caplib::PriceIrCapFloor(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="priceireuropeanswaption price an ir european swaption. irpricing7(ireuropeanswaption, irmktdataset, irrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="priceireuropeanswaption"></a>
+      <h3><code>PriceIrEuropeanSwaption</code></h3>
+      <p class="api-description">执行定价并返回定价结果。</p>
+      <p class="full-signature"><code>caplib::PriceIrEuropeanSwaption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>固定收益分析</h2>
+
+<article class="api-card" data-search="createbondparcurve create and cache a bond par-curve input object from instrument names and quotes. referencedate date, currency string, instrumentnames string[], quotes double[], quotetype string, curvename string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondparcurve"></a>
+      <h3><code>CreateBondParCurve</code></h3>
+      <p class="api-description">创建并缓存债券平价曲线输入。</p>
+      <p class="full-signature"><code>caplib::CreateBondParCurve(referenceDate DATE, currency STRING, instrumentNames STRING[], quotes DOUBLE[], quoteType STRING, curveName STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>instrumentNames</code></td><td>STRING[]</td><td>市场工具名称数组。</td></tr><tr><td><code>quotes</code></td><td>DOUBLE[]</td><td>市场报价值数组。</td></tr><tr><td><code>quoteType</code></td><td>STRING</td><td>市场报价类型。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildbondyieldcurve build and cache a bond yield curve from cached build settings and par curve objects. referencedate date, buildsettingshandle string, curvename string, parcurvehandle string, daycount string, compoundingtype string, frequency string, buildingmethod string, calcjacobian bool, forwardcurvehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildbondyieldcurve"></a>
+      <h3><code>BuildBondYieldCurve</code></h3>
+      <p class="api-description">构建债券收益率曲线。</p>
+      <p class="full-signature"><code>caplib::BuildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCount STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian BOOL, forwardCurveHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>构建设置 内存对象 句柄。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>平价曲线输入对象 内存对象 句柄。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>复利类型。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>曲线或曲面构建算法名称。</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>是否计算并返回校准雅可比信息。</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildbondcreditspreadcurve build and cache a bond credit-spread curve from cached par and discount curve objects. referencedate date, curvename string, parcurvehandle string, discountcurvehandle string, forwardcurvehandle string, buildingmethod string, calcjacobian bool, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildbondcreditspreadcurve"></a>
+      <h3><code>BuildBondCreditSpreadCurve</code></h3>
+      <p class="api-description">构建债券信用利差曲线。</p>
+      <p class="full-signature"><code>caplib::BuildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian BOOL, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>平价曲线输入对象 内存对象 句柄。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>buildingMethod</code></td><td>STRING</td><td>曲线或曲面构建算法名称。</td></tr><tr><td><code>calcJacobian</code></td><td>BOOL</td><td>是否计算并返回校准雅可比信息。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcconversionfactor calculate a bond future conversion factor. bondcouponrate double, bondcpnfreq string, nominalcpnrate double, bondmaturity date, settlementdate date, lastcpndate date scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcconversionfactor"></a>
+      <h3><code>CalcConversionFactor</code></h3>
+      <p class="api-description">计算债券期货转换因子。</p>
+      <p class="full-signature"><code>caplib::CalcConversionFactor(bondCouponRate DOUBLE, bondCpnFreq STRING, nominalCpnRate DOUBLE, bondMaturity DATE, settlementDate DATE, lastCpnDate DATE)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>bondCouponRate</code></td><td>DOUBLE</td><td>债券票息率。</td></tr><tr><td><code>bondCpnFreq</code></td><td>STRING</td><td>债券票息频率。</td></tr><tr><td><code>nominalCpnRate</code></td><td>DOUBLE</td><td>名义票息率。</td></tr><tr><td><code>bondMaturity</code></td><td>DATE</td><td>债券到期日。</td></tr><tr><td><code>settlementDate</code></td><td>DATE</td><td>结算日期。</td></tr><tr><td><code>lastCpnDate</code></td><td>DATE</td><td>上一票息日期。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcimpliedreporate calculate implied repo rate. futprice double, conversionfactor double, bondcleanprice double, bondcpnrate double, asofdate date, lastcpndate date, settlementdate date, daycount string, nextcpndate date, cpnfreq string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcimpliedreporate"></a>
+      <h3><code>CalcImpliedRepoRate</code></h3>
+      <p class="api-description">计算隐含回购利率。</p>
+      <p class="full-signature"><code>caplib::CalcImpliedRepoRate(futPrice DOUBLE, conversionFactor DOUBLE, bondCleanPrice DOUBLE, bondCpnRate DOUBLE, asOfDate DATE, lastCpnDate DATE, settlementDate DATE, dayCount STRING, nextCpnDate DATE, cpnFreq STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>futPrice</code></td><td>DOUBLE</td><td>期货价格。</td></tr><tr><td><code>conversionFactor</code></td><td>DOUBLE</td><td>转换因子。</td></tr><tr><td><code>bondCleanPrice</code></td><td>DOUBLE</td><td>债券净价。</td></tr><tr><td><code>bondCpnRate</code></td><td>DOUBLE</td><td>债券票息率。</td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>lastCpnDate</code></td><td>DATE</td><td>上一票息日期。</td></tr><tr><td><code>settlementDate</code></td><td>DATE</td><td>结算日期。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>nextCpnDate</code></td><td>DATE</td><td>下一票息日期。</td></tr><tr><td><code>cpnFreq</code></td><td>STRING</td><td>票息频率。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calczspread calculate z-spread for a bond. npv double, calculationdate date, bondbytes string, discountcurvebytes string, spreadcurvebytes string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calczspread"></a>
+      <h3><code>CalcZSpread</code></h3>
+      <p class="api-description">计算债券 Z 利差。</p>
+      <p class="full-signature"><code>caplib::CalcZSpread(npv DOUBLE, calculationDate DATE, bondBytes STRING, discountCurveBytes STRING, spreadCurveBytes STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>npv</code></td><td>DOUBLE</td><td>净现值。</td></tr><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>bondBytes</code></td><td>STRING</td><td>债券对象 protobuf 字节。</td></tr><tr><td><code>discountCurveBytes</code></td><td>STRING</td><td>贴现曲线 protobuf 字节或 内存对象 句柄。</td></tr><tr><td><code>spreadCurveBytes</code></td><td>STRING</td><td>利差曲线 protobuf 字节或 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcyieldtomaturity calculate bond yield to maturity from cached bond and optional forward curve objects. calculationdate date, compoundingtype string, bondhandle string, forwardcurvehandle string, price double, pricetype string, frequency string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcyieldtomaturity"></a>
+      <h3><code>CalcYieldToMaturity</code></h3>
+      <p class="api-description">计算债券到期收益率。</p>
+      <p class="full-signature"><code>caplib::CalcYieldToMaturity(calculationDate DATE, compoundingType STRING, bondHandle STRING, forwardCurveHandle STRING, price DOUBLE, priceType STRING, frequency STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>compoundingType</code></td><td>STRING</td><td>复利类型。</td></tr><tr><td><code>bondHandle</code></td><td>STRING</td><td>债券对象 内存对象 句柄。</td></tr><tr><td><code>forwardCurveHandle</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>price</code></td><td>DOUBLE</td><td>价格。</td></tr><tr><td><code>priceType</code></td><td>STRING</td><td>价格类型。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="calcfixedcpnbondparrate calculate fixed-coupon bond par rate from cached bond and curve objects. calculationdate date, bondhandle string, discountcurvehandle string, spreadcurvehandle string scalar">
+  <div class="api-card-head">
+    <div>
+      <a id="calcfixedcpnbondparrate"></a>
+      <h3><code>CalcFixedCpnBondParRate</code></h3>
+      <p class="api-description">计算固定票息债券平价利率。</p>
+      <p class="full-signature"><code>caplib::CalcFixedCpnBondParRate(calculationDate DATE, bondHandle STRING, discountCurveHandle STRING, spreadCurveHandle STRING)</code></p>
+    </div>
+    <span class="return-pill">SCALAR</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>执行计算的日期。</td></tr><tr><td><code>bondHandle</code></td><td>STRING</td><td>债券对象 内存对象 句柄。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>spreadCurveHandle</code></td><td>STRING</td><td>利差曲线 内存对象 句柄。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricevanillabond price a vanilla bond through the native fi handle workflow. fipricing7(vanillabond, fimktdataset, firisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricevanillabond"></a>
+      <h3><code>PriceVanillaBond</code></h3>
+      <p class="api-description">定价普通债券。</p>
+      <p class="full-signature"><code>caplib::PriceVanillaBond(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</section>
+<section class="api-group"><h2>信用分析</h2>
+
+<article class="api-card" data-search="createcreditparcurve create and cache a credit par-curve input object. asofdate date, currency string, curvename string, instrumentnames string[], instrumenttypes string[], maturities string[], quotes double[], startconventions string[], handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcreditparcurve"></a>
+      <h3><code>CreateCreditParCurve</code></h3>
+      <p class="api-description">创建并缓存信用平价曲线输入。</p>
+      <p class="full-signature"><code>caplib::CreateCreditParCurve(asOfDate DATE, currency STRING, curveName STRING, instrumentNames STRING[], instrumentTypes STRING[], maturities STRING[], quotes DOUBLE[], startConventions STRING[], handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>instrumentNames</code></td><td>STRING[]</td><td>市场工具名称数组。</td></tr><tr><td><code>instrumentTypes</code></td><td>STRING[]</td><td>市场工具类型数组。</td></tr><tr><td><code>maturities</code></td><td>STRING[]</td><td>工具到期期限数组。</td></tr><tr><td><code>quotes</code></td><td>DOUBLE[]</td><td>市场报价值数组。</td></tr><tr><td><code>startConventions</code></td><td>STRING[]</td><td>工具起息日约定数组。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildcreditcurve build and cache 信用曲线。 asofdate date, parcurvehandle string, discountcurvehandle string, curvename string, method string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildcreditcurve"></a>
+      <h3><code>BuildCreditCurve</code></h3>
+      <p class="api-description">构建信用曲线。</p>
+      <p class="full-signature"><code>caplib::BuildCreditCurve(asOfDate DATE, parCurveHandle STRING, discountCurveHandle STRING, curveName STRING, method STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>parCurveHandle</code></td><td>STRING</td><td>平价曲线输入对象 内存对象 句柄。</td></tr><tr><td><code>discountCurveHandle</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>method</code></td><td>STRING</td><td>计算、校准或有限差分方法选择器。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="pricecreditdefaultswap price a credit default swap. creditpricing7(creditdefaultswap, crmktdataset, crrisksettings) pricing_result returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="pricecreditdefaultswap"></a>
+      <h3><code>PriceCreditDefaultSwap</code></h3>
+      <p class="api-description">定价信用违约互换。</p>
+      <p class="full-signature"><code>caplib::PriceCreditDefaultSwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">PRICING_RESULT</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。</td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。</td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。</td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。</td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。</td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。</td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>利率市场对象工厂</h2>
+
+<article class="api-card" data-search="createinterestcalcscheduledefinition create a schedule definition for interest calculation. calendars string, frequency string, interestdayconvention string, stubpolicy string, brokenperiodtype string, daterollconvention string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createinterestcalcscheduledefinition"></a>
+      <h3><code>CreateInterestCalcScheduleDefinition</code></h3>
+      <p class="api-description">创建并缓存计息日程定义。</p>
+      <p class="full-signature"><code>caplib::CreateInterestCalcScheduleDefinition(calendars STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, dateRollConvention STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calendars</code></td><td>STRING</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>计息日调整约定。</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>短长首末期处理规则。</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>不规则首末期处理类型。</td></tr><tr><td><code>dateRollConvention</code></td><td>STRING</td><td>日期或日期数组。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createinterestpaymentscheduledefinition create a schedule definition for interest payment timing. calendars string, frequency string, paydaymode string, paydayoffset int, paydayconvention string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createinterestpaymentscheduledefinition"></a>
+      <h3><code>CreateInterestPaymentScheduleDefinition</code></h3>
+      <p class="api-description">创建并缓存付息日程定义。</p>
+      <p class="full-signature"><code>caplib::CreateInterestPaymentScheduleDefinition(calendars STRING, frequency STRING, payDayMode STRING, payDayOffset INT, payDayConvention STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calendars</code></td><td>STRING</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>payDayMode</code></td><td>STRING</td><td>付款日生成模式。</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>付款日偏移天数。</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>付款日调整约定。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createinterestratefixingscheduledefinition create a schedule definition for floating-rate fixings. calendars string, frequency string, frequencyratio int, fixingdaymode string, fixingdayoffset int, fixingdayconvention string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createinterestratefixingscheduledefinition"></a>
+      <h3><code>CreateInterestRateFixingScheduleDefinition</code></h3>
+      <p class="api-description">创建并缓存利率定盘日程定义。</p>
+      <p class="full-signature"><code>caplib::CreateInterestRateFixingScheduleDefinition(calendars STRING, frequency STRING, frequencyRatio INT, fixingDayMode STRING, fixingDayOffset INT, fixingDayConvention STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calendars</code></td><td>STRING</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>frequencyRatio</code></td><td>INT</td><td>频率换算比例。</td></tr><tr><td><code>fixingDayMode</code></td><td>STRING</td><td>定盘日生成模式。</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>定盘日偏移天数。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createiborindex create cache and register an ibor index as sdt_ibor_index static data indexname string indextenor string indexccy string calendarlist string or string[] startdelay int daycount string interestdayconvention string daterollconvention string ibortype string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createiborindex"></a>
+      <h3><code>CreateIborIndex</code></h3>
+      <p class="api-description">创建并缓存 IBOR 指数定义。</p>
+      <p class="full-signature"><code>caplib::CreateIborIndex(indexName STRING, indexTenor STRING, indexCcy STRING, calendarList STRING or STRING[], startDelay INT[, dayCount STRING[, interestDayConvention STRING[, dateRollConvention STRING[, iborType STRING]]]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>indexName</code></td><td>STRING</td><td>利率指数名称。</td></tr><tr><td><code>indexTenor</code></td><td>STRING</td><td>利率指数期限。</td></tr><tr><td><code>indexCcy</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>calendarList</code></td><td>STRING or STRING[]</td><td>业务日历名称列表。</td></tr><tr><td><code>startDelay</code></td><td>INT</td><td>起息或交割延迟天数。</td></tr><tr><td><code>dayCount</code></td><td>STRING, optional</td><td>日计数约定。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING, optional</td><td>计息日调整约定。</td></tr><tr><td><code>dateRollConvention</code></td><td>STRING, optional</td><td>日期或日期数组。</td></tr><tr><td><code>iborType</code></td><td>STRING, optional</td><td>IBOR 指数类型。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirlegdefinition create and cache an ir leg definition python style inline schedule arguments handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirlegdefinition"></a>
+      <h3><code>CreateIrLegDefinition</code></h3>
+      <p class="api-description">创建并缓存利率现金流腿定义。</p>
+      <p class="full-signature"><code>caplib::CreateIrLegDefinition(legType STRING, currency STRING, dayCount STRING, refIndex STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, notionalExchange STRING, spread BOOL, fxConvert BOOL, fxReset BOOL, calendar STRING or STRING[], freq STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingCalendars STRING or STRING[], fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>legType</code></td><td>STRING</td><td>现金流腿类型。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>参考利率指数名称或句柄。</td></tr><tr><td><code>payDiscountMethod</code></td><td>STRING</td><td>支付现金流贴现方法。</td></tr><tr><td><code>interestCalcMethod</code></td><td>STRING</td><td>利息计算方法。</td></tr><tr><td><code>interestRateCalcMethod</code></td><td>STRING</td><td>利率计算方法。</td></tr><tr><td><code>brokenRateCalcMethod</code></td><td>STRING</td><td>不规则期间利率计算方法。</td></tr><tr><td><code>notionalExchange</code></td><td>STRING</td><td>是否交换名义本金。</td></tr><tr><td><code>isSpread</code></td><td>BOOL</td><td>是否将输入利率作为利差处理。</td></tr><tr><td><code>isFxConvert</code></td><td>BOOL</td><td>是否进行外汇折算。</td></tr><tr><td><code>isFxReset</code></td><td>BOOL</td><td>是否使用外汇重置。</td></tr><tr><td><code>calcSched</code></td><td>STRING</td><td>计息计算日程对象或句柄。</td></tr><tr><td><code>paySched</code></td><td>STRING</td><td>付款日程对象或句柄。</td></tr><tr><td><code>fixingSched</code></td><td>STRING</td><td>定盘日程对象或句柄。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfixedlegdefinition fixed ir leg definition create_fixed_leg_definition handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfixedlegdefinition"></a>
+      <h3><code>CreateFixedLegDefinition</code></h3>
+      <p class="api-description">创建并缓存固定利率腿定义。</p>
+      <p class="full-signature"><code>caplib::CreateFixedLegDefinition(currency STRING, calendar STRING or STRING[], freq STRING, dayCount STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, notionalExchange STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>业务日历名称。</td></tr><tr><td><code>freq</code></td><td>STRING</td><td>支付或计息频率。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>计息日调整约定。</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>短长首末期处理规则。</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>不规则首末期处理类型。</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>付款日偏移天数。</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>付款日调整约定。</td></tr><tr><td><code>notionalExchange</code></td><td>STRING</td><td>是否交换名义本金。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfloatinglegdefinition floating ir leg definition create_floating_leg_definition handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfloatinglegdefinition"></a>
+      <h3><code>CreateFloatingLegDefinition</code></h3>
+      <p class="api-description">创建并缓存浮动利率腿定义。</p>
+      <p class="full-signature"><code>caplib::CreateFloatingLegDefinition(currency STRING, refIndex STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING, fixingFreq STRING, dayCount STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, spread BOOL, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT[, notionalExchange STRING], tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>参考利率指数名称或句柄。</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>业务日历名称。</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING or STRING[]</td><td>定盘日业务日历名称。</td></tr><tr><td><code>freq</code></td><td>STRING</td><td>支付或计息频率。</td></tr><tr><td><code>fixingFreq</code></td><td>STRING</td><td>定盘频率。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>paymentDiscountMethod</code></td><td>STRING</td><td>付款金额贴现方法。</td></tr><tr><td><code>rateCalcMethod</code></td><td>STRING</td><td>利率计算方法。</td></tr><tr><td><code>spread</code></td><td>BOOL</td><td>利差。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>计息日调整约定。</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>短长首末期处理规则。</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>不规则首末期处理类型。</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>付款日偏移天数。</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>付款日调整约定。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。</td></tr><tr><td><code>fixingMode</code></td><td>STRING</td><td>定盘值处理方式。</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>定盘日偏移天数。</td></tr><tr><td><code>notionalExchange</code></td><td>STRING, optional</td><td>是否交换名义本金。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirvanillainstrumenttemplate create cache register generic vanilla ir instrument template static data handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirvanillainstrumenttemplate"></a>
+      <h3><code>CreateIrVanillaInstrumentTemplate</code></h3>
+      <p class="api-description">创建并缓存标准利率工具模板。</p>
+      <p class="full-signature"><code>caplib::CreateIrVanillaInstrumentTemplate(instType STRING, instName STRING, startConvention STRING, startDelay INT, legDefinitions STRING[], tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instType</code></td><td>STRING</td><td>工具类型。</td></tr><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>startConvention</code></td><td>STRING</td><td>工具起息约定。</td></tr><tr><td><code>startDelay</code></td><td>INT</td><td>起息或交割延迟天数。</td></tr><tr><td><code>legDefinitions</code></td><td>STRING[]</td><td>现金流腿定义对象或句柄数组。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createdepotemplate deposit template create_depo_template sdt_ir_vanilla_instrument handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createdepotemplate"></a>
+      <h3><code>CreateDepoTemplate</code></h3>
+      <p class="api-description">创建并缓存存款工具模板。</p>
+      <p class="full-signature"><code>caplib::CreateDepoTemplate(instName STRING, currency STRING, calendar STRING or STRING[][, startDelay INT[, dayCount STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, startConvention STRING]]]]]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>业务日历名称。</td></tr><tr><td><code>startDelay</code></td><td>INT, optional</td><td>起息或交割延迟天数。</td></tr><tr><td><code>dayCount</code></td><td>STRING, optional</td><td>日计数约定。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING, optional</td><td>计息日调整约定。</td></tr><tr><td><code>payDayOffset</code></td><td>INT, optional</td><td>付款日偏移天数。</td></tr><tr><td><code>payDayConvention</code></td><td>STRING, optional</td><td>付款日调整约定。</td></tr><tr><td><code>startConvention</code></td><td>STRING, optional</td><td>工具起息约定。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfratemplate fra template create_fra_template sdt_ir_vanilla_instrument handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfratemplate"></a>
+      <h3><code>CreateFraTemplate</code></h3>
+      <p class="api-description">创建并缓存远期利率协议模板。</p>
+      <p class="full-signature"><code>caplib::CreateFraTemplate(instName STRING, refIndex STRING, currency STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING[, dayCount STRING[, paymentDiscountMethod STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, fixingDayConvention STRING[, fixingDayOffset INT]]]]]]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>参考利率指数名称或句柄。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>calendar</code></td><td>STRING or STRING[]</td><td>业务日历名称。</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING or STRING[]</td><td>定盘日业务日历名称。</td></tr><tr><td><code>freq</code></td><td>STRING</td><td>支付或计息频率。</td></tr><tr><td><code>dayCount</code></td><td>STRING, optional</td><td>日计数约定。</td></tr><tr><td><code>paymentDiscountMethod</code></td><td>STRING, optional</td><td>付款金额贴现方法。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING, optional</td><td>计息日调整约定。</td></tr><tr><td><code>payDayOffset</code></td><td>INT, optional</td><td>付款日偏移天数。</td></tr><tr><td><code>payDayConvention</code></td><td>STRING, optional</td><td>付款日调整约定。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING, optional</td><td>定盘日调整约定。</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT, optional</td><td>定盘日偏移天数。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createirvanillaswaptemplate vanilla swap template create_ir_vanilla_swap_template sdt_ir_vanilla_instrument handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createirvanillaswaptemplate"></a>
+      <h3><code>CreateIrVanillaSwapTemplate</code></h3>
+      <p class="api-description">创建并缓存标准利率互换模板。</p>
+      <p class="full-signature"><code>caplib::CreateIrVanillaSwapTemplate(instName STRING, startDelay INT or STRING, leg1Definition STRING, leg2Definition STRING, startConvention STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>startDelay</code></td><td>INT or STRING</td><td>起息或交割延迟天数。</td></tr><tr><td><code>leg1Definition</code></td><td>STRING</td><td>第一条现金流腿定义对象或句柄。</td></tr><tr><td><code>leg2Definition</code></td><td>STRING</td><td>第二条现金流腿定义对象或句柄。</td></tr><tr><td><code>startConvention</code></td><td>STRING</td><td>工具起息约定。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildirvanillainstrument build and cache a vanilla ir instrument from a template. payreceive string, cpnrate double, spread double, startdate date, maturitydate date, insttemplate string, nominal double, legfixings string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildirvanillainstrument"></a>
+      <h3><code>BuildIrVanillaInstrument</code></h3>
+      <p class="api-description">构建标准利率工具。</p>
+      <p class="full-signature"><code>caplib::BuildIrVanillaInstrument(payReceive STRING, cpnRate DOUBLE, spread DOUBLE, startDate DATE, maturityDate DATE, instTemplate STRING, nominal DOUBLE, legFixings STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>payReceive</code></td><td>STRING</td><td>支付或收取方向。</td></tr><tr><td><code>cpnRate</code></td><td>DOUBLE</td><td>票息率。</td></tr><tr><td><code>spread</code></td><td>DOUBLE</td><td>利差。</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>起始日期。</td></tr><tr><td><code>maturityDate</code></td><td>DATE</td><td>到期日。</td></tr><tr><td><code>instTemplate</code></td><td>STRING</td><td>工具模板对象或模板句柄。</td></tr><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>legFixings</code></td><td>STRING</td><td>各现金流腿使用的定盘值对象或数组。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildircapfloor build and cache an ir cap or floor. type string, strike double, startdate date, enddate date, currency string, notionalamount double, insttemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildircapfloor"></a>
+      <h3><code>BuildIrCapFloor</code></h3>
+      <p class="api-description">构建利率上限/下限工具。</p>
+      <p class="full-signature"><code>caplib::BuildIrCapFloor(type STRING, strike DOUBLE, startDate DATE, endDate DATE, currency STRING, notionalAmount DOUBLE, instTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>type</code></td><td>STRING</td><td>对象类型或业务类型。</td></tr><tr><td><code>strike</code></td><td>DOUBLE</td><td>行权价。</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>起始日期。</td></tr><tr><td><code>endDate</code></td><td>DATE</td><td>结束日期。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>notionalAmount</code></td><td>DOUBLE</td><td>名义本金金额。</td></tr><tr><td><code>instTemplateHandle</code></td><td>STRING</td><td>工具模板 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildireuropeanswaption build and cache an ir european swaption. exercisedate date, settlementdate date, settlementtype string, swapmaturity date, fixedrate double, payreceive string, currency string, notionalamount double, insttemplatehandle string, handle string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildireuropeanswaption"></a>
+      <h3><code>BuildIrEuropeanSwaption</code></h3>
+      <p class="api-description">构建欧式利率互换期权。</p>
+      <p class="full-signature"><code>caplib::BuildIrEuropeanSwaption(exerciseDate DATE, settlementDate DATE, settlementType STRING, swapMaturity DATE, fixedRate DOUBLE, payReceive STRING, currency STRING, notionalAmount DOUBLE, instTemplateHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>exerciseDate</code></td><td>DATE</td><td>日期或日期数组。</td></tr><tr><td><code>settlementDate</code></td><td>DATE</td><td>结算日期。</td></tr><tr><td><code>settlementType</code></td><td>STRING</td><td>结算类型。</td></tr><tr><td><code>swapMaturity</code></td><td>DATE</td><td>互换到期期限。</td></tr><tr><td><code>fixedRate</code></td><td>DOUBLE</td><td>固定利率。</td></tr><tr><td><code>payReceive</code></td><td>STRING</td><td>支付或收取方向。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>notionalAmount</code></td><td>DOUBLE</td><td>名义本金金额。</td></tr><tr><td><code>instTemplateHandle</code></td><td>STRING</td><td>工具模板 内存对象 句柄。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>固定收益市场对象工厂</h2>
+
+<article class="api-card" data-search="createbondlegdefinition create and cache a bond leg definition. bondtype string, settlementdays int, currency string, daycount string, calendar string, frequency string, interestdayconvention string, stubpolicy string, brokenperiodtype string, paydayoffset int, paydayconvention string, refindex string, fixingcalendars string, fixingfreq string, fixingdayconvention string, fixingmode string, fixingdayoffset int, instname string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondlegdefinition"></a>
+      <h3><code>CreateBondLegDefinition</code></h3>
+      <p class="api-description">创建并缓存债券现金流腿定义。</p>
+      <p class="full-signature"><code>caplib::CreateBondLegDefinition(bondType STRING, settlementDays INT, currency STRING, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, instName STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>bondType</code></td><td>STRING</td><td>债券类型。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>calendar</code></td><td>STRING</td><td>业务日历名称。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>计息日调整约定。</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>短长首末期处理规则。</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>不规则首末期处理类型。</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>付款日偏移天数。</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>付款日调整约定。</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>参考利率指数名称或句柄。</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING</td><td>定盘日业务日历名称。</td></tr><tr><td><code>fixingFreq</code></td><td>STRING</td><td>定盘频率。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。</td></tr><tr><td><code>fixingMode</code></td><td>STRING</td><td>定盘值处理方式。</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>定盘日偏移天数。</td></tr><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvanillabondtemplate create and cache a vanilla-bond template and register sdt_vanilla_bond static data. instname string, vanillabondtype string, issuedate date, settlementdays int, startdate date, maturity string, rate double, currency string, issueprice double, daycount string, calendar string, frequency string, interestdayconvention string, stubpolicy string, brokenperiodtype string, paydayoffset int, paydayconvention string, refindex string, fixingcalendars string or string[], fixingfreq string, fixingdayconvention string, fixingmode string, fixingdayoffset int, excouponperiod string, excouponcalendar string, excoupondayconvention string, excouponendofmonth bool, notionaltype string, recoveryrate double handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvanillabondtemplate"></a>
+      <h3><code>CreateVanillaBondTemplate</code></h3>
+      <p class="api-description">创建并缓存普通债券模板。</p>
+      <p class="full-signature"><code>caplib::CreateVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE, settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING, issuePrice DOUBLE, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING or STRING[], fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING, exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL[, notionalType STRING[, recoveryRate DOUBLE]][, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>vanillaBondType</code></td><td>STRING</td><td>普通债券类型。</td></tr><tr><td><code>issueDate</code></td><td>DATE</td><td>发行日期。</td></tr><tr><td><code>settlementDays</code></td><td>INT</td><td>交易或行权到结算的工作日天数。</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>起始日期。</td></tr><tr><td><code>maturity</code></td><td>STRING</td><td>到期期限或到期日。</td></tr><tr><td><code>rate</code></td><td>DOUBLE</td><td>利率或票息率。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>issuePrice</code></td><td>DOUBLE</td><td>发行价格。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>calendar</code></td><td>STRING</td><td>业务日历名称。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>interestDayConvention</code></td><td>STRING</td><td>计息日调整约定。</td></tr><tr><td><code>stubPolicy</code></td><td>STRING</td><td>短长首末期处理规则。</td></tr><tr><td><code>brokenPeriodType</code></td><td>STRING</td><td>不规则首末期处理类型。</td></tr><tr><td><code>payDayOffset</code></td><td>INT</td><td>付款日偏移天数。</td></tr><tr><td><code>payDayConvention</code></td><td>STRING</td><td>付款日调整约定。</td></tr><tr><td><code>refIndex</code></td><td>STRING</td><td>参考利率指数名称或句柄。</td></tr><tr><td><code>fixingCalendars</code></td><td>STRING or STRING[]</td><td>定盘日业务日历名称。</td></tr><tr><td><code>fixingFreq</code></td><td>STRING</td><td>定盘频率。</td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。</td></tr><tr><td><code>fixingMode</code></td><td>STRING</td><td>定盘值处理方式。</td></tr><tr><td><code>fixingDayOffset</code></td><td>INT</td><td>定盘日偏移天数。</td></tr><tr><td><code>exCouponPeriod</code></td><td>STRING</td><td>除息期长度。</td></tr><tr><td><code>exCouponCalendar</code></td><td>STRING</td><td>除息日业务日历名称。</td></tr><tr><td><code>exCouponDayConvention</code></td><td>STRING</td><td>除息日调整约定。</td></tr><tr><td><code>exCouponEndOfMonth</code></td><td>BOOL</td><td>除息期是否使用月末规则。</td></tr><tr><td><code>notionalType</code></td><td>STRING, optional</td><td>名义本金类型。</td></tr><tr><td><code>recoveryRate</code></td><td>DOUBLE, optional</td><td>回收率。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildvanillabond build and cache a vanilla bond from a template. nominal double, insttemplate string, fixings string, startdate date, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildvanillabond"></a>
+      <h3><code>BuildVanillaBond</code></h3>
+      <p class="api-description">构建普通债券工具。</p>
+      <p class="full-signature"><code>caplib::BuildVanillaBond(nominal DOUBLE, instTemplate STRING, fixings STRING, startDate DATE, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>instTemplate</code></td><td>STRING</td><td>工具模板对象或模板句柄。</td></tr><tr><td><code>fixings</code></td><td>STRING</td><td>历史定盘值对象或数组。</td></tr><tr><td><code>startDate</code></td><td>DATE</td><td>起始日期。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>信用与商品市场对象工厂</h2>
+
+<article class="api-card" data-search="createcdstemplate create and cache a cds template and register it as sdt_credit_instrument static data. instname string, startdelay string or int, settlementtype string, referenceprice double, leverage double, creditprotectiontype string, recoveryrate double, creditpremiumtype string, daycount string, frequency string, businessdayconvention string, calendars string or string[], rebateaccrual bool or int handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcdstemplate"></a>
+      <h3><code>CreateCdsTemplate</code></h3>
+      <p class="api-description">创建并缓存信用违约互换模板。</p>
+      <p class="full-signature"><code>caplib::CreateCdsTemplate(instName STRING, startDelay STRING or INT, settlementType STRING, referencePrice DOUBLE, leverage DOUBLE, creditProtectionType STRING, recoveryRate DOUBLE, creditPremiumType STRING, dayCount STRING, frequency STRING, businessDayConvention STRING, calendars STRING or STRING[], rebateAccrual BOOL or INT[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。</td></tr><tr><td><code>startDelay</code></td><td>STRING or INT</td><td>起息或交割延迟天数。</td></tr><tr><td><code>settlementType</code></td><td>STRING</td><td>结算类型。</td></tr><tr><td><code>referencePrice</code></td><td>DOUBLE</td><td>收益结构使用的参考价格。</td></tr><tr><td><code>leverage</code></td><td>DOUBLE</td><td>保护腿或收益结构杠杆。</td></tr><tr><td><code>creditProtectionType</code></td><td>STRING</td><td>信用保护类型。</td></tr><tr><td><code>recoveryRate</code></td><td>DOUBLE</td><td>回收率。</td></tr><tr><td><code>creditPremiumType</code></td><td>STRING</td><td>信用产品溢价支付类型。</td></tr><tr><td><code>dayCount</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>businessDayConvention</code></td><td>STRING</td><td>营业日调整约定。</td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>rebateAccrual</code></td><td>BOOL or INT</td><td>是否返还应计利息。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="buildcreditdefaultswap build and cache a cds instrument. nominal double, currency string, issuedate date, maturity date, protectionlegpayreceive string, protectionlegsettlementtype string, protectionlegreferenceprice double, protectionlegleverage double, creditprotectiontype string, protectionlegrecoveryrate double, couponrate double, creditpremiumtype string, daycountconvention string, frequency string, businessdayconvention string, calendars string, upfrontrate double, rebateaccrual bool, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="buildcreditdefaultswap"></a>
+      <h3><code>BuildCreditDefaultSwap</code></h3>
+      <p class="api-description">构建信用违约互换工具。</p>
+      <p class="full-signature"><code>caplib::BuildCreditDefaultSwap(nominal DOUBLE, currency STRING, issueDate DATE, maturity DATE, protectionLegPayReceive STRING, protectionLegSettlementType STRING, protectionLegReferencePrice DOUBLE, protectionLegLeverage DOUBLE, creditProtectionType STRING, protectionLegRecoveryRate DOUBLE, couponRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING, upfrontRate DOUBLE, rebateAccrual BOOL, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>nominal</code></td><td>DOUBLE</td><td>工具名义金额。</td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。</td></tr><tr><td><code>issueDate</code></td><td>DATE</td><td>发行日期。</td></tr><tr><td><code>maturity</code></td><td>DATE</td><td>到期期限或到期日。</td></tr><tr><td><code>protectionLegPayReceive</code></td><td>STRING</td><td>保护腿支付或收取方向。</td></tr><tr><td><code>protectionLegSettlementType</code></td><td>STRING</td><td>保护腿结算类型。</td></tr><tr><td><code>protectionLegReferencePrice</code></td><td>DOUBLE</td><td>保护腿参考价格。</td></tr><tr><td><code>protectionLegLeverage</code></td><td>DOUBLE</td><td>保护腿杠杆。</td></tr><tr><td><code>creditProtectionType</code></td><td>STRING</td><td>信用保护类型。</td></tr><tr><td><code>protectionLegRecoveryRate</code></td><td>DOUBLE</td><td>保护腿回收率。</td></tr><tr><td><code>couponRate</code></td><td>DOUBLE</td><td>票息率。</td></tr><tr><td><code>creditPremiumType</code></td><td>STRING</td><td>信用产品溢价支付类型。</td></tr><tr><td><code>dayCountConvention</code></td><td>STRING</td><td>日计数约定。</td></tr><tr><td><code>frequency</code></td><td>STRING</td><td>频率。</td></tr><tr><td><code>businessDayConvention</code></td><td>STRING</td><td>营业日调整约定。</td></tr><tr><td><code>calendars</code></td><td>STRING</td><td>日期调整使用的业务日历名称。</td></tr><tr><td><code>upfrontRate</code></td><td>DOUBLE</td><td>前端费用率。</td></tr><tr><td><code>rebateAccrual</code></td><td>BOOL</td><td>是否返还应计利息。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<section class="api-group"><h2>资产域市场数据与设置</h2>
+
+<article class="api-card" data-search="createbondyieldcurvebuildsettings create and cache bond yield-curve build settings. curvename string, curvetype string, interpmethod string, extrapmethod string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondyieldcurvebuildsettings"></a>
+      <h3><code>CreateBondYieldCurveBuildSettings</code></h3>
+      <p class="api-description">创建并缓存债券收益率曲线构建设置。</p>
+      <p class="full-signature"><code>caplib::CreateBondYieldCurveBuildSettings(curveName STRING, curveType STRING, interpMethod STRING, extrapMethod STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>curveName</code></td><td>STRING</td><td>曲线业务名称。</td></tr><tr><td><code>curveType</code></td><td>STRING</td><td>曲线值类型，例如零利率、贴现因子或利差。</td></tr><tr><td><code>interpMethod</code></td><td>STRING</td><td>插值方法。</td></tr><tr><td><code>extrapMethod</code></td><td>STRING</td><td>外推方法。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfimktdataset create and cache a fixed-income market-data set. asofdate date, discountcurve string, creditcurve string, underlyingdiscountcurve string, underlyingincomecurve string, underlyingforwardcurve string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfimktdataset"></a>
+      <h3><code>CreateFiMktDataSet</code></h3>
+      <p class="api-description">创建并缓存固定收益市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateFiMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, underlyingDiscountCurve STRING, underlyingIncomeCurve STRING, underlyingForwardCurve STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>creditCurve</code></td><td>STRING</td><td>信用曲线 内存对象 句柄。</td></tr><tr><td><code>underlyingDiscountCurve</code></td><td>STRING</td><td>标的贴现曲线 内存对象 句柄。</td></tr><tr><td><code>underlyingIncomeCurve</code></td><td>STRING</td><td>标的收益曲线 内存对象 句柄。</td></tr><tr><td><code>underlyingForwardCurve</code></td><td>STRING</td><td>标的远期曲线 内存对象 句柄。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createbondmktdataset create and cache a bond market-data set. asofdate date, discountcurve string, creditcurve string, forwardcurve string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createbondmktdataset"></a>
+      <h3><code>CreateBondMktDataSet</code></h3>
+      <p class="api-description">创建并缓存债券市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateBondMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, forwardCurve STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>creditCurve</code></td><td>STRING</td><td>信用曲线 内存对象 句柄。</td></tr><tr><td><code>forwardCurve</code></td><td>STRING</td><td>远期曲线 内存对象 句柄。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createfirisksettings create and cache fixed-income 风险设置。 ircurvesettings string, cscurvesettings string, thetasettings string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createfirisksettings"></a>
+      <h3><code>CreateFiRiskSettings</code></h3>
+      <p class="api-description">创建并缓存固定收益风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateFiRiskSettings(irCurveSettings STRING, csCurveSettings STRING, thetaSettings STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irCurveSettings</code></td><td>STRING</td><td>利率曲线风险设置 内存对象 句柄。</td></tr><tr><td><code>csCurveSettings</code></td><td>STRING</td><td>信用利差曲线风险设置 内存对象 句柄。</td></tr><tr><td><code>thetaSettings</code></td><td>STRING</td><td>设置对象的缓存句柄或配置值。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createvanillabondrisksettings create and cache vanilla-bond 风险设置。 dv01 string, cs01 string, theta bool, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createvanillabondrisksettings"></a>
+      <h3><code>CreateVanillaBondRiskSettings</code></h3>
+      <p class="api-description">创建并缓存普通债券风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateVanillaBondRiskSettings(dv01 STRING, cs01 STRING, theta BOOL, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>dv01</code></td><td>STRING</td><td>是否计算 DV01 利率风险。</td></tr><tr><td><code>cs01</code></td><td>STRING</td><td>是否计算 CS01 信用利差风险。</td></tr><tr><td><code>theta</code></td><td>BOOL</td><td>是否计算 Theta 风险。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcdspricingsettings create and cache cds 定价设置。 pricingcurrency string, includecurrentflow bool, cashflows bool, includesettlementflow bool, numericalfix string, accrualbias string, fwdsincpnperiod string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcdspricingsettings"></a>
+      <h3><code>CreateCdsPricingSettings</code></h3>
+      <p class="api-description">创建并缓存 CDS 定价设置。</p>
+      <p class="full-signature"><code>caplib::CreateCdsPricingSettings(pricingCurrency STRING, includeCurrentFlow BOOL, cashFlows BOOL, includeSettlementFlow BOOL, numericalFix STRING, accrualBias STRING, fwdsInCpnPeriod STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>pricingCurrency</code></td><td>STRING</td><td>定价输出使用的币种。</td></tr><tr><td><code>includeCurrentFlow</code></td><td>BOOL</td><td>估值输出中是否包含当前现金流。</td></tr><tr><td><code>cashFlows</code></td><td>BOOL</td><td>定价结果中是否包含详细现金流输出。</td></tr><tr><td><code>includeSettlementFlow</code></td><td>BOOL</td><td>估值输出中是否包含结算现金流。</td></tr><tr><td><code>numericalFix</code></td><td>STRING</td><td>数值稳定性修正方法。</td></tr><tr><td><code>accrualBias</code></td><td>STRING</td><td>应计利息偏差处理方式。</td></tr><tr><td><code>fwdsInCpnPeriod</code></td><td>STRING</td><td>控制票息期间内远期利率处理方式的约定。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcrmktdataset create and cache a credit market-data set. asofdate date, discountcurve string, creditcurve string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcrmktdataset"></a>
+      <h3><code>CreateCrMktDataSet</code></h3>
+      <p class="api-description">创建并缓存信用市场数据集。</p>
+      <p class="full-signature"><code>caplib::CreateCrMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。</td></tr><tr><td><code>discountCurve</code></td><td>STRING</td><td>贴现曲线 内存对象 句柄。</td></tr><tr><td><code>creditCurve</code></td><td>STRING</td><td>信用曲线 内存对象 句柄。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+
+<article class="api-card" data-search="createcrrisksettings create and cache credit 风险设置。 ircurvesettings string, cscurvesettings string, thetasettings string, name string, tag string handle_or_json returnjson bool">
+  <div class="api-card-head">
+    <div>
+      <a id="createcrrisksettings"></a>
+      <h3><code>CreateCrRiskSettings</code></h3>
+      <p class="api-description">创建并缓存信用风险设置。</p>
+      <p class="full-signature"><code>caplib::CreateCrRiskSettings(irCurveSettings STRING, csCurveSettings STRING, thetaSettings STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+    </div>
+    <span class="return-pill">HANDLE_OR_JSON</span>
+  </div>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irCurveSettings</code></td><td>STRING</td><td>利率曲线风险设置 内存对象 句柄。</td></tr><tr><td><code>csCurveSettings</code></td><td>STRING</td><td>信用利差曲线风险设置 内存对象 句柄。</td></tr><tr><td><code>thetaSettings</code></td><td>STRING</td><td>设置对象的缓存句柄或配置值。</td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。</td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。</td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。</td></tr></tbody></table>
+  </details>
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `显示 ${visible} / ${cards.length} 个函数`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

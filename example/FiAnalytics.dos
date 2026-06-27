@@ -1,0 +1,67 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: FI Analytics
+// =============================================================================
+// This script is stripped from test/test_fianalytics.dos and shows the main
+// fixed-income curve and bond pricing flow.
+
+loadPlugin("PluginCaplib")
+
+asOfDate = 2021.07.22
+currency = "CNY"
+
+// Create the discount curve used for bond pricing.
+discountCurve = caplib::CreateIrYieldCurve(
+    asOfDate,
+    [2021.08.22, 2022.07.22, 2023.07.22, 2024.07.22],
+    [0.02, 0.022, 0.024, 0.026],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_TREAS", "FI_IR_CURVE", false)
+
+// Create the credit spread curve used for FI analytics.
+spreadCurve = caplib::CreateCreditCurve(
+    asOfDate,
+    [2021.08.22, 2022.07.22, 2023.07.22, 2024.07.22],
+    [0.0010, 0.0012, 0.0014, 0.0016],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CNY_MTN_AAA", "FI_CREDIT_CURVE", false)
+
+// Create the bond leg definition for the sample bond.
+bondLeg = caplib::CreateBondLegDefinition(
+    "FIXED_COUPON_BOND", 1, currency, "ACT_365_FIXED", "CAL_CFETS",
+    "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "", "", "ANNUAL",
+    "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "FI_BOND_LEG", false)
+
+// Create the bond template used to build a vanilla bond.
+bondTemplate = caplib::CreateVanillaBondTemplate(
+    "CNY_TREAS_CPN_BOND", "FIXED_COUPON_BOND",
+    2020.07.22, 1, 2020.07.22, "5Y",
+    0.03, 100.0, 0.4, bondLeg, false)
+
+// Build the vanilla bond instrument from its template.
+vanillaBond = caplib::BuildVanillaBond(
+    1000000.0, bondTemplate, "", 2020.07.22, "FI_VANILLA_BOND", false)
+
+// Create pricing settings for bond valuation.
+pricingModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "FI_MODEL", false)
+pricingSettings = caplib::CreatePricingSettings(
+    currency, "ANALYTICAL", 1, 1, pricingModel, "", "", "FI_PRICING", false)
+
+// Create FI risk settings from IR, credit, and theta components.
+irRisk = caplib::CreateIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "FI_IR_RISK", false)
+creditRisk = caplib::CreateCreditCurveRiskSettings(
+    1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "FI_CREDIT_RISK", false)
+thetaRisk = caplib::CreateThetaRiskSettings(1, 1, 1.0 / 365.0, "FI_THETA_RISK", false)
+fiRisk = caplib::CreateFiRiskSettings(
+    irRisk, creditRisk, thetaRisk, "FI_RISK_NAME", "FI_RISK", true)
+
+// Assemble the FI market data set from curves.
+fiMktData = caplib::CreateFiMktDataSet(
+    asOfDate, discountCurve, spreadCurve, "", "", "", "FI_MKT_NAME", "FI_MKT", true)
+
+// Price the vanilla bond and print the handle plus JSON payload.
+vanillaBondPricingResult = caplib::PriceVanillaBond(
+    vanillaBond, asOfDate, fiMktData[0], pricingSettings, fiRisk[0], "", "", true)
+print(vanillaBondPricingResult)
