@@ -1,0 +1,118 @@
+// ─────────────────────────────────────────────────────────────
+// caplib Docker Smoke Test
+// Run inside DDB after plugin is loaded:
+//   run("/opt/ddb/test_plugin.dos")
+// ─────────────────────────────────────────────────────────────
+
+testNum = 0;
+passNum = 0;
+
+def t(name, cond) {
+    if (cond) {
+        print("  PASS: " + name);
+        return true;
+    } else {
+        print("  FAIL: " + name);
+        return false;
+    }
+}
+
+print("═══════════════════════════════════════════");
+print("  caplib Plugin Smoke Test");
+print("═══════════════════════════════════════════");
+
+// ─── Load Plugin ────────────────────────────────────────────
+pluginFile = "/opt/ddb/server/plugins/caplib/PluginCaplib.txt";
+
+try {
+    fns = loadPlugin(pluginFile);
+    ok = t("loadPlugin: " + size(fns) + " functions registered", size(fns) > 0);
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    print("  Registered functions: " + size(fns));
+} catch(ex) {
+    print("  loadPlugin error: " + ex);
+    testNum = testNum + 1;
+}
+
+// ─── Basic non-proto function ───────────────────────────────
+try {
+    r = caplib::CalcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360);
+    expected = 364.0 / 360.0;
+    ok = t("CalcYearFraction = " + string(r), abs(r - expected) < 0.0001);
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  CalcYearFraction error: " + ex);
+    testNum = testNum + 1;
+}
+
+// ─── Create* factory functions (Analytics module) ───────────
+// These store objects in ObjectCache and return handles or [handle, json].
+
+// CreateIrYieldCurve — current native signature.
+try {
+    refDate = 2020.02.21;
+    irDates = [2020.02.22, 2021.02.21, 2022.02.21, 2025.02.21, 2030.02.21];
+    irRates = [0.02, 0.025, 0.028, 0.032, 0.038];
+    h = caplib::CreateIrYieldCurve(
+        refDate, irDates, irRates,
+        "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", "CNY_DISC_DOCKER", "DISC_DOCKER", false);
+    ok = t("CreateIrYieldCurve → " + h, h == "DISC_DOCKER");
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  CreateIrYieldCurve error: " + ex);
+    testNum = testNum + 1;
+}
+
+// GetObjectCacheJson — cache JSON round-trip for visualization.
+try {
+    curveJson = caplib::GetObjectCacheJson("IrYieldCurve", "DISC_DOCKER");
+    ok = t("GetObjectCacheJson(IrYieldCurve)", strlen(curveJson) > 0 && strpos(curveJson, "\"currency\"") >= 0);
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  GetObjectCacheJson error: " + ex);
+    testNum = testNum + 1;
+}
+
+// CreatePricingModelSettings — current native signature.
+try {
+    h = caplib::CreatePricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "MODEL_DOCKER", false);
+    ok = t("CreatePricingModelSettings → " + h, h == "MODEL_DOCKER");
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  CreatePricingModelSettings error: " + ex);
+    testNum = testNum + 1;
+}
+
+// CreatePricingSettings — current native signature.
+try {
+    h = caplib::CreatePricingSettings("CNY", "ANALYTICAL", 0, 0, "MODEL_DOCKER", "", "", "PRC_DOCKER", false);
+    ok = t("CreatePricingSettings → " + h, h == "PRC_DOCKER");
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  CreatePricingSettings error: " + ex);
+    testNum = testNum + 1;
+}
+
+// CreateEqRiskSettings — handle + JSON output style.
+try {
+    r = caplib::CreateEqRiskSettings(1, 1, 1, 1, "EQ_RISK_DOCKER", true);
+    ok = t("CreateEqRiskSettings → [EQ_RISK_DOCKER, json]",
+        size(r) == 2 && r[0] == "EQ_RISK_DOCKER" && strlen(r[1]) > 0);
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  CreateEqRiskSettings error: " + ex);
+    testNum = testNum + 1;
+}
+
+// ─── Results ────────────────────────────────────────────────
+print("");
+print("═══════════════════════════════════════════");
+print("  Results: " + string(passNum) + "/" + string(testNum) + " passed");
+print("═══════════════════════════════════════════");
+
+if (passNum == testNum) {
+    print("✓ ALL TESTS PASSED");
+} else {
+    print("✗ SOME TESTS FAILED");
+}

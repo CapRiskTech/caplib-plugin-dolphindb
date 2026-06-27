@@ -1,0 +1,12 @@
+// ─────────────────────────────────────────────────────────────
+// DDB Auto-Startup Script
+// Executed automatically when DDB starts (placed in home directory)
+// ─────────────────────────────────────────────────────────────
+
+// Load the caplib plugin
+try {
+    fns = loadPlugin("/opt/ddb/server/plugins/caplib/PluginCaplib.txt");
+    print("✓ caplib plugin loaded: " + size(fns) + " functions registered");
+} catch(ex) {
+    print("✗ Failed to load caplib plugin: " + ex);
+}
