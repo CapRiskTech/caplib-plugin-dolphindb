@@ -1,10 +1,10 @@
 # caplib-plugin-dolphindb
 
-这是面向 **DolphinDB 用户** 的 Caplib 插件发布仓库。
+这是面向 **DolphinDB 用户** 的 Caplib 插件发行仓库。
 
 仓库主要提供三类内容：
 
-- GitHub Release：可直接下载的插件发布包
+- GitHub 版本发布页：可直接下载的插件发行包
 - `docs/`：静态文档站点与入口页
 - `example/`：按业务场景整理的 DolphinDB 示例脚本
 
@@ -12,11 +12,11 @@
 
 如果你已经在使用 DolphinDB，希望快速接入 Caplib 定价与分析能力，这个仓库就是给你准备的。
 
-你通常不需要关心插件的打包过程，也不需要自己拼接依赖文件。直接使用 Release 中的发布包即可。
+你通常不需要关心插件的打包过程，也不需要自己拼接依赖文件。直接使用版本发布页中的发行包即可。
 
-## Release 内容
+## 发行包内容
 
-当前发布包 `0.0.8` 为一个完整压缩包，包含运行插件所需的核心文件：
+当前 `0.0.8` 发行包是一个完整压缩包，包含运行插件所需的核心文件：
 
 - `libPluginCaplib.so`
 - `PluginCaplib.txt`
@@ -28,9 +28,9 @@
 
 ## 快速开始
 
-### 方式一：直接使用发布包
+### 方式一：直接使用发行包
 
-1. 从 GitHub Release 下载 `caplib-plugin-dolphindb-0.0.8.tar.gz`
+1. 从 GitHub 版本发布页下载 `caplib-plugin-dolphindb-0.0.8.tar.gz`
 2. 解压到你的 DolphinDB 插件目录
 3. 在 DolphinDB 中加载 `PluginCaplib.txt`
 
@@ -77,7 +77,7 @@ caplib::CalcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360)
 
 `docker/` 目录面向希望一键启动环境的用户，负责自动准备：
 
-- Caplib 插件发布包
+- Caplib 插件发行包
 - 内置 `dqlibc.lic`
 - DolphinDB Server
 

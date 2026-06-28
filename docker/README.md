@@ -2,7 +2,7 @@
 
 这个目录面向 **最终使用者**，目标很简单：
 
-- 自动下载 Caplib 插件发布包
+- 自动下载 Caplib 插件发行包
 - 自动准备 DolphinDB Server
 - 构建并启动一个可直接连接的 Docker 环境
 
@@ -36,7 +36,7 @@
 
 - Docker
 - `gh` 或 `GITHUB_TOKEN`
-- 对 `CapRiskTech/caplib-plugin-dolphindb` Release 的访问权限
+- 对 `CapRiskTech/caplib-plugin-dolphindb` 版本发布页的访问权限
 
 如果你已经登录 GitHub CLI，可先确认：
 
@@ -127,7 +127,7 @@ loadPlugin("/opt/ddb/server/plugins/caplib/PluginCaplib.txt")
 
 ## 使用自定义许可证
 
-默认情况下，`build.sh` 会直接使用发布包中自带的 `dqlibc.lic`。
+默认情况下，`build.sh` 会直接使用发行包中自带的 `dqlibc.lic`。
 
 如果你需要替换为自己的许可证文件，可以这样执行：
 
@@ -135,11 +135,11 @@ loadPlugin("/opt/ddb/server/plugins/caplib/PluginCaplib.txt")
 DQLIBC_LICENSE_PATH=/path/to/dqlibc.lic bash docker/build.sh
 ```
 
-## 发布包来源
+## 发行包来源
 
 `build.sh` 会自动下载以下内容：
 
-- `CapRiskTech/caplib-plugin-dolphindb` Release 中的插件压缩包
+- `CapRiskTech/caplib-plugin-dolphindb` 版本发布页中的插件压缩包
 - DolphinDB 官方服务端压缩包
 
 其中插件压缩包内已包含：
@@ -180,7 +180,7 @@ run("/opt/ddb/test_plugin.dos")
 
 ## 常见问题
 
-### 无法下载 Release 资源
+### 无法下载版本发布资源
 
 通常是 GitHub 权限或认证问题。先检查：
 
