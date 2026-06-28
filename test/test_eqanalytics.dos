@@ -1,0 +1,867 @@
+// ============================================================================
+// test_eqanalytics.dos — EQ Analytics Tests
+// Native DolphinDB API coverage for equity analytics.
+// ============================================================================
+
+print("============================================");
+print("  EQ Analytics Test Suite  ");
+print("============================================");
+
+// ============================================================================
+// Setup: Market Data fixtures
+// ============================================================================
+print("--- Setup: Market Data ---");
+
+// Currency and underlying fixtures
+currency = "CNY";
+underlying = "50ETF.SSE";
+asOfDate = 2020.02.21;
+underlyingPrice = 2.958;
+
+// --- IR Yield Curve (14 pillars) ---
+irDates = [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24,
+           2020.08.24, 2020.11.24, 2021.02.24, 2022.02.24, 2023.02.24,
+           2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24];
+irRates = [0.0135486283791684, 0.0197762034605164, 0.0197686053073393,
+           0.0224838821372655, 0.0241740300538751, 0.0256822601972516,
+           0.0265096948143765, 0.0271330931714993, 0.0274314991366822,
+           0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+           0.032692683803743, 0.034410206396147];
+irCurve = caplib::CreateIrYieldCurve(
+    asOfDate, irDates, irRates,
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "IR_CURVE", false);
+
+// --- Dividend Curve (4 pillars) ---
+divDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23];
+divValues = [0.05361055758784821, 0.01338941242891319,
+             -0.001765240983827533, -0.002594662370949712];
+divCurve = caplib::CreateDividendCurve(
+    asOfDate, divDates, divValues, asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "DIVIDEND_CURVE_50ETF", "DIV_CURVE", false);
+
+// --- Option quotes used by the SVI volatility-surface builder ---
+quoteTermDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23];
+quoteStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]
+];
+quotePrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]
+];
+quotePayoffTypes = [
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"]
+];
+
+// --- Pricing Model Settings ---
+// BSM model settings default to [0.0]
+// and leaves the model asset unspecified.
+modelParams = [0.0];
+bsmModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MODEL", false);
+
+// --- Pricing Settings: BSM + ANALYTICAL ---
+bsmAnalyticalSettings = caplib::CreatePricingSettings(
+    "CNY", "ANALYTICAL", 0, 0,
+    bsmModel, "", "", "BSM_ANALYTICAL", false);
+
+// --- Pricing Settings: BSM + PDE ---
+// PDE settings: 201 x 401 grid, [-5, 5] bounds, adaptive grid, cubic spline interpolation
+// CreatePdeSettings: [0]tSize, [1]xSize, [2]xMin, [3]xMax, [4]xMinMaxType,
+//   [5]ySize, [6]yMin, [7]yMax, [8]yMinMaxType, [9]zSize, [10]zMin, [11]zMax,
+//   [12]zMinMaxType, [13]xDensity, [14]yDensity, [15]zDensity,
+//   [16]xGridType, [17]yGridType, [18]zGridType,
+//   [19]xInterp, [20]yInterp, [21]zInterp, [22]handle
+pdeSettings = caplib::CreatePdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "PDE_SETTINGS", false);
+// Create a PDE model settings handle
+bsmPdeModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_PDE_MODEL", false);
+bsmPdeSettings = caplib::CreatePricingSettings(
+    "CNY", "PDE", 0, 0,
+    bsmPdeModel, pdeSettings, "", "BSM_PDE", false);
+
+// --- Pricing Settings: BSM + MONTE_CARLO ---
+// Monte Carlo settings: Sobol, Brownian bridge, inverse cumulative method
+// CreateMonteCarloSettings: numSimulations, uniformNumberType, seed, wienerBuildMethod,
+//   gaussianMethod, useAntithetic, numSteps, handle
+mcSettings = caplib::CreateMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "MC_SETTINGS", false);
+bsmMcModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MC_MODEL", false);
+bsmMcSettings = caplib::CreatePricingSettings(
+    "CNY", "MONTE_CARLO", 0, 0,
+    bsmMcModel, "", mcSettings, "BSM_MC", false);
+
+// --- Risk Settings ---
+// All method/granularity/threading params are INT enums:
+//   method: 0=CENTRAL_DIFFERENCE, 1=ONE_SIDE_DOWN, 2=ONE_SIDE_UP
+//   granularity: 0=TOTAL_RISK, 1=TERM_BUCKET
+//   threading: 0=SINGLE_THREADING, 1=MULTI_THREADING
+// Risk fixture: IR delta+gamma, price delta+gamma, vol vega+volga,
+//         price_vol vanna, dividend delta+gamma, theta
+irCurveRisk = caplib::CreateIrCurveRiskSettings(1, 1, 0, 1.0e-4, 5.0e-1,
+    0, 0, 1.0e-4, 0, "IR_CURVE_RISK", false);
+priceRisk = caplib::CreatePriceRiskSettings(1, 1, 0, 1.0e-2, 5.0e-1,
+    0, 1.0e-2, 0, "PRICE_RISK", false);
+volRisk = caplib::CreateVolRiskSettings(1, 1, 1.0e-2,
+    0, 0, 1.0e-2, 0, "VOL_RISK", false);
+priceVolRisk = caplib::CreatePriceVolRiskSettings(1, 1.0e-2, 1.0e-2,
+    0, 0, 1.0e-2, 1.0e-2, 0, "PRICE_VOL_RISK", false);
+dividendCurveRisk = caplib::CreateDividendCurveRiskSettings(1, 1, 1.0e-4,
+    0, 0, 1.0e-4, 0, "DIV_RISK", false);
+thetaRisk = caplib::CreateThetaRiskSettings(1, 1, 1.0/365.0, "THETA_RISK", false);
+eqRisk = caplib::CreateEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true);
+// Base-valuation settings keep the live pricing assertion fast. The complete
+// Risk fixture above remains available for dedicated risk runs.
+eqNoRisk = caplib::CreateEqRiskSettings(0, 0, 0, 0, "EQ_NO_RISK", true);
+
+// --- Scenario Analysis Settings ---
+// Scenario analysis: PRICE_VOL_SCN_ANALYSIS, price -0.20..0.20 (11), vol -0.05..0.05 (12)
+priceScn = caplib::CreateScnSettings(-0.20, 0.20, 11, 1, "PRICE_SCN", false);
+volScn = caplib::CreateScnSettings(-0.05, 0.05, 12, 0, "VOL_SCN", false);
+scnAnalysis = caplib::CreateScnAnalysisSettings(
+    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn,
+    0, "SCN_ANALYSIS", false);
+
+// --- Market Data Set ---
+// Explicit zero-rate quanto curves are supplied even with zero correlation.
+quantoDates = [2020.02.22, 2030.02.24];
+quantoValues = [0.0, 0.0];
+quantoIr = caplib::CreateIrYieldCurve(
+    asOfDate, quantoDates, quantoValues,
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
+quantoFxVol = caplib::CreateVolatilityCurve(
+    asOfDate, quantoDates, quantoValues,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    underlying, "QUANTO_FX_VOL", false);
+print("  Setup fixtures complete");
+
+// Daily observation data reused by all discrete-observation instruments.
+dailyObsDates = 2020.02.22..2020.08.19;
+dailyObsValues = take(0.0, size(dailyObsDates));
+dailyObsWeights = take(1.0, size(dailyObsDates));
+couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
+               2020.06.22, 2020.07.23, 2020.08.22];
+couponObsValues = take(0.0, size(couponDates));
+couponObsWeights = take(1.0, size(couponDates));
+
+// ============================================================================
+// Helper: pass/fail counter
+// ============================================================================
+testNum = 0;
+passNum = 0;
+
+def t(name, cond) {
+    if (cond) {
+        print("  PASS: " + name);
+    } else {
+        print("  FAIL: " + name);
+    }
+    return cond;
+}
+
+def isHandleJson(result, expectedHandle) {
+    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
+        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
+}
+
+def hasJsonField(json, fieldName) {
+    return strpos(json, "\"" + fieldName + "\"") >= 0;
+}
+
+def isPricingResultsJson(result, expectedHandle) {
+    return isHandleJson(result, expectedHandle) &&
+        hasJsonField(result[1], "present_value") &&
+        hasJsonField(result[1], "cash_value") &&
+        hasJsonField(result[1], "currency");
+}
+
+def checkPricingResult(name, result, expectedHandle) {
+    return t(name + " -> [" + expectedHandle + ", PricingResults JSON fields]",
+        isPricingResultsJson(result, expectedHandle));
+}
+
+ok = t("CreateEqRiskSettings -> [EQ_RISK, json]",
+    isHandleJson(eqRisk, "EQ_RISK"));
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateEqRiskSettings -> [EQ_NO_RISK, json]",
+    isHandleJson(eqNoRisk, "EQ_NO_RISK"));
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 1: Builder fixtures
+// ============================================================================
+print("");
+print("--- Test 1: EQ builders ---");
+bldCallPrices = [
+    [45.800, 40.800, 35.800, 30.800, 25.800, 20.800, 15.860, 10.810, 6.090, 2.320, 0.530, 0.120, 0.050, 0.010, 0.010, 0.010],
+    [45.990, 41.320, 36.410, 31.650, 26.230, 22.310, 17.660, 13.650, 10.190, 7.190, 4.980, 2.160, 1.100, 0.660, 0.460, 0.300],
+    [49.900, 45.500, 40.930, 36.660, 32.610, 28.660, 25.260, 21.460, 18.540, 15.780, 13.250, 9.350, 6.590, 4.700, 3.300, 2.420],
+    [53.280, 49.320, 45.240, 41.260, 37.360, 33.900, 30.450, 27.420, 24.330, 21.570, 19.300, 14.830, 12.980, 8.970, 7.020]
+];
+bldPutPrices = [
+    [0.020, 0.020, 0.020, 0.020, 0.040, 0.080, 0.150, 0.230, 0.650, 1.840, 5.000, 14.720, 24.510, 34.300, 44.370, 54.370],
+    [0.270, 0.330, 0.400, 0.540, 0.810, 1.130, 1.720, 2.700, 4.000, 6.080, 8.750, 16.000, 24.960, 34.310, 44.370, 54.370],
+    [2.010, 2.300, 2.810, 3.450, 4.330, 5.410, 6.680, 8.180, 10.040, 12.290, 14.710, 20.760, 27.730, 35.690, 44.570, 54.370],
+    [3.650, 4.340, 5.160, 6.120, 7.240, 8.620, 10.150, 11.840, 13.810, 15.950, 18.410, 23.940, 30.380, 37.590, 45.670]
+];
+bldStrikes = [
+    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50],
+    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50],
+    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50],
+    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40]
+];
+bldQuotePrices = [
+    bldCallPrices[0] join bldPutPrices[0],
+    bldCallPrices[1] join bldPutPrices[1],
+    bldCallPrices[2] join bldPutPrices[2],
+    bldCallPrices[3] join bldPutPrices[3]
+];
+bldQuoteStrikes = [
+    bldStrikes[0] join bldStrikes[0],
+    bldStrikes[1] join bldStrikes[1],
+    bldStrikes[2] join bldStrikes[2],
+    bldStrikes[3] join bldStrikes[3]
+];
+bldQuotePayoffTypes = [
+    take("CALL", size(bldCallPrices[0])) join take("PUT", size(bldPutPrices[0])),
+    take("CALL", size(bldCallPrices[1])) join take("PUT", size(bldPutPrices[1])),
+    take("CALL", size(bldCallPrices[2])) join take("PUT", size(bldPutPrices[2])),
+    take("CALL", size(bldCallPrices[3])) join take("PUT", size(bldPutPrices[3]))
+];
+bldQuoteExpiriesVec =
+    take(quoteTermDates[0], size(bldQuotePrices[0])) join
+    take(quoteTermDates[1], size(bldQuotePrices[1])) join
+    take(quoteTermDates[2], size(bldQuotePrices[2])) join
+    take(quoteTermDates[3], size(bldQuotePrices[3]));
+bldQuoteStrikesVec = bldQuoteStrikes[0] join bldQuoteStrikes[1] join
+    bldQuoteStrikes[2] join bldQuoteStrikes[3];
+bldQuotePayoffTypesVec = bldQuotePayoffTypes[0] join bldQuotePayoffTypes[1] join
+    bldQuotePayoffTypes[2] join bldQuotePayoffTypes[3];
+bldQuotePricesVec = bldQuotePrices[0] join bldQuotePrices[1] join
+    bldQuotePrices[2] join bldQuotePrices[3];
+idxOptionPrices = table(bldQuoteExpiriesVec as expiry,
+    bldQuoteStrikesVec as strike,
+    bldQuotePayoffTypesVec as optionType,
+    bldQuotePricesVec as price);
+ok = t("builder matrices loaded",
+    size(bldCallPrices) == 4 && size(bldPutPrices) == 4 &&
+    size(bldStrikes) == 4 && size(quotePrices) == 4 &&
+    size(dailyObsDates) == 180);
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+ok = t("index dividend option price table loaded",
+    size(idxOptionPrices) == size(bldQuotePricesVec));
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+emptyFuturePrices = array(DOUBLE, 0);
+idxDivCurve = caplib::BuildEqIndexDividendCurve(
+    asOfDate, quoteTermDates, emptyFuturePrices, idxOptionPrices,
+    underlyingPrice, irCurve, "IDX_DIV_CURVE", true);
+ok = t("BuildEqIndexDividendCurve -> [IDX_DIV_CURVE, json]",
+    isHandleJson(idxDivCurve, "IDX_DIV_CURVE"));
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+volSurfDefinition = caplib::CreateVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-5, 1.0e-5, "VOL_SURF_DEF", true);
+ok = t("CreateVolatilitySurfaceDefinition -> [VOL_SURF_DEF, json]",
+    isHandleJson(volSurfDefinition, "VOL_SURF_DEF"));
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+volSurfBuildSettings = caplib::CreateVolSurfBuildSettings(1, 0.5, "VOL_SURF_BUILD_SETTINGS", true);
+ok = t("CreateVolSurfBuildSettings -> [VOL_SURF_BUILD_SETTINGS, json]",
+    isHandleJson(volSurfBuildSettings, "VOL_SURF_BUILD_SETTINGS"));
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+eqOptionQuotes = caplib::CreateEqOptionQuoteMatrix(
+    "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes,
+    underlying, "EQ_OPTION_QUOTES", true);
+ok = t("CreateEqOptionQuoteMatrix -> [EQ_OPTION_QUOTES, json]",
+    isHandleJson(eqOptionQuotes, "EQ_OPTION_QUOTES"));
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+volSurfaceHandle = "";
+try {
+    volSurface = caplib::BuildEqVolatilitySurface(
+        asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0],
+        [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0],
+        bsmAnalyticalSettings, "VOL_SURF", true);
+    volSurfaceHandle = volSurface[0];
+    ok = t("BuildEqVolatilitySurface -> [VOL_SURF, json]",
+        isHandleJson(volSurface, "VOL_SURF"));
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+
+    mktData = caplib::CreateEqMktDataSet(
+        asOfDate, underlying, underlyingPrice,
+        irCurve, divCurve, volSurfaceHandle,
+        quantoIr, quantoFxVol, 0.0, "EQ_MKT", true);
+    ok = t("CreateEqMktDataSet -> [EQ_MKT, json]",
+        isHandleJson(mktData, "EQ_MKT"));
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: EQ builder exception: " + ex);
+    testNum = testNum + 1;
+}
+
+// ============================================================================
+// Test 2: CreateEuropeanOption
+// ============================================================================
+print("");
+print("--- Test 2: EuropeanOption (BSM ANALYTICAL) ---");
+// Fixture: payoff_type=CALL, strike=2.958, expiry=2020.08.19, delivery=2020.08.20,
+//         nominal=1e6, payoff_ccy=CNY, underlying_type=SPOT, underlying_ccy=CNY,
+//         underlying=50ETF.SSE
+eo = caplib::CreateEuropeanOption(
+    "CALL", 2.958, 2020.08.19, 2020.08.20,
+        1000000.0, "CNY", "SPOT", "CNY", underlying, "EO_INST", false);
+ok1 = t("CreateEuropeanOption -> EO_INST", eo == "EO_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok1, 1, 0);
+
+// ============================================================================
+// Test 3: CreateAmericanOption
+// ============================================================================
+print("");
+print("--- Test 3: AmericanOption ---");
+// Fixture: payoff_type=CALL, strike=2.958, expiry=2020.08.19,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+am = caplib::CreateAmericanOption(
+    "CALL", 2.958, 2020.08.19, 2020.08.20, 1,
+    1000000.0, "CNY", "SPOT", "CNY", underlying, "AM_INST", false);
+ok = t("CreateAmericanOption -> AM_INST", am == "AM_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 4: CreateAsianOption
+// ============================================================================
+print("");
+print("--- Test 4: AsianOption ---");
+// Fixture: payoff_type=CALL, expiry=2020.08.19, delivery=2020.08.20,
+//         strike_type=FIXED_STRIKE, strike=2.958,
+//         avg_method=ARITHMETIC_AVERAGE_METHOD, obs_type=DISCRETE_OBSERVATION_TYPE,
+//         fixing_schedule=[180 dates from 2020.02.22 to 2020.08.19],
+//         nominal=1e6, payoff_ccy=CNY, underlying_type=SPOT,
+//         underlying_ccy=CNY, underlying=50ETF.SSE
+aopt = caplib::CreateAsianOption(
+    "CALL", 2.958, 2020.08.19, 2020.08.20,
+    "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD",
+    "DISCRETE_OBSERVATION_TYPE", 1000000.0,
+    "CNY", "SPOT", "CNY", underlying, "AS_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateAsianOption -> AS_INST", aopt == "AS_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 5: CreateDigitalOption
+// ============================================================================
+print("");
+print("--- Test 5: DigitalOption ---");
+// Fixture: payoff_type=CALL, expiry=2020.08.19, delivery=2020.08.20,
+//         strike=2.958, cash=0.0, asset=1.0, nominal=1e6,
+//         payoff_ccy=CNY, underlying_type=SPOT, underlying_ccy=CNY,
+//         underlying=50ETF.SSE
+dg = caplib::CreateDigitalOption(
+    "CALL", 2.958, 2020.08.19, 2020.08.20,
+    0.0, 1.0, 1000000.0, "CNY", "SPOT", "CNY", underlying, "DG_INST", false);
+ok = t("CreateDigitalOption -> DG_INST", dg == "DG_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 6: CreateSingleBarrierOption
+// ============================================================================
+print("");
+print("--- Test 6: SingleBarrierOption ---");
+// Fixture: payoff_type=CALL, strike=2.958, expiry=2020.08.19, delivery=2020.08.20,
+//         barrier_type=UP_IN, barrier_value=3.2538,
+//         barrier_obs_type=CONTINUOUS_OBSERVATION_TYPE, obs_schedule=[[],[],[]],
+//         payment_type=PAY_AT_MATURITY, cash_rebate=0.0, asset_rebate=0.0,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+sb = caplib::CreateSingleBarrierOption(
+    "CALL", 2.958, 2020.08.19, 2020.08.20, "UP_IN", 3.2538,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, "CNY", "SPOT", "CNY", underlying, "SB_INST", false);
+ok = t("CreateSingleBarrierOption -> SB_INST", sb == "SB_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 7: CreateDoubleBarrierOption
+// ============================================================================
+print("");
+print("--- Test 7: DoubleBarrierOption ---");
+// Fixture: payoff_type=CALL, strike=2.958, expiry=2020.08.19, delivery=2020.08.20,
+//         lower_barrier_type=DOWN_IN, lower_barrier_value=2.810,
+//         upper_barrier_type=UP_IN, upper_barrier_value=3.106,
+//         barrier_obs_type=CONTINUOUS_OBSERVATION_TYPE, obs_schedule=[[],[],[]],
+//         payment_type=PAY_AT_MATURITY,
+//         lower_cash_rebate=0.0, lower_asset_rebate=0.0,
+//         upper_cash_rebate=0.0, upper_asset_rebate=0.0,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+dblB = caplib::CreateDoubleBarrierOption(
+    "CALL", 2.958, 2020.08.19, 2020.08.20,
+    "DOWN_IN", 2.810, "UP_IN", 3.106,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, "CNY", "SPOT", "CNY", underlying, "DB_INST", false);
+ok = t("CreateDoubleBarrierOption -> DB_INST", dblB == "DB_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 8: CreateOneTouchOption
+// ============================================================================
+print("");
+print("--- Test 8: OneTouchOption ---");
+// Fixture: expiry=2020.08.19, delivery=2020.08.20,
+//         barrier_type=UP_IN, barrier_value=3.106,
+//         barrier_obs_type=CONTINUOUS_OBSERVATION_TYPE, obs_schedule=[[],[],[]],
+//         payment_type=PAY_AT_MATURITY, cash=1.0, asset=0.0,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+ot = caplib::CreateOneTouchOption(
+    2020.08.19, 2020.08.20, "UP_IN", 3.106,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, "CNY", "SPOT", "CNY", underlying, "OT_INST", false);
+ok = t("CreateOneTouchOption -> OT_INST", ot == "OT_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 9: CreateDoubleTouchOption
+// ============================================================================
+print("");
+print("--- Test 9: DoubleTouchOption ---");
+// Fixture: expiry=2020.08.19, delivery=2020.08.20,
+//         lower_barrier_type=DOWN_IN, lower_barrier_value=2.810,
+//         upper_barrier_type=UP_IN, upper_barrier_value=3.106,
+//         barrier_obs_type=CONTINUOUS_OBSERVATION_TYPE, obs_schedule=[[],[],[]],
+//         payment_type=PAY_AT_MATURITY, cash=1.0, asset=0.0,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+dt = caplib::CreateDoubleTouchOption(
+    2020.08.19, 2020.08.20, "DOWN_IN", 2.810, "UP_IN", 3.106,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, "CNY", "SPOT", "CNY", underlying, "DT_INST", false);
+ok = t("CreateDoubleTouchOption -> DT_INST", dt == "DT_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 10: CreateSingleSharkFinOption
+// ============================================================================
+print("");
+print("--- Test 10: SingleSharkFinOption ---");
+// Fixture: payoff_type=CALL, strike=2.958, expiry=2020.08.19, delivery=2020.08.20,
+//         gearing=1.0, performance_type=RELATIVE_PERFORM_TYPE,
+//         barrier_type=UP_OUT, barrier_value=3.10590,
+//         barrier_obs_type=DISCRETE_OBSERVATION_TYPE,
+//         obs_schedule=[180 dates + [0]*180 + [1]*180],
+//         payment_type=PAY_AT_MATURITY, cash_rebate=0.0, asset_rebate=0.0,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+sf = caplib::CreateSingleSharkFinOption(
+    "CALL", 2.958, 2020.08.19, 2020.08.20, 1.0,
+    "RELATIVE_PERFORM_TYPE", "UP_OUT", 3.10590,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, "CNY", "SPOT", "CNY", underlying, "SF_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateSingleSharkFinOption -> SF_INST", sf == "SF_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 11: CreateDoubleSharkFinOption
+// ============================================================================
+print("");
+print("--- Test 11: DoubleSharkFinOption ---");
+// Fixture: lower_strike=2.958, upper_strike=2.958,
+//         expiry=2020.08.19, delivery=2020.08.20,
+//         lower_participation=1.0, upper_participation=1.0,
+//         performance_type=ABSOLUTE_PERFORM_TYPE,
+//         lower_barrier=2.662200, upper_barrier=3.253800,
+//         barrier_obs_type=DISCRETE_OBSERVATION_TYPE,
+//         obs_schedule=[180 dates + [0]*180 + [1]*180],
+//         payment_type=PAY_AT_MATURITY,
+//         lower_cash_rebate=0.0, lower_asset_rebate=0.0,
+//         upper_cash_rebate=0.0, upper_asset_rebate=0.0,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+ds = caplib::CreateDoubleSharkFinOption(
+    2.958, 2.958, 2020.08.19, 2020.08.20, 1.0, 1.0,
+    "ABSOLUTE_PERFORM_TYPE", 2.662200, 3.253800,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0,
+    "CNY", "SPOT", "CNY", underlying, "DS_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateDoubleSharkFinOption -> DS_INST", ds == "DS_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 12: CreateRangeAccrualOption
+// ============================================================================
+print("");
+print("--- Test 12: RangeAccrualOption ---");
+// Fixture: expiry_date=2020.08.19, delivery_date=2020.08.20,
+//         cash=0.01, asset=0.0, lower_barrier=2.662200, upper_barrier=3.253800,
+//         obs_schedule=[180 dates + [0]*180 + [1]*180],
+//         nominal=1e6, payoff_ccy=CNY, underlying_type=SPOT,
+//         underlying_ccy=CNY, underlying=50ETF.SSE
+ra = caplib::CreateRangeAccrualOption(
+    2020.08.19, 2020.08.20, 0.0, 0.01, 2.662200, 3.253800,
+    1000000.0, "CNY", "SPOT", "CNY", underlying, "RA_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateRangeAccrualOption -> RA_INST", ra == "RA_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 13: CreateAirbagOption
+// ============================================================================
+print("");
+print("--- Test 13: AirbagOption ---");
+// Fixture: payoff_type=CALL, expiry=2020.08.19, delivery=2020.08.20,
+//         lower_strike=2.958, upper_strike=3.54960,
+//         lower_participation=1.0, upper_participation=1.0,
+//         knock_in_strike=2.958,
+//         barrier_type=DOWN_IN, barrier_value=2.36640,
+//         barrier_obs_type=DISCRETE_OBSERVATION_TYPE,
+//         obs_schedule=[180 dates + [0]*180 + [1]*180],
+//         nominal=1e6, payoff_ccy=CNY, underlying_type=SPOT,
+//         underlying_ccy=CNY, underlying=50ETF.SSE
+ab = caplib::CreateAirbagOption(
+    "CALL", 2020.08.19, 2020.08.20,
+    2.958, 3.54960, 1.0, 1.0, 2.958,
+    "DOWN_IN", 2.36640, "DISCRETE_OBSERVATION_TYPE",
+    1000000.0, "CNY", "SPOT", "CNY", underlying, "AB_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateAirbagOption -> AB_INST", ab == "AB_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 14: CreatePingPongOption
+// ============================================================================
+print("");
+print("--- Test 14: PingPongOption ---");
+// Fixture: expiry=2020.08.19, delivery=2020.08.20,
+//         lower_barrier_type=DOWN_IN, lower_barrier_value=2.810,
+//         upper_barrier_type=UP_IN, upper_barrier_value=3.106,
+//         barrier_obs_type=DISCRETE_OBSERVATION_TYPE,
+//         obs_schedule=[180 dates + [0]*180 + [1]*180],
+//         payment_type=PAY_AT_MATURITY, cash=0.015, asset=0.0,
+//         settlement_days=1, nominal=1e6, payoff_ccy=CNY,
+//         underlying_type=SPOT, underlying_ccy=CNY, underlying=50ETF.SSE
+pp = caplib::CreatePingPongOption(
+    2020.08.19, 2020.08.20, "DOWN_IN", 2.810, "UP_IN", 3.106,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.015, 0.0, 1, 1000000.0, "CNY", "SPOT", "CNY", underlying, "PP_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreatePingPongOption -> PP_INST", pp == "PP_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 15: CreatePhoenixAutoCallableNote
+// ============================================================================
+print("");
+print("--- Test 15: PhoenixAutoCallableNote ---");
+// Fixture: coupon_payoff_type=CALL, coupon_strike=2.958, coupon_rate=0.12,
+//         start_date=2020.02.22,
+//         coupon_dates=[2020.03.23, 2020.04.22, 2020.05.22, 2020.06.22, 2020.07.23, 2020.08.22],
+//         day_count=ACT_365_FIXED,
+//         knock_out_barrier_type=UP_OUT, knock_out_barrier_value=3.25380,
+//         knock_out_sched=[coupon_dates + [0]*6 + [1]*6],
+//         knock_in_barrier_type=DOWN_IN, knock_in_barrier_value=2.66220,
+//         knock_in_sched=[180 dates + [0]*180 + [1]*180],
+//         long_short=SELL, knock_in_payoff_type=PUT, knock_in_payoff_strike=2.514300,
+//         expiry=2020.08.19, delivery=2020.08.20, settlement_days=1,
+//         nominal=1e6, payoff_ccy=CNY, underlying_type=SPOT,
+//         underlying_ccy=CNY, underlying=50ETF.SSE
+ph = caplib::CreatePhoenixAutoCallableNote(
+    "CALL", 2.958, 0.12, "ACT_365_FIXED", 2020.02.22,
+    couponDates, "UP_OUT", 3.25380, "DOWN_IN", 2.66220,
+    "SELL", "PUT", 2.514300, 2020.08.19, 2020.08.20,
+    1, 1000000.0, "CNY", "SPOT", "CNY", underlying, "PH_INST",
+    couponDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreatePhoenixAutoCallableNote -> PH_INST", ph == "PH_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 16: CreateSnowballAutoCallableNote
+// ============================================================================
+print("");
+print("--- Test 16: SnowballAutoCallableNote ---");
+// Fixture: coupon_rate=0.12, start_date=2020.02.21,
+//         coupon_dates=[2020.03.23, 2020.04.22, 2020.05.22, 2020.06.22, 2020.07.23, 2020.08.22],
+//         day_count=ACT_365_FIXED,
+//         knock_out_barrier_type=UP_OUT, knock_out_barrier_value=3.25380,
+//         knock_out_sched=[coupon_dates + [0]*6 + [1]*6],
+//         knock_in_barrier_type=DOWN_IN, knock_in_barrier_value=2.66220,
+//         knock_in_sched=[180 dates + [0]*180 + [1]*180],
+//         long_short=SELL, knock_in_payoff_type=PUT,
+//         knock_in_payoff_strike=2.514300, knock_in_payoff_gearing=1.0,
+//         initial price=2.958,
+//         expiry=2020.08.22, delivery=2020.08.22, settlement_days=1,
+//         nominal=1e6, payoff_ccy=CNY, underlying_type=SPOT,
+//         underlying_ccy=CNY, underlying=50ETF.SSE
+sn = caplib::CreateSnowballAutoCallableNote(
+    0.12, 2020.02.21, couponDates, "ACT_365_FIXED",
+    "UP_OUT", 3.25380, "DOWN_IN", 2.66220,
+    "SELL", "PUT", 2.514300, 1.0, 2.958,
+    2020.08.22, 2020.08.22, 1, 1000000.0,
+    "CNY", "SPOT", "CNY", underlying, "SN_INST",
+    couponDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateSnowballAutoCallableNote -> SN_INST", sn == "SN_INST");
+testNum = testNum + 1;
+passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 17: Price all EQ instruments using the 7-arg ObjectCache handle APIs
+// ============================================================================
+print("");
+print("--- Test 17: EQ pricing functions (all handle APIs) ---");
+
+try {
+    europeanPricingResult = caplib::PriceEqEuropeanOption(
+        eo, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqEuropeanOption", europeanPricingResult, "EO_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqEuropeanOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    americanPricingResult = caplib::PriceEqAmericanOption(
+        am, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqAmericanOption", americanPricingResult, "AM_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqAmericanOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    asianPricingResult = caplib::PriceEqAsianOption(
+        aopt, asOfDate, mktData[0],
+        bsmMcSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqAsianOption", asianPricingResult, "AS_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqAsianOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    digitalPricingResult = caplib::PriceEqDigitalOption(
+        dg, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqDigitalOption", digitalPricingResult, "DG_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqDigitalOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    singleBarrierPricingResult = caplib::PriceEqSingleBarrierOption(
+        sb, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqSingleBarrierOption", singleBarrierPricingResult, "SB_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqSingleBarrierOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    doubleBarrierPricingResult = caplib::PriceEqDoubleBarrierOption(
+        dblB, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqDoubleBarrierOption", doubleBarrierPricingResult, "DB_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqDoubleBarrierOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    oneTouchPricingResult = caplib::PriceEqOneTouchOption(
+        ot, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqOneTouchOption", oneTouchPricingResult, "OT_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqOneTouchOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    doubleTouchPricingResult = caplib::PriceEqDoubleTouchOption(
+        dt, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqDoubleTouchOption", doubleTouchPricingResult, "DT_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqDoubleTouchOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    singleSharkFinPricingResult = caplib::PriceEqSingleSharkFinOption(
+        sf, asOfDate, mktData[0],
+        bsmPdeSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqSingleSharkFinOption", singleSharkFinPricingResult, "SF_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqSingleSharkFinOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    doubleSharkFinPricingResult = caplib::PriceEqDoubleSharkFinOption(
+        ds, asOfDate, mktData[0],
+        bsmPdeSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqDoubleSharkFinOption", doubleSharkFinPricingResult, "DS_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqDoubleSharkFinOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    rangeAccrualPricingResult = caplib::PriceEqRangeAccrualOption(
+        ra, asOfDate, mktData[0],
+        bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqRangeAccrualOption", rangeAccrualPricingResult, "RA_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqRangeAccrualOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    airbagPricingResult = caplib::PriceEqAirbagOption(
+        ab, asOfDate, mktData[0],
+        bsmPdeSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqAirbagOption", airbagPricingResult, "AB_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqAirbagOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    pingPongPricingResult = caplib::PriceEqPingPongOption(
+        pp, asOfDate, mktData[0],
+        bsmMcSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqPingPongOption", pingPongPricingResult, "PP_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqPingPongOption exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    phoenixPricingResult = caplib::PriceEqPhoenixAutoCallableNote(
+        ph, asOfDate, mktData[0],
+        bsmMcSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqPhoenixAutoCallableNote", phoenixPricingResult, "PH_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqPhoenixAutoCallableNote exception: " + ex);
+    testNum = testNum + 1;
+}
+
+try {
+    snowballPricingResult = caplib::PriceEqSnowballAutoCallableNote(
+        sn, asOfDate, mktData[0],
+        bsmMcSettings, eqNoRisk[0], "", "", true);
+    ok = checkPricingResult("PriceEqSnowballAutoCallableNote", snowballPricingResult, "SN_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: PriceEqSnowballAutoCallableNote exception: " + ex);
+    testNum = testNum + 1;
+}
+
+// ============================================================================
+// Test 18: Generic ObjectCache protobuf JSON conversion
+// ============================================================================
+print("");
+print("--- Test 18: Generic ObjectCache JSON conversion ---");
+
+try {
+    cachedEuropeanPricingResult = caplib::GetObjectCacheJson("PricingResults", "EO_INST_results");
+    ok = checkPricingResult("GetObjectCacheJson(PricingResults)", cachedEuropeanPricingResult, "EO_INST_results");
+    testNum = testNum + 1;
+    passNum = passNum + iif(ok, 1, 0);
+} catch(ex) {
+    print("  FAIL: GetObjectCacheJson(PricingResults) exception: " + ex);
+    testNum = testNum + 1;
+}
+
+// ============================================================================
+// Summary
+// ============================================================================
+print("");
+print("============================================");
+print("  TEST RESULTS");
+print("  Passed: " + string(passNum) + " / " + string(testNum));
+print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
+print("============================================");
+if (testNum == passNum) {
+    print("  ALL TESTS PASSED!");
+} else {
+    print("  " + string(testNum - passNum) + " TEST(S) FAILED");
+}
+print("============================================");

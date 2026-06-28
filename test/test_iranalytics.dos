@@ -1,0 +1,202 @@
+// ============================================================================
+// test_iranalytics.dos
+// Native DolphinDB IR Analytics tests.
+// ============================================================================
+
+print("============================================");
+print("  IR Analytics Test Suite                  ");
+print("============================================");
+
+print("--- Setup: IR fixtures ---");
+
+asOfDate = 2022.03.09;
+currency = "CNY";
+curveName = "CNY_SHIBOR_3M";
+indexName = "SHIBOR_3M";
+calCfets = "CAL_CFETS";
+calCfetsCreated = caplib::CreateCalendar(calCfets);
+
+irCurve = caplib::CreateIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, curveName, "IR_CURVE", false);
+
+iborIndex = caplib::CreateIborIndex(
+    indexName, "3M", currency, [calCfets], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
+
+fixedLeg = caplib::CreateFixedLegDefinition(
+    currency, calCfets, "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "IR_FIXED_LEG", true);
+floatingLeg = caplib::CreateFloatingLegDefinition(
+    currency, iborIndex[0], calCfets, [calCfets],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "IR_FLOATING_LEG", true);
+
+swapTemplate = caplib::CreateIrVanillaSwapTemplate(
+    curveName, 1, fixedLeg[0], floatingLeg[0], "SPOTSTART", true);
+
+swap = caplib::BuildIrVanillaInstrument(
+    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+    swapTemplate[0], 1000000.0, "", "IR_SWAP", false);
+
+pricingModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "IR_MODEL", false);
+pricingSettings = caplib::CreatePricingSettings(
+    currency, "ANALYTICAL", 1, 1, pricingModel, "", "", "IR_PRICING", false);
+
+irCurveRisk = caplib::CreateIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "IR_CURVE_RISK", false);
+priceRisk = caplib::CreatePriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "IR_PRICE_RISK", false);
+thetaRisk = caplib::CreateThetaRiskSettings(1, 1, 1.0 / 365.0, "IR_THETA_RISK", false);
+irRisk = caplib::CreateIrRiskSettings(irCurveRisk, thetaRisk, "IR_RISK", true);
+xccyIrRisk = caplib::CreateXccyIrRiskSettings(irCurveRisk, priceRisk, thetaRisk, "IR_XCCY_RISK", true);
+
+mktData = caplib::CreateIrMktDataSet(
+    asOfDate, irCurve, [iborIndex[0]], [irCurve], "IR_MKT", true);
+
+print("  Setup fixtures loaded");
+
+testNum = 0;
+passNum = 0;
+
+def t(name, cond) {
+    if (cond) { print("  PASS: " + name); }
+    else      { print("  FAIL: " + name); }
+    return cond;
+}
+
+def isHandleJson(result, expectedHandle) {
+    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
+        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
+}
+
+def hasJsonField(json, fieldName) {
+    return strpos(json, "\"" + fieldName + "\"") >= 0;
+}
+
+def isPricingResultsJson(result, expectedHandle) {
+    return isHandleJson(result, expectedHandle) &&
+        hasJsonField(result[1], "present_value") &&
+        hasJsonField(result[1], "cash_value") &&
+        hasJsonField(result[1], "currency");
+}
+
+print("");
+print("--- Test 1: IR curve inputs/build settings ---");
+ok = t("CreateCalendar -> CAL_CFETS", calCfetsCreated);
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateIborIndex -> [SHIBOR_3M, json]",
+    isHandleJson(iborIndex, "SHIBOR_3M") &&
+    hasJsonField(iborIndex[1], "name") &&
+    hasJsonField(iborIndex[1], "tenor"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateFixedLegDefinition -> [IR_FIXED_LEG, json]",
+    isHandleJson(fixedLeg, "IR_FIXED_LEG") &&
+    hasJsonField(fixedLeg[1], "leg_type") &&
+    hasJsonField(fixedLeg[1], "schedule_definition"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateFloatingLegDefinition -> [IR_FLOATING_LEG, json]",
+    isHandleJson(floatingLeg, "IR_FLOATING_LEG") &&
+    hasJsonField(floatingLeg[1], "leg_type") &&
+    hasJsonField(floatingLeg[1], "ibor_index"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateIrVanillaSwapTemplate -> [CNY_SHIBOR_3M, json]",
+    isHandleJson(swapTemplate, "CNY_SHIBOR_3M") &&
+    hasJsonField(swapTemplate[1], "instrument_name") &&
+    hasJsonField(swapTemplate[1], "leg_definition"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+curveBuildSettings = caplib::CreateIrYieldCurveBuildSettings(
+    curveName, 0, [currency], [curveName], [iborIndex[0]], [curveName], "IR_BUILD_SETTINGS", true);
+ok = t("CreateIrYieldCurveBuildSettings -> [IR_BUILD_SETTINGS, json]",
+    isHandleJson(curveBuildSettings, "IR_BUILD_SETTINGS"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+parCurve = caplib::CreateIrParRateCurve(
+    asOfDate, currency, curveName,
+    [iborIndex[0], curveName, curveName],
+    ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"],
+    ["3M", "6M", "1Y"],
+    [100.0, 100.0, 100.0],
+    [0.023, 0.024, 0.026],
+    "IR_PAR_CURVE", true);
+ok = t("CreateIrParRateCurve -> [IR_PAR_CURVE, json]", isHandleJson(parCurve, "IR_PAR_CURVE"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+builderParCurve = caplib::CreateIrParRateCurve(
+    asOfDate, currency, curveName,
+    [curveName, curveName, curveName],
+    ["IR_VANILLA_SWAP", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"],
+    ["6M", "1Y", "3Y"],
+    [100.0, 100.0, 100.0],
+    [2.3, 2.4, 2.6],
+    "IR_BUILDER_PAR_CURVE", true);
+ok = t("CreateIrParRateCurve builder fixture -> [IR_BUILDER_PAR_CURVE, json]",
+    isHandleJson(builderParCurve, "IR_BUILDER_PAR_CURVE"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+builtSingleCcyCurve = caplib::BuildIrSingleCurrencyCurve(
+    asOfDate,
+    [curveName],
+    [curveBuildSettings[0]],
+    [builderParCurve[0]],
+    "ACT_365_FIXED",
+    "CONTINUOUS_COMPOUNDING",
+    "ANNUAL",
+    [],
+    "BOOTSTRAPPING_METHOD",
+    0,
+    1.0e-4,
+    "CENTRAL_DIFFERENCE_METHOD",
+    "SINGLE_THREADING_MODE",
+    ["IR_BUILT_CURVE"],
+    "IR_SINGLE_CCY_BUILD_OUTPUT", true);
+ok = t("BuildIrSingleCurrencyCurve -> scalar conventions, [IR_SINGLE_CCY_BUILD_OUTPUT, json]",
+    isHandleJson(builtSingleCcyCurve, "IR_SINGLE_CCY_BUILD_OUTPUT") &&
+    hasJsonField(builtSingleCcyCurve[1], "target_curves"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 2: IR market/risk factories ---");
+ok = t("CreateIrMktDataSet -> [IR_MKT, json]", isHandleJson(mktData, "IR_MKT"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateIrRiskSettings -> [IR_RISK, json]", isHandleJson(irRisk, "IR_RISK"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateXccyIrRiskSettings -> Python arg order [IR_XCCY_RISK, json]",
+    isHandleJson(xccyIrRisk, "IR_XCCY_RISK") &&
+    hasJsonField(xccyIrRisk[1], "ir_curve_settings") &&
+    hasJsonField(xccyIrRisk[1], "fx_settings") &&
+    hasJsonField(xccyIrRisk[1], "theta_settings"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 3: IR vanilla instrument pricing ---");
+swapPricingResult = caplib::PriceIrVanillaInstrument(
+    swap, asOfDate, mktData[0], pricingSettings, irRisk[0], "", "", true);
+ok = t("PriceIrVanillaInstrument -> [IR_SWAP_results, PricingResults JSON fields]",
+    isPricingResultsJson(swapPricingResult, "IR_SWAP_results"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("============================================");
+print("  TEST RESULTS");
+print("  Passed: " + string(passNum) + " / " + string(testNum));
+print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
+print("============================================");
+
+if (passNum != testNum) {
+    throw "IR analytics tests failed";
+}

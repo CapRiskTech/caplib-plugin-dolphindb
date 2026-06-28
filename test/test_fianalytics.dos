@@ -1,0 +1,336 @@
+// ============================================================================
+// test_fianalytics.dos
+// Native DolphinDB FI Analytics tests.
+// ============================================================================
+
+print("============================================");
+print("  FI Analytics Test Suite                  ");
+print("============================================");
+
+testNum = 0;
+passNum = 0;
+
+def t(name, cond) {
+    if (cond) { print("  PASS: " + name); }
+    else      { print("  FAIL: " + name); }
+    return cond;
+}
+
+def isHandleJson(result, expectedHandle) {
+    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
+        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
+}
+
+def isJsonOnly(result) {
+    return size(result) == 2 && result[0] == "" && strlen(result[1]) > 0;
+}
+
+def hasJsonField(json, fieldName) {
+    return strpos(json, "\"" + fieldName + "\"") >= 0;
+}
+
+def isPricingResultsJson(result, expectedHandle) {
+    return isHandleJson(result, expectedHandle) &&
+        hasJsonField(result[1], "present_value") &&
+        hasJsonField(result[1], "cash_value") &&
+        hasJsonField(result[1], "currency");
+}
+
+def createStdFixedBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::CreateVanillaBondTemplate(
+        instName, "FIXED_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
+def createStdZeroBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::CreateVanillaBondTemplate(
+        instName, "ZERO_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
+print("--- Setup: FI fixtures from test_fianalytics.py ---");
+
+asOfDate = 2021.07.22;
+currency = "CNY";
+calCfets = "CAL_CFETS";
+
+holidays = [44654, 44954];
+specialBusinessDays = [44655];
+calCfetsCreated = caplib::CreateCalendar(calCfets, holidays, specialBusinessDays);
+
+cnyTreasZero1m = createStdZeroBondTemplate("cny_treas_zero_1m", "1M", currency, calCfets, asOfDate);
+cnyTreasCpnA3m = createStdFixedBondTemplate("cny_treas_cpn_a_3m", "3M", currency, calCfets, asOfDate);
+cnyTreasCpnA6m = createStdFixedBondTemplate("cny_treas_cpn_a_6m", "6M", currency, calCfets, asOfDate);
+cnyTreasCpnA9m = createStdFixedBondTemplate("cny_treas_cpn_a_9m", "9M", currency, calCfets, asOfDate);
+cnyTreasCpnA1y = createStdFixedBondTemplate("cny_treas_cpn_a_1y", "1Y", currency, calCfets, asOfDate);
+cnyTreasCpnA2y = createStdFixedBondTemplate("cny_treas_cpn_a_2y", "2Y", currency, calCfets, asOfDate);
+cnyTreasCpnA3y = createStdFixedBondTemplate("cny_treas_cpn_a_3y", "3Y", currency, calCfets, asOfDate);
+cnyTreasCpnA5y = createStdFixedBondTemplate("cny_treas_cpn_a_5y", "5Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa7y = createStdFixedBondTemplate("cny_treas_cpn_sa_7y", "7Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa10y = createStdFixedBondTemplate("cny_treas_cpn_sa_10y", "10Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa15y = createStdFixedBondTemplate("cny_treas_cpn_sa_15y", "15Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa20y = createStdFixedBondTemplate("cny_treas_cpn_sa_20y", "20Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa30y = createStdFixedBondTemplate("cny_treas_cpn_sa_30y", "30Y", currency, calCfets, asOfDate);
+
+cnyMtnAaaCpnA1m = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_1m", "1M", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA3m = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_3m", "3M", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA6m = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_6m", "6M", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA9m = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_9m", "9M", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA1y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_1y", "1Y", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA2y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_2y", "2Y", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA3y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_3y", "3Y", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA4y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_4y", "4Y", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA5y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_5y", "5Y", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA7y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_7y", "7Y", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA8y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_8y", "8Y", currency, calCfets, asOfDate);
+cnyMtnAaaCpnA9y = createStdFixedBondTemplate("cny_mtn_aaa_cpn_a_9y", "9Y", currency, calCfets, asOfDate);
+
+cnyTreasCpnBond200014Template = caplib::CreateVanillaBondTemplate(
+    "cny_treas_cpn_bond_200014", "FIXED_COUPON_BOND",
+    2020.10.09, 1, 2020.10.10, "5Y",
+    2.15e-2, currency, 100.0,
+    "ACT_365_FIXED", calCfets, "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, true);
+
+cnyTreasStdCfetsName = "cny_treas_std_cfets";
+cnyTreasBondNames = [
+    "CNY_TREAS_ZERO_1M",
+    "CNY_TREAS_CPN_A_3M",
+    "CNY_TREAS_CPN_A_6M",
+    "CNY_TREAS_CPN_A_9M",
+    "CNY_TREAS_CPN_A_1Y",
+    "CNY_TREAS_CPN_A_2Y",
+    "CNY_TREAS_CPN_A_3Y",
+    "CNY_TREAS_CPN_A_5Y",
+    "CNY_TREAS_CPN_SA_7Y",
+    "CNY_TREAS_CPN_SA_10Y",
+    "CNY_TREAS_CPN_SA_15Y",
+    "CNY_TREAS_CPN_SA_20Y",
+    "CNY_TREAS_CPN_SA_30Y"];
+cnyTreasBondQuotes = [
+    1.7112e-2, 1.8317e-2, 1.9413e-2, 1.9500e-2, 2.1563e-2,
+    2.4985e-2, 2.5538e-2, 2.7550e-2, 2.9175e-2, 2.9263e-2,
+    3.2984e-2, 3.3462e-2, 3.5023e-2];
+parCnyTreasStdCfets = caplib::CreateBondParCurve(
+    asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes,
+    "YIELD_TO_MATURITY", cnyTreasStdCfetsName, true);
+cnyTreasBuildSettings = caplib::CreateBondYieldCurveBuildSettings(
+    cnyTreasStdCfetsName, "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CNY_TREAS_STD_CFETS_BUILD_SETTINGS", true);
+
+cnyMtnAaaSprdStdCfetsName = "cny_mtn_aaa_sprd_std_cfets";
+cnyMtnBondNames = [
+    "CNY_MTN_AAA_CPN_A_1M",
+    "CNY_MTN_AAA_CPN_A_3M",
+    "CNY_MTN_AAA_CPN_A_6M",
+    "CNY_MTN_AAA_CPN_A_9M",
+    "CNY_MTN_AAA_CPN_A_1Y",
+    "CNY_MTN_AAA_CPN_A_2Y",
+    "CNY_MTN_AAA_CPN_A_3Y",
+    "CNY_MTN_AAA_CPN_A_4Y",
+    "CNY_MTN_AAA_CPN_A_5Y",
+    "CNY_MTN_AAA_CPN_A_7Y",
+    "CNY_MTN_AAA_CPN_A_8Y",
+    "CNY_MTN_AAA_CPN_A_9Y"];
+cnyMtnBondQuotes = [
+    0.022916, 0.024213, 0.025822, 0.026675, 0.027216, 0.028916,
+    0.031112, 0.032824, 0.033816, 0.036816, 0.037026, 0.037311];
+parCnyMtnAaaSprdStdCfets = caplib::CreateBondParCurve(
+    asOfDate, currency, cnyMtnBondNames, cnyMtnBondQuotes,
+    "YIELD_TO_MATURITY", cnyMtnAaaSprdStdCfetsName, true);
+cnyMtnBuildSettings = caplib::CreateBondYieldCurveBuildSettings(
+    cnyMtnAaaSprdStdCfetsName, "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CNY_MTN_AAA_SPRD_STD_CFETS_BUILD_SETTINGS", true);
+
+cnyTreasStdCfets = caplib::BuildBondYieldCurve(
+    asOfDate, cnyTreasBuildSettings[0], cnyTreasStdCfetsName, parCnyTreasStdCfets[0],
+    "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL",
+    "BOOTSTRAPPING_METHOD", 0, "", "CNY_TREAS_STD_CFETS", true);
+
+cnyMtnAaaSprdStdCfets = caplib::BuildBondCreditSpreadCurve(
+    asOfDate, cnyMtnAaaSprdStdCfetsName, parCnyMtnAaaSprdStdCfets[0],
+    cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0,
+    "CNY_MTN_AAA_SPRD_STD_CFETS", true);
+
+vanillaBond = caplib::BuildVanillaBond(
+    1000000.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "FI_VANILLA_BOND", false);
+
+fiMktData = caplib::CreateFiMktDataSet(
+    asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0],
+    cnyTreasStdCfets[0], cnyTreasStdCfets[0], cnyTreasStdCfets[0],
+    "FI_MKT_NAME", "FI_MKT", true);
+bondMktData = caplib::CreateBondMktDataSet(
+    asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0],
+    cnyTreasStdCfets[0], "FI_BOND_MKT_NAME", "FI_BOND_MKT", true);
+
+irRisk = caplib::CreateIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "FI_IR_RISK", false);
+creditRisk = caplib::CreateCreditCurveRiskSettings(
+    1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "FI_CREDIT_RISK", false);
+thetaRisk = caplib::CreateThetaRiskSettings(1, 1, 1.0 / 365.0, "FI_THETA_RISK", false);
+fiRisk = caplib::CreateFiRiskSettings(
+    irRisk, creditRisk, thetaRisk, "FI_RISK_NAME", "FI_RISK", true);
+vanillaBondRisk = caplib::CreateVanillaBondRiskSettings(
+    "", "", 1, "FI_VANILLA_BOND_RISK_NAME", "FI_VANILLA_BOND_RISK", true);
+
+pricingSettings = caplib::CreatePricingSettings(
+    currency, "ANALYTICAL", 1, 1, "", "", "", "FI_PRICING", false);
+
+print("  Setup fixtures loaded");
+
+print("");
+print("--- Test 1: Python setup fixtures ---");
+ok = t("CreateCalendar -> CAL_CFETS with holidays/special business days", calCfetsCreated);
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("Treasury standard template ladder -> 13 handles",
+    isHandleJson(cnyTreasZero1m, "CNY_TREAS_ZERO_1M") &&
+    isHandleJson(cnyTreasCpnA3m, "CNY_TREAS_CPN_A_3M") &&
+    isHandleJson(cnyTreasCpnSa30y, "CNY_TREAS_CPN_SA_30Y"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("MTN AAA standard template ladder -> 12 handles",
+    isHandleJson(cnyMtnAaaCpnA1m, "CNY_MTN_AAA_CPN_A_1M") &&
+    isHandleJson(cnyMtnAaaCpnA5y, "CNY_MTN_AAA_CPN_A_5Y") &&
+    isHandleJson(cnyMtnAaaCpnA9y, "CNY_MTN_AAA_CPN_A_9Y"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateVanillaBondTemplate -> CNY_TREAS_CPN_BOND_200014",
+    isHandleJson(cnyTreasCpnBond200014Template, "CNY_TREAS_CPN_BOND_200014") &&
+    hasJsonField(cnyTreasCpnBond200014Template[1], "instrument_name") &&
+    hasJsonField(cnyTreasCpnBond200014Template[1], "leg_definition"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 2: Bond par curve and build settings factories ---");
+ok = t("CreateBondParCurve -> treasury CFETS JSON",
+    isHandleJson(parCnyTreasStdCfets, cnyTreasStdCfetsName) &&
+    hasJsonField(parCnyTreasStdCfets[1], "reference_date") &&
+    hasJsonField(parCnyTreasStdCfets[1], "pillars") &&
+    hasJsonField(parCnyTreasStdCfets[1], "name"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateBondParCurve -> MTN AAA spread CFETS JSON",
+    isHandleJson(parCnyMtnAaaSprdStdCfets, cnyMtnAaaSprdStdCfetsName) &&
+    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "reference_date") &&
+    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "pillars") &&
+    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "name"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateBondYieldCurveBuildSettings -> treasury handle/json",
+    isHandleJson(cnyTreasBuildSettings, "CNY_TREAS_STD_CFETS_BUILD_SETTINGS") &&
+    hasJsonField(cnyTreasBuildSettings[1], "curve_name") &&
+    hasJsonField(cnyTreasBuildSettings[1], "curve_type"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateBondYieldCurveBuildSettings -> MTN handle/json",
+    isHandleJson(cnyMtnBuildSettings, "CNY_MTN_AAA_SPRD_STD_CFETS_BUILD_SETTINGS") &&
+    hasJsonField(cnyMtnBuildSettings[1], "curve_name") &&
+    hasJsonField(cnyMtnBuildSettings[1], "curve_type"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("BuildBondYieldCurve -> [CNY_TREAS_STD_CFETS, json]",
+    isHandleJson(cnyTreasStdCfets, "CNY_TREAS_STD_CFETS") &&
+    hasJsonField(cnyTreasStdCfets[1], "curve"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("BuildBondCreditSpreadCurve -> [CNY_MTN_AAA_SPRD_STD_CFETS, json]",
+    isHandleJson(cnyMtnAaaSprdStdCfets, "CNY_MTN_AAA_SPRD_STD_CFETS") &&
+    hasJsonField(cnyMtnAaaSprdStdCfets[1], "curve"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 3: FI market/risk factories ---");
+ok = t("CreateFiMktDataSet -> [FI_MKT, json]",
+    isHandleJson(fiMktData, "FI_MKT") &&
+    hasJsonField(fiMktData[1], "discount_curve") &&
+    hasJsonField(fiMktData[1], "spread_curve"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateBondMktDataSet -> [FI_BOND_MKT, json]",
+    isHandleJson(bondMktData, "FI_BOND_MKT") &&
+    hasJsonField(bondMktData[1], "discount_curve") &&
+    hasJsonField(bondMktData[1], "spread_curve"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateFiRiskSettings -> [FI_RISK, json]",
+    isHandleJson(fiRisk, "FI_RISK") &&
+    hasJsonField(fiRisk[1], "ir_curve_settings") &&
+    hasJsonField(fiRisk[1], "cs_curve_settings") &&
+    hasJsonField(fiRisk[1], "theta_settings"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateVanillaBondRiskSettings -> [FI_VANILLA_BOND_RISK, json]",
+    isHandleJson(vanillaBondRisk, "FI_VANILLA_BOND_RISK") &&
+    hasJsonField(vanillaBondRisk[1], "theta_settings"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 4: FI scalar calculators ---");
+conversionFactor = caplib::CalcConversionFactor(
+    0.03, "ANNUAL", 0.03, 2025.07.22, asOfDate, 2021.07.22);
+ok = t("CalcConversionFactor -> positive double", conversionFactor > 0.0);
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+impliedRepoRate = caplib::CalcImpliedRepoRate(
+    98.0, 1.0, 99.0, 0.03, asOfDate, 2021.07.22, 2021.09.22,
+    "ACT_365", 2022.07.22, "ANNUAL");
+ok = t("CalcImpliedRepoRate -> finite double", impliedRepoRate == impliedRepoRate);
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+yieldToMaturity = caplib::CalcYieldToMaturity(
+    asOfDate, "DISCRETE_COMPOUNDING", vanillaBond, cnyTreasStdCfets[0], 972294.9381034705,
+    "DIRTY_PRICE", "ANNUAL");
+ok = t("CalcYieldToMaturity -> finite double", yieldToMaturity == yieldToMaturity);
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+fixedCpnBondParRate = caplib::CalcFixedCpnBondParRate(
+    asOfDate, vanillaBond, cnyTreasStdCfets[0], "");
+ok = t("CalcFixedCpnBondParRate -> finite double", fixedCpnBondParRate == fixedCpnBondParRate);
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 5: VanillaBond pricing and greeks path ---");
+vanillaBondPricingResult = caplib::PriceVanillaBond(
+    vanillaBond, asOfDate, fiMktData[0], pricingSettings, fiRisk[0], "", "", true);
+ok = t("PriceVanillaBond -> [FI_VANILLA_BOND_results, PricingResults JSON fields]",
+    isPricingResultsJson(vanillaBondPricingResult, "FI_VANILLA_BOND_results"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("PriceVanillaBond greeks path -> sensitivity/cash-flow JSON present",
+    hasJsonField(vanillaBondPricingResult[1], "sensitivity") ||
+    hasJsonField(vanillaBondPricingResult[1], "cash_flow_results") ||
+    hasJsonField(vanillaBondPricingResult[1], "specific_pricing_results"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("============================================");
+print("  TEST RESULTS");
+print("  Passed: " + string(passNum) + " / " + string(testNum));
+print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
+print("============================================");
+
+if (passNum != testNum) {
+    throw "FI analytics tests failed";
+}

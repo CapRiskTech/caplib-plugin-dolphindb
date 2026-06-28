@@ -1,0 +1,152 @@
+// ============================================================================
+// test_cranalytics.dos
+// Native DolphinDB CR Analytics tests.
+// ============================================================================
+
+print("============================================");
+print("  CR Analytics Test Suite                  ");
+print("============================================");
+
+print("--- Setup: CR fixtures ---");
+
+asOfDate = 2020.02.21;
+currency = "CNY";
+calCfets = "CAL_CFETS";
+calendarCreated = caplib::CreateCalendar(calCfets);
+
+discountDates = [2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21,
+                 2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21, 2030.02.21];
+discountRates = [0.0166, 0.0183, 0.0198, 0.0212, 0.0234,
+                 0.0256, 0.0268, 0.0280, 0.0294, 0.0305];
+discountCurve = caplib::CreateIrYieldCurve(
+    asOfDate, discountDates, discountRates,
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CN_TREAS", "CR_DISCOUNT_CURVE", false);
+
+baseCreditDates = [2020.03.01, 2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21,
+                   2022.02.21, 2023.02.21, 2024.02.21, 2025.02.21, 2026.02.21];
+baseCreditSpreads = [0.0012, 0.0018, 0.0024, 0.0030, 0.0042,
+                     0.0058, 0.0065, 0.0072, 0.0078, 0.0084];
+baseCreditCurve = caplib::CreateCreditCurve(
+    asOfDate, baseCreditDates, baseCreditSpreads,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "BOND_CREDIT", "CR_BASE_CREDIT_CURVE", false);
+
+cdsTemplate = caplib::CreateCdsTemplate(
+    "CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0,
+    1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD",
+    "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [calCfets], false, true);
+
+pricingSettings = caplib::CreateCdsPricingSettings(
+    currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE",
+    "CR_PRICING_NAME", "CR_PRICING", true);
+
+irRisk = caplib::CreateIrCurveRiskSettings(
+    1, 0, 0, 1.0e-4, 5.0e-1, 0, 1, 1.0e-4, 0, "CR_IR_RISK", false);
+creditRisk = caplib::CreateCreditCurveRiskSettings(
+    1, 0, 1.0e-4, 0, 1, 1.0e-4, 0, "CR_CREDIT_RISK", false);
+thetaRisk = caplib::CreateThetaRiskSettings(1, 1, 1.0 / 365.0, "CR_THETA_RISK", false);
+crRisk = caplib::CreateCrRiskSettings(
+    irRisk, creditRisk, thetaRisk, "CR_RISK_NAME", "CR_RISK", true);
+
+creditParCurve = caplib::CreateCreditParCurve(
+    asOfDate, currency, "BOND_CREDIT",
+    ["CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA"],
+    ["CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP"],
+    ["1Y", "3Y", "5Y"],
+    [0.0080, 0.0100, 0.0120],
+    ["SPOTSTART", "SPOTSTART", "SPOTSTART"],
+    "CR_CREDIT_PAR_CURVE", true);
+
+creditCurve = caplib::BuildCreditCurve(
+    asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT",
+    "BOOTSTRAPPING_METHOD", "CR_CREDIT_CURVE", true);
+
+mktData = caplib::CreateCrMktDataSet(
+    asOfDate, discountCurve, creditCurve[0], "CR_MKT_NAME", "CR_MKT", true);
+
+cds = caplib::BuildCreditDefaultSwap(
+    1000000.0, currency, 2019.06.20, 2024.06.20,
+    "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4,
+    0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY",
+    "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0,
+    "CR_CDS_NAME", "CR_CDS", false);
+
+print("  Setup fixtures loaded");
+
+testNum = 0;
+passNum = 0;
+
+def t(name, cond) {
+    if (cond) { print("  PASS: " + name); }
+    else      { print("  FAIL: " + name); }
+    return cond;
+}
+
+def isHandleJson(result, expectedHandle) {
+    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
+        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
+}
+
+def hasJsonField(json, fieldName) {
+    return strpos(json, "\"" + fieldName + "\"") >= 0;
+}
+
+def isPricingResultsJson(result, expectedHandle) {
+    return isHandleJson(result, expectedHandle) &&
+        hasJsonField(result[1], "present_value") &&
+        hasJsonField(result[1], "cash_value") &&
+        hasJsonField(result[1], "currency");
+}
+
+print("");
+print("--- Test 1: CR curve builder/factories ---");
+ok = t("CreateCalendar -> true", calendarCreated);
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateCdsTemplate -> [CFETS-SHCH-GTJA, json]",
+    isHandleJson(cdsTemplate, "CFETS-SHCH-GTJA") &&
+    hasJsonField(cdsTemplate[1], "instrument_name") &&
+    hasJsonField(cdsTemplate[1], "credit_protection_type"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateCreditParCurve -> [CR_CREDIT_PAR_CURVE, json]",
+    isHandleJson(creditParCurve, "CR_CREDIT_PAR_CURVE"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("BuildCreditCurve -> [CR_CREDIT_CURVE, json]",
+    isHandleJson(creditCurve, "CR_CREDIT_CURVE"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateCrMktDataSet -> [CR_MKT, json]", isHandleJson(mktData, "CR_MKT"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateCrRiskSettings -> [CR_RISK, json]", isHandleJson(crRisk, "CR_RISK"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateCdsPricingSettings -> full PricingSettings JSON",
+    isHandleJson(pricingSettings, "CR_PRICING") &&
+    hasJsonField(pricingSettings[1], "pricing_method") &&
+    hasJsonField(pricingSettings[1], "model_settings") &&
+    hasJsonField(pricingSettings[1], "pde_settings") &&
+    hasJsonField(pricingSettings[1], "mc_settings"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 2: CreditDefaultSwap pricing ---");
+cdsPricingResult = caplib::PriceCreditDefaultSwap(
+    cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true);
+ok = t("PriceCreditDefaultSwap -> [CR_CDS_results, PricingResults JSON fields]",
+    isPricingResultsJson(cdsPricingResult, "CR_CDS_results"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("============================================");
+print("  TEST RESULTS");
+print("  Passed: " + string(passNum) + " / " + string(testNum));
+print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
+print("============================================");
+
+if (passNum != testNum) {
+    throw "CR analytics tests failed";
+}

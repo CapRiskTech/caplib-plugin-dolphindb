@@ -1,0 +1,469 @@
+// ============================================================================
+// test_cmanalytics.dos
+// Native DolphinDB CM Analytics tests.
+// Assertions validate handles and PricingResults JSON fields instead of raw
+// protobuf bytes, so the tests remain stable across protobuf serialization.
+// ============================================================================
+
+print("============================================");
+print("  CM Analytics Test Suite                  ");
+print("============================================");
+
+// ============================================================================
+// Setup: exact market fixtures from the Python setUp()
+// ============================================================================
+print("--- Setup: Market Data ---");
+
+currency = "CNY";
+underlying = "CU.SHFE";
+asOfDate = 2020.02.21;
+underlyingPrice = 66380.00;
+
+irDates = [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24,
+           2020.08.24, 2020.11.24, 2021.02.24, 2022.02.24, 2023.02.24,
+           2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24];
+irRates = [0.0135486283791684, 0.0197762034605164, 0.0197686053073393,
+           0.0224838821372655, 0.0241740300538751, 0.0256822601972516,
+           0.0265096948143765, 0.0271330931714993, 0.0274314991366822,
+           0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+           0.032692683803743, 0.034410206396147];
+irCurve = caplib::CreateIrYieldCurve(
+    asOfDate, irDates, irRates,
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false);
+
+fwdDates = [2020.02.22, 2030.02.24];
+fwdValues = [0.0, 0.0];
+fwdCurve = caplib::CreateDividendCurve(
+    asOfDate, fwdDates, fwdValues, asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false);
+
+modelParams = [0.0];
+bsmModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false);
+bsmAnalyticalSettings = caplib::CreatePricingSettings(
+    currency, "ANALYTICAL", 0, 0, bsmModel, "", "", "CM_BSM_ANALYTICAL", false);
+
+pdeSettings = caplib::CreatePdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "CM_PDE_SETTINGS", false);
+bsmPdeModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_PDE_MODEL", false);
+bsmPdeSettings = caplib::CreatePricingSettings(
+    currency, "PDE", 0, 0, bsmPdeModel, pdeSettings, "", "CM_BSM_PDE", false);
+
+mcSettings = caplib::CreateMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false);
+bsmMcModel = caplib::CreatePricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false);
+bsmMcSettings = caplib::CreatePricingSettings(
+    currency, "MONTE_CARLO", 0, 0, bsmMcModel, "", mcSettings, "CM_BSM_MC", false);
+
+cmRisk = caplib::CreateCmRiskSettings(1, 1, 1, 1, "CM_RISK", true);
+cmNoRisk = caplib::CreateCmRiskSettings(0, 0, 0, 0, "CM_NO_RISK", true);
+
+priceScn = caplib::CreateScnSettings(-0.20, 0.20, 11, 1, "CM_PRICE_SCN", false);
+volScn = caplib::CreateScnSettings(-0.05, 0.05, 12, 0, "CM_VOL_SCN", false);
+scnAnalysis = caplib::CreateScnAnalysisSettings(
+    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 0, "CM_SCN_ANALYSIS", false);
+
+termDates = [2020.03.12, 2020.04.13, 2020.05.12, 2020.06.12,
+             2020.07.10, 2020.08.12, 2020.09.11];
+
+// The Python helper iterates over prices and ignores any extra payoff/strike
+// entries. Keep row lengths equal here because the native plugin validates
+// quote, strike, and payoff matrix shapes.
+payoffTypes = [
+    take("PUT", 13) join take("CALL", 14),
+    take("PUT", 13) join take("CALL", 14),
+    take("PUT", 13) join take("CALL", 14),
+    take("PUT", 11) join take("CALL", 15),
+    take("PUT", 10) join take("CALL", 11),
+    take("PUT", 11) join take("CALL", 14),
+    take("PUT", 10) join take("CALL", 10)
+];
+strikes = [
+    [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000,
+     63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000,
+     72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+    [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000,
+     63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000,
+     72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+    [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000,
+     63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000,
+     72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
+    [56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000,
+     65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000,
+     74000, 75000, 76000, 77000, 78000, 79000, 80000, 82000],
+    [57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000,
+     66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000,
+     75000, 76000, 77000],
+    [56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000,
+     65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000,
+     74000, 75000, 76000, 77000, 78000, 79000, 80000],
+    [57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000,
+     66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000,
+     75000, 76000]
+];
+prices = [
+    [14.00, 16.00, 20.00, 26.00, 38.00, 64.00, 86.00, 130.00, 198.00,
+     282.00, 400.00, 600.00, 878.00, 1070.00, 660.00, 394.00, 236.00,
+     142.00, 90.00, 52.00, 32.00, 22.00, 18.00, 14.00, 10.00, 6.00, 6.00],
+    [126.00, 126.00, 160.00, 200.00, 250.00, 312.00, 396.00, 478.00,
+     600.00, 776.00, 974.00, 1230.00, 1602.00, 1736.00, 1276.00, 910.00,
+     642.00, 460.00, 312.00, 212.00, 150.00, 110.00, 80.00, 58.00,
+     40.00, 28.00, 38.00],
+    [172.00, 192.00, 236.00, 292.00, 426.00, 478.00, 574.00, 702.00,
+     892.00, 1206.00, 1368.00, 1632.00, 2140.00, 2218.00, 1762.00,
+     1350.00, 1026.00, 762.00, 562.00, 404.00, 294.00, 210.00, 128.00,
+     102.00, 58.00, 56.00, 106.00],
+    [414.00, 486.00, 584.00, 700.00, 958.00, 1186.00, 1308.00, 1634.00,
+     2008.00, 2436.00, 2914.00, 2814.00, 2396.00, 2026.00, 1698.00,
+     1412.00, 758.00, 964.00, 446.00, 346.00, 256.00, 188.00, 138.00,
+     102.00, 82.00, 44.00],
+    [676.00, 798.00, 936.00, 1064.00, 1354.00, 1780.00, 2138.00,
+     2538.00, 2978.00, 3474.00, 3324.00, 2902.00, 2516.00, 1544.00,
+     1256.00, 984.00, 806.00, 622.00, 488.00, 382.00, 282.00],
+    [678.00, 802.00, 906.00, 1058.00, 1246.00, 1456.00, 2066.00,
+     2446.00, 2862.00, 3314.00, 3814.00, 3590.00, 3168.00, 2784.00,
+     2446.00, 2136.00, 1852.00, 1612.00, 1390.00, 630.00, 1026.00,
+     448.00, 338.00, 278.00, 196.00],
+    [1006.00, 1146.00, 1312.00, 1558.00, 1790.00, 2118.00, 2688.00,
+     3118.00, 3578.00, 4078.00, 3828.00, 3408.00, 3024.00, 2680.00,
+     2358.00, 2078.00, 1822.00, 1586.00, 1388.00, 666.00]
+];
+underlyingPrices = [66810.00, 66750.00, 66620.00, 66620.00, 66490.00, 66460.00, 66380.00];
+
+dailyObsDates = 2020.02.22..2020.08.19;
+dailyObsValues = take(0.0, size(dailyObsDates));
+dailyObsWeights = take(1.0, size(dailyObsDates));
+couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
+               2020.06.22, 2020.07.23, 2020.08.22];
+couponObsValues = take(0.0, size(couponDates));
+couponObsWeights = take(1.0, size(couponDates));
+
+print("  Setup fixtures loaded");
+
+// ============================================================================
+// Helpers
+// ============================================================================
+testNum = 0;
+passNum = 0;
+
+def t(name, cond) {
+    if (cond) { print("  PASS: " + name); }
+    else      { print("  FAIL: " + name); }
+    return cond;
+}
+
+def isHandleJson(result, expectedHandle) {
+    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
+        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
+}
+
+def hasJsonField(json, fieldName) {
+    return strpos(json, "\"" + fieldName + "\"") >= 0;
+}
+
+def isPricingResultsJson(result, expectedHandle) {
+    return isHandleJson(result, expectedHandle) &&
+        hasJsonField(result[1], "present_value") &&
+        hasJsonField(result[1], "cash_value") &&
+        hasJsonField(result[1], "currency");
+}
+
+def checkPricingResult(name, result, expectedHandle) {
+    return t(name + " -> [" + expectedHandle + ", PricingResults JSON fields]",
+        isPricingResultsJson(result, expectedHandle));
+}
+
+ok = t("CreateCmRiskSettings -> [CM_RISK, json]", isHandleJson(cmRisk, "CM_RISK"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+ok = t("CreateCmRiskSettings -> [CM_NO_RISK, json]", isHandleJson(cmNoRisk, "CM_NO_RISK"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Test 1: CM volatility surface builder
+// ============================================================================
+print("");
+print("--- Test 1: CM volatility surface builder ---");
+
+volSurfDefinition = caplib::CreateVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-5, 1.0e-5, "CM_VOL_SURF_DEF", true);
+ok = t("CreateVolatilitySurfaceDefinition -> [CM_VOL_SURF_DEF, json]",
+    isHandleJson(volSurfDefinition, "CM_VOL_SURF_DEF"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+volSurfBuildSettings = caplib::CreateVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD_SETTINGS", true);
+ok = t("CreateVolSurfBuildSettings -> [CM_VOL_BUILD_SETTINGS, json]",
+    isHandleJson(volSurfBuildSettings, "CM_VOL_BUILD_SETTINGS"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+cmOptionQuotes = caplib::CreateCmOptionQuoteMatrix(
+    "AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", true);
+ok = t("CreateCmOptionQuoteMatrix -> [CM_OPTION_QUOTES, json]",
+    isHandleJson(cmOptionQuotes, "CM_OPTION_QUOTES") &&
+    hasJsonField(cmOptionQuotes[1], "quote_smiles"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+volSurface = caplib::BuildCmVolatilitySurface(
+    asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0],
+    underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "CM_VOL_SURF", true);
+ok = t("BuildCmVolatilitySurface -> [CM_VOL_SURF, json]",
+    isHandleJson(volSurface, "CM_VOL_SURF") &&
+    hasJsonField(volSurface[1], "vol_smiles"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+// Explicit zero-rate quanto curves are supplied even with zero correlation.
+quantoDates = [2020.02.22, 2030.02.24];
+quantoValues = [0.0, 0.0];
+quantoIr = caplib::CreateIrYieldCurve(
+    asOfDate, quantoDates, quantoValues,
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
+quantoFxVol = caplib::CreateVolatilityCurve(
+    asOfDate, quantoDates, quantoValues,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    underlying, "QUANTO_FX_VOL", false);
+
+mktData = caplib::CreateCmMktDataSet(
+    asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface[0],
+    quantoIr, quantoFxVol, 0.0, "CM_MKT", true);
+ok = t("CreateCmMktDataSet -> [CM_MKT, json]", isHandleJson(mktData, "CM_MKT"));
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Tests 2-16: active CM pricer tests from test_cmanalytics.py
+// ============================================================================
+print("");
+print("--- Test 2: EuropeanOption (BSM ANALYTICAL) ---");
+europeanOption = caplib::CreateEuropeanOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_EO_INST", false);
+ok = t("CreateEuropeanOption -> CM_EO_INST", europeanOption == "CM_EO_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+europeanPricingResult = caplib::PriceCmEuropeanOption(
+    europeanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmEuropeanOption", europeanPricingResult, "CM_EO_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 3: AmericanOption (BSM ANALYTICAL) ---");
+americanOption = caplib::CreateAmericanOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1,
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_AM_INST", false);
+ok = t("CreateAmericanOption -> CM_AM_INST", americanOption == "CM_AM_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+americanPricingResult = caplib::PriceCmAmericanOption(
+    americanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmAmericanOption", americanPricingResult, "CM_AM_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 4: AsianOption (BSM MONTE_CARLO) ---");
+asianOption = caplib::CreateAsianOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD",
+    "DISCRETE_OBSERVATION_TYPE", 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_AS_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateAsianOption -> CM_AS_INST", asianOption == "CM_AS_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+asianPricingResult = caplib::PriceCmAsianOption(
+    asianOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmAsianOption", asianPricingResult, "CM_AS_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 5: DigitalOption (BSM ANALYTICAL) ---");
+digitalOption = caplib::CreateDigitalOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    0.0, 1.0, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DG_INST", false);
+ok = t("CreateDigitalOption -> CM_DG_INST", digitalOption == "CM_DG_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+digitalPricingResult = caplib::PriceCmDigitalOption(
+    digitalOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmDigitalOption", digitalPricingResult, "CM_DG_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 6: SingleBarrierOption (BSM ANALYTICAL) ---");
+singleBarrierOption = caplib::CreateSingleBarrierOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SB_INST", false);
+ok = t("CreateSingleBarrierOption -> CM_SB_INST", singleBarrierOption == "CM_SB_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+singleBarrierPricingResult = caplib::PriceCmSingleBarrierOption(
+    singleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmSingleBarrierOption", singleBarrierPricingResult, "CM_SB_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 7: DoubleBarrierOption (BSM ANALYTICAL) ---");
+doubleBarrierOption = caplib::CreateDoubleBarrierOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DB_INST", false);
+ok = t("CreateDoubleBarrierOption -> CM_DB_INST", doubleBarrierOption == "CM_DB_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+doubleBarrierPricingResult = caplib::PriceCmDoubleBarrierOption(
+    doubleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmDoubleBarrierOption", doubleBarrierPricingResult, "CM_DB_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 8: OneTouchOption (BSM ANALYTICAL) ---");
+oneTouchOption = caplib::CreateOneTouchOption(
+    2020.08.19, 2020.08.20, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_OT_INST", false);
+ok = t("CreateOneTouchOption -> CM_OT_INST", oneTouchOption == "CM_OT_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+oneTouchPricingResult = caplib::PriceCmOneTouchOption(
+    oneTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmOneTouchOption", oneTouchPricingResult, "CM_OT_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 9: DoubleTouchOption (BSM ANALYTICAL) ---");
+doubleTouchOption = caplib::CreateDoubleTouchOption(
+    2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95,
+    "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DT_INST", false);
+ok = t("CreateDoubleTouchOption -> CM_DT_INST", doubleTouchOption == "CM_DT_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+doubleTouchPricingResult = caplib::PriceCmDoubleTouchOption(
+    doubleTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmDoubleTouchOption", doubleTouchPricingResult, "CM_DT_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 10: SingleSharkFinOption (BSM PDE) ---");
+singleSharkFinOption = caplib::CreateSingleSharkFinOption(
+    "CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0,
+    "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice * 1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SF_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateSingleSharkFinOption -> CM_SF_INST", singleSharkFinOption == "CM_SF_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+singleSharkFinPricingResult = caplib::PriceCmSingleSharkFinOption(
+    singleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmSingleSharkFinOption", singleSharkFinPricingResult, "CM_SF_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 11: DoubleSharkFinOption (BSM PDE) ---");
+doubleSharkFinOption = caplib::CreateDoubleSharkFinOption(
+    underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0,
+    "ABSOLUTE_PERFORM_TYPE", underlyingPrice * 0.95, underlyingPrice * 1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_DS_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateDoubleSharkFinOption -> CM_DS_INST", doubleSharkFinOption == "CM_DS_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+doubleSharkFinPricingResult = caplib::PriceCmDoubleSharkFinOption(
+    doubleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmDoubleSharkFinOption", doubleSharkFinPricingResult, "CM_DS_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 12: RangeAccrualOption (BSM ANALYTICAL) ---");
+rangeAccrualOption = caplib::CreateRangeAccrualOption(
+    2020.08.19, 2020.08.20, 0.0, 0.01,
+    underlyingPrice * 0.95, underlyingPrice * 1.05,
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_RA_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateRangeAccrualOption -> CM_RA_INST", rangeAccrualOption == "CM_RA_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+rangeAccrualPricingResult = caplib::PriceCmRangeAccrualOption(
+    rangeAccrualOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmRangeAccrualOption", rangeAccrualPricingResult, "CM_RA_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 13: AirbagOption (BSM PDE) ---");
+airbagOption = caplib::CreateAirbagOption(
+    "CALL", 2020.08.19, 2020.08.20,
+    underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice,
+    "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE",
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_AB_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateAirbagOption -> CM_AB_INST", airbagOption == "CM_AB_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+airbagPricingResult = caplib::PriceCmAirbagOption(
+    airbagOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmAirbagOption", airbagPricingResult, "CM_AB_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 14: PingPongOption (BSM MONTE_CARLO) ---");
+pingPongOption = caplib::CreatePingPongOption(
+    2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95,
+    "UP_IN", underlyingPrice * 1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.015, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_PP_INST",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreatePingPongOption -> CM_PP_INST", pingPongOption == "CM_PP_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+pingPongPricingResult = caplib::PriceCmPingPongOption(
+    pingPongOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true);
+ok = checkPricingResult("PriceCmPingPongOption", pingPongPricingResult, "CM_PP_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 15: PhoenixAutoCallableNote (BSM MONTE_CARLO) ---");
+phoenixNote = caplib::CreatePhoenixAutoCallableNote(
+    "CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22,
+    couponDates, "UP_OUT", underlyingPrice * 1.1, "DOWN_IN", underlyingPrice * 0.9,
+    "SELL", "PUT", underlyingPrice * 0.85, 2020.08.19, 2020.08.20,
+    1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_PH_INST",
+    couponDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreatePhoenixAutoCallableNote -> CM_PH_INST", phoenixNote == "CM_PH_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+phoenixPricingResult = caplib::PriceCmPhoenixAutoCallableNote(
+    phoenixNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true);
+ok = checkPricingResult("PriceCmPhoenixAutoCallableNote", phoenixPricingResult, "CM_PH_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+print("");
+print("--- Test 16: SnowballAutoCallableNote (BSM MONTE_CARLO) ---");
+snowballNote = caplib::CreateSnowballAutoCallableNote(
+    0.12, 2020.02.21, couponDates, "ACT_365_FIXED",
+    "UP_OUT", underlyingPrice * 1.05, "DOWN_IN", underlyingPrice * 0.8,
+    "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice,
+    2020.08.22, 2020.08.22, 1, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_SN_INST",
+    couponDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false);
+ok = t("CreateSnowballAutoCallableNote -> CM_SN_INST", snowballNote == "CM_SN_INST");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+snowballPricingResult = caplib::PriceCmSnowballAutoCallableNote(
+    snowballNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true);
+ok = checkPricingResult("PriceCmSnowballAutoCallableNote", snowballPricingResult, "CM_SN_INST_results");
+testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+
+// ============================================================================
+// Summary
+// ============================================================================
+print("");
+print("============================================");
+print("  TEST RESULTS");
+print("  Passed: " + string(passNum) + " / " + string(testNum));
+print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
+print("============================================");
+
+if (passNum != testNum) {
+    throw "CM analytics tests failed";
+}
