@@ -34,7 +34,7 @@ IMAGE_NAME="${IMAGE_NAME:-caplibdolphin}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 # ─── Release versions ───────────────────────────────────────
-CAPLIB_PLUGIN_TAG="${CAPLIB_PLUGIN_TAG:-0.0.8}"
+CAPLIB_PLUGIN_TAG="${CAPLIB_PLUGIN_TAG:-0.0.9}"
 CAPLIB_PLUGIN_REPO="CapRiskTech/caplib-plugin-dolphindb"
 CAPLIB_PLUGIN_ASSET="caplib-plugin-dolphindb-${CAPLIB_PLUGIN_TAG}.tar.gz"
 EXPECTED_PLUGIN_FUNCTIONS="${EXPECTED_PLUGIN_FUNCTIONS:-211}"
