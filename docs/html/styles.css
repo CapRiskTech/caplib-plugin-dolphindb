@@ -377,6 +377,17 @@ h1 {
   white-space: nowrap;
 }
 
+.return-description {
+  margin-top: 0.85rem !important;
+  padding: 0.75rem 0.85rem;
+  border-left: 3px solid var(--blue);
+  border-radius: 0 7px 7px 0;
+  background: #f5f8fd;
+  color: var(--navy-2) !important;
+  line-height: 1.55;
+}
+.return-description code { color: var(--navy); }
+
 .return-pill {
   display: inline-flex;
   justify-content: center;
