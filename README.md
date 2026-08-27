@@ -5,7 +5,7 @@ Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件�
 当前发行版本为 `0.0.10`，基于 `dqlibdolphin` 的 `release-caplib`
 提交 `2867f08` 构建，提供 202 个对外接口。完整文档入口：
 
-- [完整中文使用说明](docs/DQLIB_DOCUMENTATION.md)
+- [完整中文使用说明](docs/CAPLIB_DOCUMENTATION.md)
 - [中文文档](docs/html/zh/index.html)
 - [English documentation](docs/html/index.html)
 - [文档语言入口](docs/index.html)
