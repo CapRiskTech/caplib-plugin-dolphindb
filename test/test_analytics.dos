@@ -7,13 +7,12 @@ print("============================================");
 print("  Common Analytics Test Suite                ");
 print("============================================");
 
-totalTests = 0;
-passedTests = 0;
+try { undef(`CAPLIB_ANALYTICS_RESULTS, SHARED); } catch(ex) {}
+share table(100:0, ["condition"], [BOOL]) as CAPLIB_ANALYTICS_RESULTS;
 
 def t(name, condition) {
-    totalTests = totalTests + 1;
+    tableInsert(CAPLIB_ANALYTICS_RESULTS, condition);
     if (condition) {
-        passedTests = passedTests + 1;
         print("PASS: " + name);
         return true;
     } else {
@@ -46,11 +45,11 @@ def isMatrix(value) {
 // ============================================================================
 
 modelParams = [0.0];
-bsmModel = caplib::CreatePricingModelSettings(
+bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "AN_BSM_MODEL", false);
-ok = t("CreatePricingModelSettings -> handle", bsmModel == "AN_BSM_MODEL");
+ok = t("createPricingModelSettings -> handle", bsmModel == "AN_BSM_MODEL");
 
-pdeSettings = caplib::CreatePdeSettings(
+pdeSettings = caplib::createPdeSettings(
     101, 201, -5.0, 5.0, 0,
     11, 0.0, 10.0, 1,
     3, -4.0, 4.0, 0,
@@ -58,79 +57,79 @@ pdeSettings = caplib::CreatePdeSettings(
     2, 1, 1,
     3, 1, 1,
     "AN_PDE_SETTINGS", false);
-ok = t("CreatePdeSettings -> handle", pdeSettings == "AN_PDE_SETTINGS");
+ok = t("createPdeSettings -> handle", pdeSettings == "AN_PDE_SETTINGS");
 
-mcSettings = caplib::CreateMonteCarloSettings(
+mcSettings = caplib::createMonteCarloSettings(
     3000, 1, -1,
     2, 1,
     1, 101, "AN_MC_SETTINGS", false);
-ok = t("CreateMonteCarloSettings -> handle", mcSettings == "AN_MC_SETTINGS");
+ok = t("createMonteCarloSettings -> handle", mcSettings == "AN_MC_SETTINGS");
 
-pricingSettings = caplib::CreatePricingSettings(
+pricingSettings = caplib::createPricingSettings(
     "CNY", "ANALYTICAL", 0, 0,
     bsmModel, pdeSettings, mcSettings, "AN_PRICING_SETTINGS", false);
-ok = t("CreatePricingSettings -> handle", pricingSettings == "AN_PRICING_SETTINGS");
+ok = t("createPricingSettings -> handle", pricingSettings == "AN_PRICING_SETTINGS");
 
-pricingSettingsDefaultReturn = caplib::CreatePricingSettings(
+pricingSettingsDefaultReturn = caplib::createPricingSettings(
     "CNY", "ANALYTICAL", 0, 0,
     bsmModel, pdeSettings, mcSettings, "AN_PRICING_SETTINGS_DEFAULT");
-ok = t("CreatePricingSettings omitted returnJson -> handle",
+ok = t("createPricingSettings omitted returnJson -> handle",
     pricingSettingsDefaultReturn == "AN_PRICING_SETTINGS_DEFAULT");
 
-modelFreePricingSettings = caplib::CreateModelFreePricingSettings(
+modelFreePricingSettings = caplib::createModelFreePricingSettings(
     "CNY", 1, 0, "AN_MODEL_FREE_PRICING_SETTINGS", false);
-ok = t("CreateModelFreePricingSettings -> handle",
+ok = t("createModelFreePricingSettings -> handle",
     modelFreePricingSettings == "AN_MODEL_FREE_PRICING_SETTINGS");
 
 // ============================================================================
 // Risk settings
 // ============================================================================
 
-irCurveRisk = caplib::CreateIrCurveRiskSettings(
+irCurveRisk = caplib::createIrCurveRiskSettings(
     1, 1, 1, 2.0e-4, 50.0e-4,
     0, 1,
     2.0e-4, 1, "AN_IR_RISK", false);
-ok = t("CreateIrCurveRiskSettings -> handle", irCurveRisk == "AN_IR_RISK");
+ok = t("createIrCurveRiskSettings -> handle", irCurveRisk == "AN_IR_RISK");
 
-creditCurveRisk = caplib::CreateCreditCurveRiskSettings(
+creditCurveRisk = caplib::createCreditCurveRiskSettings(
     1, 1, 2.0e-4,
     0, 0,
     2.0e-4, 0, "AN_CR_RISK", false);
-ok = t("CreateCreditCurveRiskSettings -> handle", creditCurveRisk == "AN_CR_RISK");
+ok = t("createCreditCurveRiskSettings -> handle", creditCurveRisk == "AN_CR_RISK");
 
-dividendCurveRisk = caplib::CreateDividendCurveRiskSettings(
+dividendCurveRisk = caplib::createDividendCurveRiskSettings(
     1, 1, 2.0e-4,
     0, 0,
     2.0e-4, 0, "AN_DIV_RISK", false);
-ok = t("CreateDividendCurveRiskSettings -> handle", dividendCurveRisk == "AN_DIV_RISK");
+ok = t("createDividendCurveRiskSettings -> handle", dividendCurveRisk == "AN_DIV_RISK");
 
-priceRisk = caplib::CreatePriceRiskSettings(
+priceRisk = caplib::createPriceRiskSettings(
     1, 1, 1, 0.01, 0.5,
     0, 0.01,
     0, "AN_PRICE_RISK", false);
-ok = t("CreatePriceRiskSettings -> handle", priceRisk == "AN_PRICE_RISK");
+ok = t("createPriceRiskSettings -> handle", priceRisk == "AN_PRICE_RISK");
 
-volRisk = caplib::CreateVolRiskSettings(
+volRisk = caplib::createVolRiskSettings(
     1, 1, 0.01,
     0, 0,
     0.01, 0, "AN_VOL_RISK", false);
-ok = t("CreateVolRiskSettings -> handle", volRisk == "AN_VOL_RISK");
+ok = t("createVolRiskSettings -> handle", volRisk == "AN_VOL_RISK");
 
-priceVolRisk = caplib::CreatePriceVolRiskSettings(
+priceVolRisk = caplib::createPriceVolRiskSettings(
     1, 0.01, 0.01,
     0, 0,
     0.01, 0.01, 0, "AN_PRICE_VOL_RISK", false);
-ok = t("CreatePriceVolRiskSettings -> handle", priceVolRisk == "AN_PRICE_VOL_RISK");
+ok = t("createPriceVolRiskSettings -> handle", priceVolRisk == "AN_PRICE_VOL_RISK");
 
-thetaRisk = caplib::CreateThetaRiskSettings(1, 1, 1.0 / 365.0, "AN_THETA_RISK", false);
-ok = t("CreateThetaRiskSettings -> handle", thetaRisk == "AN_THETA_RISK");
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "AN_THETA_RISK", false);
+ok = t("createThetaRiskSettings -> handle", thetaRisk == "AN_THETA_RISK");
 
-priceScn = caplib::CreateScnSettings(-0.1, 0.1, 5, 0, "AN_PRICE_SCN", false);
-volScn = caplib::CreateScnSettings(-0.2, 0.2, 5, 0, "AN_VOL_SCN", false);
-scnSettings = caplib::CreateScnAnalysisSettings(
+priceScn = caplib::createScnSettings(-0.1, 0.1, 5, 0, "AN_PRICE_SCN", false);
+volScn = caplib::createScnSettings(-0.2, 0.2, 5, 0, "AN_VOL_SCN", false);
+scnSettings = caplib::createScnAnalysisSettings(
     "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn,
     1, "AN_SCN_SETTINGS", false);
-ok = t("CreateScnAnalysisSettings -> handle", scnSettings == "AN_SCN_SETTINGS");
+ok = t("createScnAnalysisSettings -> handle", scnSettings == "AN_SCN_SETTINGS");
 
 // ============================================================================
 // Curves from test_analytics.py
@@ -140,139 +139,139 @@ asOfDate = 2022.03.09;
 curveDates = [2022.03.10, 2025.03.10];
 curveValues = [0.02, 0.025];
 
-assetYieldCurve = caplib::CreateAssetYieldCurve(
+assetYieldCurve = caplib::createAssetYieldCurve(
     asOfDate, curveDates, curveValues,
     "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED",
     "CONTINUOUS_COMPOUNDING", ["1D", "3Y"],
     "AN_ASSET_YIELD_CURVE", "AN_ASSET_YIELD_CURVE", false);
-ok = t("CreateAssetYieldCurve -> handle", assetYieldCurve == "AN_ASSET_YIELD_CURVE");
+ok = t("createAssetYieldCurve -> handle", assetYieldCurve == "AN_ASSET_YIELD_CURVE");
 
-irCurve = caplib::CreateIrYieldCurve(
+irCurve = caplib::createIrYieldCurve(
     asOfDate, curveDates, curveValues,
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "DISCRETE_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "AN_IR_CURVE", false);
-ok = t("CreateIrYieldCurve -> handle", irCurve == "AN_IR_CURVE");
+ok = t("createIrYieldCurve -> handle", irCurve == "AN_IR_CURVE");
 
-flatIrCurve = caplib::CreateFlatIrYieldCurve(asOfDate, "CNY", 0.02, "AN_FLAT_IR_CURVE", false);
-ok = t("CreateFlatIrYieldCurve -> handle", flatIrCurve == "AN_FLAT_IR_CURVE");
+flatIrCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "AN_FLAT_IR_CURVE", false);
+ok = t("createFlatIrYieldCurve -> handle", flatIrCurve == "AN_FLAT_IR_CURVE");
 
-creditCurve = caplib::CreateCreditCurve(
+creditCurve = caplib::createCreditCurve(
     asOfDate, curveDates, [0.002, 0.0025],
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "AN_CREDIT_CURVE", "AN_CREDIT_CURVE", false);
-ok = t("CreateCreditCurve -> handle", creditCurve == "AN_CREDIT_CURVE");
+ok = t("createCreditCurve -> handle", creditCurve == "AN_CREDIT_CURVE");
 
-flatCreditCurve = caplib::CreateFlatCreditCurve(asOfDate, 0.002, "AN_FLAT_CREDIT_CURVE", false);
-ok = t("CreateFlatCreditCurve -> handle", flatCreditCurve == "AN_FLAT_CREDIT_CURVE");
+flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.002, "AN_FLAT_CREDIT_CURVE", false);
+ok = t("createFlatCreditCurve -> handle", flatCreditCurve == "AN_FLAT_CREDIT_CURVE");
 
-dividendCurve = caplib::CreateDividendCurve(
+dividendCurve = caplib::createDividendCurve(
     asOfDate, curveDates, [0.01, 0.01], asOfDate,
     "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "AN_DIVIDEND_CURVE", "AN_DIVIDEND_CURVE", false);
-ok = t("CreateDividendCurve -> handle", dividendCurve == "AN_DIVIDEND_CURVE");
+ok = t("createDividendCurve -> handle", dividendCurve == "AN_DIVIDEND_CURVE");
 
-flatDividendCurve = caplib::CreateFlatDividendCurve(
+flatDividendCurve = caplib::createFlatDividendCurve(
     asOfDate, 0.01, "AN_FLAT_DIVIDEND_CURVE", "AN_FLAT_DIVIDEND_CURVE", false);
-ok = t("CreateFlatDividendCurve -> handle", flatDividendCurve == "AN_FLAT_DIVIDEND_CURVE");
+ok = t("createFlatDividendCurve -> handle", flatDividendCurve == "AN_FLAT_DIVIDEND_CURVE");
 
-volCurve = caplib::CreateVolatilityCurve(
+volCurve = caplib::createVolatilityCurve(
     asOfDate, curveDates, [0.20, 0.21],
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "AN_UNDERLYING", "AN_VOL_CURVE", false);
-ok = t("CreateVolatilityCurve -> handle", volCurve == "AN_VOL_CURVE");
+ok = t("createVolatilityCurve -> handle", volCurve == "AN_VOL_CURVE");
 
-flatVolCurve = caplib::CreateFlatVolCurve(asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_CURVE", false);
-ok = t("CreateFlatVolCurve -> handle", flatVolCurve == "AN_FLAT_VOL_CURVE");
+flatVolCurve = caplib::createFlatVolCurve(asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_CURVE", false);
+ok = t("createFlatVolCurve -> handle", flatVolCurve == "AN_FLAT_VOL_CURVE");
 
 emptyDoubles = array(DOUBLE, 0);
-volSmile1d = caplib::CreateVolatilitySmile(
+volSmile1d = caplib::createVolatilitySmile(
     "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21],
     "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0 / 365.0,
     emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_VOL_SMILE_1D", false);
-ok = t("CreateVolatilitySmile 1D -> handle", volSmile1d == "AN_VOL_SMILE_1D");
+ok = t("createVolatilitySmile 1D -> handle", volSmile1d == "AN_VOL_SMILE_1D");
 
-volSmile3y = caplib::CreateVolatilitySmile(
+volSmile3y = caplib::createVolatilitySmile(
     "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.23, 0.21, 0.22],
     "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 3.0,
     emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_VOL_SMILE_3Y", false);
-ok = t("CreateVolatilitySmile 3Y -> handle", volSmile3y == "AN_VOL_SMILE_3Y");
+ok = t("createVolatilitySmile 3Y -> handle", volSmile3y == "AN_VOL_SMILE_3Y");
 
-flatVolSurface = caplib::CreateFlatVolatilitySurface(
+flatVolSurface = caplib::createFlatVolatilitySurface(
     asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_SURFACE", true);
-ok = t("CreateFlatVolatilitySurface -> [handle, json]",
+ok = t("createFlatVolatilitySurface -> [handle, json]",
     isHandleJson(flatVolSurface, "AN_FLAT_VOL_SURFACE") &&
     hasJsonField(flatVolSurface[1], "vol_smiles"));
 
-volSurfaceDefinition = caplib::CreateVolatilitySurfaceDefinition(
+volSurfaceDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP",
     "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY",
     "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
     90.0, 110.0, "AN_VOL_SURFACE_DEFINITION", true);
-ok = t("CreateVolatilitySurfaceDefinition -> [handle, json]",
+ok = t("createVolatilitySurfaceDefinition -> [handle, json]",
     isHandleJson(volSurfaceDefinition, "AN_VOL_SURFACE_DEFINITION") &&
     hasJsonField(volSurfaceDefinition[1], "vol_smile_type"));
 
-volSurface = caplib::CreateVolatilitySurface(
+volSurface = caplib::createVolatilitySurface(
     volSurfaceDefinition[0], asOfDate, [volSmile1d, volSmile3y], curveDates,
     "AN_UNDERLYING", "AN_VOL_SURFACE", false);
-ok = t("CreateVolatilitySurface from definition/smiles -> handle",
+ok = t("createVolatilitySurface from definition/smiles -> handle",
     volSurface == "AN_VOL_SURFACE");
 
 quoteTermDates = [2022.06.09, 2022.09.09];
 quotePayoffTypes = matrix(["CALL", "PUT"], ["CALL", "PUT"]);
 quoteValues = matrix([10.5, 8.5], [11.0, 9.0]);
 quoteStrikes = matrix([95.0, 95.0], [105.0, 105.0]);
-optionQuoteMatrix = caplib::CreateOptionQuoteMatrix(
+optionQuoteMatrix = caplib::createOptionQuoteMatrix(
     "OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE",
     "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
     [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes,
     "AN_UNDERLYING", "AN_OPTION_QUOTES", true);
-ok = t("CreateOptionQuoteMatrix -> [handle, json]",
+ok = t("createOptionQuoteMatrix -> [handle, json]",
     isHandleJson(optionQuoteMatrix, "AN_OPTION_QUOTES") &&
     hasJsonField(optionQuoteMatrix[1], "quote_smiles"));
 
-proxyOptionQuoteMatrix = caplib::CreateProxyOptionQuoteMatrix(
+proxyOptionQuoteMatrix = caplib::createProxyOptionQuoteMatrix(
     "AN_UNDERLYING", flatVolSurface[0], 100.0, 101.0, "AN_PROXY_OPTION_QUOTES", true);
-ok = t("CreateProxyOptionQuoteMatrix -> [handle, json]",
+ok = t("createProxyOptionQuoteMatrix -> [handle, json]",
     isHandleJson(proxyOptionQuoteMatrix, "AN_PROXY_OPTION_QUOTES"));
 
-discountFactors = caplib::GetDiscountFactor(flatIrCurve, curveDates);
-ok = t("GetDiscountFactor -> vector", isDoubleVector(discountFactors));
+discountFactors = caplib::getDiscountFactor(flatIrCurve, curveDates);
+ok = t("getDiscountFactor -> vector", isDoubleVector(discountFactors));
 
-zeroRates = caplib::GetZeroRate(flatIrCurve, curveDates);
-ok = t("GetZeroRate -> vector", isDoubleVector(zeroRates));
+zeroRates = caplib::getZeroRate(flatIrCurve, curveDates);
+ok = t("getZeroRate -> vector", isDoubleVector(zeroRates));
 
-fwdRates = caplib::GetFwdRate(flatIrCurve, curveDates, 0.25);
-ok = t("GetFwdRate -> vector", isDoubleVector(fwdRates));
+fwdRates = caplib::getFwdRate(flatIrCurve, curveDates, 0.25);
+ok = t("getFwdRate -> vector", isDoubleVector(fwdRates));
 
-survivalProbabilities = caplib::GetSurvivalProbability(flatCreditCurve, curveDates);
-ok = t("GetSurvivalProbability -> vector", isDoubleVector(survivalProbabilities));
+survivalProbabilities = caplib::getSurvivalProbability(flatCreditCurve, curveDates);
+ok = t("getSurvivalProbability -> vector", isDoubleVector(survivalProbabilities));
 
-creditSpreads = caplib::GetCreditSpread(flatCreditCurve, curveDates);
-ok = t("GetCreditSpread -> vector", isDoubleVector(creditSpreads));
+creditSpreads = caplib::getCreditSpread(flatCreditCurve, curveDates);
+ok = t("getCreditSpread -> vector", isDoubleVector(creditSpreads));
 
-volatilities = caplib::GetVolatility(flatVolSurface[0], curveDates, [95.0, 105.0]);
-ok = t("GetVolatility -> matrix", isMatrix(volatilities));
+volatilities = caplib::getVolatility(flatVolSurface[0], curveDates, [95.0, 105.0]);
+ok = t("getVolatility -> matrix", isMatrix(volatilities));
 
-impliedVol = caplib::ImpliedVolCalculator(
+impliedVol = caplib::impliedVolCalculator(
     asOfDate, 100.0, flatIrCurve, flatDividendCurve, pricingSettings,
     5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0);
-ok = t("ImpliedVolCalculator -> scalar", typestr(impliedVol) == "DOUBLE");
+ok = t("impliedVolCalculator -> scalar", typestr(impliedVol) == "DOUBLE");
 
-irJson = caplib::GetObjectCacheJson("IrYieldCurve", irCurve);
-ok = t("GetObjectCacheJson IrYieldCurve -> [handle, json]",
+irJson = caplib::getObjectCacheJson("IrYieldCurve", irCurve);
+ok = t("getObjectCacheJson IrYieldCurve -> [handle, json]",
     isHandleJson(irJson, irCurve) && hasJsonField(irJson[1], "currency"));
 
-pricingJson = caplib::GetObjectCacheJson("PricingSettings", pricingSettings);
-ok = t("GetObjectCacheJson PricingSettings -> [handle, json]",
+pricingJson = caplib::getObjectCacheJson("PricingSettings", pricingSettings);
+ok = t("getObjectCacheJson PricingSettings -> [handle, json]",
     isHandleJson(pricingJson, pricingSettings) && hasJsonField(pricingJson[1], "pricing_method"));
 
-volSmileJson = caplib::GetObjectCacheJson("VolatilitySmile", volSmile1d);
-ok = t("GetObjectCacheJson VolatilitySmile -> [handle, json]",
+volSmileJson = caplib::getObjectCacheJson("VolatilitySmile", volSmile1d);
+ok = t("getObjectCacheJson VolatilitySmile -> [handle, json]",
     isHandleJson(volSmileJson, volSmile1d) && hasJsonField(volSmileJson[1], "vol_smile_type"));
 
-assetYieldCurveJson = caplib::GetObjectCacheJson("AssetYieldCurve", assetYieldCurve);
-ok = t("GetObjectCacheJson AssetYieldCurve -> [handle, json]",
+assetYieldCurveJson = caplib::getObjectCacheJson("AssetYieldCurve", assetYieldCurve);
+ok = t("getObjectCacheJson AssetYieldCurve -> [handle, json]",
     isHandleJson(assetYieldCurveJson, assetYieldCurve) &&
     hasJsonField(assetYieldCurveJson[1], "compounding_type"));
 
@@ -280,6 +279,10 @@ ok = t("GetObjectCacheJson AssetYieldCurve -> [handle, json]",
 // Summary
 // ============================================================================
 
+testSummary = select count(*) as total, sum(condition) as passed
+    from CAPLIB_ANALYTICS_RESULTS;
+totalTests = testSummary.total[0];
+passedTests = testSummary.passed[0];
 print("============================================");
 print("  Common Analytics Test Summary");
 print("  Passed: " + string(passedTests) + " / " + string(totalTests));

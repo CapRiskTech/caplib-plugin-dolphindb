@@ -17,10 +17,12 @@
         <h1>外汇</h1>
         <p class="lede">外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。</p>
       </header>
-      <section id="user-guide" class="panel"><h2>用户指南</h2><p>外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。 本页包含 39 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p class="validity-guide"><strong>参数有效性：</strong> 每个参数均说明精确枚举标签、选择器代码、范围、正负性、形状和跨参数规则。“包装器检查”表示插件立即校验；“业务有效”规则可能由下游服务校验。</p></section><section class="panel example"><h2>示例</h2><pre><code>fxMkt = caplib::CreateFxMktDataSet(
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。 本页包含 39 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p class="validity-guide"><strong>参数有效性：</strong> 每个参数均说明精确枚举标签、选择器代码、范围、正负性、形状和跨参数规则。“包装器检查”表示插件立即校验；“业务有效”规则可能由下游服务校验。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+
+fxMkt = caplib::createFxMktDataSet(
     2025.01.02, &quot;USD_DISC&quot;, &quot;EUR_DISC&quot;, &quot;EURUSD_SPOT&quot;, &quot;EURUSD_VOL&quot;, &quot;FX_MKT&quot;, &quot;FX_MKT&quot;, true);
 
-pricingResult = caplib::PriceFxEuropeanOption(
+pricingResult = caplib::priceFxEuropeanOption(
     &quot;EURUSD_CALL&quot;, 2025.01.02, fxMkt[0], &quot;FX_ANALYTICAL&quot;, &quot;FX_RISK&quot;, &quot;&quot;, &quot;&quot;, true);
 pricingHandle = pricingResult[0];
 pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
@@ -30,476 +32,588 @@ pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" cl
   <div class="api-card-head">
     <div>
       <a id="calcfxforwardrate"></a>
-      <h3><code>CalcFxForwardRate</code></h3>
+      <h3><code>calcFxForwardRate</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::calcFxForwardRate(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">根据缓存现货报价以及本币和外币贴现曲线计算交割日 FX 远期汇率。</p>
-      <p class="full-signature"><code>caplib::CalcFxForwardRate(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
     </div>
     <span class="return-pill">DOUBLE</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>货币对的左侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>货币对的右侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>FxSpotRate 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>domestic IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>foreign IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxForwardRate(calculationDate, leftCcy, rightCcy, deliveryDate, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="calcfxswappoint calculationdate date leftccy string rightccy string deliverydate date fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
   <div class="api-card-head">
     <div>
       <a id="calcfxswappoint"></a>
-      <h3><code>CalcFxSwapPoint</code></h3>
+      <h3><code>calcFxSwapPoint</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::calcFxSwapPoint(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">根据现货报价与两条贴现曲线隐含的远期相对现货调整计算交割日 FX 掉期点。</p>
-      <p class="full-signature"><code>caplib::CalcFxSwapPoint(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
     </div>
     <span class="return-pill">DOUBLE</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>货币对的左侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>货币对的右侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>FxSpotRate 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>domestic IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>foreign IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxSwapPoint(calculationDate, leftCcy, rightCcy, deliveryDate, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="calcfxprice convert a currency amount into a target-currency price using an fx rate. amount double, currency string, destccy string, fxrate double, baseccy string, targetccy string scalar">
   <div class="api-card-head">
     <div>
       <a id="calcfxprice"></a>
-      <h3><code>CalcFxPrice</code></h3>
+      <h3><code>calcFxPrice</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::calcFxPrice(amount DOUBLE, currency STRING, destCcy STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING)</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">按给定基础/目标币种 FX 汇率将金额转换为 destCcy，并返回转换金额。</p>
-      <p class="full-signature"><code>caplib::CalcFxPrice(amount DOUBLE, currency STRING, destCcy STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING)</code></p>
     </div>
     <span class="return-pill">DOUBLE</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>amount</code></td><td>DOUBLE</td><td>金额。<br><span class="validity-note"><strong>有效性:</strong> 必须为有限 DOUBLE；负值、零和正值均有效，可表示带符号的换算金额。</span></td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>destCcy</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>外汇汇率输入值。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器仅检查 DOUBLE 类型。</span></td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxPrice(amount, currency, destCcy, fxRate, baseCcy, targetCcy)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="calcfxatmstrike atmtype string expirydate date volsurfacehandle string fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
   <div class="api-card-head">
     <div>
       <a id="calcfxatmstrike"></a>
-      <h3><code>CalcFxAtmStrike</code></h3>
+      <h3><code>calcFxAtmStrike</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::calcFxAtmStrike(atmType STRING, expiryDate DATE, volSurfaceHandle STRING, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">根据缓存 FX 波动率曲面、现货报价和两条贴现曲线计算到期日 atmType 执行价。</p>
-      <p class="full-signature"><code>caplib::CalcFxAtmStrike(atmType STRING, expiryDate DATE, volSurfaceHandle STRING, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
     </div>
     <span class="return-pill">DOUBLE</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>atmType</code></td><td>STRING</td><td>ATM 行权价约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_ATM_TYPE</code>, <code>ATM_FORWARD</code>, <code>ATM_DNS_PIPS</code>, <code>ATM_DNS_PERCENTAGE</code>, <code>ATM_SPOT</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。</span></td></tr><tr><td><code>volSurfaceHandle</code></td><td>STRING</td><td>FxVolatilitySurface 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>FxSpotRate 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>domestic IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>foreign IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxAtmStrike(atmType, expiryDate, volSurfaceHandle, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="calcfxdeltatostrike deltatype string delta double expirydate date volsurfacehandle string fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
   <div class="api-card-head">
     <div>
       <a id="calcfxdeltatostrike"></a>
-      <h3><code>CalcFxDeltaToStrike</code></h3>
+      <h3><code>calcFxDeltaToStrike</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::calcFxDeltaToStrike(deltaType STRING, delta DOUBLE, expiryDate DATE, volSurfaceHandle STRING, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">反解所选 FX Delta 约定得到执行价；负 Delta 选择 PUT，非负 Delta 选择 CALL。</p>
-      <p class="full-signature"><code>caplib::CalcFxDeltaToStrike(deltaType STRING, delta DOUBLE, expiryDate DATE, volSurfaceHandle STRING, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
     </div>
     <span class="return-pill">DOUBLE</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>deltaType</code></td><td>STRING</td><td>外汇 Delta 约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_DELTA_TYPE</code>, <code>PIPS_SPOT_DELTA</code>, <code>PERCENTAGE_SPOT_DELTA</code>, <code>PIPS_FORWARD_DELTA</code>, <code>PERCENTAGE_FORWARD_DELTA</code>, <code>SIMPLE_DELTA</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>delta</code></td><td>DOUBLE</td><td>带符号的期权 Delta；负值选择 PUT，非负值选择 CALL。<br><span class="validity-note"><strong>有效性:</strong> 必须为有限数，业务有效范围为 <code>(-1,0) ∪ (0,1)</code>；包装器仅检查 DOUBLE 类型。</span></td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。</span></td></tr><tr><td><code>volSurfaceHandle</code></td><td>STRING</td><td>FxVolatilitySurface 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>FxSpotRate 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>domestic IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>foreign IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxDeltaToStrike(deltaType, delta, expiryDate, volSurfaceHandle, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxoptionquotematrix create and cache an fx 期权报价矩阵。 leftccy string, rightccy string, asofdate date, terms string[], quotenames string[], quotes double matrix, handle string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxoptionquotematrix"></a>
-      <h3><code>CreateFxOptionQuoteMatrix</code></h3>
+      <h3><code>createFxOptionQuoteMatrix</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxOptionQuoteMatrix(leftCcy STRING, rightCcy STRING, asOfDate DATE, terms STRING[], quoteNames STRING[], quotes DOUBLE matrix, handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇期权报价矩阵。 函数验证并转换字段，构造 <code>FxOptionQuoteMatrix</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxOptionQuoteMatrix(leftCcy STRING, rightCcy STRING, asOfDate DATE, terms STRING[], quoteNames STRING[], quotes DOUBLE matrix, handle STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxOptionQuoteMatrix</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxOptionQuoteMatrix</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>leftCcy</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>terms</code></td><td>STRING[]</td><td>报价期限数组。<br><span class="validity-note"><strong>有效性:</strong> 每个元素必须使用正整数加 <code>Y/M/W/D</code>（或完整英文单位）；不支持小数，字符串解析不保留负号。</span></td></tr><tr><td><code>quoteNames</code></td><td>STRING[]</td><td>报价名称或微笑报价标签。<br><span class="validity-note"><strong>有效性:</strong> 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。</span></td></tr><tr><td><code>quotes</code></td><td>DOUBLE matrix</td><td>市场报价值数组。<br><span class="validity-note"><strong>有效性:</strong> 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxOptionQuoteMatrix(leftCcy, rightCcy, asOfDate, terms, quoteNames, quotes, handle)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createflatfxvolatilitysurface create and cache a flat fx volatility surface. referencedate date, currencypair string, vol double, tag string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createflatfxvolatilitysurface"></a>
-      <h3><code>CreateFlatFxVolatilitySurface</code></h3>
+      <h3><code>createFlatFxVolatilitySurface</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFlatFxVolatilitySurface(referenceDate DATE, currencyPair STRING, vol DOUBLE, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存平坦外汇波动率曲面。 函数验证并转换字段，构造 <code>FxVolatilitySurface</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFlatFxVolatilitySurface(referenceDate DATE, currencyPair STRING, vol DOUBLE, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxVolatilitySurface</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxVolatilitySurface</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。<br><span class="validity-note"><strong>有效性:</strong> 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。</span></td></tr><tr><td><code>vol</code></td><td>DOUBLE</td><td>波动率数值。<br><span class="validity-note"><strong>有效性:</strong> 必须非负且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFlatFxVolatilitySurface(referenceDate, currencyPair, vol, tag)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxvolatilitysurface create and cache an fx volatility surface from explicit term dates and smile rows. referencedate date, leftccy string, rightccy string, termdates date[], strikes double matrix/vector, volatilities double matrix/vector, definitionhandle string, marketconventionshandle string, handle string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxvolatilitysurface"></a>
-      <h3><code>CreateFxVolatilitySurface</code></h3>
+      <h3><code>createFxVolatilitySurface</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE[], strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇波动率曲面。 函数验证并转换字段，构造 <code>FxVolatilitySurface</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE[], strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxVolatilitySurface</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxVolatilitySurface</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>曲线、曲面或构建请求的参考日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>termDates</code></td><td>DATE[]</td><td>报价期限对应的到期日期数组。<br><span class="validity-note"><strong>有效性:</strong> 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。</span></td></tr><tr><td><code>strikes</code></td><td>DOUBLE matrix/vector</td><td>行权价数组或矩阵。<br><span class="validity-note"><strong>有效性:</strong> 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。</span></td></tr><tr><td><code>volatilities</code></td><td>DOUBLE matrix/vector</td><td>波动率数组或矩阵。<br><span class="validity-note"><strong>有效性:</strong> 必须具有所列元素类型和形状；数值必须非负且有限；除明确说明外包装器不强制非空。</span></td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>波动率曲面定义 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>marketConventionsHandle</code></td><td>STRING</td><td>市场惯例 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxVolatilitySurface(referenceDate, leftCcy, rightCcy, termDates, strikes, volatilities, definitionHandle, marketConventionsHandle, handle)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="buildfxvolatilitysurface referencedate date leftccy string rightccy string marketconventionshandle string quotematrixhandle string spotrate double spotrefdate date spotdate date domesticdiscountcurvehandle string foreigndiscountcurvehandle string definitionhandle string buildsettingshandle string handle string returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="buildfxvolatilitysurface"></a>
-      <h3><code>BuildFxVolatilitySurface</code></h3>
+      <h3><code>buildFxVolatilitySurface</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::buildFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">构建外汇波动率曲面。 函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 <code>FxVolatilitySurface</code>。</p>
-      <p class="full-signature"><code>caplib::BuildFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxVolatilitySurface</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxVolatilitySurface</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>货币对的左侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>货币对的右侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>marketConventionsHandle</code></td><td>STRING</td><td>FxMarketConventions 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>quoteMatrixHandle</code></td><td>STRING</td><td>OptionQuoteMatrix 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>spotRate</code></td><td>DOUBLE</td><td>外汇即期汇率。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>spotRefDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>domestic IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>foreign IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>definitionHandle</code></td><td>STRING</td><td>VolatilitySurfaceDefinition 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>buildSettingsHandle</code></td><td>STRING</td><td>VolatilitySurfaceBuildSettings 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>所构建曲面的 ObjectCache 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选返回形状标志。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::buildFxVolatilitySurface(referenceDate, leftCcy, rightCcy, marketConventionsHandle, quoteMatrixHandle, spotRate, spotRefDate, spotDate, domesticDiscountCurveHandle, foreignDiscountCurveHandle, definitionHandle, buildSettingsHandle, handle)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxforward price an fx forward. fxcashpricing7(fxforward) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxforward"></a>
-      <h3><code>PriceFxForward</code></h3>
+      <h3><code>priceFxForward</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxForward(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇远期工具。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxForward(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxForward(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxswap price an fx swap. fxcashpricing7(fxswap) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxswap"></a>
-      <h3><code>PriceFxSwap</code></h3>
+      <h3><code>priceFxSwap</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxSwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇掉期工具。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxSwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxSwap(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxnondeliverableforward price an fx non-deliverable forward. fxcashpricing7(fxnondeliverableforward) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxnondeliverableforward"></a>
-      <h3><code>PriceFxNonDeliverableForward</code></h3>
+      <h3><code>priceFxNonDeliverableForward</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxNonDeliverableForward(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇无本金交割远期工具。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxNonDeliverableForward(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxNonDeliverableForward(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxtimeoption price an fx time option. fxcashpricing7(fxtimeoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxtimeoption"></a>
-      <h3><code>PriceFxTimeOption</code></h3>
+      <h3><code>priceFxTimeOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxTimeOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇时间期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxTimeOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxTimeOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxeuropeanoption price an fx european option. fxoptionpricing7(europeanoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxeuropeanoption"></a>
-      <h3><code>PriceFxEuropeanOption</code></h3>
+      <h3><code>priceFxEuropeanOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxEuropeanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇欧式期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxEuropeanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxEuropeanOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxamericanoption price an fx american option. fxoptionpricing7(americanoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxamericanoption"></a>
-      <h3><code>PriceFxAmericanOption</code></h3>
+      <h3><code>priceFxAmericanOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxAmericanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇美式期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxAmericanOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxAmericanOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxasianoption price an fx asian option. fxoptionpricing7(asianoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxasianoption"></a>
-      <h3><code>PriceFxAsianOption</code></h3>
+      <h3><code>priceFxAsianOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇亚式期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxAsianOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxdigitaloption price an fx 数字期权. fxoptionpricing7(digitaloption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxdigitaloption"></a>
-      <h3><code>PriceFxDigitalOption</code></h3>
+      <h3><code>priceFxDigitalOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxDigitalOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇数字期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxDigitalOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxDigitalOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxonetouchoption price an fx 单触碰期权. fxoptionpricing7(onetouchoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxonetouchoption"></a>
-      <h3><code>PriceFxOneTouchOption</code></h3>
+      <h3><code>priceFxOneTouchOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxOneTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇单触碰期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxOneTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxOneTouchOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxdoubletouchoption price an fx 双触碰期权. fxoptionpricing7(doubletouchoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxdoubletouchoption"></a>
-      <h3><code>PriceFxDoubleTouchOption</code></h3>
+      <h3><code>priceFxDoubleTouchOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇双触碰期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxDoubleTouchOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxsinglebarrieroption price an fx 单障碍期权. fxoptionpricing7(singlebarrieroption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxsinglebarrieroption"></a>
-      <h3><code>PriceFxSingleBarrierOption</code></h3>
+      <h3><code>priceFxSingleBarrierOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxSingleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇单障碍期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxSingleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxSingleBarrierOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxdoublebarrieroption price an fx 双障碍期权. fxoptionpricing7(doublebarrieroption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxdoublebarrieroption"></a>
-      <h3><code>PriceFxDoubleBarrierOption</code></h3>
+      <h3><code>priceFxDoubleBarrierOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxDoubleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇双障碍期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxDoubleBarrierOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxDoubleBarrierOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxsinglesharkfinoption price an fx single shark-fin option. fxoptionpricing7(singlesharkfinoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxsinglesharkfinoption"></a>
-      <h3><code>PriceFxSingleSharkFinOption</code></h3>
+      <h3><code>priceFxSingleSharkFinOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇单鲨鱼鳍期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxSingleSharkFinOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxdoublesharkfinoption price an fx double shark-fin option. fxoptionpricing7(doublesharkfinoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxdoublesharkfinoption"></a>
-      <h3><code>PriceFxDoubleSharkFinOption</code></h3>
+      <h3><code>priceFxDoubleSharkFinOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxDoubleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇双鲨鱼鳍期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxDoubleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxDoubleSharkFinOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxpingpongoption price an fx 乒乓期权. fxoptionpricing7(pingpongoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxpingpongoption"></a>
-      <h3><code>PriceFxPingPongOption</code></h3>
+      <h3><code>priceFxPingPongOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxPingPongOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇乒乓期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxPingPongOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxPingPongOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxairbagoption price an fx 安全气囊期权. fxoptionpricing7(airbagoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxairbagoption"></a>
-      <h3><code>PriceFxAirbagOption</code></h3>
+      <h3><code>priceFxAirbagOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇安全气囊期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxAirbagOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxrangeaccrualoption price an fx 区间累计期权. fxoptionpricing7(rangeaccrualoption) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxrangeaccrualoption"></a>
-      <h3><code>PriceFxRangeAccrualOption</code></h3>
+      <h3><code>priceFxRangeAccrualOption</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxRangeAccrualOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇区间累计期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxRangeAccrualOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxRangeAccrualOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxphoenixautocallablenote price an fx phoenix autocallable note. fxoptionpricing7(phoenixautocallablenote) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxphoenixautocallablenote"></a>
-      <h3><code>PriceFxPhoenixAutoCallableNote</code></h3>
+      <h3><code>priceFxPhoenixAutoCallableNote</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxPhoenixAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇凤凰自动赎回票据。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxPhoenixAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxPhoenixAutoCallableNote(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="pricefxsnowballautocallablenote price an fx snowball autocallable note. fxoptionpricing7(snowballautocallablenote) pricing_result returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="pricefxsnowballautocallablenote"></a>
-      <h3><code>PriceFxSnowballAutoCallableNote</code></h3>
+      <h3><code>priceFxSnowballAutoCallableNote</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::priceFxSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">定价外汇雪球自动赎回票据。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-      <p class="full-signature"><code>caplib::PriceFxSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">PricingResults</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxSnowballAutoCallableNote(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 </section>
 <section class="api-group"><h2>外汇市场对象工厂</h2>
@@ -508,136 +622,168 @@ pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" cl
   <div class="api-card-head">
     <div>
       <a id="createfxspottemplate"></a>
-      <h3><code>CreateFxSpotTemplate</code></h3>
+      <h3><code>createFxSpotTemplate</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxSpotTemplate(instName STRING, currencyPair STRING, spotDayConvention STRING, calendars STRING or STRING[], spotDelay STRING or INT[, handle STRING][, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇即期模板。 函数验证并转换字段，构造 <code>FxSpotTemplate</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxSpotTemplate(instName STRING, currencyPair STRING, spotDayConvention STRING, calendars STRING or STRING[], spotDelay STRING or INT[, handle STRING][, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxSpotTemplate</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxSpotTemplate</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。<br><span class="validity-note"><strong>有效性:</strong> 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。</span></td></tr><tr><td><code>spotDayConvention</code></td><td>STRING</td><td>即期日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。<br><span class="validity-note"><strong>有效性:</strong> 每个名称必须是已注册的非空日历标识。</span></td></tr><tr><td><code>spotDelay</code></td><td>STRING or INT</td><td>即期结算延迟。<br><span class="validity-note"><strong>有效性:</strong> 值必须使用非负整数加 <code>Y/M/W/D</code>（或完整英文单位）；不支持小数，字符串解析不保留负号。</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>分配给创建对象并由函数返回的 内存对象 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxSpotTemplate(instName, currencyPair, spotDayConvention, calendars, spotDelay)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxspotrate create and cache an fx spot-rate object. value double, basecurrency string, targetcurrency string, refdate date, spotdate date, tag string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxspotrate"></a>
-      <h3><code>CreateFxSpotRate</code></h3>
+      <h3><code>createFxSpotRate</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRING, refDate DATE, spotDate DATE, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇即期汇率。 函数验证并转换字段，构造 <code>FxSpotRate</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRING, refDate DATE, spotDate DATE, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxSpotRate</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxSpotRate</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>value</code></td><td>DOUBLE</td><td>报价、利率或即期汇率数值。<br><span class="validity-note"><strong>有效性:</strong> 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。</span></td></tr><tr><td><code>baseCurrency</code></td><td>STRING</td><td>外汇货币对中的基准币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>targetCurrency</code></td><td>STRING</td><td>外汇货币对中的目标币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>refDate</code></td><td>DATE</td><td>参考日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>spotDate</code></td><td>DATE</td><td>即期结算日。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxSpotRate(value, baseCurrency, targetCurrency, refDate, spotDate, tag)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxforwardtemplate create and cache an fx forward template and register it as sdt_fx_forward static data. instname string, fixingoffset string or int, currencypair string, deliverydayconvention string, fixingdayconvention string, calendars string or string[] handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxforwardtemplate"></a>
-      <h3><code>CreateFxForwardTemplate</code></h3>
+      <h3><code>createFxForwardTemplate</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxForwardTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING[][, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇远期模板。 函数验证并转换字段，构造 <code>FxForwardTemplate</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxForwardTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING[][, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxForwardTemplate</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxForwardTemplate</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>fixingOffset</code></td><td>STRING or INT</td><td>定盘偏移期限。<br><span class="validity-note"><strong>有效性:</strong> 值必须使用非负整数加 <code>Y/M/W/D</code>（或完整英文单位）；不支持小数，字符串解析不保留负号。</span></td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。<br><span class="validity-note"><strong>有效性:</strong> 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。</span></td></tr><tr><td><code>deliveryDayConvention</code></td><td>STRING</td><td>交割日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。<br><span class="validity-note"><strong>有效性:</strong> 每个名称必须是已注册的非空日历标识。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxForwardTemplate(instName, fixingOffset, currencyPair, deliveryDayConvention, fixingDayConvention, calendars)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxswaptemplate create and cache an fx swap template and register it as sdt_fx_swap static data. instname string, startconvention string, currencypair string, calendars string or string[], startdayconvention string, enddayconvention string, fixingoffset string or int, fixingdayconvention string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxswaptemplate"></a>
-      <h3><code>CreateFxSwapTemplate</code></h3>
+      <h3><code>createFxSwapTemplate</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxSwapTemplate(instName STRING, startConvention STRING, currencyPair STRING, calendars STRING or STRING[], startDayConvention STRING, endDayConvention STRING, fixingOffset STRING or INT, fixingDayConvention STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇掉期模板。 函数验证并转换字段，构造 <code>FxSwapTemplate</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxSwapTemplate(instName STRING, startConvention STRING, currencyPair STRING, calendars STRING or STRING[], startDayConvention STRING, endDayConvention STRING, fixingOffset STRING or INT, fixingDayConvention STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxSwapTemplate</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxSwapTemplate</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>startConvention</code></td><td>STRING</td><td>工具起息约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_INSTRUMENT_START_CONVENTION</code>, <code>SPOTSTART</code>, <code>TODAYSTART</code>, <code>TOMORROWSTART</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。<br><span class="validity-note"><strong>有效性:</strong> 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。</span></td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。<br><span class="validity-note"><strong>有效性:</strong> 每个名称必须是已注册的非空日历标识。</span></td></tr><tr><td><code>startDayConvention</code></td><td>STRING</td><td>起始日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>endDayConvention</code></td><td>STRING</td><td>结束日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>fixingOffset</code></td><td>STRING or INT</td><td>定盘偏移期限。<br><span class="validity-note"><strong>有效性:</strong> 值必须使用非负整数加 <code>Y/M/W/D</code>（或完整英文单位）；不支持小数，字符串解析不保留负号。</span></td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxSwapTemplate(instName, startConvention, currencyPair, calendars, startDayConvention, endDayConvention, fixingOffset, fixingDayConvention)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxndftemplate create and cache an fx ndf template and register it as sdt_fx_ndf static data. instname string, fixingoffset string or int, currencypair string, deliverydayconvention string, fixingdayconvention string, calendars string or string[], settlementcurrency string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxndftemplate"></a>
-      <h3><code>CreateFxNdfTemplate</code></h3>
+      <h3><code>createFxNdfTemplate</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxNdfTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING[], settlementCurrency STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇无本金交割远期模板。 函数验证并转换字段，构造 <code>FxNdfTemplate</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxNdfTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING[], settlementCurrency STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxNdfTemplate</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxNdfTemplate</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instName</code></td><td>STRING</td><td>工具或模板名称，通常也作为缓存句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>fixingOffset</code></td><td>STRING or INT</td><td>定盘偏移期限。<br><span class="validity-note"><strong>有效性:</strong> 值必须使用非负整数加 <code>Y/M/W/D</code>（或完整英文单位）；不支持小数，字符串解析不保留负号。</span></td></tr><tr><td><code>currencyPair</code></td><td>STRING</td><td>货币对标识，通常为基准币种/目标币种格式。<br><span class="validity-note"><strong>有效性:</strong> 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。</span></td></tr><tr><td><code>deliveryDayConvention</code></td><td>STRING</td><td>交割日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>fixingDayConvention</code></td><td>STRING</td><td>定盘日调整约定。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_BUSINESS_DAY_CONVENTION</code>, <code>FOLLOWING</code>, <code>MODIFIED_FOLLOWING</code>, <code>PRECEDING</code>, <code>MODIFIED_PRECEDING</code>, <code>UNADJUSTED</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>calendars</code></td><td>STRING or STRING[]</td><td>日期调整使用的业务日历名称。<br><span class="validity-note"><strong>有效性:</strong> 每个名称必须是已注册的非空日历标识。</span></td></tr><tr><td><code>settlementCurrency</code></td><td>STRING</td><td>结算币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxNdfTemplate(instName, fixingOffset, currencyPair, deliveryDayConvention, fixingDayConvention, calendars, settlementCurrency)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxforward create and cache an fx forward instrument. buycurrency string, buyamount double, sellcurrency string, sellamount double, deliverydate date, expirydate date, tag string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxforward"></a>
-      <h3><code>CreateFxForward</code></h3>
+      <h3><code>createFxForward</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, deliveryDate DATE, expiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇远期工具。 函数验证并转换字段，构造 <code>FxForward</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, deliveryDate DATE, expiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxForward</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxForward</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>buyCurrency</code></td><td>STRING</td><td>买入币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>buyAmount</code></td><td>DOUBLE</td><td>买入金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>sellCurrency</code></td><td>STRING</td><td>卖出币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>sellAmount</code></td><td>DOUBLE</td><td>卖出金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>交割或结算日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>到期日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxForward(buyCurrency, buyAmount, sellCurrency, sellAmount, deliveryDate, expiryDate, tag)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxswap create and cache an fx swap instrument. nearbuycurrency string, nearbuyamount double, nearsellcurrency string, nearsellamount double, neardeliverydate date, nearexpirydate date, farbuycurrency string, farbuyamount double, farsellcurrency string, farsellamount double, fardeliverydate date, farexpirydate date, tag string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxswap"></a>
-      <h3><code>CreateFxSwap</code></h3>
+      <h3><code>createFxSwap</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxSwap(nearBuyCurrency STRING, nearBuyAmount DOUBLE, nearSellCurrency STRING, nearSellAmount DOUBLE, nearDeliveryDate DATE, nearExpiryDate DATE, farBuyCurrency STRING, farBuyAmount DOUBLE, farSellCurrency STRING, farSellAmount DOUBLE, farDeliveryDate DATE, farExpiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇掉期工具。 函数验证并转换字段，构造 <code>FxSwap</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxSwap(nearBuyCurrency STRING, nearBuyAmount DOUBLE, nearSellCurrency STRING, nearSellAmount DOUBLE, nearDeliveryDate DATE, nearExpiryDate DATE, farBuyCurrency STRING, farBuyAmount DOUBLE, farSellCurrency STRING, farSellAmount DOUBLE, farDeliveryDate DATE, farExpiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxSwap</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxSwap</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>nearBuyCurrency</code></td><td>STRING</td><td>近端买入币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>nearBuyAmount</code></td><td>DOUBLE</td><td>近端买入金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>nearSellCurrency</code></td><td>STRING</td><td>近端卖出币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>nearSellAmount</code></td><td>DOUBLE</td><td>近端卖出金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>nearDeliveryDate</code></td><td>DATE</td><td>日期或日期数组。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。</span></td></tr><tr><td><code>nearExpiryDate</code></td><td>DATE</td><td>日期或日期数组。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。</span></td></tr><tr><td><code>farBuyCurrency</code></td><td>STRING</td><td>远端买入币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>farBuyAmount</code></td><td>DOUBLE</td><td>远端买入金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>farSellCurrency</code></td><td>STRING</td><td>远端卖出币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>farSellAmount</code></td><td>DOUBLE</td><td>远端卖出金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>farDeliveryDate</code></td><td>DATE</td><td>日期或日期数组。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。</span></td></tr><tr><td><code>farExpiryDate</code></td><td>DATE</td><td>日期或日期数组。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxSwap(nearBuyCurrency, nearBuyAmount, nearSellCurrency, nearSellAmount, nearDeliveryDate, nearExpiryDate, farBuyCurrency, farBuyAmount, farSellCurrency, farSellAmount, farDeliveryDate, farExpiryDate, tag)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxnondeliverableforward create and cache an fx non-deliverable forward instrument. buycurrency string, buyamount double, sellcurrency string, sellamount double, settlementcurrency string, deliverydate date, expirydate date, tag string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxnondeliverableforward"></a>
-      <h3><code>CreateFxNonDeliverableForward</code></h3>
+      <h3><code>createFxNonDeliverableForward</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxNonDeliverableForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, settlementCurrency STRING, deliveryDate DATE, expiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇无本金交割远期工具。 函数验证并转换字段，构造 <code>FxNonDeliverableForward</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxNonDeliverableForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, settlementCurrency STRING, deliveryDate DATE, expiryDate DATE, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxNonDeliverableForward</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxNonDeliverableForward</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>buyCurrency</code></td><td>STRING</td><td>买入币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>buyAmount</code></td><td>DOUBLE</td><td>买入金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>sellCurrency</code></td><td>STRING</td><td>卖出币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>sellAmount</code></td><td>DOUBLE</td><td>卖出金额。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器通常仅检查类型。</span></td></tr><tr><td><code>settlementCurrency</code></td><td>STRING</td><td>结算币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>交割或结算日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>expiryDate</code></td><td>DATE</td><td>到期日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxNonDeliverableForward(buyCurrency, buyAmount, sellCurrency, sellAmount, settlementCurrency, deliveryDate, expiryDate, tag)</code></pre></div>
 </article>
 </section>
 <section class="api-group"><h2>资产域市场数据与设置</h2>
@@ -646,51 +792,63 @@ pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" cl
   <div class="api-card-head">
     <div>
       <a id="createfxmktconventions"></a>
-      <h3><code>CreateFxMktConventions</code></h3>
+      <h3><code>createFxMktConventions</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxMktConventions(ccyPair STRING, atmType STRING, shortDeltaType STRING, longDeltaType STRING, deltaCutoff STRING, riskReversal STRING, smileQuoteType STRING, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇市场惯例。 函数验证并转换字段，构造 <code>FxMarketConventions</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxMktConventions(ccyPair STRING, atmType STRING, shortDeltaType STRING, longDeltaType STRING, deltaCutoff STRING, riskReversal STRING, smileQuoteType STRING, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxMarketConventions</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxMarketConventions</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>ccyPair</code></td><td>STRING</td><td>货币对标识。<br><span class="validity-note"><strong>有效性:</strong> 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。</span></td></tr><tr><td><code>atmType</code></td><td>STRING</td><td>ATM 报价类型。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_ATM_TYPE</code>, <code>ATM_FORWARD</code>, <code>ATM_DNS_PIPS</code>, <code>ATM_DNS_PERCENTAGE</code>, <code>ATM_SPOT</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>shortDeltaType</code></td><td>STRING</td><td>短期限 Delta 报价类型。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_DELTA_TYPE</code>, <code>PIPS_SPOT_DELTA</code>, <code>PERCENTAGE_SPOT_DELTA</code>, <code>PIPS_FORWARD_DELTA</code>, <code>PERCENTAGE_FORWARD_DELTA</code>, <code>SIMPLE_DELTA</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>longDeltaType</code></td><td>STRING</td><td>长期限 Delta 报价类型。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_DELTA_TYPE</code>, <code>PIPS_SPOT_DELTA</code>, <code>PERCENTAGE_SPOT_DELTA</code>, <code>PIPS_FORWARD_DELTA</code>, <code>PERCENTAGE_FORWARD_DELTA</code>, <code>SIMPLE_DELTA</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>deltaCutoff</code></td><td>STRING</td><td>Delta 报价切换阈值。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_DELTA_TYPE</code>, <code>PIPS_SPOT_DELTA</code>, <code>PERCENTAGE_SPOT_DELTA</code>, <code>PIPS_FORWARD_DELTA</code>, <code>PERCENTAGE_FORWARD_DELTA</code>, <code>SIMPLE_DELTA</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>riskReversal</code></td><td>STRING</td><td>设置对象的缓存句柄或配置值。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>RR_CALL_PUT</code>, <code>RR_PUT_CALL</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>smileQuoteType</code></td><td>STRING</td><td>波动率微笑报价类型。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>BUTTERFLY_QUOTE</code>, <code>MARKET_STRANGLE_QUOTE</code>, <code>WINGS_RATIO_BF_QUOTE</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxMktConventions(ccyPair, atmType, shortDeltaType, longDeltaType, deltaCutoff, riskReversal, smileQuoteType, tag)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxmktdataset create and cache an fx market-data set. asofdate date, domdiscountcurve string, fordiscountcurve string, spot string, volsurface string, name string, tag string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxmktdataset"></a>
-      <h3><code>CreateFxMktDataSet</code></h3>
+      <h3><code>createFxMktDataSet</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxMktDataSet(asOfDate DATE, domDiscountCurve STRING, forDiscountCurve STRING, spot STRING, volSurface STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇市场数据集。 函数验证并转换字段，构造 <code>FxMktDataSet</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxMktDataSet(asOfDate DATE, domDiscountCurve STRING, forDiscountCurve STRING, spot STRING, volSurface STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxMktDataSet</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxMktDataSet</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>asOfDate</code></td><td>DATE</td><td>市场数据基准日或估值参考日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>domDiscountCurve</code></td><td>STRING</td><td>本币贴现曲线 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>forDiscountCurve</code></td><td>STRING</td><td>外币贴现曲线 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>spot</code></td><td>STRING</td><td>当前现货价格。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>volSurface</code></td><td>STRING</td><td>波动率曲面 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxMktDataSet(asOfDate, domDiscountCurve, forDiscountCurve, spot, volSurface, name, tag)</code></pre></div>
 </article>
 
 <article class="api-card" data-search="createfxrisksettings create and cache fx 风险设置。 ircurvesettings string, pricesettings string, volsettings string, pricevolsettings string, thetasettings string, name string, tag string handle_or_json returnjson bool">
   <div class="api-card-head">
     <div>
       <a id="createfxrisksettings"></a>
-      <h3><code>CreateFxRiskSettings</code></h3>
+      <h3><code>createFxRiskSettings</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::createFxRiskSettings(irCurveSettings STRING, priceSettings STRING, volSettings STRING, priceVolSettings STRING, thetaSettings STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
       <p class="api-description">创建并缓存外汇风险设置。 函数验证并转换字段，构造 <code>FxRiskSettings</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
-      <p class="full-signature"><code>caplib::CreateFxRiskSettings(irCurveSettings STRING, priceSettings STRING, volSettings STRING, priceVolSettings STRING, thetaSettings STRING, name STRING, tag STRING[, returnJson BOOL])</code></p>
     </div>
     <span class="return-pill">FxRiskSettings</span>
   </div>
+  <h4 class="api-subheading">返回值</h4>
   <p class="return-description"><strong>返回：</strong> 成功时创建 <code>FxRiskSettings</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
   <details open>
     <summary>参数</summary>
     <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>irCurveSettings</code></td><td>STRING</td><td>利率曲线风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>priceSettings</code></td><td>STRING</td><td>价格风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>volSettings</code></td><td>STRING</td><td>波动率风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>priceVolSettings</code></td><td>STRING</td><td>价格-波动率联合风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>thetaSettings</code></td><td>STRING</td><td>设置对象的缓存句柄或配置值。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>name</code></td><td>STRING</td><td>写入创建对象的业务名称。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。</span></td></tr><tr><td><code>tag</code></td><td>STRING</td><td>用于后续获取创建对象的 内存对象 键或标签。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
   </details>
+<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createFxRiskSettings(irCurveSettings, priceSettings, volSettings, priceVolSettings, thetaSettings, name, tag)</code></pre></div>
 </article>
 </section>
 <script>

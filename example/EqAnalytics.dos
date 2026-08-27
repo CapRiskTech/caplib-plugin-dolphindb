@@ -12,7 +12,7 @@ asOfDate = 2020.02.21
 underlyingPrice = 2.958
 
 // Create the equity IR curve used by the EQ fixtures.
-irCurve = caplib::CreateIrYieldCurve(
+irCurve = caplib::createIrYieldCurve(
     asOfDate,
     [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
     [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
@@ -20,7 +20,7 @@ irCurve = caplib::CreateIrYieldCurve(
     "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
 
 // Create the dividend curve used as the EQ forward curve.
-divCurve = caplib::CreateDividendCurve(
+divCurve = caplib::createDividendCurve(
     asOfDate,
     [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
     [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
@@ -30,30 +30,30 @@ divCurve = caplib::CreateDividendCurve(
 
 // Create analytical pricing settings for the vanilla EQ examples.
 modelParams = [0.0]
-bsmModel = caplib::CreatePricingModelSettings(
+bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
-bsmSettings = caplib::CreatePricingSettings(
+bsmSettings = caplib::createPricingSettings(
     currency, "ANALYTICAL", 0, 0, bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
 
 // Enable EQ risk settings so pricing returns a structured result handle.
-eqRisk = caplib::CreateEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true)
+eqRisk = caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true)
 
 dailyObsDates = 2020.02.22..2020.08.19;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
 // Define the vol surface model used by EQ volatility builders.
-volDef = caplib::CreateVolatilitySurfaceDefinition(
+volDef = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
     "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
     -1.0e-5, 1.0e-5, "EQ_VOL_DEF", true)
 
 // Configure the EQ vol surface builder.
-volBuildSettings = caplib::CreateVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", true)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", true)
 
 // Build a quote matrix from strike, payoff, and price grids.
-quoteMatrix = caplib::CreateEqOptionQuoteMatrix(
+quoteMatrix = caplib::createEqOptionQuoteMatrix(
     "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
     [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
     [
@@ -77,29 +77,29 @@ quoteMatrix = caplib::CreateEqOptionQuoteMatrix(
     underlying, "EQ_OPTION_QUOTES", true)
 
 // Build an EQ volatility surface from quotes, curves, and build settings.
-volSurface = caplib::BuildEqVolatilitySurface(
+volSurface = caplib::buildEqVolatilitySurface(
     asOfDate, underlying, volDef[0], quoteMatrix[0],
     [2.958, 2.960, 2.962],
     irCurve, divCurve, volBuildSettings[0], bsmSettings, "EQ_VOL_SURFACE", true)
 
 // Assemble EQ market data from spot, curves, and volatility surface.
-mktData = caplib::CreateEqMktDataSet(
+mktData = caplib::createEqMktDataSet(
     asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], "", "", 0.0, "EQ_MKT", true)
 
 // Create a European option instrument and price it.
-europeanOption = caplib::CreateEuropeanOption(
+europeanOption = caplib::createEuropeanOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     1000000.0, currency, "SPOT", currency, underlying, "EQ_EO", false)
-europeanResult = caplib::PriceEqEuropeanOption(
+europeanResult = caplib::priceEqEuropeanOption(
     europeanOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
 print(europeanResult)
 
 // Create an Asian option instrument and price it with Monte Carlo settings.
-asianOption = caplib::CreateAsianOption(
+asianOption = caplib::createAsianOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE",
     1000000.0, "SPOT", currency, underlying, "EQ_ASIAN",
     dailyObsDates, dailyObsValues, dailyObsWeights, false)
-asianResult = caplib::PriceEqAsianOption(
+asianResult = caplib::priceEqAsianOption(
     asianOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
 print(asianResult)

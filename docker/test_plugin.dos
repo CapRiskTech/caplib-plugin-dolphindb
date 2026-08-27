@@ -36,72 +36,72 @@ try {
 
 // ─── Basic non-proto function ───────────────────────────────
 try {
-    r = caplib::CalcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360);
+    r = caplib::calcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360);
     expected = 364.0 / 360.0;
-    ok = t("CalcYearFraction = " + string(r), abs(r - expected) < 0.0001);
+    ok = t("calcYearFraction = " + string(r), abs(r - expected) < 0.0001);
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {
-    print("  CalcYearFraction error: " + ex);
+    print("  calcYearFraction error: " + ex);
     testNum = testNum + 1;
 }
 
-// ─── Create* factory functions (Analytics module) ───────────
+// ─── create* factory functions (Analytics module) ───────────
 // These store objects in ObjectCache and return handles or [handle, json].
 
-// CreateIrYieldCurve — current native signature.
+// createIrYieldCurve — current native signature.
 try {
     refDate = 2020.02.21;
     irDates = [2020.02.22, 2021.02.21, 2022.02.21, 2025.02.21, 2030.02.21];
     irRates = [0.02, 0.025, 0.028, 0.032, 0.038];
-    h = caplib::CreateIrYieldCurve(
+    h = caplib::createIrYieldCurve(
         refDate, irDates, irRates,
         "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
         "CONTINUOUS_COMPOUNDING", "CNY", "CNY_DISC_DOCKER", "DISC_DOCKER", false);
-    ok = t("CreateIrYieldCurve → " + h, h == "DISC_DOCKER");
+    ok = t("createIrYieldCurve → " + h, h == "DISC_DOCKER");
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {
-    print("  CreateIrYieldCurve error: " + ex);
+    print("  createIrYieldCurve error: " + ex);
     testNum = testNum + 1;
 }
 
-// GetObjectCacheJson — cache JSON round-trip for visualization.
+// getObjectCacheJson — cache JSON round-trip for visualization.
 try {
-    curveJson = caplib::GetObjectCacheJson("IrYieldCurve", "DISC_DOCKER");
-    ok = t("GetObjectCacheJson(IrYieldCurve)", strlen(curveJson) > 0 && strpos(curveJson, "\"currency\"") >= 0);
+    curveJson = caplib::getObjectCacheJson("IrYieldCurve", "DISC_DOCKER");
+    ok = t("getObjectCacheJson(IrYieldCurve)", strlen(curveJson) > 0 && strpos(curveJson, "\"currency\"") >= 0);
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {
-    print("  GetObjectCacheJson error: " + ex);
+    print("  getObjectCacheJson error: " + ex);
     testNum = testNum + 1;
 }
 
-// CreatePricingModelSettings — current native signature.
+// createPricingModelSettings — current native signature.
 try {
-    h = caplib::CreatePricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "MODEL_DOCKER", false);
-    ok = t("CreatePricingModelSettings → " + h, h == "MODEL_DOCKER");
+    h = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "MODEL_DOCKER", false);
+    ok = t("createPricingModelSettings → " + h, h == "MODEL_DOCKER");
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {
-    print("  CreatePricingModelSettings error: " + ex);
+    print("  createPricingModelSettings error: " + ex);
     testNum = testNum + 1;
 }
 
-// CreatePricingSettings — current native signature.
+// createPricingSettings — current native signature.
 try {
-    h = caplib::CreatePricingSettings("CNY", "ANALYTICAL", 0, 0, "MODEL_DOCKER", "", "", "PRC_DOCKER", false);
-    ok = t("CreatePricingSettings → " + h, h == "PRC_DOCKER");
+    h = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "MODEL_DOCKER", "", "", "PRC_DOCKER", false);
+    ok = t("createPricingSettings → " + h, h == "PRC_DOCKER");
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {
-    print("  CreatePricingSettings error: " + ex);
+    print("  createPricingSettings error: " + ex);
     testNum = testNum + 1;
 }
 
-// CreateEqRiskSettings — handle + JSON output style.
+// createEqRiskSettings — handle + JSON output style.
 try {
-    r = caplib::CreateEqRiskSettings(1, 1, 1, 1, "EQ_RISK_DOCKER", true);
-    ok = t("CreateEqRiskSettings → [EQ_RISK_DOCKER, json]",
+    r = caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK_DOCKER", true);
+    ok = t("createEqRiskSettings → [EQ_RISK_DOCKER, json]",
         size(r) == 2 && r[0] == "EQ_RISK_DOCKER" && strlen(r[1]) > 0);
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {
-    print("  CreateEqRiskSettings error: " + ex);
+    print("  createEqRiskSettings error: " + ex);
     testNum = testNum + 1;
 }
 

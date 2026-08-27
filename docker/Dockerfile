@@ -2,7 +2,7 @@
 # caplib Docker Image
 # Standalone Docker environment for caplib DolphinDB plugin:
 #   - DolphinDB 3.00.5 Community Edition
-#   - libPluginCaplib.so (caplib plugin, 211 user-facing functions)
+#   - libPluginCaplib.so (caplib plugin, 202 user-facing functions)
 #   - libdqlibc.so (dqlib C interop, ABI0)
 #   - dqlibc.lic (RSA-signed license)
 #
@@ -15,12 +15,15 @@ FROM ubuntu:24.04
 
 ARG CAPLIB_PLUGIN_TAG=unknown
 ARG CAPLIB_PLUGIN_FUNCTIONS=unknown
+ARG DEBIAN_FRONTEND=noninteractive
 
-LABEL org.dqlab.image="caplibdolphin"
+ENV TZ=Etc/UTC
+
+LABEL org.caprisktech.image="caplibdolphin"
 LABEL description="DolphinDB + caplib plugin standalone pricing server"
 LABEL version="1.0.0"
-LABEL org.dqlab.caplib.release="$CAPLIB_PLUGIN_TAG"
-LABEL org.dqlab.caplib.functions="$CAPLIB_PLUGIN_FUNCTIONS"
+LABEL org.caprisktech.caplib.release="$CAPLIB_PLUGIN_TAG"
+LABEL org.caprisktech.caplib.functions="$CAPLIB_PLUGIN_FUNCTIONS"
 
 # ─── System Dependencies ────────────────────────────────────
 # ubuntu:24.04 ships GCC 13's libstdc++ (GLIBCXX_3.4.32), which

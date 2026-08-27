@@ -27,43 +27,43 @@ irRates = [0.0135486283791684, 0.0197762034605164, 0.0197686053073393,
            0.0265096948143765, 0.0271330931714993, 0.0274314991366822,
            0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
            0.032692683803743, 0.034410206396147];
-irCurve = caplib::CreateIrYieldCurve(
+irCurve = caplib::createIrYieldCurve(
     asOfDate, irDates, irRates,
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false);
 
 fwdDates = [2020.02.22, 2030.02.24];
 fwdValues = [0.0, 0.0];
-fwdCurve = caplib::CreateDividendCurve(
+fwdCurve = caplib::createDividendCurve(
     asOfDate, fwdDates, fwdValues, asOfDate,
     "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false);
 
 modelParams = [0.0];
-bsmModel = caplib::CreatePricingModelSettings(
+bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false);
-bsmAnalyticalSettings = caplib::CreatePricingSettings(
+bsmAnalyticalSettings = caplib::createPricingSettings(
     currency, "ANALYTICAL", 0, 0, bsmModel, "", "", "CM_BSM_ANALYTICAL", false);
 
-pdeSettings = caplib::CreatePdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
     0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "CM_PDE_SETTINGS", false);
-bsmPdeModel = caplib::CreatePricingModelSettings(
+bsmPdeModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_PDE_MODEL", false);
-bsmPdeSettings = caplib::CreatePricingSettings(
+bsmPdeSettings = caplib::createPricingSettings(
     currency, "PDE", 0, 0, bsmPdeModel, pdeSettings, "", "CM_BSM_PDE", false);
 
-mcSettings = caplib::CreateMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false);
-bsmMcModel = caplib::CreatePricingModelSettings(
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false);
+bsmMcModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false);
-bsmMcSettings = caplib::CreatePricingSettings(
+bsmMcSettings = caplib::createPricingSettings(
     currency, "MONTE_CARLO", 0, 0, bsmMcModel, "", mcSettings, "CM_BSM_MC", false);
 
-cmRisk = caplib::CreateCmRiskSettings(1, 1, 1, 1, "CM_RISK", true);
-cmNoRisk = caplib::CreateCmRiskSettings(0, 0, 0, 0, "CM_NO_RISK", true);
+cmRisk = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", true);
+cmNoRisk = caplib::createCmRiskSettings(0, 0, 0, 0, "CM_NO_RISK", true);
 
-priceScn = caplib::CreateScnSettings(-0.20, 0.20, 11, 1, "CM_PRICE_SCN", false);
-volScn = caplib::CreateScnSettings(-0.05, 0.05, 12, 0, "CM_VOL_SCN", false);
-scnAnalysis = caplib::CreateScnAnalysisSettings(
+priceScn = caplib::createScnSettings(-0.20, 0.20, 11, 1, "CM_PRICE_SCN", false);
+volScn = caplib::createScnSettings(-0.05, 0.05, 12, 0, "CM_VOL_SCN", false);
+scnAnalysis = caplib::createScnAnalysisSettings(
     "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 0, "CM_SCN_ANALYSIS", false);
 
 termDates = [2020.03.12, 2020.04.13, 2020.05.12, 2020.06.12,
@@ -176,10 +176,10 @@ def checkPricingResult(name, result, expectedHandle) {
         isPricingResultsJson(result, expectedHandle));
 }
 
-ok = t("CreateCmRiskSettings -> [CM_RISK, json]", isHandleJson(cmRisk, "CM_RISK"));
+ok = t("createCmRiskSettings -> [CM_RISK, json]", isHandleJson(cmRisk, "CM_RISK"));
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
-ok = t("CreateCmRiskSettings -> [CM_NO_RISK, json]", isHandleJson(cmNoRisk, "CM_NO_RISK"));
+ok = t("createCmRiskSettings -> [CM_NO_RISK, json]", isHandleJson(cmNoRisk, "CM_NO_RISK"));
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 // ============================================================================
@@ -188,32 +188,32 @@ testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 print("");
 print("--- Test 1: CM volatility surface builder ---");
 
-volSurfDefinition = caplib::CreateVolatilitySurfaceDefinition(
+volSurfDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
     "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
     -1.0e-5, 1.0e-5, "CM_VOL_SURF_DEF", true);
-ok = t("CreateVolatilitySurfaceDefinition -> [CM_VOL_SURF_DEF, json]",
+ok = t("createVolatilitySurfaceDefinition -> [CM_VOL_SURF_DEF, json]",
     isHandleJson(volSurfDefinition, "CM_VOL_SURF_DEF"));
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
-volSurfBuildSettings = caplib::CreateVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD_SETTINGS", true);
-ok = t("CreateVolSurfBuildSettings -> [CM_VOL_BUILD_SETTINGS, json]",
+volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD_SETTINGS", true);
+ok = t("createVolSurfBuildSettings -> [CM_VOL_BUILD_SETTINGS, json]",
     isHandleJson(volSurfBuildSettings, "CM_VOL_BUILD_SETTINGS"));
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
-cmOptionQuotes = caplib::CreateCmOptionQuoteMatrix(
+cmOptionQuotes = caplib::createCmOptionQuoteMatrix(
     "AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
     termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", true);
-ok = t("CreateCmOptionQuoteMatrix -> [CM_OPTION_QUOTES, json]",
+ok = t("createCmOptionQuoteMatrix -> [CM_OPTION_QUOTES, json]",
     isHandleJson(cmOptionQuotes, "CM_OPTION_QUOTES") &&
     hasJsonField(cmOptionQuotes[1], "quote_smiles"));
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
-volSurface = caplib::BuildCmVolatilitySurface(
+volSurface = caplib::buildCmVolatilitySurface(
     asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0],
     underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "CM_VOL_SURF", true);
-ok = t("BuildCmVolatilitySurface -> [CM_VOL_SURF, json]",
+ok = t("buildCmVolatilitySurface -> [CM_VOL_SURF, json]",
     isHandleJson(volSurface, "CM_VOL_SURF") &&
     hasJsonField(volSurface[1], "vol_smiles"));
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
@@ -221,20 +221,20 @@ testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 // Explicit zero-rate quanto curves are supplied even with zero correlation.
 quantoDates = [2020.02.22, 2030.02.24];
 quantoValues = [0.0, 0.0];
-quantoIr = caplib::CreateIrYieldCurve(
+quantoIr = caplib::createIrYieldCurve(
     asOfDate, quantoDates, quantoValues,
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
-quantoFxVol = caplib::CreateVolatilityCurve(
+quantoFxVol = caplib::createVolatilityCurve(
     asOfDate, quantoDates, quantoValues,
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     underlying, "QUANTO_FX_VOL", false);
 
-mktData = caplib::CreateCmMktDataSet(
+mktData = caplib::createCmMktDataSet(
     asOfDate, underlying, underlyingPrice,
     irCurve, fwdCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "CM_MKT", true);
-ok = t("CreateCmMktDataSet -> [CM_MKT, json]", isHandleJson(mktData, "CM_MKT"));
+ok = t("createCmMktDataSet -> [CM_MKT, json]", isHandleJson(mktData, "CM_MKT"));
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 // ============================================================================
@@ -242,204 +242,204 @@ testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 // ============================================================================
 print("");
 print("--- Test 2: EuropeanOption (BSM ANALYTICAL) ---");
-europeanOption = caplib::CreateEuropeanOption(
+europeanOption = caplib::createEuropeanOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     1000000.0, currency, "FUTURE", currency, underlying, "CM_EO_INST", false);
-ok = t("CreateEuropeanOption -> CM_EO_INST", europeanOption == "CM_EO_INST");
+ok = t("createEuropeanOption -> CM_EO_INST", europeanOption == "CM_EO_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-europeanPricingResult = caplib::PriceCmEuropeanOption(
+europeanPricingResult = caplib::priceCmEuropeanOption(
     europeanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmEuropeanOption", europeanPricingResult, "CM_EO_INST_results");
+ok = checkPricingResult("priceCmEuropeanOption", europeanPricingResult, "CM_EO_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 3: AmericanOption (BSM ANALYTICAL) ---");
-americanOption = caplib::CreateAmericanOption(
+americanOption = caplib::createAmericanOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1,
     1000000.0, currency, "FUTURE", currency, underlying, "CM_AM_INST", false);
-ok = t("CreateAmericanOption -> CM_AM_INST", americanOption == "CM_AM_INST");
+ok = t("createAmericanOption -> CM_AM_INST", americanOption == "CM_AM_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-americanPricingResult = caplib::PriceCmAmericanOption(
+americanPricingResult = caplib::priceCmAmericanOption(
     americanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmAmericanOption", americanPricingResult, "CM_AM_INST_results");
+ok = checkPricingResult("priceCmAmericanOption", americanPricingResult, "CM_AM_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 4: AsianOption (BSM MONTE_CARLO) ---");
-asianOption = caplib::CreateAsianOption(
+asianOption = caplib::createAsianOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD",
     "DISCRETE_OBSERVATION_TYPE", 1000000.0,
     currency, "FUTURE", currency, underlying, "CM_AS_INST",
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreateAsianOption -> CM_AS_INST", asianOption == "CM_AS_INST");
+ok = t("createAsianOption -> CM_AS_INST", asianOption == "CM_AS_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-asianPricingResult = caplib::PriceCmAsianOption(
+asianPricingResult = caplib::priceCmAsianOption(
     asianOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmAsianOption", asianPricingResult, "CM_AS_INST_results");
+ok = checkPricingResult("priceCmAsianOption", asianPricingResult, "CM_AS_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 5: DigitalOption (BSM ANALYTICAL) ---");
-digitalOption = caplib::CreateDigitalOption(
+digitalOption = caplib::createDigitalOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     0.0, 1.0, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DG_INST", false);
-ok = t("CreateDigitalOption -> CM_DG_INST", digitalOption == "CM_DG_INST");
+ok = t("createDigitalOption -> CM_DG_INST", digitalOption == "CM_DG_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-digitalPricingResult = caplib::PriceCmDigitalOption(
+digitalPricingResult = caplib::priceCmDigitalOption(
     digitalOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmDigitalOption", digitalPricingResult, "CM_DG_INST_results");
+ok = checkPricingResult("priceCmDigitalOption", digitalPricingResult, "CM_DG_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 6: SingleBarrierOption (BSM ANALYTICAL) ---");
-singleBarrierOption = caplib::CreateSingleBarrierOption(
+singleBarrierOption = caplib::createSingleBarrierOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SB_INST", false);
-ok = t("CreateSingleBarrierOption -> CM_SB_INST", singleBarrierOption == "CM_SB_INST");
+ok = t("createSingleBarrierOption -> CM_SB_INST", singleBarrierOption == "CM_SB_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-singleBarrierPricingResult = caplib::PriceCmSingleBarrierOption(
+singleBarrierPricingResult = caplib::priceCmSingleBarrierOption(
     singleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmSingleBarrierOption", singleBarrierPricingResult, "CM_SB_INST_results");
+ok = checkPricingResult("priceCmSingleBarrierOption", singleBarrierPricingResult, "CM_SB_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 7: DoubleBarrierOption (BSM ANALYTICAL) ---");
-doubleBarrierOption = caplib::CreateDoubleBarrierOption(
+doubleBarrierOption = caplib::createDoubleBarrierOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DB_INST", false);
-ok = t("CreateDoubleBarrierOption -> CM_DB_INST", doubleBarrierOption == "CM_DB_INST");
+ok = t("createDoubleBarrierOption -> CM_DB_INST", doubleBarrierOption == "CM_DB_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleBarrierPricingResult = caplib::PriceCmDoubleBarrierOption(
+doubleBarrierPricingResult = caplib::priceCmDoubleBarrierOption(
     doubleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmDoubleBarrierOption", doubleBarrierPricingResult, "CM_DB_INST_results");
+ok = checkPricingResult("priceCmDoubleBarrierOption", doubleBarrierPricingResult, "CM_DB_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 8: OneTouchOption (BSM ANALYTICAL) ---");
-oneTouchOption = caplib::CreateOneTouchOption(
+oneTouchOption = caplib::createOneTouchOption(
     2020.08.19, 2020.08.20, "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_OT_INST", false);
-ok = t("CreateOneTouchOption -> CM_OT_INST", oneTouchOption == "CM_OT_INST");
+ok = t("createOneTouchOption -> CM_OT_INST", oneTouchOption == "CM_OT_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-oneTouchPricingResult = caplib::PriceCmOneTouchOption(
+oneTouchPricingResult = caplib::priceCmOneTouchOption(
     oneTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmOneTouchOption", oneTouchPricingResult, "CM_OT_INST_results");
+ok = checkPricingResult("priceCmOneTouchOption", oneTouchPricingResult, "CM_OT_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 9: DoubleTouchOption (BSM ANALYTICAL) ---");
-doubleTouchOption = caplib::CreateDoubleTouchOption(
+doubleTouchOption = caplib::createDoubleTouchOption(
     2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95,
     "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DT_INST", false);
-ok = t("CreateDoubleTouchOption -> CM_DT_INST", doubleTouchOption == "CM_DT_INST");
+ok = t("createDoubleTouchOption -> CM_DT_INST", doubleTouchOption == "CM_DT_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleTouchPricingResult = caplib::PriceCmDoubleTouchOption(
+doubleTouchPricingResult = caplib::priceCmDoubleTouchOption(
     doubleTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmDoubleTouchOption", doubleTouchPricingResult, "CM_DT_INST_results");
+ok = checkPricingResult("priceCmDoubleTouchOption", doubleTouchPricingResult, "CM_DT_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 10: SingleSharkFinOption (BSM PDE) ---");
-singleSharkFinOption = caplib::CreateSingleSharkFinOption(
+singleSharkFinOption = caplib::createSingleSharkFinOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0,
     "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SF_INST",
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreateSingleSharkFinOption -> CM_SF_INST", singleSharkFinOption == "CM_SF_INST");
+ok = t("createSingleSharkFinOption -> CM_SF_INST", singleSharkFinOption == "CM_SF_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-singleSharkFinPricingResult = caplib::PriceCmSingleSharkFinOption(
+singleSharkFinPricingResult = caplib::priceCmSingleSharkFinOption(
     singleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmSingleSharkFinOption", singleSharkFinPricingResult, "CM_SF_INST_results");
+ok = checkPricingResult("priceCmSingleSharkFinOption", singleSharkFinPricingResult, "CM_SF_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 11: DoubleSharkFinOption (BSM PDE) ---");
-doubleSharkFinOption = caplib::CreateDoubleSharkFinOption(
+doubleSharkFinOption = caplib::createDoubleSharkFinOption(
     underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0,
     "ABSOLUTE_PERFORM_TYPE", underlyingPrice * 0.95, underlyingPrice * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 0.0, 0.0, 1, 1000000.0,
     currency, "FUTURE", currency, underlying, "CM_DS_INST",
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreateDoubleSharkFinOption -> CM_DS_INST", doubleSharkFinOption == "CM_DS_INST");
+ok = t("createDoubleSharkFinOption -> CM_DS_INST", doubleSharkFinOption == "CM_DS_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleSharkFinPricingResult = caplib::PriceCmDoubleSharkFinOption(
+doubleSharkFinPricingResult = caplib::priceCmDoubleSharkFinOption(
     doubleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmDoubleSharkFinOption", doubleSharkFinPricingResult, "CM_DS_INST_results");
+ok = checkPricingResult("priceCmDoubleSharkFinOption", doubleSharkFinPricingResult, "CM_DS_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 12: RangeAccrualOption (BSM ANALYTICAL) ---");
-rangeAccrualOption = caplib::CreateRangeAccrualOption(
+rangeAccrualOption = caplib::createRangeAccrualOption(
     2020.08.19, 2020.08.20, 0.0, 0.01,
     underlyingPrice * 0.95, underlyingPrice * 1.05,
     1000000.0, currency, "FUTURE", currency, underlying, "CM_RA_INST",
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreateRangeAccrualOption -> CM_RA_INST", rangeAccrualOption == "CM_RA_INST");
+ok = t("createRangeAccrualOption -> CM_RA_INST", rangeAccrualOption == "CM_RA_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-rangeAccrualPricingResult = caplib::PriceCmRangeAccrualOption(
+rangeAccrualPricingResult = caplib::priceCmRangeAccrualOption(
     rangeAccrualOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmRangeAccrualOption", rangeAccrualPricingResult, "CM_RA_INST_results");
+ok = checkPricingResult("priceCmRangeAccrualOption", rangeAccrualPricingResult, "CM_RA_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 13: AirbagOption (BSM PDE) ---");
-airbagOption = caplib::CreateAirbagOption(
+airbagOption = caplib::createAirbagOption(
     "CALL", 2020.08.19, 2020.08.20,
     underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice,
     "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE",
     1000000.0, currency, "FUTURE", currency, underlying, "CM_AB_INST",
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreateAirbagOption -> CM_AB_INST", airbagOption == "CM_AB_INST");
+ok = t("createAirbagOption -> CM_AB_INST", airbagOption == "CM_AB_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-airbagPricingResult = caplib::PriceCmAirbagOption(
+airbagPricingResult = caplib::priceCmAirbagOption(
     airbagOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmAirbagOption", airbagPricingResult, "CM_AB_INST_results");
+ok = checkPricingResult("priceCmAirbagOption", airbagPricingResult, "CM_AB_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 14: PingPongOption (BSM MONTE_CARLO) ---");
-pingPongOption = caplib::CreatePingPongOption(
+pingPongOption = caplib::createPingPongOption(
     2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95,
     "UP_IN", underlyingPrice * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.015, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_PP_INST",
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreatePingPongOption -> CM_PP_INST", pingPongOption == "CM_PP_INST");
+ok = t("createPingPongOption -> CM_PP_INST", pingPongOption == "CM_PP_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-pingPongPricingResult = caplib::PriceCmPingPongOption(
+pingPongPricingResult = caplib::priceCmPingPongOption(
     pingPongOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("PriceCmPingPongOption", pingPongPricingResult, "CM_PP_INST_results");
+ok = checkPricingResult("priceCmPingPongOption", pingPongPricingResult, "CM_PP_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 15: PhoenixAutoCallableNote (BSM MONTE_CARLO) ---");
-phoenixNote = caplib::CreatePhoenixAutoCallableNote(
+phoenixNote = caplib::createPhoenixAutoCallableNote(
     "CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22,
     couponDates, "UP_OUT", underlyingPrice * 1.1, "DOWN_IN", underlyingPrice * 0.9,
     "SELL", "PUT", underlyingPrice * 0.85, 2020.08.19, 2020.08.20,
     1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_PH_INST",
     couponDates, couponObsValues, couponObsWeights,
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreatePhoenixAutoCallableNote -> CM_PH_INST", phoenixNote == "CM_PH_INST");
+ok = t("createPhoenixAutoCallableNote -> CM_PH_INST", phoenixNote == "CM_PH_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-phoenixPricingResult = caplib::PriceCmPhoenixAutoCallableNote(
+phoenixPricingResult = caplib::priceCmPhoenixAutoCallableNote(
     phoenixNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true);
-ok = checkPricingResult("PriceCmPhoenixAutoCallableNote", phoenixPricingResult, "CM_PH_INST_results");
+ok = checkPricingResult("priceCmPhoenixAutoCallableNote", phoenixPricingResult, "CM_PH_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 print("");
 print("--- Test 16: SnowballAutoCallableNote (BSM MONTE_CARLO) ---");
-snowballNote = caplib::CreateSnowballAutoCallableNote(
+snowballNote = caplib::createSnowballAutoCallableNote(
     0.12, 2020.02.21, couponDates, "ACT_365_FIXED",
     "UP_OUT", underlyingPrice * 1.05, "DOWN_IN", underlyingPrice * 0.8,
     "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice,
@@ -447,11 +447,11 @@ snowballNote = caplib::CreateSnowballAutoCallableNote(
     currency, "FUTURE", currency, underlying, "CM_SN_INST",
     couponDates, couponObsValues, couponObsWeights,
     dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("CreateSnowballAutoCallableNote -> CM_SN_INST", snowballNote == "CM_SN_INST");
+ok = t("createSnowballAutoCallableNote -> CM_SN_INST", snowballNote == "CM_SN_INST");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-snowballPricingResult = caplib::PriceCmSnowballAutoCallableNote(
+snowballPricingResult = caplib::priceCmSnowballAutoCallableNote(
     snowballNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true);
-ok = checkPricingResult("PriceCmSnowballAutoCallableNote", snowballPricingResult, "CM_SN_INST_results");
+ok = checkPricingResult("priceCmSnowballAutoCallableNote", snowballPricingResult, "CM_SN_INST_results");
 testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 // ============================================================================

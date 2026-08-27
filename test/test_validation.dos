@@ -1,0 +1,223 @@
+// ============================================================================
+// test_validation.dos
+// Negative, boundary, relationship, determinism, and optional-argument tests.
+// ============================================================================
+
+print("============================================");
+print("  Caplib Validation Test Suite              ");
+print("============================================");
+
+try { undef(`CAPLIB_VALIDATION_RESULTS, SHARED); } catch(ex) {}
+share table(100:0, ["condition"], [BOOL]) as CAPLIB_VALIDATION_RESULTS;
+
+def t(name, condition) {
+    tableInsert(CAPLIB_VALIDATION_RESULTS, condition);
+    if (condition) {
+        print("  PASS: " + name);
+        return true;
+    }
+    print("  FAIL: " + name);
+    return false;
+}
+
+def expectError(name, scriptText) {
+    try {
+        eval(parseExpr(scriptText));
+        return t(name, false);
+    } catch(ex) {
+        return t(name, true);
+    }
+}
+
+def expectSuccess(name, scriptText) {
+    try {
+        eval(parseExpr(scriptText));
+        return t(name, true);
+    } catch(ex) {
+        print("    ERROR: " + ex);
+        return t(name, false);
+    }
+}
+
+print("--- Exact numeric references and repeatability ---");
+yfExpected = 364.0 / 360.0;
+yf1 = caplib::calcYearFraction(2024.01.01, 2024.12.30, "ACTUAL_360");
+yf2 = caplib::calcYearFraction(2024.01.01, 2024.12.30, "ACTUAL_360");
+yf3 = caplib::calcYearFraction(2024.01.01, 2024.12.30, "ACTUAL_360");
+ok = t("calcYearFraction ACT/360 -> independent 364/360 reference",
+    abs(yf1 - yfExpected) < 1.0e-12);
+ok = t("calcYearFraction repeated calls are deterministic",
+    yf1 == yf2 && yf2 == yf3);
+
+print("--- Type, form, null, argument-count, and keyword validation ---");
+ok = expectError("calcYearFraction rejects STRING startDate",
+    "caplib::calcYearFraction(\"bad\", 2024.12.30, \"ACTUAL_360\")");
+ok = expectError("calcYearFraction rejects DATE vector startDate",
+    "caplib::calcYearFraction([2024.01.01], 2024.12.30, \"ACTUAL_360\")");
+ok = expectError("calcYearFraction rejects null DATE scalar",
+    "caplib::calcYearFraction(date(), 2024.12.30, \"ACTUAL_360\")");
+ok = expectError("calcYearFraction rejects missing argument",
+    "caplib::calcYearFraction(2024.01.01, 2024.12.30)");
+ok = expectError("calcYearFraction rejects extra argument",
+    "caplib::calcYearFraction(2024.01.01, 2024.12.30, \"ACTUAL_360\", 1)");
+ok = expectError("plugin call with keyword arguments is explicitly unsupported",
+    "caplib::calcYearFraction(startDate=2024.01.01, endDate=2024.12.30, dayCountConvention=\"ACTUAL_360\")");
+
+print("--- createIrYieldCurve input relationships and boundaries ---");
+curveBase = caplib::createIrYieldCurve(
+    2024.01.01, [2024.01.02, 2025.01.02], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "VAL_CURVE", "VAL_CURVE", false);
+ok = t("createIrYieldCurve valid baseline", curveBase == "VAL_CURVE");
+
+ok = expectError("createIrYieldCurve rejects STRING pillarDates",
+    "caplib::createIrYieldCurve(2024.01.01, [\"2024-01-02\"], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_1\", false)");
+ok = expectError("createIrYieldCurve rejects scalar pillarDates",
+    "caplib::createIrYieldCurve(2024.01.01, 2024.01.02, [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_2\", false)");
+ok = expectError("createIrYieldCurve rejects scalar pillarValues",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], 0.02, \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_3\", false)");
+ok = expectError("createIrYieldCurve rejects empty vectors",
+    "caplib::createIrYieldCurve(2024.01.01, take(date(),0), take(double(),0), \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_4\", false)");
+ok = expectError("createIrYieldCurve rejects all-null DATE vector",
+    "caplib::createIrYieldCurve(2024.01.01, take(date(),2), [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_5\", false)");
+ok = expectError("createIrYieldCurve rejects partially-null DATE vector",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,date()], [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_6\", false)");
+ok = expectError("createIrYieldCurve rejects partially-null DOUBLE vector",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2025.01.02], [0.02,double()], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_7\", false)");
+ok = expectError("createIrYieldCurve rejects dates/values length mismatch",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2025.01.02], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_8\", false)");
+ok = expectError("createIrYieldCurve rejects duplicate pillar dates",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2024.01.02], [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_9\", false)");
+ok = expectError("createIrYieldCurve rejects descending pillar dates",
+    "caplib::createIrYieldCurve(2024.01.01, [2025.01.02,2024.01.02], [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_10\", false)");
+ok = expectError("createIrYieldCurve rejects invalid curveType enum",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], \"NOT_A_CURVE_TYPE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_11\", false)");
+ok = expectError("createIrYieldCurve rejects invalid interpolation enum",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"NOT_AN_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_12\", false)");
+ok = expectError("createIrYieldCurve rejects wrong returnJson type",
+    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_13\", \"false\")");
+
+for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
+    handle = "VAL_ENUM_" + curveType;
+    result = caplib::createIrYieldCurve(
+        2024.01.01, [2024.01.02], [0.02], curveType,
+        "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", handle, handle, false);
+    ok = t("createIrYieldCurve supports curveType=" + curveType, result == handle);
+}
+
+print("--- Optional returnJson null/default handling and vector sizes ---");
+omittedReturn = caplib::createFlatIrYieldCurve(2024.01.01, "CNY", 0.02, "VAL_OPTIONAL_OMITTED");
+nullReturn = caplib::createFlatIrYieldCurve(2024.01.01, "CNY", 0.02, "VAL_OPTIONAL_NULL", bool());
+ok = t("omitted returnJson uses false default", omittedReturn == "VAL_OPTIONAL_OMITTED");
+ok = t("null returnJson uses false default", nullReturn == "VAL_OPTIONAL_NULL");
+
+for (n in [1, 1024, 65536]) {
+    datesN = 2024.01.02 + 0..(n - 1);
+    ratesN = take(0.02, n);
+    handleN = "VAL_CURVE_SIZE_" + string(n);
+    resultN = caplib::createIrYieldCurve(
+        2024.01.01, datesN, ratesN,
+        "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", handleN, handleN, false);
+    ok = t("createIrYieldCurve vector length=" + string(n), resultN == handleN);
+}
+
+print("--- Volatility-surface bounds and enum validation ---");
+validVolDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP",
+    "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED",
+    "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.0001, 10000.0,
+    "VAL_VOL_DEF", false);
+ok = t("createVolatilitySurfaceDefinition valid bounds", validVolDef == "VAL_VOL_DEF");
+ok = expectError("createVolatilitySurfaceDefinition rejects lower == upper",
+    "caplib::createVolatilitySurfaceDefinition(\"STRIKE_VOL_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", 1.0, 1.0, \"VAL_BAD_VOL_1\", false)");
+ok = expectError("createVolatilitySurfaceDefinition rejects lower > upper",
+    "caplib::createVolatilitySurfaceDefinition(\"STRIKE_VOL_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", 2.0, 1.0, \"VAL_BAD_VOL_2\", false)");
+ok = expectError("createVolatilitySurfaceDefinition rejects null lower",
+    "caplib::createVolatilitySurfaceDefinition(\"STRIKE_VOL_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", double(), 1.0, \"VAL_BAD_VOL_3\", false)");
+ok = expectError("createVolatilitySurfaceDefinition rejects invalid smile enum",
+    "caplib::createVolatilitySurfaceDefinition(\"NOT_A_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", 0.1, 1.0, \"VAL_BAD_VOL_4\", false)");
+
+print("--- Matrix shape, empty, and null validation ---");
+ok = expectError("createIrCapFloorQuoteMatrix rejects terms/rows mismatch",
+    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\",\"2Y\"], [0.01], matrix([0.20]), \"CAP\", 1.0, \"VAL_BAD_CAP_1\", false)");
+ok = expectError("createIrCapFloorQuoteMatrix rejects strikes/columns mismatch",
+    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01,0.02], matrix([0.20]), \"CAP\", 1.0, \"VAL_BAD_CAP_2\", false)");
+ok = expectError("createIrCapFloorQuoteMatrix rejects zero-row matrix",
+    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01], matrix(DOUBLE,0,1), \"CAP\", 1.0, \"VAL_BAD_CAP_3\", false)");
+ok = expectError("createIrCapFloorQuoteMatrix rejects zero-column matrix",
+    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01], matrix(DOUBLE,1,0), \"CAP\", 1.0, \"VAL_BAD_CAP_4\", false)");
+ok = expectError("createIrCapFloorQuoteMatrix rejects partially-null matrix",
+    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\",\"2Y\"], [0.01], matrix([0.20,double()]), \"CAP\", 1.0, \"VAL_BAD_CAP_5\", false)");
+ok = expectError("createIrCapFloorQuoteMatrix rejects all-null matrix",
+    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\",\"2Y\"], [0.01], matrix(take(double(),2)), \"CAP\", 1.0, \"VAL_BAD_CAP_6\", false)");
+ok = expectError("createIrCapFloorQuoteMatrix rejects scalar vols",
+    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01], 0.20, \"CAP\", 1.0, \"VAL_BAD_CAP_7\", false)");
+
+// Matrix stress cases put the null in the final cell so the complete matrix
+// traversal is exercised at each documented boundary size.
+for (n in [1, 1024, 65536]) {
+    stressVols = matrix(DOUBLE, 1, n, n, 0.20);
+    stressVols[0, n - 1] = double();
+    try {
+        caplib::createIrCapFloorQuoteMatrix(
+            2024.01.01, ["1Y"], take(0.01, n), stressVols,
+            "CAP", 1.0, "VAL_BAD_MATRIX_SIZE_" + string(n), false);
+        ok = t("matrix length=" + string(n) + " validates final-cell null", false);
+    } catch(ex) {
+        ok = t("matrix length=" + string(n) + " validates final-cell null", true);
+    }
+}
+
+print("--- Scalar/vector alternatives for floating-leg calendars ---");
+legScalar = caplib::createFloatingLegDefinition(
+    "CNY", "VAL_IBOR", "CAL1", "CAL1", "QUARTERLY", "QUARTERLY",
+    "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING",
+    "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "VAL_LEG_SS", false);
+legVector = caplib::createFloatingLegDefinition(
+    "CNY", "VAL_IBOR", ["CAL1","CAL2"], ["CAL1"], "QUARTERLY", "QUARTERLY",
+    "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING",
+    "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "VAL_LEG_VV", false);
+legMixed = caplib::createFloatingLegDefinition(
+    "CNY", "VAL_IBOR", "CAL1", ["CAL1","CAL2"], "QUARTERLY", "QUARTERLY",
+    "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING",
+    "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "VAL_LEG_SV", false);
+ok = t("createFloatingLegDefinition calendar/fixingCalendars scalar/scalar", legScalar == "VAL_LEG_SS");
+ok = t("createFloatingLegDefinition calendar/fixingCalendars vector/vector with independent lengths", legVector == "VAL_LEG_VV");
+ok = t("createFloatingLegDefinition calendar/fixingCalendars scalar/vector", legMixed == "VAL_LEG_SV");
+ok = expectError("createFloatingLegDefinition rejects INT calendar",
+    "caplib::createFloatingLegDefinition(\"CNY\", \"VAL_IBOR\", 1, \"CAL1\", \"QUARTERLY\", \"QUARTERLY\", \"ACT_360\", \"NO_DISCOUNT\", \"STANDARD\", false, \"MODIFIED_FOLLOWING\", \"INITIAL\", \"LONG\", 0, \"MODIFIED_FOLLOWING\", \"MODIFIED_PRECEDING\", \"IN_ADVANCE\", -1, \"INVALID_NOTIONAL_EXCHANGE\", \"VAL_BAD_LEG_1\", false)");
+ok = expectError("createFloatingLegDefinition rejects null calendar vector element",
+    "caplib::createFloatingLegDefinition(\"CNY\", \"VAL_IBOR\", [\"CAL1\",string()], \"CAL1\", \"QUARTERLY\", \"QUARTERLY\", \"ACT_360\", \"NO_DISCOUNT\", \"STANDARD\", false, \"MODIFIED_FOLLOWING\", \"INITIAL\", \"LONG\", 0, \"MODIFIED_FOLLOWING\", \"MODIFIED_PRECEDING\", \"IN_ADVANCE\", -1, \"INVALID_NOTIONAL_EXCHANGE\", \"VAL_BAD_LEG_2\", false)");
+
+print("--- Date ordering and object-handle validation ---");
+ok = expectError("calcCrossCurrencyBasisSwapSpread rejects refDate after spotDate",
+    "caplib::calcCrossCurrencyBasisSwapSpread(2024.01.01, \"MISSING_SWAP\", \"1Y\", 7.0, \"USD\", \"CNY\", 2024.01.05, 2024.01.02, \"C1\", \"C2\", \"C3\", \"C4\")");
+ok = expectError("getObjectCacheJson rejects nonexistent handle",
+    "caplib::getObjectCacheJson(\"IrYieldCurve\", \"HANDLE_DOES_NOT_EXIST\")");
+ok = expectError("getObjectCacheJson rejects wrong protobuf type for handle",
+    "caplib::getObjectCacheJson(\"FxSpotRate\", \"VAL_CURVE\")");
+ok = expectError("getObjectCacheJson rejects unsupported protobuf type",
+    "caplib::getObjectCacheJson(\"NotAProtoType\", \"VAL_CURVE\")");
+ok = expectError("getObjectCacheJson rejects non-STRING handle",
+    "caplib::getObjectCacheJson(\"IrYieldCurve\", 123)");
+ok = expectError("buildIrSwaptionVolatilitySurface rejects curve handle as quoteCubeHandle",
+    "caplib::buildIrSwaptionVolatilitySurface(\"SWAPTION\", 2024.01.01, \"VAL_CURVE\", \"VAL_CURVE\", \"VAL_CURVE\", \"VAL_VOL_DEF\", \"MISSING_BUILD\", \"MISSING_SWAP\", \"VAL_BAD_SWAPTION\", false)");
+
+testSummary = select count(*) as total, sum(condition) as passed
+    from CAPLIB_VALIDATION_RESULTS;
+totalTests = testSummary.total[0];
+passedTests = testSummary.passed[0];
+print("============================================");
+print("  TEST RESULTS");
+print("  Passed: " + string(passedTests) + " / " + string(totalTests));
+print("  Failed: " + string(totalTests - passedTests) + " / " + string(totalTests));
+print("============================================");
+
+if (passedTests != totalTests) {
+    throw "Caplib validation tests failed: " + string(totalTests - passedTests);
+}

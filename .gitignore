@@ -1,0 +1,15 @@
+# Published release archives are attached to GitHub Releases, not committed.
+caplib-plugin-dolphindb-*.tar.gz
+
+# Docker build downloads and assembled contexts.
+docker/.cache/
+docker/.staging/
+
+# Editor and operating-system files.
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
