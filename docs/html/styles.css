@@ -464,3 +464,14 @@ summary {
   .workflow-grid { grid-template-columns: 1fr; }
   .api-card-head { grid-template-columns: 1fr; }
 }
+
+.api-subheading { margin: 1rem 0 0.35rem; color: var(--ink); font-size: 0.9rem; letter-spacing: 0.02em; }
+.api-example { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
+.api-example h4 { margin: 0 0 0.35rem; }
+.api-example p { margin: 0 0 0.6rem; color: var(--muted); font-size: 0.9rem; }
+.api-example pre { margin-bottom: 0; }
+
+.api-card, .api-card-head, .api-card-head > div, .api-card details, .api-card pre { min-width: 0; max-width: 100%; }
+.param-table { table-layout: fixed; }
+.param-table td { overflow-wrap: anywhere; }
+.param-table code { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }

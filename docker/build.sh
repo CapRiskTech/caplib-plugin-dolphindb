@@ -2,17 +2,17 @@
 # ─────────────────────────────────────────────────────────────
 # caplib DolphinDB Docker Build Script
 #
-# Downloads the published plugin package plus DolphinDB server,
+# Downloads the complete CapRiskTech release plus DolphinDB Server,
 # assembles a staging directory, and builds
 # the Docker image.
 #
 # Artifact sources:
 #   1. libPluginCaplib.so ─┐
 #   2. PluginCaplib.txt    │
-#   3. libdqlibc.so        │   CapRiskTech/caplib-plugin-dolphindb release
-#   4. calendars.bin       │   (0.0.8)
+#   3. libdqlibc.so        ├── CapRiskTech/caplib-plugin-dolphindb
+#   4. calendars.bin       │   release (0.0.10)
 #   5. dqlibc.lic        ─┘
-#   6. DolphinDB Server  ─── EXCEPTION — DolphinDB official distribution
+#   6. DolphinDB Server    ─── EXCEPTION — DolphinDB official distribution
 #
 # Usage:
 #   bash docker/build.sh                    # build only
@@ -34,18 +34,22 @@ IMAGE_NAME="${IMAGE_NAME:-caplibdolphin}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 # ─── Release versions ───────────────────────────────────────
-CAPLIB_PLUGIN_TAG="${CAPLIB_PLUGIN_TAG:-0.0.9}"
+CAPLIB_PLUGIN_TAG="${CAPLIB_PLUGIN_TAG:-0.0.10}"
 CAPLIB_PLUGIN_REPO="CapRiskTech/caplib-plugin-dolphindb"
 CAPLIB_PLUGIN_ASSET="caplib-plugin-dolphindb-${CAPLIB_PLUGIN_TAG}.tar.gz"
-EXPECTED_PLUGIN_FUNCTIONS="${EXPECTED_PLUGIN_FUNCTIONS:-211}"
+# The official 0.0.10 descriptor exports exactly 202 public functions.
+# Keep this fixed so a stale shell/CI override (for example 211) cannot
+# reject the matching release asset.
+EXPECTED_PLUGIN_FUNCTIONS=202
 REQUIRED_PLUGIN_FUNCTIONS=(
-    "CreatePricingModelSettings"
-    "CreateVolatilityCurve"
-    "CreateVolatilitySurface"
+    "createPricingModelSettings"
+    "createVolatilityCurve"
+    "createVolatilitySurface"
 )
-PACKAGED_LICENSE_ASSET="dqlibc.lic"
 
-# DolphinDB Server (EXCEPTION — not from dqlab)
+LICENSE_ASSET="dqlibc.lic"
+
+# DolphinDB Server is obtained from its official distribution.
 # Override with DDB_DOWNLOAD_URL env var or provide a local zip via DDB_ZIP_PATH
 DDB_DOWNLOAD_URL="${DDB_DOWNLOAD_URL:-https://cdn.dolphindb.cn/downloads/DolphinDB_Linux64_V3.00.5.zip}"
 DDB_EXPECTED_BIN="dolphindb"
@@ -107,8 +111,9 @@ cp "$SCRIPT_DIR/dolphindb.cfg"   "$STAGING/"
 cp "$SCRIPT_DIR/dolphindb.dos"   "$STAGING/"
 cp "$SCRIPT_DIR/test_plugin.dos" "$STAGING/"
 
-# ─── Step 2: Download caplib plugin package release ─────────
-# Contains: libPluginCaplib.so, PluginCaplib.txt, libdqlibc.so, calendars.bin, dqlibc.lic
+# ─── Step 2: Download caplib plugin release ─────────────────
+# Contains: libPluginCaplib.so, PluginCaplib.txt, libdqlibc.so,
+# calendars.bin, and dqlibc.lic.
 CAPLIB_PLUGIN_DIR="$SCRIPT_DIR/.cache/caplib-plugin-release"
 rm -rf "$CAPLIB_PLUGIN_DIR"
 mkdir -p "$CAPLIB_PLUGIN_DIR"
@@ -119,17 +124,18 @@ info "Extracting $CAPLIB_PLUGIN_ASSET..."
 tar xzf "$CAPLIB_PLUGIN_DIR/$CAPLIB_PLUGIN_ASSET" -C "$CAPLIB_PLUGIN_DIR" --strip-components=1
 
 # Validate contents (extracted flat — no wrapper directory)
-for f in "libPluginCaplib.so" "PluginCaplib.txt" "libdqlibc.so" "$PACKAGED_LICENSE_ASSET"; do
+for f in "libPluginCaplib.so" "PluginCaplib.txt" "libdqlibc.so" "$LICENSE_ASSET"; do
     [ -f "$CAPLIB_PLUGIN_DIR/$f" ] || fail "Missing in caplib plugin release: $f"
 done
 
-plugin_function_count="$(grep -c '^[A-Z]' "$CAPLIB_PLUGIN_DIR/PluginCaplib.txt" 2>/dev/null || echo 0)"
+plugin_function_count="$(grep -Ec '^[A-Z][A-Za-z0-9]*,[a-z][A-Za-z0-9]*,' "$CAPLIB_PLUGIN_DIR/PluginCaplib.txt" 2>/dev/null || echo 0)"
 if [ "$plugin_function_count" -ne "$EXPECTED_PLUGIN_FUNCTIONS" ]; then
     fail "caplib plugin release $CAPLIB_PLUGIN_TAG exposes $plugin_function_count functions; expected $EXPECTED_PLUGIN_FUNCTIONS. Refusing to build a stale/mismatched Docker image."
 fi
 
 for fn in "${REQUIRED_PLUGIN_FUNCTIONS[@]}"; do
-    grep -q "^${fn},${fn}," "$CAPLIB_PLUGIN_DIR/PluginCaplib.txt" || \
+    cpp_fn="${fn^}"
+    grep -q "^${cpp_fn},${fn}," "$CAPLIB_PLUGIN_DIR/PluginCaplib.txt" || \
         fail "caplib plugin release $CAPLIB_PLUGIN_TAG is missing required API: $fn"
 done
 
@@ -153,22 +159,22 @@ echo "  Release tag:        $CAPLIB_PLUGIN_TAG"
 echo "  Functions:          $plugin_function_count registered"
 echo ""
 
-# ─── Step 3: Stage dqlibc license ───────────────────────────
+# ─── Step 3: Stage packaged dqlibc license ────────────────
 if [ -n "${DQLIBC_LICENSE_PATH:-}" ]; then
     [ -f "$DQLIBC_LICENSE_PATH" ] || fail "DQLIBC_LICENSE_PATH does not exist: $DQLIBC_LICENSE_PATH"
     info "Using local dqlibc license: $DQLIBC_LICENSE_PATH"
-    cp "$DQLIBC_LICENSE_PATH" "$STAGING/dqlibc.lic"
+    cp "$DQLIBC_LICENSE_PATH" "$STAGING/$LICENSE_ASSET"
 else
-    cp "$CAPLIB_PLUGIN_DIR/$PACKAGED_LICENSE_ASSET" "$STAGING/dqlibc.lic"
+    cp "$CAPLIB_PLUGIN_DIR/$LICENSE_ASSET" "$STAGING/$LICENSE_ASSET"
 fi
 
-[ -f "$STAGING/dqlibc.lic" ] || fail "Packaged license staging failed"
+[ -f "$STAGING/$LICENSE_ASSET" ] || fail "License staging failed"
 
 echo "  License:           $(head -1 "$STAGING/dqlibc.lic" | tr -d '\n\r')"
 echo ""
 
 # ─── Step 4: Download DolphinDB Server (EXCEPTION) ──────────
-# DolphinDB is the only artifact NOT from dqlab releases.
+# DolphinDB Server comes from the official distribution.
 DDB_SERVER_DIR="$STAGING/dolphindb-server"
 mkdir -p "$DDB_SERVER_DIR"
 
@@ -299,8 +305,8 @@ if [[ "${1:-}" == "--run" ]] || [[ "${1:-}" == "--test" ]]; then
 import dolphindb as ddb
 s = ddb.session()
 s.connect('localhost', 8848, 'admin', '123456')
-r = s.run('caplib::CalcYearFraction(2025.01.01, 2025.12.31, \x60ACTUAL_360)')
-print(f'  CalcYearFraction(2025.01.01, 2025.12.31, ACTUAL_360) = {r}')
+r = s.run('caplib::calcYearFraction(2025.01.01, 2025.12.31, \x60ACTUAL_360)')
+print(f'  calcYearFraction(2025.01.01, 2025.12.31, ACTUAL_360) = {r}')
 expected = 364.0 / 360.0
 if abs(float(str(r)) - expected) < 1e-6:
     print(f'  ✓ PASS (expected {expected})')

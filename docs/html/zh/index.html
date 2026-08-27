@@ -3,23 +3,130 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>文档概览 | CAPLIB</title>
+  <title>DolphinDB Caplib 插件使用说明</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="alternate" hreflang="en" href="../index.html">
 </head>
 <body>
   <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../index.html">English</a><span class="lang-active">中文</span></span></nav>
   <div class="shell">
-    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child active" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="shared.html#api-reference">通用 <span>29</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>73</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>39</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a></div></aside>
+    <aside class="side-nav">
+      <div class="side-title">文档</div>
+      <div class="nav-group"><div class="nav-heading">用户指南</div>
+        <a class="nav-child active" href="#overview">功能说明</a>
+        <a class="nav-child" href="#third-party">第三方库</a>
+        <a class="nav-child" href="#install">安装插件</a>
+        <a class="nav-child" href="#concepts">核心概念</a>
+        <a class="nav-child" href="#data-conversion">类型转换</a>
+        <a class="nav-child" href="#example">使用示例</a>
+        <a class="nav-child" href="#appendix">附录</a>
+      </div>
+      <div class="nav-group"><div class="nav-heading">API 参考</div>
+        <a class="nav-child" href="shared.html#api-reference">通用 <span>29</span></a>
+        <a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>73</span></a>
+        <a class="nav-child" href="currency.html#api-reference">外汇 <span>39</span></a>
+        <a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a>
+        <a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a>
+      </div>
+    </aside>
     <main class="content">
-      <header class="page-header">
-        <p class="kicker">DolphinDB caplib 插件</p>
-        <h1>文档概览</h1>
-        <p class="lede">覆盖所有 CAPLIB插件函数的 API 参考、用户指南和示例。</p>
+      <a id="user-guide"></a>
+      <header id="overview" class="page-header">
+        <p class="kicker">DolphinDB Caplib 插件</p>
+        <h1>DolphinDB Caplib 插件使用说明</h1>
+        <p class="lede">面向固定收益、利率、外汇、权益、商品和信用的曲线构建、工具定价与风险分析插件。</p>
       </header>
-      <section class="panel"><h2>文档结构</h2><p>按资产类别查看聚焦的 API 参考。每个页面都提供可筛选的函数列表，以及参数、类型和说明表。</p><div class="domain-grid"><a class="domain-tile" href="fixed-income.html"><span>固定收益</span><strong>73</strong><em>利率、债券、信用、跨币种利率、固定收益市场数据与风险设置。</em></a><a class="domain-tile" href="currency.html"><span>外汇</span><strong>39</strong><em>外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。</em></a><a class="domain-tile" href="commodity.html"><span>商品</span><strong>25</strong><em>商品与贵金属市场数据、报价矩阵、波动率曲面和定价。</em></a><a class="domain-tile" href="equity.html"><span>权益</span><strong>36</strong><em>权益市场数据、股息曲线、波动率曲面、期权工具和权益定价。</em></a><a class="domain-tile" href="shared.html"><span>通用</span><strong>29</strong><em>跨资产工具、静态数据服务辅助函数、定价设置、风险设置、情景设置以及共享 protobuf 工具。</em></a></div></section><section id="user-guide" class="panel"><h2>用户指南</h2><div class="workflow-grid"><article class="workflow-card"><h3>1. 创建对象</h3><p>使用工厂函数在 内存对象 中创建曲线、报价、模板、设置、市场数据和工具对象。</p></article><article class="workflow-card"><h3>2. 传递句柄</h3><p>构建器和定价封装函数接收前序调用返回的句柄字符串，避免重复传递序列化 protobuf 字节。</p></article><article class="workflow-card"><h3>3. 统一定价调用</h3><p>原生定价封装使用一致的七个数据参数，并可追加 <code>returnJson BOOL</code>：工具、定价日、市场数据、定价设置、风险设置、情景设置、模式以及 returnJson。</p></article><article class="workflow-card"><h3>4. 查看 JSON</h3><p>省略 <code>returnJson</code> 或设置为 <code>false</code> 时仅返回句柄；设置为 <code>true</code> 时返回 <code>[handle, protobufJson]</code>，便于检查和可视化。</p></article></div></section><section class="panel example"><h2>返回值模式</h2><pre><code>pricingResult = caplib::PriceEqEuropeanOption(inst, date, mkt, settings, risk, &quot;&quot;, &quot;&quot;, true)
-pricingHandle = pricingResult[0]
-pricingJson = pricingResult[1]</code></pre></section>
+
+      <section class="panel">
+        <h2>功能说明</h2>
+        <p>按标准模板编排的完整中文文档见 <a href="../../DQLIB_DOCUMENTATION.md"><code>docs/DQLIB_DOCUMENTATION.md</code></a>。</p>
+        <p>Caplib 通过 CapRiskTech 的 `dqlibc` 计算库提供 202 个 DolphinDB 接口。按资产类别浏览逐接口说明：</p>
+        <div class="domain-grid">
+          <a class="domain-tile" href="fixed-income.html"><span>固定收益、利率与信用</span><strong>73</strong><em>曲线、债券、互换、Cap/Floor、Swaption、CDS、市场数据和风险设置。</em></a>
+          <a class="domain-tile" href="currency.html"><span>外汇</span><strong>39</strong><em>汇率计算、报价矩阵、波动率曲面、外汇现金类产品和期权定价。</em></a>
+          <a class="domain-tile" href="commodity.html"><span>商品</span><strong>25</strong><em>商品与贵金属市场数据、收益率曲线、波动率曲面和期权定价。</em></a>
+          <a class="domain-tile" href="equity.html"><span>权益</span><strong>36</strong><em>股息曲线、波动率曲面、权益期权工具和定价。</em></a>
+          <a class="domain-tile" href="shared.html"><span>通用</span><strong>29</strong><em>日期、静态数据、通用曲线、定价设置、风险设置和情景设置。</em></a>
+        </div>
+      </section>
+
+      <section id="third-party" class="panel">
+        <h2>第三方库说明</h2>
+        <p>插件依赖 CapRiskTech 提供的专有 `dqlibc` 库。该库负责底层金融计算、protobuf 数据处理和许可证校验。使用前必须准备有效的 `dqlibc.lic`（`lic_ver = 200`）。</p>
+      </section>
+
+      <section id="install" class="panel">
+        <h2>安装插件</h2>
+        <h3>版本要求</h3>
+        <table class="param-table"><thead><tr><th>组件</th><th>要求</th></tr></thead><tbody>
+          <tr><td>DolphinDB Server</td><td>3.00.5 或更高版本；插件描述文件版本必须与 Server 一致</td></tr>
+          <tr><td>操作系统</td><td>Linux x86-64</td></tr>
+          <tr><td>运行时 ABI</td><td>`_GLIBCXX_USE_CXX11_ABI=0`（ABI0）</td></tr>
+          <tr><td>License</td><td>有效的 `dqlibc.lic`</td></tr>
+        </tbody></table>
+        <h3>插件市场</h3>
+        <p>先确认 `listRemotePlugins()` 的结果中存在 `caplib`。若存在，可安装并加载：</p>
+        <pre><code>login("admin", "123456")
+listRemotePlugins()
+installPlugin("caplib")
+loadPlugin("caplib")</code></pre>
+        <h3>预编译发行包</h3>
+        <p>若远程列表中没有 `caplib`，将 `libPluginCaplib.so`、生成后的 `PluginCaplib.txt`、`libdqlibc.so` 和 `dqlibc.lic` 放在同一目录，并把 `calendars.bin` 放到 `data/` 子目录：</p>
+        <pre><code>loadPlugin("/your/path/to/caplib/PluginCaplib.txt")</code></pre>
+        <p>请使用本仓库发行包内已配置的 <code>PluginCaplib.txt</code>；不要部署源码仓库中的 CMake 模板。</p>
+      </section>
+
+      <section id="concepts" class="panel">
+        <h2>核心概念</h2>
+        <p>插件对外函数统一使用 lowerCamelCase，例如 <code>caplib::calcYearFraction</code>。<code>PluginCaplib.txt</code> 第一列保留 PascalCase C++ 实现符号，第二列记录 lowerCamelCase 外部名称。</p>
+        <div class="workflow-grid">
+          <article class="workflow-card"><h3>1. 创建对象</h3><p>`create*` 和 `build*` 函数在 ObjectCache 中创建曲线、报价、模板、设置、市场数据和工具。</p></article>
+          <article class="workflow-card"><h3>2. 传递句柄</h3><p>后续函数接收前序调用返回的 STRING 句柄；`*Handle` 参数必须引用匹配的 protobuf 类型。</p></article>
+          <article class="workflow-card"><h3>3. 调用定价</h3><p>定价函数依次接收工具、定价日、市场数据、定价设置、风险设置、情景设置和模式。</p></article>
+          <article class="workflow-card"><h3>4. 查看 JSON</h3><p>工厂和定价函数的可选 `returnJson=true` 返回 `[handle, protobufJson]`；默认仅返回句柄。</p></article>
+        </div>
+        <p>语法中的方括号表示可选参数，如 `[, returnJson BOOL]`。`asOfDate` 表示市场数据基准日，`pricingDate` 表示估值日，`calculationDate` 表示独立计算器的计算日。</p>
+      </section>
+
+      <section id="data-conversion" class="panel">
+        <h2>数据类型转换</h2>
+        <table class="param-table"><thead><tr><th>DolphinDB 类型</th><th>转换规则</th></tr></thead><tbody>
+          <tr><td>DATE</td><td>转换为 `dqlibc` 日期序号；日期向量按接口要求使用 DATE 或 INT</td></tr>
+          <tr><td>STRING</td><td>表示枚举、币种、期限、对象名称或 ObjectCache 句柄</td></tr>
+          <tr><td>DOUBLE</td><td>表示利率、价格、波动率、本金或风险扰动，通常必须是有限值</td></tr>
+          <tr><td>BOOL</td><td>表示开关或 `returnJson` 标志</td></tr>
+          <tr><td>向量/矩阵</td><td>元素类型、形状和配对长度以逐接口参数表为准</td></tr>
+        </tbody></table>
+        <p>参数、句柄、解析、序列化或底层服务失败时会抛出 DolphinDB `RuntimeException`。</p>
+      </section>
+
+      <section id="example" class="panel example">
+        <h2>使用示例</h2>
+        <p>以下示例可直接运行，并展示加载插件、创建对象和读取结果；完整债券定价流程见 <a href="../../../example/FiAnalytics.dos">`example/FiAnalytics.dos`</a>。</p>
+        <pre><code>loadPlugin("PluginCaplib")
+
+curve = caplib::createIrYieldCurve(
+    2025.01.02,
+    [2025.07.02, 2026.01.02, 2027.01.02],
+    [0.0200, 0.0210, 0.0225],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_DISC", "CNY_DISC", false)
+
+zeroRate = caplib::getZeroRate(curve, 2026.07.02)
+print(zeroRate)</code></pre>
+      </section>
+
+      <section id="appendix" class="panel">
+        <h2>附录</h2>
+        <h3>Docker 与编译</h3>
+        <p>Docker 部署见 <a href="../../../docker/README.md">`docker/README.md`</a>；源码编译依赖、ABI 和命令见 <a href="../../../BUILD_REQUIREMENTS.md">`BUILD_REQUIREMENTS.md`</a>。</p>
+        <h3>License</h3>
+        <p>`dqlibc.lic` 可放在 `~/.dqlib/dqlibc.lic`、`/etc/dqlib/dqlibc.lic` 或与 `libdqlibc.so` 相同的目录。请通过 <a href="https://caprisktech.com">caprisktech.com</a> 申请。</p>
+        <h3>常见问题</h3>
+        <p>`Invalid plugin file` 通常表示部署了源模板或版本不匹配；`GLIBCXX_* not found` 表示 C++ 运行库不兼容；`LICENSE_FILE_NOT_FOUND` 表示许可证不在搜索路径。</p>
+        <h3>缩写</h3>
+        <p>FI：Fixed Income；IR：Interest Rate；FX：Foreign Exchange；EQ：Equity；CM：Commodity；CR：Credit；PM：Precious Metal；CDS：Credit Default Swap；NDF：Non-Deliverable Forward；MTM：Mark to Market。</p>
+      </section>
     </main>
   </div>
 </body>

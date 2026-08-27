@@ -12,7 +12,7 @@ asOfDate = 2020.02.21
 underlyingPrice = 66380.00
 
 // Create the commodity IR curve used for discounting.
-irCurve = caplib::CreateIrYieldCurve(
+irCurve = caplib::createIrYieldCurve(
     asOfDate,
     [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
     [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
@@ -20,33 +20,33 @@ irCurve = caplib::CreateIrYieldCurve(
     "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
 
 // Create the flat forward curve used by the CM vol surface builder.
-fwdCurve = caplib::CreateDividendCurve(
+fwdCurve = caplib::createDividendCurve(
     asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
     "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
 
 // Create analytical pricing settings for the CM examples.
 modelParams = [0.0]
-bsmModel = caplib::CreatePricingModelSettings(
+bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
-bsmSettings = caplib::CreatePricingSettings(
+bsmSettings = caplib::createPricingSettings(
     currency, "ANALYTICAL", 0, 0, bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
 
 // Enable CM risk settings so pricers return structured results.
-cmRisk = caplib::CreateCmRiskSettings(1, 1, 1, 1, "CM_RISK", true)
+cmRisk = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", true)
 
 // Define the commodity volatility surface model.
-volDef = caplib::CreateVolatilitySurfaceDefinition(
+volDef = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
     "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
     -1.0e-5, 1.0e-5, "CM_VOL_DEF", true)
 
 // Configure the CM vol surface builder.
-volBuildSettings = caplib::CreateVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", true)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", true)
 
 // Build the CM option quote matrix used to bootstrap implied volatilities.
-optionQuotes = caplib::CreateCmOptionQuoteMatrix(
+optionQuotes = caplib::createCmOptionQuoteMatrix(
     "AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
     [2020.03.12, 2020.04.13, 2020.05.12, 2020.06.12],
     [
@@ -76,19 +76,19 @@ optionQuotes = caplib::CreateCmOptionQuoteMatrix(
     underlying, "CM_OPTION_QUOTES", true)
 
 // Build the CM volatility surface from option quotes and curves.
-volSurface = caplib::BuildCmVolatilitySurface(
+volSurface = caplib::buildCmVolatilitySurface(
     asOfDate, underlying, volDef[0], optionQuotes[0],
     [66380.00, 66400.00, 66420.00], irCurve, fwdCurve,
     volBuildSettings[0], "CM_VOL_SURF", true)
 
 // Assemble CM market data from curves, spot, and the built surface.
-mktData = caplib::CreateCmMktDataSet(
+mktData = caplib::createCmMktDataSet(
     asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], "", "", 0.0, "CM_MKT", true)
 
 // Create a European option instrument and price it under CM settings.
-europeanOption = caplib::CreateEuropeanOption(
+europeanOption = caplib::createEuropeanOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     1000000.0, currency, "FUTURE", currency, underlying, "CM_EO", false)
-europeanResult = caplib::PriceCmEuropeanOption(
+europeanResult = caplib::priceCmEuropeanOption(
     europeanOption, asOfDate, mktData[0], bsmSettings, cmRisk[0], "", "", true)
 print(europeanResult)
