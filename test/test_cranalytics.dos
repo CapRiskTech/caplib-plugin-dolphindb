@@ -1,13 +1,13 @@
 // ============================================================================
 // test_cranalytics.dos
 // Native DolphinDB CR Analytics tests.
+// Uses the native DolphinDB testing framework:
+//     test("test_cranalytics.dos")
 // ============================================================================
 
-print("============================================");
-print("  CR Analytics Test Suite                  ");
-print("============================================");
-
-print("--- Setup: CR fixtures ---");
+// ============================================================================
+// Setup: CR fixtures (plain script, executed before the test cases)
+// ============================================================================
 
 asOfDate = 2020.02.21;
 currency = "CNY";
@@ -72,16 +72,9 @@ cds = caplib::buildCreditDefaultSwap(
     "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0,
     "CR_CDS_NAME", "CR_CDS", false);
 
-print("  Setup fixtures loaded");
-
-testNum = 0;
-passNum = 0;
-
-def t(name, cond) {
-    if (cond) { print("  PASS: " + name); }
-    else      { print("  FAIL: " + name); }
-    return cond;
-}
+// ============================================================================
+// Helper predicates
+// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -98,55 +91,78 @@ def isPricingResultsJson(result, expectedHandle) {
         hasJsonField(result[1], "cash_value") &&
         hasJsonField(result[1], "currency");
 }
+def presentValue(pricingResult) {
+    json = pricingResult[1];
+    marker = "\"present_value\":";
+    start = strpos(json, marker);
+    if (start < 0) { return double(NULL); }
+    start += strlen(marker);
+    rest = substr(json, start);
+    end = strpos(rest, ",");
+    if (end < 0) { end = strpos(rest, "}"); }
+    return double(substr(rest, 0, end));
+}
 
-print("");
-print("--- Test 1: CR curve builder/factories ---");
-ok = t("createCalendar -> true", calendarCreated);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+// ============================================================================
+// Tests
+// ============================================================================
 
-ok = t("createCdsTemplate -> [CFETS-SHCH-GTJA, json]",
-    isHandleJson(cdsTemplate, "CFETS-SHCH-GTJA") &&
+// --- CR curve builder/factories ---
+@testing:case="createCalendar -> true"
+assert 1, calendarCreated
+
+@testing:case="createCdsTemplate -> [CFETS-SHCH-GTJA, json]"
+assert 1, isHandleJson(cdsTemplate, "CFETS-SHCH-GTJA") &&
     hasJsonField(cdsTemplate[1], "instrument_name") &&
-    hasJsonField(cdsTemplate[1], "credit_protection_type"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    hasJsonField(cdsTemplate[1], "credit_protection_type")
 
-ok = t("createCreditParCurve -> [CR_CREDIT_PAR_CURVE, json]",
-    isHandleJson(creditParCurve, "CR_CREDIT_PAR_CURVE"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createCreditParCurve -> [CR_CREDIT_PAR_CURVE, json]"
+assert 1, isHandleJson(creditParCurve, "CR_CREDIT_PAR_CURVE")
 
-ok = t("buildCreditCurve -> [CR_CREDIT_CURVE, json]",
-    isHandleJson(creditCurve, "CR_CREDIT_CURVE"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="buildCreditCurve -> [CR_CREDIT_CURVE, json]"
+assert 1, isHandleJson(creditCurve, "CR_CREDIT_CURVE")
 
-ok = t("createCrMktDataSet -> [CR_MKT, json]", isHandleJson(mktData, "CR_MKT"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createCrMktDataSet -> [CR_MKT, json]"
+assert 1, isHandleJson(mktData, "CR_MKT")
 
-ok = t("createCrRiskSettings -> [CR_RISK, json]", isHandleJson(crRisk, "CR_RISK"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createCrRiskSettings -> [CR_RISK, json]"
+assert 1, isHandleJson(crRisk, "CR_RISK")
 
-ok = t("createCdsPricingSettings -> full PricingSettings JSON",
-    isHandleJson(pricingSettings, "CR_PRICING") &&
+@testing:case="createCdsPricingSettings -> full PricingSettings JSON"
+assert 1, isHandleJson(pricingSettings, "CR_PRICING") &&
     hasJsonField(pricingSettings[1], "pricing_method") &&
     hasJsonField(pricingSettings[1], "model_settings") &&
     hasJsonField(pricingSettings[1], "pde_settings") &&
-    hasJsonField(pricingSettings[1], "mc_settings"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    hasJsonField(pricingSettings[1], "mc_settings")
 
-print("");
-print("--- Test 2: CreditDefaultSwap pricing ---");
+// --- CreditDefaultSwap pricing ---
+@testing:case="priceCreditDefaultSwap -> [CR_CDS_results, present_value reference]"
 cdsPricingResult = caplib::priceCreditDefaultSwap(
-    cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true);
-ok = t("priceCreditDefaultSwap -> [CR_CDS_results, PricingResults JSON fields]",
-    isPricingResultsJson(cdsPricingResult, "CR_CDS_results"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true)
+assert 1, isPricingResultsJson(cdsPricingResult, "CR_CDS_results")
+assert 2, abs(presentValue(cdsPricingResult) - -4324.565959039959) < abs(-4324.565959039959) * 1.0e-9 + 1.0e-6
 
-print("");
-print("============================================");
-print("  TEST RESULTS");
-print("  Passed: " + string(passNum) + " / " + string(testNum));
-print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
-print("============================================");
+// ============================================================================
+// Negative / exception validation
+// ============================================================================
 
-if (passNum != testNum) {
-    throw "CR analytics tests failed";
-}
+
+@testing:case="priceCreditDefaultSwap rejects wrong mktData handle", exception=1
+caplib::priceCreditDefaultSwap(cds, asOfDate, discountCurve, pricingSettings[0], crRisk[0], "", "", true)
+
+@testing:case="createCdsTemplate rejects INT instrumentName", exception=1
+caplib::createCdsTemplate(1, "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [calCfets], false, true)
+
+
+// ============================================================================
+// Extended negative / exception validation
+// ============================================================================
+
+@testing:case="createCreditParCurve rejects lengths mismatch", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP"], ["1Y"], [0.0080, 0.0100], ["SPOTSTART"], "CR_BAD_PAR_2", true)
+
+@testing:case="createCdsPricingSettings rejects INT currency", exception=1
+caplib::createCdsPricingSettings(1, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "CR_BAD_PRC_NAME", "CR_BAD_PRC", true)
+
+@testing:case="buildCreditCurve rejects wrong discount curve handle", exception=1
+caplib::buildCreditCurve(asOfDate, creditParCurve[0], baseCreditCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "CR_BAD_CC_2", true)

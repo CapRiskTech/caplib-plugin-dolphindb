@@ -1,25 +1,180 @@
 // ============================================================================
 // test_analytics.dos
 // Common Analytics tests through native DolphinDB plugin APIs.
+// Uses the native DolphinDB testing framework:
+//     test("test_analytics.dos")
 // ============================================================================
 
-print("============================================");
-print("  Common Analytics Test Suite                ");
-print("============================================");
+// ============================================================================
+// Setup: fixtures (plain script, executed before the test cases)
+// ============================================================================
 
-try { undef(`CAPLIB_ANALYTICS_RESULTS, SHARED); } catch(ex) {}
-share table(100:0, ["condition"], [BOOL]) as CAPLIB_ANALYTICS_RESULTS;
+// --- Pricing model, PDE, Monte Carlo, and pricing settings ---
+modelParams = [0.0];
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "AN_BSM_MODEL", false);
 
-def t(name, condition) {
-    tableInsert(CAPLIB_ANALYTICS_RESULTS, condition);
-    if (condition) {
-        print("PASS: " + name);
-        return true;
-    } else {
-        print("FAIL: " + name);
-        return false;
-    }
-}
+pdeSettings = caplib::createPdeSettings(
+    101, 201, -5.0, 5.0, 0,
+    11, 0.0, 10.0, 1,
+    3, -4.0, 4.0, 0,
+    0.1, 0.1, 1.0,
+    2, 1, 1,
+    3, 1, 1,
+    "AN_PDE_SETTINGS", false);
+
+mcSettings = caplib::createMonteCarloSettings(
+    3000, 1, -1,
+    2, 1,
+    1, 101, "AN_MC_SETTINGS", false);
+
+pricingSettings = caplib::createPricingSettings(
+    "CNY", "ANALYTICAL", 0, 0,
+    bsmModel, pdeSettings, mcSettings, "AN_PRICING_SETTINGS", false);
+
+pricingSettingsDefaultReturn = caplib::createPricingSettings(
+    "CNY", "ANALYTICAL", 0, 0,
+    bsmModel, pdeSettings, mcSettings, "AN_PRICING_SETTINGS_DEFAULT");
+
+modelFreePricingSettings = caplib::createModelFreePricingSettings(
+    "CNY", 1, 0, "AN_MODEL_FREE_PRICING_SETTINGS", false);
+
+// --- Risk settings ---
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 2.0e-4, 50.0e-4,
+    0, 1,
+    2.0e-4, 1, "AN_IR_RISK", false);
+
+creditCurveRisk = caplib::createCreditCurveRiskSettings(
+    1, 1, 2.0e-4,
+    0, 0,
+    2.0e-4, 0, "AN_CR_RISK", false);
+
+dividendCurveRisk = caplib::createDividendCurveRiskSettings(
+    1, 1, 2.0e-4,
+    0, 0,
+    2.0e-4, 0, "AN_DIV_RISK", false);
+
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 1, 0.01, 0.5,
+    0, 0.01,
+    0, "AN_PRICE_RISK", false);
+
+volRisk = caplib::createVolRiskSettings(
+    1, 1, 0.01,
+    0, 0,
+    0.01, 0, "AN_VOL_RISK", false);
+
+priceVolRisk = caplib::createPriceVolRiskSettings(
+    1, 0.01, 0.01,
+    0, 0,
+    0.01, 0.01, 0, "AN_PRICE_VOL_RISK", false);
+
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "AN_THETA_RISK", false);
+
+priceScn = caplib::createScnSettings(-0.1, 0.1, 5, 0, "AN_PRICE_SCN", false);
+volScn = caplib::createScnSettings(-0.2, 0.2, 5, 0, "AN_VOL_SCN", false);
+scnSettings = caplib::createScnAnalysisSettings(
+    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn,
+    1, "AN_SCN_SETTINGS", false);
+
+// --- Curves ---
+asOfDate = 2022.03.09;
+curveDates = [2022.03.10, 2025.03.10];
+curveValues = [0.02, 0.025];
+
+assetYieldCurve = caplib::createAssetYieldCurve(
+    asOfDate, curveDates, curveValues,
+    "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED",
+    "CONTINUOUS_COMPOUNDING", ["1D", "3Y"],
+    "AN_ASSET_YIELD_CURVE", "AN_ASSET_YIELD_CURVE", false);
+
+irCurve = caplib::createIrYieldCurve(
+    asOfDate, curveDates, curveValues,
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "DISCRETE_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "AN_IR_CURVE", false);
+
+flatIrCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "AN_FLAT_IR_CURVE", false);
+
+creditCurve = caplib::createCreditCurve(
+    asOfDate, curveDates, [0.002, 0.0025],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "AN_CREDIT_CURVE", "AN_CREDIT_CURVE", false);
+
+flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.002, "AN_FLAT_CREDIT_CURVE", false);
+
+dividendCurve = caplib::createDividendCurve(
+    asOfDate, curveDates, [0.01, 0.01], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "AN_DIVIDEND_CURVE", "AN_DIVIDEND_CURVE", false);
+
+flatDividendCurve = caplib::createFlatDividendCurve(
+    asOfDate, 0.01, "AN_FLAT_DIVIDEND_CURVE", "AN_FLAT_DIVIDEND_CURVE", false);
+
+volCurve = caplib::createVolatilityCurve(
+    asOfDate, curveDates, [0.20, 0.21],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "AN_UNDERLYING", "AN_VOL_CURVE", false);
+
+flatVolCurve = caplib::createFlatVolCurve(asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_CURVE", false);
+
+emptyDoubles = array(DOUBLE, 0);
+volSmile1d = caplib::createVolatilitySmile(
+    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21],
+    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0 / 365.0,
+    emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_VOL_SMILE_1D", false);
+
+volSmile3y = caplib::createVolatilitySmile(
+    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.23, 0.21, 0.22],
+    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 3.0,
+    emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_VOL_SMILE_3Y", false);
+
+flatVolSurface = caplib::createFlatVolatilitySurface(
+    asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_SURFACE", true);
+
+volSurfaceDefinition = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP",
+    "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
+    90.0, 110.0, "AN_VOL_SURFACE_DEFINITION", true);
+
+volSurface = caplib::createVolatilitySurface(
+    volSurfaceDefinition[0], asOfDate, [volSmile1d, volSmile3y], curveDates,
+    "AN_UNDERLYING", "AN_VOL_SURFACE", false);
+
+quoteTermDates = [2022.06.09, 2022.09.09];
+quotePayoffTypes = matrix(["CALL", "PUT"], ["CALL", "PUT"]);
+quoteValues = matrix([10.5, 8.5], [11.0, 9.0]);
+quoteStrikes = matrix([95.0, 95.0], [105.0, 105.0]);
+optionQuoteMatrix = caplib::createOptionQuoteMatrix(
+    "OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE",
+    "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes,
+    "AN_UNDERLYING", "AN_OPTION_QUOTES", true);
+
+proxyOptionQuoteMatrix = caplib::createProxyOptionQuoteMatrix(
+    "AN_UNDERLYING", flatVolSurface[0], 100.0, 101.0, "AN_PROXY_OPTION_QUOTES", true);
+
+// --- Curve queries and calculators ---
+discountFactors = caplib::getDiscountFactor(flatIrCurve, curveDates);
+zeroRates = caplib::getZeroRate(flatIrCurve, curveDates);
+fwdRates = caplib::getFwdRate(flatIrCurve, curveDates, 0.25);
+survivalProbabilities = caplib::getSurvivalProbability(flatCreditCurve, curveDates);
+creditSpreads = caplib::getCreditSpread(flatCreditCurve, curveDates);
+volatilities = caplib::getVolatility(flatVolSurface[0], curveDates, [95.0, 105.0]);
+
+impliedVol = caplib::impliedVolCalculator(
+    asOfDate, 100.0, flatIrCurve, flatDividendCurve, pricingSettings,
+    5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0);
+
+irJson = caplib::getObjectCacheJson("IrYieldCurve", irCurve);
+pricingJson = caplib::getObjectCacheJson("PricingSettings", pricingSettings);
+volSmileJson = caplib::getObjectCacheJson("VolatilitySmile", volSmile1d);
+assetYieldCurveJson = caplib::getObjectCacheJson("AssetYieldCurve", assetYieldCurve);
+
+// ============================================================================
+// Helper predicates
+// ============================================================================
 
 def hasJsonField(json, fieldName) {
     return strpos(json, "\"" + fieldName + "\"") >= 0;
@@ -41,255 +196,276 @@ def isMatrix(value) {
 }
 
 // ============================================================================
-// Pricing model, PDE, Monte Carlo, and pricing settings
+// Tests
 // ============================================================================
 
-modelParams = [0.0];
-bsmModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "AN_BSM_MODEL", false);
-ok = t("createPricingModelSettings -> handle", bsmModel == "AN_BSM_MODEL");
+@testing:case="createPricingModelSettings -> handle"
+assert 1, bsmModel == "AN_BSM_MODEL"
 
-pdeSettings = caplib::createPdeSettings(
-    101, 201, -5.0, 5.0, 0,
-    11, 0.0, 10.0, 1,
-    3, -4.0, 4.0, 0,
-    0.1, 0.1, 1.0,
-    2, 1, 1,
-    3, 1, 1,
-    "AN_PDE_SETTINGS", false);
-ok = t("createPdeSettings -> handle", pdeSettings == "AN_PDE_SETTINGS");
+@testing:case="createPdeSettings -> handle"
+assert 1, pdeSettings == "AN_PDE_SETTINGS"
 
-mcSettings = caplib::createMonteCarloSettings(
-    3000, 1, -1,
-    2, 1,
-    1, 101, "AN_MC_SETTINGS", false);
-ok = t("createMonteCarloSettings -> handle", mcSettings == "AN_MC_SETTINGS");
+@testing:case="createMonteCarloSettings -> handle"
+assert 1, mcSettings == "AN_MC_SETTINGS"
 
-pricingSettings = caplib::createPricingSettings(
-    "CNY", "ANALYTICAL", 0, 0,
-    bsmModel, pdeSettings, mcSettings, "AN_PRICING_SETTINGS", false);
-ok = t("createPricingSettings -> handle", pricingSettings == "AN_PRICING_SETTINGS");
+@testing:case="createPricingSettings -> handle"
+assert 1, pricingSettings == "AN_PRICING_SETTINGS"
 
-pricingSettingsDefaultReturn = caplib::createPricingSettings(
-    "CNY", "ANALYTICAL", 0, 0,
-    bsmModel, pdeSettings, mcSettings, "AN_PRICING_SETTINGS_DEFAULT");
-ok = t("createPricingSettings omitted returnJson -> handle",
-    pricingSettingsDefaultReturn == "AN_PRICING_SETTINGS_DEFAULT");
+@testing:case="createPricingSettings omitted returnJson -> handle"
+assert 1, pricingSettingsDefaultReturn == "AN_PRICING_SETTINGS_DEFAULT"
 
-modelFreePricingSettings = caplib::createModelFreePricingSettings(
-    "CNY", 1, 0, "AN_MODEL_FREE_PRICING_SETTINGS", false);
-ok = t("createModelFreePricingSettings -> handle",
-    modelFreePricingSettings == "AN_MODEL_FREE_PRICING_SETTINGS");
+@testing:case="createModelFreePricingSettings -> handle"
+assert 1, modelFreePricingSettings == "AN_MODEL_FREE_PRICING_SETTINGS"
 
-// ============================================================================
-// Risk settings
-// ============================================================================
+@testing:case="createIrCurveRiskSettings -> handle"
+assert 1, irCurveRisk == "AN_IR_RISK"
 
-irCurveRisk = caplib::createIrCurveRiskSettings(
-    1, 1, 1, 2.0e-4, 50.0e-4,
-    0, 1,
-    2.0e-4, 1, "AN_IR_RISK", false);
-ok = t("createIrCurveRiskSettings -> handle", irCurveRisk == "AN_IR_RISK");
+@testing:case="createCreditCurveRiskSettings -> handle"
+assert 1, creditCurveRisk == "AN_CR_RISK"
 
-creditCurveRisk = caplib::createCreditCurveRiskSettings(
-    1, 1, 2.0e-4,
-    0, 0,
-    2.0e-4, 0, "AN_CR_RISK", false);
-ok = t("createCreditCurveRiskSettings -> handle", creditCurveRisk == "AN_CR_RISK");
+@testing:case="createDividendCurveRiskSettings -> handle"
+assert 1, dividendCurveRisk == "AN_DIV_RISK"
 
-dividendCurveRisk = caplib::createDividendCurveRiskSettings(
-    1, 1, 2.0e-4,
-    0, 0,
-    2.0e-4, 0, "AN_DIV_RISK", false);
-ok = t("createDividendCurveRiskSettings -> handle", dividendCurveRisk == "AN_DIV_RISK");
+@testing:case="createPriceRiskSettings -> handle"
+assert 1, priceRisk == "AN_PRICE_RISK"
 
-priceRisk = caplib::createPriceRiskSettings(
-    1, 1, 1, 0.01, 0.5,
-    0, 0.01,
-    0, "AN_PRICE_RISK", false);
-ok = t("createPriceRiskSettings -> handle", priceRisk == "AN_PRICE_RISK");
+@testing:case="createVolRiskSettings -> handle"
+assert 1, volRisk == "AN_VOL_RISK"
 
-volRisk = caplib::createVolRiskSettings(
-    1, 1, 0.01,
-    0, 0,
-    0.01, 0, "AN_VOL_RISK", false);
-ok = t("createVolRiskSettings -> handle", volRisk == "AN_VOL_RISK");
+@testing:case="createPriceVolRiskSettings -> handle"
+assert 1, priceVolRisk == "AN_PRICE_VOL_RISK"
 
-priceVolRisk = caplib::createPriceVolRiskSettings(
-    1, 0.01, 0.01,
-    0, 0,
-    0.01, 0.01, 0, "AN_PRICE_VOL_RISK", false);
-ok = t("createPriceVolRiskSettings -> handle", priceVolRisk == "AN_PRICE_VOL_RISK");
+@testing:case="createThetaRiskSettings -> handle"
+assert 1, thetaRisk == "AN_THETA_RISK"
 
-thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "AN_THETA_RISK", false);
-ok = t("createThetaRiskSettings -> handle", thetaRisk == "AN_THETA_RISK");
+@testing:case="createScnAnalysisSettings -> handle"
+assert 1, scnSettings == "AN_SCN_SETTINGS"
 
-priceScn = caplib::createScnSettings(-0.1, 0.1, 5, 0, "AN_PRICE_SCN", false);
-volScn = caplib::createScnSettings(-0.2, 0.2, 5, 0, "AN_VOL_SCN", false);
-scnSettings = caplib::createScnAnalysisSettings(
-    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn,
-    1, "AN_SCN_SETTINGS", false);
-ok = t("createScnAnalysisSettings -> handle", scnSettings == "AN_SCN_SETTINGS");
+@testing:case="createAssetYieldCurve -> handle"
+assert 1, assetYieldCurve == "AN_ASSET_YIELD_CURVE"
 
-// ============================================================================
-// Curves from test_analytics.py
-// ============================================================================
+@testing:case="createIrYieldCurve -> handle"
+assert 1, irCurve == "AN_IR_CURVE"
 
-asOfDate = 2022.03.09;
-curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
+@testing:case="createFlatIrYieldCurve -> handle"
+assert 1, flatIrCurve == "AN_FLAT_IR_CURVE"
 
-assetYieldCurve = caplib::createAssetYieldCurve(
-    asOfDate, curveDates, curveValues,
-    "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED",
-    "CONTINUOUS_COMPOUNDING", ["1D", "3Y"],
-    "AN_ASSET_YIELD_CURVE", "AN_ASSET_YIELD_CURVE", false);
-ok = t("createAssetYieldCurve -> handle", assetYieldCurve == "AN_ASSET_YIELD_CURVE");
+@testing:case="createCreditCurve -> handle"
+assert 1, creditCurve == "AN_CREDIT_CURVE"
 
-irCurve = caplib::createIrYieldCurve(
-    asOfDate, curveDates, curveValues,
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "DISCRETE_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "AN_IR_CURVE", false);
-ok = t("createIrYieldCurve -> handle", irCurve == "AN_IR_CURVE");
+@testing:case="createFlatCreditCurve -> handle"
+assert 1, flatCreditCurve == "AN_FLAT_CREDIT_CURVE"
 
-flatIrCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "AN_FLAT_IR_CURVE", false);
-ok = t("createFlatIrYieldCurve -> handle", flatIrCurve == "AN_FLAT_IR_CURVE");
+@testing:case="createDividendCurve -> handle"
+assert 1, dividendCurve == "AN_DIVIDEND_CURVE"
 
-creditCurve = caplib::createCreditCurve(
-    asOfDate, curveDates, [0.002, 0.0025],
-    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "AN_CREDIT_CURVE", "AN_CREDIT_CURVE", false);
-ok = t("createCreditCurve -> handle", creditCurve == "AN_CREDIT_CURVE");
+@testing:case="createFlatDividendCurve -> handle"
+assert 1, flatDividendCurve == "AN_FLAT_DIVIDEND_CURVE"
 
-flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.002, "AN_FLAT_CREDIT_CURVE", false);
-ok = t("createFlatCreditCurve -> handle", flatCreditCurve == "AN_FLAT_CREDIT_CURVE");
+@testing:case="createVolatilityCurve -> handle"
+assert 1, volCurve == "AN_VOL_CURVE"
 
-dividendCurve = caplib::createDividendCurve(
-    asOfDate, curveDates, [0.01, 0.01], asOfDate,
-    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", "AN_DIVIDEND_CURVE", "AN_DIVIDEND_CURVE", false);
-ok = t("createDividendCurve -> handle", dividendCurve == "AN_DIVIDEND_CURVE");
+@testing:case="createFlatVolCurve -> handle"
+assert 1, flatVolCurve == "AN_FLAT_VOL_CURVE"
 
-flatDividendCurve = caplib::createFlatDividendCurve(
-    asOfDate, 0.01, "AN_FLAT_DIVIDEND_CURVE", "AN_FLAT_DIVIDEND_CURVE", false);
-ok = t("createFlatDividendCurve -> handle", flatDividendCurve == "AN_FLAT_DIVIDEND_CURVE");
+@testing:case="createVolatilitySmile 1D -> handle"
+assert 1, volSmile1d == "AN_VOL_SMILE_1D"
 
-volCurve = caplib::createVolatilityCurve(
-    asOfDate, curveDates, [0.20, 0.21],
-    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "AN_UNDERLYING", "AN_VOL_CURVE", false);
-ok = t("createVolatilityCurve -> handle", volCurve == "AN_VOL_CURVE");
+@testing:case="createVolatilitySmile 3Y -> handle"
+assert 1, volSmile3y == "AN_VOL_SMILE_3Y"
 
-flatVolCurve = caplib::createFlatVolCurve(asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_CURVE", false);
-ok = t("createFlatVolCurve -> handle", flatVolCurve == "AN_FLAT_VOL_CURVE");
+@testing:case="createFlatVolatilitySurface -> [handle, json]"
+assert 1, isHandleJson(flatVolSurface, "AN_FLAT_VOL_SURFACE") &&
+    hasJsonField(flatVolSurface[1], "vol_smiles")
 
-emptyDoubles = array(DOUBLE, 0);
-volSmile1d = caplib::createVolatilitySmile(
-    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21],
-    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0 / 365.0,
-    emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_VOL_SMILE_1D", false);
-ok = t("createVolatilitySmile 1D -> handle", volSmile1d == "AN_VOL_SMILE_1D");
+@testing:case="createVolatilitySurfaceDefinition -> [handle, json]"
+assert 1, isHandleJson(volSurfaceDefinition, "AN_VOL_SURFACE_DEFINITION") &&
+    hasJsonField(volSurfaceDefinition[1], "vol_smile_type")
 
-volSmile3y = caplib::createVolatilitySmile(
-    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.23, 0.21, 0.22],
-    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 3.0,
-    emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_VOL_SMILE_3Y", false);
-ok = t("createVolatilitySmile 3Y -> handle", volSmile3y == "AN_VOL_SMILE_3Y");
+@testing:case="createVolatilitySurface from definition/smiles -> handle"
+assert 1, volSurface == "AN_VOL_SURFACE"
 
-flatVolSurface = caplib::createFlatVolatilitySurface(
-    asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_SURFACE", true);
-ok = t("createFlatVolatilitySurface -> [handle, json]",
-    isHandleJson(flatVolSurface, "AN_FLAT_VOL_SURFACE") &&
-    hasJsonField(flatVolSurface[1], "vol_smiles"));
+@testing:case="createOptionQuoteMatrix -> [handle, json]"
+assert 1, isHandleJson(optionQuoteMatrix, "AN_OPTION_QUOTES") &&
+    hasJsonField(optionQuoteMatrix[1], "quote_smiles")
 
-volSurfaceDefinition = caplib::createVolatilitySurfaceDefinition(
-    "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP",
-    "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY",
-    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
-    90.0, 110.0, "AN_VOL_SURFACE_DEFINITION", true);
-ok = t("createVolatilitySurfaceDefinition -> [handle, json]",
-    isHandleJson(volSurfaceDefinition, "AN_VOL_SURFACE_DEFINITION") &&
-    hasJsonField(volSurfaceDefinition[1], "vol_smile_type"));
+@testing:case="createProxyOptionQuoteMatrix -> [handle, json]"
+assert 1, isHandleJson(proxyOptionQuoteMatrix, "AN_PROXY_OPTION_QUOTES")
 
-volSurface = caplib::createVolatilitySurface(
-    volSurfaceDefinition[0], asOfDate, [volSmile1d, volSmile3y], curveDates,
-    "AN_UNDERLYING", "AN_VOL_SURFACE", false);
-ok = t("createVolatilitySurface from definition/smiles -> handle",
-    volSurface == "AN_VOL_SURFACE");
+@testing:case="getDiscountFactor -> vector + reference values"
+assert 1, isDoubleVector(discountFactors)
+assert 2, abs(discountFactors[0] - 0.9999452069806444) < 1.0e-9 &&
+    abs(discountFactors[1] - 0.9416613321670505) < 1.0e-9
 
-quoteTermDates = [2022.06.09, 2022.09.09];
-quotePayoffTypes = matrix(["CALL", "PUT"], ["CALL", "PUT"]);
-quoteValues = matrix([10.5, 8.5], [11.0, 9.0]);
-quoteStrikes = matrix([95.0, 95.0], [105.0, 105.0]);
-optionQuoteMatrix = caplib::createOptionQuoteMatrix(
-    "OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE",
-    "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
-    [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes,
-    "AN_UNDERLYING", "AN_OPTION_QUOTES", true);
-ok = t("createOptionQuoteMatrix -> [handle, json]",
-    isHandleJson(optionQuoteMatrix, "AN_OPTION_QUOTES") &&
-    hasJsonField(optionQuoteMatrix[1], "quote_smiles"));
+@testing:case="getZeroRate -> vector + reference values"
+assert 1, isDoubleVector(zeroRates)
+assert 2, abs(zeroRates[0] - 0.02) < 1.0e-9 && abs(zeroRates[1] - 0.02) < 1.0e-9
 
-proxyOptionQuoteMatrix = caplib::createProxyOptionQuoteMatrix(
-    "AN_UNDERLYING", flatVolSurface[0], 100.0, 101.0, "AN_PROXY_OPTION_QUOTES", true);
-ok = t("createProxyOptionQuoteMatrix -> [handle, json]",
-    isHandleJson(proxyOptionQuoteMatrix, "AN_PROXY_OPTION_QUOTES"));
+@testing:case="getFwdRate -> vector + reference values"
+assert 1, isDoubleVector(fwdRates)
+assert 2, abs(fwdRates[0] - 0.02) < 1.0e-9 && abs(fwdRates[1] - 0.02) < 1.0e-9
 
-discountFactors = caplib::getDiscountFactor(flatIrCurve, curveDates);
-ok = t("getDiscountFactor -> vector", isDoubleVector(discountFactors));
+@testing:case="getSurvivalProbability -> vector + reference values"
+assert 1, isDoubleVector(survivalProbabilities)
+assert 2, abs(survivalProbabilities[0] - 0.9999945205629573) < 1.0e-9 &&
+    abs(survivalProbabilities[1] - 0.9940070707660733) < 1.0e-9
 
-zeroRates = caplib::getZeroRate(flatIrCurve, curveDates);
-ok = t("getZeroRate -> vector", isDoubleVector(zeroRates));
+@testing:case="getCreditSpread -> vector + reference values"
+assert 1, isDoubleVector(creditSpreads)
+assert 2, abs(creditSpreads[0] - 0.002) < 1.0e-9 && abs(creditSpreads[1] - 0.002) < 1.0e-9
 
-fwdRates = caplib::getFwdRate(flatIrCurve, curveDates, 0.25);
-ok = t("getFwdRate -> vector", isDoubleVector(fwdRates));
+@testing:case="getVolatility -> matrix + reference values"
+assert 1, isMatrix(volatilities)
+assert 2, abs(volatilities[0,0] - 0.2) < 1.0e-9 && abs(volatilities[0,1] - 0.2) < 1.0e-9 &&
+    abs(volatilities[1,0] - 0.2) < 1.0e-9 && abs(volatilities[1,1] - 0.2) < 1.0e-9
 
-survivalProbabilities = caplib::getSurvivalProbability(flatCreditCurve, curveDates);
-ok = t("getSurvivalProbability -> vector", isDoubleVector(survivalProbabilities));
+@testing:case="impliedVolCalculator -> scalar"
+assert 1, typestr(impliedVol) == "DOUBLE"
 
-creditSpreads = caplib::getCreditSpread(flatCreditCurve, curveDates);
-ok = t("getCreditSpread -> vector", isDoubleVector(creditSpreads));
+@testing:case="getObjectCacheJson IrYieldCurve -> [handle, json]"
+assert 1, isHandleJson(irJson, irCurve) && hasJsonField(irJson[1], "currency")
 
-volatilities = caplib::getVolatility(flatVolSurface[0], curveDates, [95.0, 105.0]);
-ok = t("getVolatility -> matrix", isMatrix(volatilities));
+@testing:case="getObjectCacheJson PricingSettings -> [handle, json]"
+assert 1, isHandleJson(pricingJson, pricingSettings) && hasJsonField(pricingJson[1], "pricing_method")
 
-impliedVol = caplib::impliedVolCalculator(
-    asOfDate, 100.0, flatIrCurve, flatDividendCurve, pricingSettings,
-    5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0);
-ok = t("impliedVolCalculator -> scalar", typestr(impliedVol) == "DOUBLE");
+@testing:case="getObjectCacheJson VolatilitySmile -> [handle, json]"
+assert 1, isHandleJson(volSmileJson, volSmile1d) && hasJsonField(volSmileJson[1], "vol_smile_type")
 
-irJson = caplib::getObjectCacheJson("IrYieldCurve", irCurve);
-ok = t("getObjectCacheJson IrYieldCurve -> [handle, json]",
-    isHandleJson(irJson, irCurve) && hasJsonField(irJson[1], "currency"));
-
-pricingJson = caplib::getObjectCacheJson("PricingSettings", pricingSettings);
-ok = t("getObjectCacheJson PricingSettings -> [handle, json]",
-    isHandleJson(pricingJson, pricingSettings) && hasJsonField(pricingJson[1], "pricing_method"));
-
-volSmileJson = caplib::getObjectCacheJson("VolatilitySmile", volSmile1d);
-ok = t("getObjectCacheJson VolatilitySmile -> [handle, json]",
-    isHandleJson(volSmileJson, volSmile1d) && hasJsonField(volSmileJson[1], "vol_smile_type"));
-
-assetYieldCurveJson = caplib::getObjectCacheJson("AssetYieldCurve", assetYieldCurve);
-ok = t("getObjectCacheJson AssetYieldCurve -> [handle, json]",
-    isHandleJson(assetYieldCurveJson, assetYieldCurve) &&
-    hasJsonField(assetYieldCurveJson[1], "compounding_type"));
+@testing:case="getObjectCacheJson AssetYieldCurve -> [handle, json]"
+assert 1, isHandleJson(assetYieldCurveJson, assetYieldCurve) &&
+    hasJsonField(assetYieldCurveJson[1], "compounding_type")
 
 // ============================================================================
-// Summary
+// Negative / exception validation
 // ============================================================================
 
-testSummary = select count(*) as total, sum(condition) as passed
-    from CAPLIB_ANALYTICS_RESULTS;
-totalTests = testSummary.total[0];
-passedTests = testSummary.passed[0];
-print("============================================");
-print("  Common Analytics Test Summary");
-print("  Passed: " + string(passedTests) + " / " + string(totalTests));
-print("============================================");
+@testing:case="createPricingModelSettings rejects invalid model type enum", exception=1
+caplib::createPricingModelSettings("NOT_A_MODEL", "", 0, [0.0], "AN_BAD_MODEL", false)
 
-if (passedTests != totalTests) {
-    throw "Common Analytics tests failed: " + string(passedTests) + "/" + string(totalTests);
-}
+@testing:case="createPricingModelSettings rejects STRING modelParams", exception=1
+caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, ["x"], "AN_BAD_MODEL_2", false)
 
-true;
+@testing:case="createPricingModelSettings rejects missing argument", syntaxError=1
+caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON")
+
+
+
+@testing:case="createPricingSettings rejects invalid pricing method enum", exception=1
+caplib::createPricingSettings("CNY", "NOT_A_METHOD", 0, 0, bsmModel, pdeSettings, mcSettings, "AN_BAD_PRICING", false)
+
+
+@testing:case="createVolatilitySmile rejects strikes/vols length mismatch", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0/365.0, emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_BAD_SMILE_1", false)
+
+
+@testing:case="createVolatilitySurface rejects termDates/volSmileHandles length mismatch", exception=1
+caplib::createVolatilitySurface(volSurfaceDefinition[0], asOfDate, [volSmile1d], curveDates, "AN_UNDERLYING", "AN_BAD_SURF_1", false)
+
+@testing:case="createVolatilitySurface rejects wrong smile handle", exception=1
+caplib::createVolatilitySurface(volSurfaceDefinition[0], asOfDate, [irCurve], curveDates, "AN_UNDERLYING", "AN_BAD_SURF_2", false)
+
+@testing:case="createAssetYieldCurve rejects dates/values length mismatch", exception=1
+caplib::createAssetYieldCurve(asOfDate, curveDates, [0.02], "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "AN_BAD_AYC_1", "AN_BAD_AYC_1", false)
+
+@testing:case="createVolatilityCurve rejects STRING pillarDates", exception=1
+caplib::createVolatilityCurve(asOfDate, ["2022-03-10", "2025-03-10"], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "AN_UNDERLYING", "AN_BAD_VC", false)
+
+@testing:case="createPricingSettings rejects missing argument", syntaxError=1
+caplib::createPricingSettings("CNY", "ANALYTICAL")
+
+@testing:case="createFlatVolCurve keyword arguments unsupported", syntaxError=1
+caplib::createFlatVolCurve(referenceDate=asOfDate, volatility=0.20, underlying="AN_UNDERLYING", handle="AN_BAD_KW")
+
+
+// ============================================================================
+// Extended negative / exception validation
+// ============================================================================
+
+@testing:case="createIrYieldCurve rejects invalid dcc enum", exception=1
+caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, "ZERO_RATE", "NOT_A_DCC", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "AN_BAD_IR_DCC", false)
+
+@testing:case="createIrYieldCurve rejects invalid compounding enum", exception=1
+caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "NOT_A_COMPOUNDING", "CNY", "X", "AN_BAD_IR_CMP", false)
+
+@testing:case="createIrYieldCurve rejects invalid extrap enum", exception=1
+caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "NOT_AN_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "AN_BAD_IR_XTR", false)
+
+@testing:case="createCreditCurve rejects scalar spreads", exception=1
+caplib::createCreditCurve(asOfDate, curveDates, 0.002, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "AN_BAD_CREDIT", "AN_BAD_CREDIT", false)
+
+@testing:case="createDividendCurve rejects dates/values length mismatch", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "AN_BAD_DIV", "AN_BAD_DIV", false)
+
+
+@testing:case="createFlatIrYieldCurve rejects STRING rate", exception=1
+caplib::createFlatIrYieldCurve(asOfDate, "CNY", "0.02", "AN_BAD_FLAT_IR", false)
+
+@testing:case="createModelFreePricingSettings rejects STRING currency", exception=1
+caplib::createModelFreePricingSettings(1, 1, 0, "AN_BAD_MFPS", false)
+
+@testing:case="getDiscountFactor rejects wrong curve handle type", exception=1
+caplib::getDiscountFactor(flatVolCurve, curveDates)
+
+@testing:case="createOptionQuoteMatrix rejects zero-column payoff matrix", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(STRING, 2, 0), matrix(DOUBLE, 2, 0), matrix(DOUBLE, 2, 0), "AN_UNDERLYING", "AN_BAD_QQ", false)
+
+@testing:case="createScnAnalysisSettings rejects missing priceScn argument", syntaxError=1
+caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", volScn, 1)
+
+@testing:case="createPdeSettings rejects missing argument", syntaxError=1
+caplib::createPdeSettings(101, 201)
+
+
+// --- Extra-argument (too many) syntax checks ---
+@testing:case="createPricingModelSettings rejects extra argument", syntaxError=1
+caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "AN_EXTRA_MODEL", false, 1)
+
+@testing:case="createPricingSettings rejects extra argument", syntaxError=1
+caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, bsmModel, pdeSettings, mcSettings, "AN_EXTRA_PRICING", false, 1)
+
+
+// --- Matrix null / shape validation (option quote matrix) ---
+@testing:case="createOptionQuoteMatrix rejects zero-row payoff matrix", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(STRING, 0, 2), matrix(DOUBLE, 0, 2), matrix(DOUBLE, 0, 2), "AN_UNDERLYING", "AN_BAD_QQ_2", false)
+
+
+// --- INT scalar null (int()) validation ---
+@testing:case="createPricingSettings rejects null INT method", exception=1
+caplib::createPricingSettings("CNY", "ANALYTICAL", int(), 0, "", "", "", "AN_NULL_METHOD", false)
+
+
+// --- INT/BOOL parameter type validation (fed STRING/DOUBLE) ---
+@testing:case="createPricingModelSettings rejects STRING discountFactorType", exception=1
+caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", "0", [0.0], "AN_BAD_DFT", false)
+
+@testing:case="createPricingSettings rejects STRING method", exception=1
+caplib::createPricingSettings("CNY", "ANALYTICAL", "1", 0, "", "", "", "AN_BAD_METHOD", false)
+
+@testing:case="createPricingSettings rejects DOUBLE granularity", exception=1
+caplib::createPricingSettings("CNY", "ANALYTICAL", 1, 1.5, "", "", "", "AN_BAD_GRAN", false)
+
+@testing:case="createScnAnalysisSettings rejects STRING method", exception=1
+caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", 1, 2, "1", "AN_BAD_SCN_METHOD", false)
+
+
+// --- Scalar/vector form validation ---
+@testing:case="createDividendCurve rejects scalar pillarValues", exception=1
+caplib::createDividendCurve(2024.01.01, [2024.01.02], 0.01, 2024.01.01, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "AN_BAD_DIV_F", "AN_BAD_DIV_F", false)
+
+@testing:case="createVolatilityCurve rejects scalar vols", exception=1
+caplib::createVolatilityCurve(2024.01.01, [2024.01.02], 0.20, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "AN_UNDERLYING", "AN_BAD_VC_F", false)
+
+@testing:case="createAssetYieldCurve rejects scalar pillarValues", exception=1
+caplib::createAssetYieldCurve(2024.01.01, [2024.01.02], 0.02, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1Y"], "AN_BAD_AYC_F", "AN_BAD_AYC_F", false)
+
+@testing:case="createVolatilitySmile rejects scalar strikes", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", 2024.01.01, 100.0, [0.20], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, emptyDoubles, emptyDoubles, 90.0, 110.0, "AN_BAD_SMILE_F", false)
+
+@testing:case="createIrYieldCurve rejects vector referenceDate", exception=1
+caplib::createIrYieldCurve([2024.01.01, 2024.01.02], [2024.01.03], [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "AN_BAD_IR_F", "AN_BAD_IR_F", false)
+
+@testing:case="createPricingSettings rejects vector currency", exception=1
+caplib::createPricingSettings(["CNY", "USD"], "ANALYTICAL", 1, 1, "", "", "", "AN_BAD_PRC_F", false)
+
+@testing:case="createScnSettings rejects vector lower", exception=1
+caplib::createScnSettings([-0.1, -0.2], 0.1, 5, 0, "AN_BAD_SCN_F", false)

@@ -3,16 +3,13 @@
 // Native DolphinDB CM Analytics tests.
 // Assertions validate handles and PricingResults JSON fields instead of raw
 // protobuf bytes, so the tests remain stable across protobuf serialization.
+// Uses the native DolphinDB testing framework:
+//     test("test_cmanalytics.dos")
 // ============================================================================
-
-print("============================================");
-print("  CM Analytics Test Suite                  ");
-print("============================================");
 
 // ============================================================================
 // Setup: exact market fixtures from the Python setUp()
 // ============================================================================
-print("--- Setup: Market Data ---");
 
 currency = "CNY";
 underlying = "CU.SHFE";
@@ -141,19 +138,21 @@ couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
 couponObsValues = take(0.0, size(couponDates));
 couponObsWeights = take(1.0, size(couponDates));
 
-print("  Setup fixtures loaded");
+// Explicit zero-rate quanto curves are supplied even with zero correlation.
+quantoDates = [2020.02.22, 2030.02.24];
+quantoValues = [0.0, 0.0];
+quantoIr = caplib::createIrYieldCurve(
+    asOfDate, quantoDates, quantoValues,
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
+quantoFxVol = caplib::createVolatilityCurve(
+    asOfDate, quantoDates, quantoValues,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    underlying, "QUANTO_FX_VOL", false);
 
 // ============================================================================
-// Helpers
+// Helper predicates
 // ============================================================================
-testNum = 0;
-passNum = 0;
-
-def t(name, cond) {
-    if (cond) { print("  PASS: " + name); }
-    else      { print("  FAIL: " + name); }
-    return cond;
-}
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -170,275 +169,261 @@ def isPricingResultsJson(result, expectedHandle) {
         hasJsonField(result[1], "cash_value") &&
         hasJsonField(result[1], "currency");
 }
-
-def checkPricingResult(name, result, expectedHandle) {
-    return t(name + " -> [" + expectedHandle + ", PricingResults JSON fields]",
-        isPricingResultsJson(result, expectedHandle));
+def presentValue(pricingResult) {
+    json = pricingResult[1];
+    marker = "\"present_value\":";
+    start = strpos(json, marker);
+    if (start < 0) { return double(NULL); }
+    start += strlen(marker);
+    rest = substr(json, start);
+    end = strpos(rest, ",");
+    if (end < 0) { end = strpos(rest, "}"); }
+    return double(substr(rest, 0, end));
 }
 
-ok = t("createCmRiskSettings -> [CM_RISK, json]", isHandleJson(cmRisk, "CM_RISK"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createCmRiskSettings -> [CM_NO_RISK, json]", isHandleJson(cmNoRisk, "CM_NO_RISK"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
 // ============================================================================
-// Test 1: CM volatility surface builder
+// Tests
 // ============================================================================
-print("");
-print("--- Test 1: CM volatility surface builder ---");
 
+@testing:case="createCmRiskSettings -> [CM_RISK, json]"
+assert 1, isHandleJson(cmRisk, "CM_RISK")
+
+@testing:case="createCmRiskSettings -> [CM_NO_RISK, json]"
+assert 1, isHandleJson(cmNoRisk, "CM_NO_RISK")
+
+// --- CM volatility surface builder ---
+@testing:case="createVolatilitySurfaceDefinition -> [CM_VOL_SURF_DEF, json]"
 volSurfDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
     "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
-    -1.0e-5, 1.0e-5, "CM_VOL_SURF_DEF", true);
-ok = t("createVolatilitySurfaceDefinition -> [CM_VOL_SURF_DEF, json]",
-    isHandleJson(volSurfDefinition, "CM_VOL_SURF_DEF"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    -1.0e-5, 1.0e-5, "CM_VOL_SURF_DEF", true)
+assert 1, isHandleJson(volSurfDefinition, "CM_VOL_SURF_DEF")
 
-volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD_SETTINGS", true);
-ok = t("createVolSurfBuildSettings -> [CM_VOL_BUILD_SETTINGS, json]",
-    isHandleJson(volSurfBuildSettings, "CM_VOL_BUILD_SETTINGS"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createVolSurfBuildSettings -> [CM_VOL_BUILD_SETTINGS, json]"
+volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD_SETTINGS", true)
+assert 1, isHandleJson(volSurfBuildSettings, "CM_VOL_BUILD_SETTINGS")
 
+@testing:case="createCmOptionQuoteMatrix -> [CM_OPTION_QUOTES, json]"
 cmOptionQuotes = caplib::createCmOptionQuoteMatrix(
     "AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
-    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", true);
-ok = t("createCmOptionQuoteMatrix -> [CM_OPTION_QUOTES, json]",
-    isHandleJson(cmOptionQuotes, "CM_OPTION_QUOTES") &&
-    hasJsonField(cmOptionQuotes[1], "quote_smiles"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", true)
+assert 1, isHandleJson(cmOptionQuotes, "CM_OPTION_QUOTES") &&
+    hasJsonField(cmOptionQuotes[1], "quote_smiles")
 
+@testing:case="buildCmVolatilitySurface -> [CM_VOL_SURF, json]"
 volSurface = caplib::buildCmVolatilitySurface(
     asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0],
-    underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "CM_VOL_SURF", true);
-ok = t("buildCmVolatilitySurface -> [CM_VOL_SURF, json]",
-    isHandleJson(volSurface, "CM_VOL_SURF") &&
-    hasJsonField(volSurface[1], "vol_smiles"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "CM_VOL_SURF", true)
+assert 1, isHandleJson(volSurface, "CM_VOL_SURF") &&
+    hasJsonField(volSurface[1], "vol_smiles")
 
-// Explicit zero-rate quanto curves are supplied even with zero correlation.
-quantoDates = [2020.02.22, 2030.02.24];
-quantoValues = [0.0, 0.0];
-quantoIr = caplib::createIrYieldCurve(
-    asOfDate, quantoDates, quantoValues,
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
-quantoFxVol = caplib::createVolatilityCurve(
-    asOfDate, quantoDates, quantoValues,
-    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    underlying, "QUANTO_FX_VOL", false);
-
+@testing:case="createCmMktDataSet -> [CM_MKT, json]"
 mktData = caplib::createCmMktDataSet(
     asOfDate, underlying, underlyingPrice,
     irCurve, fwdCurve, volSurface[0],
-    quantoIr, quantoFxVol, 0.0, "CM_MKT", true);
-ok = t("createCmMktDataSet -> [CM_MKT, json]", isHandleJson(mktData, "CM_MKT"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    quantoIr, quantoFxVol, 0.0, "CM_MKT", true)
+assert 1, isHandleJson(mktData, "CM_MKT")
 
-// ============================================================================
-// Tests 2-16: active CM pricer tests from test_cmanalytics.py
-// ============================================================================
-print("");
-print("--- Test 2: EuropeanOption (BSM ANALYTICAL) ---");
+// --- Active CM pricer tests from test_cmanalytics.py ---
+@testing:case="createEuropeanOption -> CM_EO_INST"
 europeanOption = caplib::createEuropeanOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
-    1000000.0, currency, "FUTURE", currency, underlying, "CM_EO_INST", false);
-ok = t("createEuropeanOption -> CM_EO_INST", europeanOption == "CM_EO_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-europeanPricingResult = caplib::priceCmEuropeanOption(
-    europeanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmEuropeanOption", europeanPricingResult, "CM_EO_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_EO_INST", false)
+assert 1, europeanOption == "CM_EO_INST"
 
-print("");
-print("--- Test 3: AmericanOption (BSM ANALYTICAL) ---");
+@testing:case="priceCmEuropeanOption -> [CM_EO_INST_results, present_value reference]"
+europeanPricingResult = caplib::priceCmEuropeanOption(
+    europeanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(europeanPricingResult, "CM_EO_INST_results")
+assert 2, abs(presentValue(europeanPricingResult) - 3914329002.6617026) < abs(3914329002.6617026) * 1.0e-9 + 1.0e-6
+
+@testing:case="createAmericanOption -> CM_AM_INST"
 americanOption = caplib::createAmericanOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1,
-    1000000.0, currency, "FUTURE", currency, underlying, "CM_AM_INST", false);
-ok = t("createAmericanOption -> CM_AM_INST", americanOption == "CM_AM_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-americanPricingResult = caplib::priceCmAmericanOption(
-    americanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmAmericanOption", americanPricingResult, "CM_AM_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_AM_INST", false)
+assert 1, americanOption == "CM_AM_INST"
 
-print("");
-print("--- Test 4: AsianOption (BSM MONTE_CARLO) ---");
+@testing:case="priceCmAmericanOption -> [CM_AM_INST_results, present_value reference]"
+americanPricingResult = caplib::priceCmAmericanOption(
+    americanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(americanPricingResult, "CM_AM_INST_results")
+assert 2, abs(presentValue(americanPricingResult) - 3924755706.480323) < abs(3924755706.480323) * 1.0e-9 + 1.0e-6
+
+@testing:case="createAsianOption -> CM_AS_INST"
 asianOption = caplib::createAsianOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD",
     "DISCRETE_OBSERVATION_TYPE", 1000000.0,
     currency, "FUTURE", currency, underlying, "CM_AS_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createAsianOption -> CM_AS_INST", asianOption == "CM_AS_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-asianPricingResult = caplib::priceCmAsianOption(
-    asianOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmAsianOption", asianPricingResult, "CM_AS_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, asianOption == "CM_AS_INST"
 
-print("");
-print("--- Test 5: DigitalOption (BSM ANALYTICAL) ---");
+@testing:case="priceCmAsianOption -> [CM_AS_INST_results, present_value reference]"
+asianPricingResult = caplib::priceCmAsianOption(
+    asianOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(asianPricingResult, "CM_AS_INST_results")
+assert 2, abs(presentValue(asianPricingResult) - 2129622172.0275931) < abs(2129622172.0275931) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDigitalOption -> CM_DG_INST"
 digitalOption = caplib::createDigitalOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
-    0.0, 1.0, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DG_INST", false);
-ok = t("createDigitalOption -> CM_DG_INST", digitalOption == "CM_DG_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-digitalPricingResult = caplib::priceCmDigitalOption(
-    digitalOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmDigitalOption", digitalPricingResult, "CM_DG_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    0.0, 1.0, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DG_INST", false)
+assert 1, digitalOption == "CM_DG_INST"
 
-print("");
-print("--- Test 6: SingleBarrierOption (BSM ANALYTICAL) ---");
+@testing:case="priceCmDigitalOption -> [CM_DG_INST_results, present_value reference]"
+digitalPricingResult = caplib::priceCmDigitalOption(
+    digitalOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(digitalPricingResult, "CM_DG_INST_results")
+assert 2, abs(presentValue(digitalPricingResult) - 35825584006.30071) < abs(35825584006.30071) * 1.0e-9 + 1.0e-6
+
+@testing:case="createSingleBarrierOption -> CM_SB_INST"
 singleBarrierOption = caplib::createSingleBarrierOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
-    0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SB_INST", false);
-ok = t("createSingleBarrierOption -> CM_SB_INST", singleBarrierOption == "CM_SB_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-singleBarrierPricingResult = caplib::priceCmSingleBarrierOption(
-    singleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmSingleBarrierOption", singleBarrierPricingResult, "CM_SB_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SB_INST", false)
+assert 1, singleBarrierOption == "CM_SB_INST"
 
-print("");
-print("--- Test 7: DoubleBarrierOption (BSM ANALYTICAL) ---");
+@testing:case="priceCmSingleBarrierOption -> [CM_SB_INST_results, present_value reference]"
+singleBarrierPricingResult = caplib::priceCmSingleBarrierOption(
+    singleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(singleBarrierPricingResult, "CM_SB_INST_results")
+assert 2, abs(presentValue(singleBarrierPricingResult) - 3900655553.4487686) < abs(3900655553.4487686) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDoubleBarrierOption -> CM_DB_INST"
 doubleBarrierOption = caplib::createDoubleBarrierOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
-    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DB_INST", false);
-ok = t("createDoubleBarrierOption -> CM_DB_INST", doubleBarrierOption == "CM_DB_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleBarrierPricingResult = caplib::priceCmDoubleBarrierOption(
-    doubleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmDoubleBarrierOption", doubleBarrierPricingResult, "CM_DB_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DB_INST", false)
+assert 1, doubleBarrierOption == "CM_DB_INST"
 
-print("");
-print("--- Test 8: OneTouchOption (BSM ANALYTICAL) ---");
+@testing:case="priceCmDoubleBarrierOption -> [CM_DB_INST_results, present_value reference]"
+doubleBarrierPricingResult = caplib::priceCmDoubleBarrierOption(
+    doubleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(doubleBarrierPricingResult, "CM_DB_INST_results")
+assert 2, abs(presentValue(doubleBarrierPricingResult) - 3914135698.2975807) < abs(3914135698.2975807) * 1.0e-9 + 1.0e-6
+
+@testing:case="createOneTouchOption -> CM_OT_INST"
 oneTouchOption = caplib::createOneTouchOption(
     2020.08.19, 2020.08.20, "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
-    1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_OT_INST", false);
-ok = t("createOneTouchOption -> CM_OT_INST", oneTouchOption == "CM_OT_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-oneTouchPricingResult = caplib::priceCmOneTouchOption(
-    oneTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmOneTouchOption", oneTouchPricingResult, "CM_OT_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_OT_INST", false)
+assert 1, oneTouchOption == "CM_OT_INST"
 
-print("");
-print("--- Test 9: DoubleTouchOption (BSM ANALYTICAL) ---");
+@testing:case="priceCmOneTouchOption -> [CM_OT_INST_results, present_value reference]"
+oneTouchPricingResult = caplib::priceCmOneTouchOption(
+    oneTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(oneTouchPricingResult, "CM_OT_INST_results")
+assert 2, abs(presentValue(oneTouchPricingResult) - 717144.5895025163) < abs(717144.5895025163) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDoubleTouchOption -> CM_DT_INST"
 doubleTouchOption = caplib::createDoubleTouchOption(
     2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95,
     "UP_IN", underlyingPrice * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
-    1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DT_INST", false);
-ok = t("createDoubleTouchOption -> CM_DT_INST", doubleTouchOption == "CM_DT_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleTouchPricingResult = caplib::priceCmDoubleTouchOption(
-    doubleTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmDoubleTouchOption", doubleTouchPricingResult, "CM_DT_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DT_INST", false)
+assert 1, doubleTouchOption == "CM_DT_INST"
 
-print("");
-print("--- Test 10: SingleSharkFinOption (BSM PDE) ---");
+@testing:case="priceCmDoubleTouchOption -> [CM_DT_INST_results, present_value reference]"
+doubleTouchPricingResult = caplib::priceCmDoubleTouchOption(
+    doubleTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(doubleTouchPricingResult, "CM_DT_INST_results")
+assert 2, abs(presentValue(doubleTouchPricingResult) - 987357.584775172) < abs(987357.584775172) * 1.0e-9 + 1.0e-6
+
+@testing:case="createSingleSharkFinOption -> CM_SF_INST"
 singleSharkFinOption = caplib::createSingleSharkFinOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0,
     "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SF_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createSingleSharkFinOption -> CM_SF_INST", singleSharkFinOption == "CM_SF_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-singleSharkFinPricingResult = caplib::priceCmSingleSharkFinOption(
-    singleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmSingleSharkFinOption", singleSharkFinPricingResult, "CM_SF_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, singleSharkFinOption == "CM_SF_INST"
 
-print("");
-print("--- Test 11: DoubleSharkFinOption (BSM PDE) ---");
+@testing:case="priceCmSingleSharkFinOption -> [CM_SF_INST_results, present_value reference]"
+singleSharkFinPricingResult = caplib::priceCmSingleSharkFinOption(
+    singleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(singleSharkFinPricingResult, "CM_SF_INST_results")
+assert 2, abs(presentValue(singleSharkFinPricingResult) - 319.96888470690595) < abs(319.96888470690595) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDoubleSharkFinOption -> CM_DS_INST"
 doubleSharkFinOption = caplib::createDoubleSharkFinOption(
     underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0,
     "ABSOLUTE_PERFORM_TYPE", underlyingPrice * 0.95, underlyingPrice * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 0.0, 0.0, 1, 1000000.0,
     currency, "FUTURE", currency, underlying, "CM_DS_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createDoubleSharkFinOption -> CM_DS_INST", doubleSharkFinOption == "CM_DS_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleSharkFinPricingResult = caplib::priceCmDoubleSharkFinOption(
-    doubleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmDoubleSharkFinOption", doubleSharkFinPricingResult, "CM_DS_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, doubleSharkFinOption == "CM_DS_INST"
 
-print("");
-print("--- Test 12: RangeAccrualOption (BSM ANALYTICAL) ---");
+@testing:case="priceCmDoubleSharkFinOption -> [CM_DS_INST_results, present_value reference]"
+doubleSharkFinPricingResult = caplib::priceCmDoubleSharkFinOption(
+    doubleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(doubleSharkFinPricingResult, "CM_DS_INST_results")
+assert 2, abs(presentValue(doubleSharkFinPricingResult) - -1920260.4782055223) < abs(-1920260.4782055223) * 1.0e-9 + 1.0e-6
+
+@testing:case="createRangeAccrualOption -> CM_RA_INST"
 rangeAccrualOption = caplib::createRangeAccrualOption(
     2020.08.19, 2020.08.20, 0.0, 0.01,
     underlyingPrice * 0.95, underlyingPrice * 1.05,
     1000000.0, currency, "FUTURE", currency, underlying, "CM_RA_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createRangeAccrualOption -> CM_RA_INST", rangeAccrualOption == "CM_RA_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-rangeAccrualPricingResult = caplib::priceCmRangeAccrualOption(
-    rangeAccrualOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmRangeAccrualOption", rangeAccrualPricingResult, "CM_RA_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, rangeAccrualOption == "CM_RA_INST"
 
-print("");
-print("--- Test 13: AirbagOption (BSM PDE) ---");
+@testing:case="priceCmRangeAccrualOption -> [CM_RA_INST_results, present_value reference]"
+rangeAccrualPricingResult = caplib::priceCmRangeAccrualOption(
+    rangeAccrualOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(rangeAccrualPricingResult, "CM_RA_INST_results")
+assert 2, abs(presentValue(rangeAccrualPricingResult) - 4730.3973122983625) < abs(4730.3973122983625) * 1.0e-9 + 1.0e-6
+
+@testing:case="createAirbagOption -> CM_AB_INST"
 airbagOption = caplib::createAirbagOption(
     "CALL", 2020.08.19, 2020.08.20,
     underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice,
     "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE",
     1000000.0, currency, "FUTURE", currency, underlying, "CM_AB_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createAirbagOption -> CM_AB_INST", airbagOption == "CM_AB_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-airbagPricingResult = caplib::priceCmAirbagOption(
-    airbagOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmAirbagOption", airbagPricingResult, "CM_AB_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, airbagOption == "CM_AB_INST"
 
-print("");
-print("--- Test 14: PingPongOption (BSM MONTE_CARLO) ---");
+@testing:case="priceCmAirbagOption -> [CM_AB_INST_results, present_value reference]"
+airbagPricingResult = caplib::priceCmAirbagOption(
+    airbagOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(airbagPricingResult, "CM_AB_INST_results")
+assert 2, abs(presentValue(airbagPricingResult) - 2039273499.2826421) < abs(2039273499.2826421) * 1.0e-9 + 1.0e-6
+
+@testing:case="createPingPongOption -> CM_PP_INST"
 pingPongOption = caplib::createPingPongOption(
     2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95,
     "UP_IN", underlyingPrice * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.015, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_PP_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createPingPongOption -> CM_PP_INST", pingPongOption == "CM_PP_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-pingPongPricingResult = caplib::priceCmPingPongOption(
-    pingPongOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true);
-ok = checkPricingResult("priceCmPingPongOption", pingPongPricingResult, "CM_PP_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, pingPongOption == "CM_PP_INST"
 
-print("");
-print("--- Test 15: PhoenixAutoCallableNote (BSM MONTE_CARLO) ---");
+@testing:case="priceCmPingPongOption -> [CM_PP_INST_results, present_value reference]"
+pingPongPricingResult = caplib::priceCmPingPongOption(
+    pingPongOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, isPricingResultsJson(pingPongPricingResult, "CM_PP_INST_results")
+assert 2, abs(presentValue(pingPongPricingResult) - 6225.866833090705) < abs(6225.866833090705) * 1.0e-9 + 1.0e-6
+
+@testing:case="createPhoenixAutoCallableNote -> CM_PH_INST"
 phoenixNote = caplib::createPhoenixAutoCallableNote(
     "CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22,
     couponDates, "UP_OUT", underlyingPrice * 1.1, "DOWN_IN", underlyingPrice * 0.9,
     "SELL", "PUT", underlyingPrice * 0.85, 2020.08.19, 2020.08.20,
     1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_PH_INST",
     couponDates, couponObsValues, couponObsWeights,
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createPhoenixAutoCallableNote -> CM_PH_INST", phoenixNote == "CM_PH_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-phoenixPricingResult = caplib::priceCmPhoenixAutoCallableNote(
-    phoenixNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true);
-ok = checkPricingResult("priceCmPhoenixAutoCallableNote", phoenixPricingResult, "CM_PH_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, phoenixNote == "CM_PH_INST"
 
-print("");
-print("--- Test 16: SnowballAutoCallableNote (BSM MONTE_CARLO) ---");
+@testing:case="priceCmPhoenixAutoCallableNote -> [CM_PH_INST_results, present_value reference]"
+phoenixPricingResult = caplib::priceCmPhoenixAutoCallableNote(
+    phoenixNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(phoenixPricingResult, "CM_PH_INST_results")
+assert 2, abs(presentValue(phoenixPricingResult) - 813597.4152211095) < abs(813597.4152211095) * 1.0e-9 + 1.0e-6
+
+@testing:case="createSnowballAutoCallableNote -> CM_SN_INST"
 snowballNote = caplib::createSnowballAutoCallableNote(
     0.12, 2020.02.21, couponDates, "ACT_365_FIXED",
     "UP_OUT", underlyingPrice * 1.05, "DOWN_IN", underlyingPrice * 0.8,
@@ -446,24 +431,68 @@ snowballNote = caplib::createSnowballAutoCallableNote(
     2020.08.22, 2020.08.22, 1, 1000000.0,
     currency, "FUTURE", currency, underlying, "CM_SN_INST",
     couponDates, couponObsValues, couponObsWeights,
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createSnowballAutoCallableNote -> CM_SN_INST", snowballNote == "CM_SN_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, snowballNote == "CM_SN_INST"
+
+@testing:case="priceCmSnowballAutoCallableNote -> [CM_SN_INST_results, present_value reference]"
 snowballPricingResult = caplib::priceCmSnowballAutoCallableNote(
-    snowballNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true);
-ok = checkPricingResult("priceCmSnowballAutoCallableNote", snowballPricingResult, "CM_SN_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    snowballNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(snowballPricingResult, "CM_SN_INST_results")
+assert 2, abs(presentValue(snowballPricingResult) - 981543.8093879742) < abs(981543.8093879742) * 1.0e-9 + 1.0e-6
 
 // ============================================================================
-// Summary
+// Negative / exception validation
 // ============================================================================
-print("");
-print("============================================");
-print("  TEST RESULTS");
-print("  Passed: " + string(passNum) + " / " + string(testNum));
-print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
-print("============================================");
 
-if (passNum != testNum) {
-    throw "CM analytics tests failed";
-}
+@testing:case="createCmRiskSettings rejects STRING method", exception=1
+caplib::createCmRiskSettings("1", 1, 1, 1, "CM_BAD_RISK", true)
+
+@testing:case="createEuropeanOption rejects invalid payoff type enum", exception=1
+caplib::createEuropeanOption("NOT_A_PAYOFF", underlyingPrice, 2020.08.19, 2020.08.20, 1000000.0, currency, "FUTURE", currency, underlying, "CM_BAD_EO_1", false)
+
+
+@testing:case="priceCmEuropeanOption rejects wrong mktData handle", exception=1
+caplib::priceCmEuropeanOption(europeanOption, asOfDate, irCurve, bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+
+
+@testing:case="createCmRiskSettings rejects missing argument", syntaxError=1
+caplib::createCmRiskSettings(1, 1, 1)
+
+
+// ============================================================================
+// Extended negative / exception validation
+// ============================================================================
+
+@testing:case="createEuropeanOption rejects INT underlying", exception=1
+caplib::createEuropeanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1000000.0, currency, "FUTURE", currency, 1, "CM_BAD_EO_3", false)
+
+@testing:case="createAsianOption rejects invalid averaging method enum", exception=1
+caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "NOT_AN_AVG_METHOD", "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "FUTURE", currency, underlying, "CM_BAD_AS_2", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+@testing:case="createDigitalOption rejects invalid payoff type enum", exception=1
+caplib::createDigitalOption("NOT_A_PAYOFF", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1000000.0, currency, "FUTURE", currency, underlying, "CM_BAD_DG_2", false)
+
+@testing:case="createOneTouchOption rejects invalid barrier type enum", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "NOT_A_BARRIER", underlyingPrice * 1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_BAD_OT_2", false)
+
+
+@testing:case="priceCmEuropeanOption rejects wrong instrument handle", exception=1
+caplib::priceCmEuropeanOption(americanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+
+
+// --- Matrix null / shape validation (cm option quote matrix) ---
+@testing:case="createCmOptionQuoteMatrix rejects zero-column strikes matrix", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, matrix(DOUBLE, 7, 0), prices, underlying, "CM_BAD_QQ_1", true)
+
+@testing:case="createCmOptionQuoteMatrix rejects zero-row payoff matrix", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, matrix(STRING, 0, 27), strikes, prices, underlying, "CM_BAD_QQ_2", true)
+
+
+// --- INT scalar null (int()) validation ---
+@testing:case="createCmRiskSettings rejects null INT method", exception=1
+caplib::createCmRiskSettings(int(), 1, 1, 1, "CM_NULL_METHOD", true)
+
+
+// --- INT parameter type validation (fed STRING) ---
+@testing:case="createVolSurfBuildSettings rejects STRING int parameter", exception=1
+caplib::createVolSurfBuildSettings("1", 0.5, "CM_BAD_VSB", true)

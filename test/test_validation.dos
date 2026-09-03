@@ -1,176 +1,33 @@
 // ============================================================================
 // test_validation.dos
 // Negative, boundary, relationship, determinism, and optional-argument tests.
+// Uses the native DolphinDB testing framework:
+//     test("test_validation.dos")
 // ============================================================================
 
-print("============================================");
-print("  Caplib Validation Test Suite              ");
-print("============================================");
+// ============================================================================
+// Setup: fixtures (plain script, executed before the test cases)
+// ============================================================================
 
-try { undef(`CAPLIB_VALIDATION_RESULTS, SHARED); } catch(ex) {}
-share table(100:0, ["condition"], [BOOL]) as CAPLIB_VALIDATION_RESULTS;
-
-def t(name, condition) {
-    tableInsert(CAPLIB_VALIDATION_RESULTS, condition);
-    if (condition) {
-        print("  PASS: " + name);
-        return true;
-    }
-    print("  FAIL: " + name);
-    return false;
-}
-
-def expectError(name, scriptText) {
-    try {
-        eval(parseExpr(scriptText));
-        return t(name, false);
-    } catch(ex) {
-        return t(name, true);
-    }
-}
-
-def expectSuccess(name, scriptText) {
-    try {
-        eval(parseExpr(scriptText));
-        return t(name, true);
-    } catch(ex) {
-        print("    ERROR: " + ex);
-        return t(name, false);
-    }
-}
-
-print("--- Exact numeric references and repeatability ---");
 yfExpected = 364.0 / 360.0;
 yf1 = caplib::calcYearFraction(2024.01.01, 2024.12.30, "ACTUAL_360");
 yf2 = caplib::calcYearFraction(2024.01.01, 2024.12.30, "ACTUAL_360");
 yf3 = caplib::calcYearFraction(2024.01.01, 2024.12.30, "ACTUAL_360");
-ok = t("calcYearFraction ACT/360 -> independent 364/360 reference",
-    abs(yf1 - yfExpected) < 1.0e-12);
-ok = t("calcYearFraction repeated calls are deterministic",
-    yf1 == yf2 && yf2 == yf3);
 
-print("--- Type, form, null, argument-count, and keyword validation ---");
-ok = expectError("calcYearFraction rejects STRING startDate",
-    "caplib::calcYearFraction(\"bad\", 2024.12.30, \"ACTUAL_360\")");
-ok = expectError("calcYearFraction rejects DATE vector startDate",
-    "caplib::calcYearFraction([2024.01.01], 2024.12.30, \"ACTUAL_360\")");
-ok = expectError("calcYearFraction rejects null DATE scalar",
-    "caplib::calcYearFraction(date(), 2024.12.30, \"ACTUAL_360\")");
-ok = expectError("calcYearFraction rejects missing argument",
-    "caplib::calcYearFraction(2024.01.01, 2024.12.30)");
-ok = expectError("calcYearFraction rejects extra argument",
-    "caplib::calcYearFraction(2024.01.01, 2024.12.30, \"ACTUAL_360\", 1)");
-ok = expectError("plugin call with keyword arguments is explicitly unsupported",
-    "caplib::calcYearFraction(startDate=2024.01.01, endDate=2024.12.30, dayCountConvention=\"ACTUAL_360\")");
-
-print("--- createIrYieldCurve input relationships and boundaries ---");
 curveBase = caplib::createIrYieldCurve(
     2024.01.01, [2024.01.02, 2025.01.02], [0.02, 0.025],
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "CNY", "VAL_CURVE", "VAL_CURVE", false);
-ok = t("createIrYieldCurve valid baseline", curveBase == "VAL_CURVE");
 
-ok = expectError("createIrYieldCurve rejects STRING pillarDates",
-    "caplib::createIrYieldCurve(2024.01.01, [\"2024-01-02\"], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_1\", false)");
-ok = expectError("createIrYieldCurve rejects scalar pillarDates",
-    "caplib::createIrYieldCurve(2024.01.01, 2024.01.02, [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_2\", false)");
-ok = expectError("createIrYieldCurve rejects scalar pillarValues",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], 0.02, \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_3\", false)");
-ok = expectError("createIrYieldCurve rejects empty vectors",
-    "caplib::createIrYieldCurve(2024.01.01, take(date(),0), take(double(),0), \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_4\", false)");
-ok = expectError("createIrYieldCurve rejects all-null DATE vector",
-    "caplib::createIrYieldCurve(2024.01.01, take(date(),2), [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_5\", false)");
-ok = expectError("createIrYieldCurve rejects partially-null DATE vector",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,date()], [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_6\", false)");
-ok = expectError("createIrYieldCurve rejects partially-null DOUBLE vector",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2025.01.02], [0.02,double()], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_7\", false)");
-ok = expectError("createIrYieldCurve rejects dates/values length mismatch",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2025.01.02], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_8\", false)");
-ok = expectError("createIrYieldCurve rejects duplicate pillar dates",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2024.01.02], [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_9\", false)");
-ok = expectError("createIrYieldCurve rejects descending pillar dates",
-    "caplib::createIrYieldCurve(2024.01.01, [2025.01.02,2024.01.02], [0.02,0.03], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_10\", false)");
-ok = expectError("createIrYieldCurve rejects invalid curveType enum",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], \"NOT_A_CURVE_TYPE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_11\", false)");
-ok = expectError("createIrYieldCurve rejects invalid interpolation enum",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"NOT_AN_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_12\", false)");
-ok = expectError("createIrYieldCurve rejects wrong returnJson type",
-    "caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], \"ZERO_RATE\", \"ACT_365_FIXED\", \"LINEAR_INTERP\", \"FLAT_EXTRAP\", \"CONTINUOUS_COMPOUNDING\", \"CNY\", \"X\", \"VAL_BAD_13\", \"false\")");
-
-for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
-    handle = "VAL_ENUM_" + curveType;
-    result = caplib::createIrYieldCurve(
-        2024.01.01, [2024.01.02], [0.02], curveType,
-        "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-        "CONTINUOUS_COMPOUNDING", "CNY", handle, handle, false);
-    ok = t("createIrYieldCurve supports curveType=" + curveType, result == handle);
-}
-
-print("--- Optional returnJson null/default handling and vector sizes ---");
 omittedReturn = caplib::createFlatIrYieldCurve(2024.01.01, "CNY", 0.02, "VAL_OPTIONAL_OMITTED");
 nullReturn = caplib::createFlatIrYieldCurve(2024.01.01, "CNY", 0.02, "VAL_OPTIONAL_NULL", bool());
-ok = t("omitted returnJson uses false default", omittedReturn == "VAL_OPTIONAL_OMITTED");
-ok = t("null returnJson uses false default", nullReturn == "VAL_OPTIONAL_NULL");
 
-for (n in [1, 1024, 65536]) {
-    datesN = 2024.01.02 + 0..(n - 1);
-    ratesN = take(0.02, n);
-    handleN = "VAL_CURVE_SIZE_" + string(n);
-    resultN = caplib::createIrYieldCurve(
-        2024.01.01, datesN, ratesN,
-        "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-        "CONTINUOUS_COMPOUNDING", "CNY", handleN, handleN, false);
-    ok = t("createIrYieldCurve vector length=" + string(n), resultN == handleN);
-}
-
-print("--- Volatility-surface bounds and enum validation ---");
 validVolDef = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP",
     "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED",
     "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.0001, 10000.0,
     "VAL_VOL_DEF", false);
-ok = t("createVolatilitySurfaceDefinition valid bounds", validVolDef == "VAL_VOL_DEF");
-ok = expectError("createVolatilitySurfaceDefinition rejects lower == upper",
-    "caplib::createVolatilitySurfaceDefinition(\"STRIKE_VOL_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", 1.0, 1.0, \"VAL_BAD_VOL_1\", false)");
-ok = expectError("createVolatilitySurfaceDefinition rejects lower > upper",
-    "caplib::createVolatilitySurfaceDefinition(\"STRIKE_VOL_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", 2.0, 1.0, \"VAL_BAD_VOL_2\", false)");
-ok = expectError("createVolatilitySurfaceDefinition rejects null lower",
-    "caplib::createVolatilitySurfaceDefinition(\"STRIKE_VOL_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", double(), 1.0, \"VAL_BAD_VOL_3\", false)");
-ok = expectError("createVolatilitySurfaceDefinition rejects invalid smile enum",
-    "caplib::createVolatilitySurfaceDefinition(\"NOT_A_SMILE\", \"LINEAR_SMILE_METHOD\", \"FLAT_EXTRAP\", \"LINEAR_IN_VOLATILITY\", \"FLAT_IN_VOLATILITY\", \"ACT_365_FIXED\", \"LOG_NORMAL_VOL_TYPE\", \"ABOSULTE_STRIKE\", 0.1, 1.0, \"VAL_BAD_VOL_4\", false)");
 
-print("--- Matrix shape, empty, and null validation ---");
-ok = expectError("createIrCapFloorQuoteMatrix rejects terms/rows mismatch",
-    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\",\"2Y\"], [0.01], matrix([0.20]), \"CAP\", 1.0, \"VAL_BAD_CAP_1\", false)");
-ok = expectError("createIrCapFloorQuoteMatrix rejects strikes/columns mismatch",
-    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01,0.02], matrix([0.20]), \"CAP\", 1.0, \"VAL_BAD_CAP_2\", false)");
-ok = expectError("createIrCapFloorQuoteMatrix rejects zero-row matrix",
-    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01], matrix(DOUBLE,0,1), \"CAP\", 1.0, \"VAL_BAD_CAP_3\", false)");
-ok = expectError("createIrCapFloorQuoteMatrix rejects zero-column matrix",
-    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01], matrix(DOUBLE,1,0), \"CAP\", 1.0, \"VAL_BAD_CAP_4\", false)");
-ok = expectError("createIrCapFloorQuoteMatrix rejects partially-null matrix",
-    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\",\"2Y\"], [0.01], matrix([0.20,double()]), \"CAP\", 1.0, \"VAL_BAD_CAP_5\", false)");
-ok = expectError("createIrCapFloorQuoteMatrix rejects all-null matrix",
-    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\",\"2Y\"], [0.01], matrix(take(double(),2)), \"CAP\", 1.0, \"VAL_BAD_CAP_6\", false)");
-ok = expectError("createIrCapFloorQuoteMatrix rejects scalar vols",
-    "caplib::createIrCapFloorQuoteMatrix(2024.01.01, [\"1Y\"], [0.01], 0.20, \"CAP\", 1.0, \"VAL_BAD_CAP_7\", false)");
-
-// Matrix stress cases put the null in the final cell so the complete matrix
-// traversal is exercised at each documented boundary size.
-for (n in [1, 1024, 65536]) {
-    stressVols = matrix(DOUBLE, 1, n, n, 0.20);
-    stressVols[0, n - 1] = double();
-    try {
-        caplib::createIrCapFloorQuoteMatrix(
-            2024.01.01, ["1Y"], take(0.01, n), stressVols,
-            "CAP", 1.0, "VAL_BAD_MATRIX_SIZE_" + string(n), false);
-        ok = t("matrix length=" + string(n) + " validates final-cell null", false);
-    } catch(ex) {
-        ok = t("matrix length=" + string(n) + " validates final-cell null", true);
-    }
-}
-
-print("--- Scalar/vector alternatives for floating-leg calendars ---");
 legScalar = caplib::createFloatingLegDefinition(
     "CNY", "VAL_IBOR", "CAL1", "CAL1", "QUARTERLY", "QUARTERLY",
     "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING",
@@ -186,38 +43,253 @@ legMixed = caplib::createFloatingLegDefinition(
     "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING",
     "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
     "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "VAL_LEG_SV", false);
-ok = t("createFloatingLegDefinition calendar/fixingCalendars scalar/scalar", legScalar == "VAL_LEG_SS");
-ok = t("createFloatingLegDefinition calendar/fixingCalendars vector/vector with independent lengths", legVector == "VAL_LEG_VV");
-ok = t("createFloatingLegDefinition calendar/fixingCalendars scalar/vector", legMixed == "VAL_LEG_SV");
-ok = expectError("createFloatingLegDefinition rejects INT calendar",
-    "caplib::createFloatingLegDefinition(\"CNY\", \"VAL_IBOR\", 1, \"CAL1\", \"QUARTERLY\", \"QUARTERLY\", \"ACT_360\", \"NO_DISCOUNT\", \"STANDARD\", false, \"MODIFIED_FOLLOWING\", \"INITIAL\", \"LONG\", 0, \"MODIFIED_FOLLOWING\", \"MODIFIED_PRECEDING\", \"IN_ADVANCE\", -1, \"INVALID_NOTIONAL_EXCHANGE\", \"VAL_BAD_LEG_1\", false)");
-ok = expectError("createFloatingLegDefinition rejects null calendar vector element",
-    "caplib::createFloatingLegDefinition(\"CNY\", \"VAL_IBOR\", [\"CAL1\",string()], \"CAL1\", \"QUARTERLY\", \"QUARTERLY\", \"ACT_360\", \"NO_DISCOUNT\", \"STANDARD\", false, \"MODIFIED_FOLLOWING\", \"INITIAL\", \"LONG\", 0, \"MODIFIED_FOLLOWING\", \"MODIFIED_PRECEDING\", \"IN_ADVANCE\", -1, \"INVALID_NOTIONAL_EXCHANGE\", \"VAL_BAD_LEG_2\", false)");
 
-print("--- Date ordering and object-handle validation ---");
-ok = expectError("calcCrossCurrencyBasisSwapSpread rejects refDate after spotDate",
-    "caplib::calcCrossCurrencyBasisSwapSpread(2024.01.01, \"MISSING_SWAP\", \"1Y\", 7.0, \"USD\", \"CNY\", 2024.01.05, 2024.01.02, \"C1\", \"C2\", \"C3\", \"C4\")");
-ok = expectError("getObjectCacheJson rejects nonexistent handle",
-    "caplib::getObjectCacheJson(\"IrYieldCurve\", \"HANDLE_DOES_NOT_EXIST\")");
-ok = expectError("getObjectCacheJson rejects wrong protobuf type for handle",
-    "caplib::getObjectCacheJson(\"FxSpotRate\", \"VAL_CURVE\")");
-ok = expectError("getObjectCacheJson rejects unsupported protobuf type",
-    "caplib::getObjectCacheJson(\"NotAProtoType\", \"VAL_CURVE\")");
-ok = expectError("getObjectCacheJson rejects non-STRING handle",
-    "caplib::getObjectCacheJson(\"IrYieldCurve\", 123)");
-ok = expectError("buildIrSwaptionVolatilitySurface rejects curve handle as quoteCubeHandle",
-    "caplib::buildIrSwaptionVolatilitySurface(\"SWAPTION\", 2024.01.01, \"VAL_CURVE\", \"VAL_CURVE\", \"VAL_CURVE\", \"VAL_VOL_DEF\", \"MISSING_BUILD\", \"MISSING_SWAP\", \"VAL_BAD_SWAPTION\", false)");
+// ============================================================================
+// Tests
+// ============================================================================
 
-testSummary = select count(*) as total, sum(condition) as passed
-    from CAPLIB_VALIDATION_RESULTS;
-totalTests = testSummary.total[0];
-passedTests = testSummary.passed[0];
-print("============================================");
-print("  TEST RESULTS");
-print("  Passed: " + string(passedTests) + " / " + string(totalTests));
-print("  Failed: " + string(totalTests - passedTests) + " / " + string(totalTests));
-print("============================================");
+// --- Exact numeric references and repeatability ---
+@testing:case="calcYearFraction ACT/360 -> independent 364/360 reference"
+assert 1, abs(yf1 - yfExpected) < 1.0e-12
 
-if (passedTests != totalTests) {
-    throw "Caplib validation tests failed: " + string(totalTests - passedTests);
+@testing:case="calcYearFraction repeated calls are deterministic"
+assert 1, yf1 == yf2 && yf2 == yf3
+
+// --- Type, form, null, argument-count, and keyword validation ---
+@testing:case="calcYearFraction rejects STRING startDate", exception=1
+caplib::calcYearFraction("bad", 2024.12.30, "ACTUAL_360")
+
+@testing:case="calcYearFraction rejects DATE vector startDate", exception=1
+caplib::calcYearFraction([2024.01.01], 2024.12.30, "ACTUAL_360")
+
+@testing:case="calcYearFraction rejects null DATE scalar", exception=1
+caplib::calcYearFraction(date(), 2024.12.30, "ACTUAL_360")
+
+@testing:case="calcYearFraction rejects missing argument", syntaxError=1
+caplib::calcYearFraction(2024.01.01, 2024.12.30)
+
+@testing:case="calcYearFraction rejects extra argument", syntaxError=1
+caplib::calcYearFraction(2024.01.01, 2024.12.30, "ACTUAL_360", 1)
+
+@testing:case="plugin call with keyword arguments is explicitly unsupported", syntaxError=1
+caplib::calcYearFraction(startDate=2024.01.01, endDate=2024.12.30, dayCountConvention="ACTUAL_360")
+
+// --- createIrYieldCurve input relationships and boundaries ---
+@testing:case="createIrYieldCurve valid baseline"
+assert 1, curveBase == "VAL_CURVE"
+
+@testing:case="createIrYieldCurve rejects STRING pillarDates", exception=1
+caplib::createIrYieldCurve(2024.01.01, ["2024-01-02"], [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_1", false)
+
+@testing:case="createIrYieldCurve rejects scalar pillarDates", exception=1
+caplib::createIrYieldCurve(2024.01.01, 2024.01.02, [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_2", false)
+
+@testing:case="createIrYieldCurve rejects scalar pillarValues", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02], 0.02, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_3", false)
+
+@testing:case="createIrYieldCurve rejects empty vectors", exception=1
+caplib::createIrYieldCurve(2024.01.01, take(date(),0), take(double(),0), "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_4", false)
+
+@testing:case="createIrYieldCurve rejects all-null DATE vector", exception=1
+caplib::createIrYieldCurve(2024.01.01, take(date(),2), [0.02,0.03], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_5", false)
+
+@testing:case="createIrYieldCurve rejects partially-null DATE vector", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02,date()], [0.02,0.03], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_6", false)
+
+@testing:case="createIrYieldCurve rejects partially-null DOUBLE vector", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2025.01.02], [0.02,double()], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_7", false)
+
+@testing:case="createIrYieldCurve rejects dates/values length mismatch", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2025.01.02], [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_8", false)
+
+@testing:case="createIrYieldCurve rejects duplicate pillar dates", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02,2024.01.02], [0.02,0.03], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_9", false)
+
+@testing:case="createIrYieldCurve rejects descending pillar dates", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2025.01.02,2024.01.02], [0.02,0.03], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_10", false)
+
+@testing:case="createIrYieldCurve rejects invalid curveType enum", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], "NOT_A_CURVE_TYPE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_11", false)
+
+@testing:case="createIrYieldCurve rejects invalid interpolation enum", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], "ZERO_RATE", "ACT_365_FIXED", "NOT_AN_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_12", false)
+
+@testing:case="createIrYieldCurve rejects wrong returnJson type", exception=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_BAD_13", "false")
+
+@testing:case="createIrYieldCurve supports all curveType enums"
+for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
+    handle = "VAL_ENUM_" + curveType;
+    result = caplib::createIrYieldCurve(
+        2024.01.01, [2024.01.02], [0.02], curveType,
+        "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", handle, handle, false);
+    assert 1, result == handle
 }
+
+@testing:case="createIrYieldCurve supports all interp enums"
+for (interp in ["LINEAR_INTERP", "CUBIC_SPLINE_INTERP", "LEFT_CONTINUOUS_FLAT_INTERP", "CUBIC_HERMITE_SPLINE_INTERP"]) {
+    handle = "VAL_INTERP_" + interp;
+    result = caplib::createIrYieldCurve(
+        2024.01.01, [2024.01.02], [0.02], "ZERO_RATE",
+        "ACT_365_FIXED", interp, "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", handle, handle, false);
+    assert 1, result == handle
+}
+
+@testing:case="createVolatilitySmile supports boundary strike lengths"
+for (n in [1, 1024, 65536]) {
+    if (n == 1) { strikesN = [100.0]; }
+    else { strikesN = 90.0 + 0..(n - 1) * (20.0 / (n - 1)); }
+    volsN = take(0.20, n);
+    handleN = "VAL_SMILE_SIZE_" + string(n);
+    resultN = caplib::createVolatilitySmile(
+        "STRIKE_VOL_SMILE", 2024.01.01, strikesN, volsN,
+        "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0,
+        take(double(), 0), take(double(), 0), 90.0, 110.0,
+        handleN, false);
+    assert 1, resultN == handleN
+}
+
+// --- Optional returnJson null/default handling and vector sizes ---
+@testing:case="omitted returnJson uses false default"
+assert 1, omittedReturn == "VAL_OPTIONAL_OMITTED"
+
+@testing:case="null returnJson uses false default"
+assert 1, nullReturn == "VAL_OPTIONAL_NULL"
+
+@testing:case="createIrYieldCurve supports boundary vector lengths"
+for (n in [1, 1024, 65536]) {
+    datesN = 2024.01.02 + 0..(n - 1);
+    ratesN = take(0.02, n);
+    handleN = "VAL_CURVE_SIZE_" + string(n);
+    resultN = caplib::createIrYieldCurve(
+        2024.01.01, datesN, ratesN,
+        "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", handleN, handleN, false);
+    assert 1, resultN == handleN
+}
+
+// --- Volatility-surface bounds and enum validation ---
+@testing:case="createVolatilitySurfaceDefinition valid bounds"
+assert 1, validVolDef == "VAL_VOL_DEF"
+
+@testing:case="createVolatilitySurfaceDefinition rejects lower == upper", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 1.0, 1.0, "VAL_BAD_VOL_1", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects lower > upper", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 2.0, 1.0, "VAL_BAD_VOL_2", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects null lower", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", double(), 1.0, "VAL_BAD_VOL_3", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects invalid smile enum", exception=1
+caplib::createVolatilitySurfaceDefinition("NOT_A_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.1, 1.0, "VAL_BAD_VOL_4", false)
+
+// --- Matrix shape, empty, and null validation ---
+@testing:case="createIrCapFloorQuoteMatrix rejects terms/rows mismatch", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["1Y","2Y"], [0.01], matrix([0.20]), "CAP", 1.0, "VAL_BAD_CAP_1", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects strikes/columns mismatch", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["1Y"], [0.01,0.02], matrix([0.20]), "CAP", 1.0, "VAL_BAD_CAP_2", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects zero-row matrix", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["1Y"], [0.01], matrix(DOUBLE,0,1), "CAP", 1.0, "VAL_BAD_CAP_3", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects zero-column matrix", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["1Y"], [0.01], matrix(DOUBLE,1,0), "CAP", 1.0, "VAL_BAD_CAP_4", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects partially-null matrix", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["1Y","2Y"], [0.01], matrix([0.20,double()]), "CAP", 1.0, "VAL_BAD_CAP_5", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects all-null matrix", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["1Y","2Y"], [0.01], matrix(take(double(),2)), "CAP", 1.0, "VAL_BAD_CAP_6", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects scalar vols", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["1Y"], [0.01], 0.20, "CAP", 1.0, "VAL_BAD_CAP_7", false)
+
+@testing:case="createIrCapFloorQuoteMatrix validates final-cell null at boundary sizes"
+for (n in [1, 1024, 65536]) {
+    stressVols = matrix(DOUBLE, 1, n, n, 0.20);
+    stressVols[0, n - 1] = double();
+    try {
+        caplib::createIrCapFloorQuoteMatrix(
+            2024.01.01, ["1Y"], take(0.01, n), stressVols,
+            "CAP", 1.0, "VAL_BAD_MATRIX_SIZE_" + string(n), false);
+        assert 1, false
+    } catch(ex) {
+        assert 1, true
+    }
+}
+
+// --- Scalar/vector alternatives for floating-leg calendars ---
+@testing:case="createFloatingLegDefinition calendar/fixingCalendars scalar/scalar"
+assert 1, legScalar == "VAL_LEG_SS"
+
+@testing:case="createFloatingLegDefinition calendar/fixingCalendars vector/vector with independent lengths"
+assert 1, legVector == "VAL_LEG_VV"
+
+@testing:case="createFloatingLegDefinition calendar/fixingCalendars scalar/vector"
+assert 1, legMixed == "VAL_LEG_SV"
+
+@testing:case="createFloatingLegDefinition rejects INT calendar", exception=1
+caplib::createFloatingLegDefinition("CNY", "VAL_IBOR", 1, "CAL1", "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "VAL_BAD_LEG_1", false)
+
+@testing:case="createFloatingLegDefinition rejects null calendar vector element", exception=1
+caplib::createFloatingLegDefinition("CNY", "VAL_IBOR", ["CAL1",string()], "CAL1", "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "VAL_BAD_LEG_2", false)
+
+// --- Date ordering and object-handle validation ---
+@testing:case="calcCrossCurrencyBasisSwapSpread rejects refDate after spotDate", exception=1
+caplib::calcCrossCurrencyBasisSwapSpread(2024.01.01, "MISSING_SWAP", "1Y", 7.0, "USD", "CNY", 2024.01.05, 2024.01.02, "C1", "C2", "C3", "C4")
+
+@testing:case="getObjectCacheJson rejects nonexistent handle", exception=1
+caplib::getObjectCacheJson("IrYieldCurve", "HANDLE_DOES_NOT_EXIST")
+
+@testing:case="getObjectCacheJson rejects wrong protobuf type for handle", exception=1
+caplib::getObjectCacheJson("FxSpotRate", "VAL_CURVE")
+
+@testing:case="getObjectCacheJson rejects unsupported protobuf type", exception=1
+caplib::getObjectCacheJson("NotAProtoType", "VAL_CURVE")
+
+@testing:case="getObjectCacheJson rejects non-STRING handle", exception=1
+caplib::getObjectCacheJson("IrYieldCurve", 123)
+
+@testing:case="buildIrSwaptionVolatilitySurface rejects curve handle as quoteCubeHandle", exception=1
+caplib::buildIrSwaptionVolatilitySurface("SWAPTION", 2024.01.01, "VAL_CURVE", "VAL_CURVE", "VAL_CURVE", "VAL_VOL_DEF", "MISSING_BUILD", "MISSING_SWAP", "VAL_BAD_SWAPTION", false)
+
+
+// ============================================================================
+// Enum coverage (positive)
+// ============================================================================
+
+@testing:case="createIrYieldCurve supports all dcc enums"
+for (dcc in ["ACT_360", "ACTUAL_360", "ACT/360", "ACT_365", "ACT_365_FIXED", "ACTUAL_365_FIXED", "ACT/365", "ACT_ACT", "ACT_ACT_ISDA", "ACTUAL_ACTUAL_ISDA", "ACT_ACT_ICMA", "ACTUAL_ACTUAL_ICMA", "THIRTY_360", "30_360", "30/360", "BOND_BASIS"]) {
+    handle = "VAL_DCC_" + dcc;
+    result = caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], "ZERO_RATE", dcc, "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", handle, handle, false);
+    assert 1, result == handle
+}
+
+@testing:case="createIrYieldCurve supports all compounding enums"
+for (compounding in ["CONTINUOUS_COMPOUNDING", "DISCRETE_COMPOUNDING", "SIMPLE_COMPOUNDING"]) {
+    handle = "VAL_CMP_" + compounding;
+    result = caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", compounding, "CNY", handle, handle, false);
+    assert 1, result == handle
+}
+
+@testing:case="createIrYieldCurve supports all extrap enums"
+for (extrap in ["FLAT_EXTRAP", "LINEAR_EXTRAP"]) {
+    handle = "VAL_XTR_" + extrap;
+    result = caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", extrap, "CONTINUOUS_COMPOUNDING", "CNY", handle, handle, false);
+    assert 1, result == handle
+}
+
+
+// --- Extra-argument (too many) syntax checks ---
+@testing:case="createIrYieldCurve rejects extra argument", syntaxError=1
+caplib::createIrYieldCurve(2024.01.01, [2024.01.02], [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "VAL_EXTRA_IR", false, 1)
+
+@testing:case="createFlatIrYieldCurve rejects extra argument", syntaxError=1
+caplib::createFlatIrYieldCurve(2024.01.01, "CNY", 0.02, "VAL_EXTRA_FLAT", false, 1)
+
+@testing:case="createVolatilitySmile rejects extra argument", syntaxError=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", 2024.01.01, [90.0, 100.0], [0.20, 0.20], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, take(double(), 0), take(double(), 0), 90.0, 110.0, "VAL_EXTRA_SMILE", false, 1)

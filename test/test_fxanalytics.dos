@@ -1,13 +1,13 @@
 // ============================================================================
 // test_fxanalytics.dos
 // Native DolphinDB FX Analytics tests.
+// Uses the native DolphinDB testing framework:
+//     test("test_fxanalytics.dos")
 // ============================================================================
 
-print("============================================");
-print("  FX Analytics Test Suite                  ");
-print("============================================");
-
-print("--- Setup: FX fixtures ---");
+// ============================================================================
+// Setup: FX fixtures (plain script, executed before the test cases)
+// ============================================================================
 
 asOfDate = 2021.03.30;
 currency = "USD";
@@ -156,6 +156,9 @@ volSurfaceMatrixVector = caplib::createFxVolatilitySurface(
 volSurfaceVectorMatrix = caplib::createFxVolatilitySurface(
     asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsMatrix,
     linearVolSurfDefinition[0], fxMktConventions[0], "EURUSD_VOL_SURF_VM", false);
+volSurfaceMatrixMatrix = caplib::createFxVolatilitySurface(
+    asOfDate, "EUR", "USD", [2021.06.30], formStrikesMatrix, formVolsMatrix,
+    linearVolSurfDefinition[0], fxMktConventions[0], "EURUSD_VOL_SURF_MM", false);
 
 quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"];
 quoteTerms = ["ON", "1W", "2W", "3W", "1M", "2M", "3M", "4M", "6M",
@@ -216,19 +219,9 @@ dailyObsDates = 2021.03.31..2021.09.26;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
-print("  Setup fixtures loaded");
-
 // ============================================================================
-// Helpers
+// Helper predicates
 // ============================================================================
-testNum = 0;
-passNum = 0;
-
-def t(name, cond) {
-    if (cond) { print("  PASS: " + name); }
-    else      { print("  FAIL: " + name); }
-    return cond;
-}
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -245,348 +238,337 @@ def isPricingResultsJson(result, expectedHandle) {
         hasJsonField(result[1], "cash_value") &&
         hasJsonField(result[1], "currency");
 }
-
-def checkPricingResult(name, result, expectedHandle) {
-    return t(name + " -> [" + expectedHandle + ", PricingResults JSON fields]",
-        isPricingResultsJson(result, expectedHandle));
+def presentValue(pricingResult) {
+    json = pricingResult[1];
+    marker = "\"present_value\":";
+    start = strpos(json, marker);
+    if (start < 0) { return double(NULL); }
+    start += strlen(marker);
+    rest = substr(json, start);
+    end = strpos(rest, ",");
+    if (end < 0) { end = strpos(rest, "}"); }
+    return double(substr(rest, 0, end));
 }
 
-ok = t("createFxSpotRate -> [EURUSD_SPOT_RATE, json]",
-    isHandleJson(eurusdSpotRate, "EURUSD_SPOT_RATE") &&
-    hasJsonField(eurusdSpotRate[1], "fx_rate"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+// ============================================================================
+// Tests
+// ============================================================================
 
-ok = t("createFxRiskSettings -> [FX_RISK, json]", isHandleJson(fxRisk, "FX_RISK"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxSpotRate -> [EURUSD_SPOT_RATE, json]"
+assert 1, isHandleJson(eurusdSpotRate, "EURUSD_SPOT_RATE") &&
+    hasJsonField(eurusdSpotRate[1], "fx_rate")
 
-ok = t("createFxRiskSettings option subset -> [FX_OPTION_RISK, json]",
-    isHandleJson(fxOptionRisk, "FX_OPTION_RISK"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxRiskSettings -> [FX_RISK, json]"
+assert 1, isHandleJson(fxRisk, "FX_RISK")
 
-ok = t("createFxMktConventions -> [EURUSD_MKT_CONV, json]",
-    isHandleJson(fxMktConventions, "EURUSD_MKT_CONV"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxRiskSettings option subset -> [FX_OPTION_RISK, json]"
+assert 1, isHandleJson(fxOptionRisk, "FX_OPTION_RISK")
 
-ok = t("createFxOptionQuoteMatrix -> [EURUSD_OPTION_QUOTES, json]",
-    isHandleJson(optionQuotes, "EURUSD_OPTION_QUOTES") &&
-    hasJsonField(optionQuotes[1], "quote_smiles"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxMktConventions -> [EURUSD_MKT_CONV, json]"
+assert 1, isHandleJson(fxMktConventions, "EURUSD_MKT_CONV")
 
-ok = t("createFxVolatilitySurface -> [EURUSD_VOL_SURF, json]",
-    isHandleJson(volSurface, "EURUSD_VOL_SURF"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxOptionQuoteMatrix -> [EURUSD_OPTION_QUOTES, json]"
+assert 1, isHandleJson(optionQuotes, "EURUSD_OPTION_QUOTES") &&
+    hasJsonField(optionQuotes[1], "quote_smiles")
 
-ok = t("createFxVolatilitySurface strikes vector / vols vector",
-    volSurfaceVectorVector == "EURUSD_VOL_SURF_VV");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxVolatilitySurface -> [EURUSD_VOL_SURF, json]"
+assert 1, isHandleJson(volSurface, "EURUSD_VOL_SURF")
 
-ok = t("createFxVolatilitySurface strikes matrix / vols vector",
-    volSurfaceMatrixVector == "EURUSD_VOL_SURF_MV");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxVolatilitySurface strikes vector / vols vector"
+assert 1, volSurfaceVectorVector == "EURUSD_VOL_SURF_VV"
 
-ok = t("createFxVolatilitySurface strikes vector / vols matrix",
-    volSurfaceVectorMatrix == "EURUSD_VOL_SURF_VM");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxVolatilitySurface strikes matrix / vols vector"
+assert 1, volSurfaceMatrixVector == "EURUSD_VOL_SURF_MV"
 
-ok = t("createVolSurfBuildSettings -> [FX_VOL_BUILD_SETTINGS, json]",
-    isHandleJson(volSurfBuildSettings, "FX_VOL_BUILD_SETTINGS") &&
-    hasJsonField(volSurfBuildSettings[1], "ith_param_fixed"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxVolatilitySurface strikes vector / vols matrix"
+assert 1, volSurfaceVectorMatrix == "EURUSD_VOL_SURF_VM"
 
-ok = t("buildFxVolatilitySurface -> [EURUSD_BUILT_VOL_SURF, json]",
-    isHandleJson(builtVolSurface, "EURUSD_BUILT_VOL_SURF"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxVolatilitySurface strikes matrix / vols matrix"
+assert 1, volSurfaceMatrixMatrix == "EURUSD_VOL_SURF_MM"
 
-ok = t("createFlatFxVolatilitySurface -> [USDCNH_FLAT_FX_VOL_SURF, json]",
-    isHandleJson(flatFxVolSurface, "USDCNH_FLAT_FX_VOL_SURF") &&
-    hasJsonField(flatFxVolSurface[1], "volatility_surface"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createVolSurfBuildSettings -> [FX_VOL_BUILD_SETTINGS, json]"
+assert 1, isHandleJson(volSurfBuildSettings, "FX_VOL_BUILD_SETTINGS") &&
+    hasJsonField(volSurfBuildSettings[1], "ith_param_fixed")
 
-ok = t("createFxMktDataSet -> [EURUSD_MKT, json]", isHandleJson(eurusdMktData, "EURUSD_MKT"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="buildFxVolatilitySurface -> [EURUSD_BUILT_VOL_SURF, json]"
+assert 1, isHandleJson(builtVolSurface, "EURUSD_BUILT_VOL_SURF")
 
-ok = t("createFxMktDataSet -> [USDCNH_MKT, json]", isHandleJson(usdcnhMktData, "USDCNH_MKT"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFlatFxVolatilitySurface -> [USDCNH_FLAT_FX_VOL_SURF, json]"
+assert 1, isHandleJson(flatFxVolSurface, "USDCNH_FLAT_FX_VOL_SURF") &&
+    hasJsonField(flatFxVolSurface[1], "volatility_surface")
 
-ok = t("createFxMktDataSet empty vol -> [USDCNH_FALLBACK_MKT, json]",
-    isHandleJson(usdcnhFallbackMktData, "USDCNH_FALLBACK_MKT") &&
-    hasJsonField(usdcnhFallbackMktData[1], "vol_surf"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxMktDataSet -> [EURUSD_MKT, json]"
+assert 1, isHandleJson(eurusdMktData, "EURUSD_MKT")
+
+@testing:case="createFxMktDataSet -> [USDCNH_MKT, json]"
+assert 1, isHandleJson(usdcnhMktData, "USDCNH_MKT")
+
+@testing:case="createFxMktDataSet empty vol -> [USDCNH_FALLBACK_MKT, json]"
+assert 1, isHandleJson(usdcnhFallbackMktData, "USDCNH_FALLBACK_MKT") &&
+    hasJsonField(usdcnhFallbackMktData[1], "vol_surf")
 
 // Frozen references from the reviewed EUR/USD acceptance scenario.
-ok = t("calcFxForwardRate -> reference 1.178397818198062",
-    abs(calcFxForwardRateValue - 1.178397818198062) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="calcFxForwardRate -> reference 1.178397818198062"
+assert 1, abs(calcFxForwardRateValue - 1.178397818198062) < 1.0e-12
 
-ok = t("calcFxSwapPoint -> reference 0.002297818198062185",
-    abs(calcFxSwapPointValue - 0.002297818198062185) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="calcFxSwapPoint -> reference 0.002297818198062185"
+assert 1, abs(calcFxSwapPointValue - 0.002297818198062185) < 1.0e-12
 
-ok = t("calcFxAtmStrike -> reference 1.1818054618389189",
-    abs(calcFxAtmStrikeValue - 1.1818054618389189) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="calcFxAtmStrike -> reference 1.1818054618389189"
+assert 1, abs(calcFxAtmStrikeValue - 1.1818054618389189) < 1.0e-12
 
-ok = t("calcFxAtmStrike multiple expiries -> reviewed references",
-    abs(calcFxAtmStrikeShort - 1.178853830469094) < 1.0e-12 &&
-    abs(calcFxAtmStrikeLong - 1.1853748453767678) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="calcFxAtmStrike multiple expiries -> reviewed references"
+assert 1, abs(calcFxAtmStrikeShort - 1.178853830469094) < 1.0e-12 &&
+    abs(calcFxAtmStrikeLong - 1.1853748453767678) < 1.0e-12
 
-ok = t("calcFxAtmStrike repeated calls are deterministic",
-    calcFxAtmStrikeValue == calcFxAtmStrikeRepeat1 &&
-    calcFxAtmStrikeRepeat1 == calcFxAtmStrikeRepeat2);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="calcFxAtmStrike repeated calls are deterministic"
+assert 1, calcFxAtmStrikeValue == calcFxAtmStrikeRepeat1 &&
+    calcFxAtmStrikeRepeat1 == calcFxAtmStrikeRepeat2
 
-ok = t("calcFxDeltaToStrike -> reference 1.2185761274280187",
-    abs(calcFxDeltaToStrikeValue - 1.2185761274280187) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="calcFxDeltaToStrike -> reference 1.2185761274280187"
+assert 1, abs(calcFxDeltaToStrikeValue - 1.2185761274280187) < 1.0e-12
 
-ok = t("createCalendar -> FX calendars", calEutaCreated && calGbloCreated && calHkhkCreated);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createCalendar -> FX calendars"
+assert 1, calEutaCreated && calGbloCreated && calHkhkCreated
 
-ok = t("createFxSpotTemplate -> [EURUSD_SPOT_TPL, json]",
-    isHandleJson(fxSpotTemplate, "EURUSD_SPOT_TPL") &&
-    hasJsonField(fxSpotTemplate[1], "spot_delay"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxSpotTemplate -> [EURUSD_SPOT_TPL, json]"
+assert 1, isHandleJson(fxSpotTemplate, "EURUSD_SPOT_TPL") &&
+    hasJsonField(fxSpotTemplate[1], "spot_delay")
 
-ok = t("createFxForwardTemplate -> [EURUSD_FWD_TPL, json]",
-    isHandleJson(fxForwardTemplate, "EURUSD_FWD_TPL") &&
-    hasJsonField(fxForwardTemplate[1], "fixing_offset"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxForwardTemplate -> [EURUSD_FWD_TPL, json]"
+assert 1, isHandleJson(fxForwardTemplate, "EURUSD_FWD_TPL") &&
+    hasJsonField(fxForwardTemplate[1], "fixing_offset")
 
-ok = t("createFxSwapTemplate -> [EURUSD_SWP_TPL, json]",
-    isHandleJson(fxSwapTemplate, "EURUSD_SWP_TPL") &&
-    hasJsonField(fxSwapTemplate[1], "start_convention"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxSwapTemplate -> [EURUSD_SWP_TPL, json]"
+assert 1, isHandleJson(fxSwapTemplate, "EURUSD_SWP_TPL") &&
+    hasJsonField(fxSwapTemplate[1], "start_convention")
 
-ok = t("createFxNdfTemplate -> [USDCNH_NDF_TPL, json]",
-    isHandleJson(fxNdfTemplate, "USDCNH_NDF_TPL") &&
-    hasJsonField(fxNdfTemplate[1], "settlement_currency"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+@testing:case="createFxNdfTemplate -> [USDCNH_NDF_TPL, json]"
+assert 1, isHandleJson(fxNdfTemplate, "USDCNH_NDF_TPL") &&
+    hasJsonField(fxNdfTemplate[1], "settlement_currency")
 
-// ============================================================================
-// Active pricing tests from test_fxanalytics.py
-// ============================================================================
-print("");
-print("--- Test: FX forward ---");
+// --- Active pricing tests from test_fxanalytics.py ---
+@testing:case="createFxForward -> FX_FWD_INST"
 fxForward = caplib::createFxForward(
     "EUR", 1000000.0, "USD", 1176100.0,
-    2021.07.01, 2021.06.30, "FX_FWD_INST", false);
-ok = t("createFxForward -> FX_FWD_INST", fxForward == "FX_FWD_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-fxForwardPricingResult = caplib::priceFxForward(
-    fxForward, asOfDate, eurusdMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
-ok = checkPricingResult("priceFxForward", fxForwardPricingResult, "FX_FWD_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    2021.07.01, 2021.06.30, "FX_FWD_INST", false)
+assert 1, fxForward == "FX_FWD_INST"
 
-print("");
-print("--- Test: FX swap ---");
+@testing:case="priceFxForward -> [FX_FWD_INST_results, present_value reference]"
+fxForwardPricingResult = caplib::priceFxForward(
+    fxForward, asOfDate, eurusdMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)
+assert 1, isPricingResultsJson(fxForwardPricingResult, "FX_FWD_INST_results")
+assert 2, abs(presentValue(fxForwardPricingResult) - -324155.1424098549) < abs(-324155.1424098549) * 1.0e-9 + 1.0e-6
+
+@testing:case="createFxSwap -> FX_SWAP_INST"
 fxSwap = caplib::createFxSwap(
     "EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31,
     "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30,
-    "FX_SWAP_INST", false);
-ok = t("createFxSwap -> FX_SWAP_INST", fxSwap == "FX_SWAP_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-fxSwapPricingResult = caplib::priceFxSwap(
-    fxSwap, asOfDate, eurusdMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
-ok = checkPricingResult("priceFxSwap", fxSwapPricingResult, "FX_SWAP_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    "FX_SWAP_INST", false)
+assert 1, fxSwap == "FX_SWAP_INST"
 
-print("");
-print("--- Test: FX non-deliverable forward ---");
+@testing:case="priceFxSwap -> [FX_SWAP_INST_results, present_value reference]"
+fxSwapPricingResult = caplib::priceFxSwap(
+    fxSwap, asOfDate, eurusdMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)
+assert 1, isPricingResultsJson(fxSwapPricingResult, "FX_SWAP_INST_results")
+assert 2, abs(presentValue(fxSwapPricingResult) - -327785.54562939936) < abs(-327785.54562939936) * 1.0e-9 + 1.0e-6
+
+@testing:case="createFxNonDeliverableForward -> FX_NDF_INST"
 fxNdf = caplib::createFxNonDeliverableForward(
     "USD", 10000.0, "CNH", 66916.0, "USD",
-    2021.07.01, 2021.06.30, "FX_NDF_INST", false);
-ok = t("createFxNonDeliverableForward -> FX_NDF_INST", fxNdf == "FX_NDF_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-fxNdfPricingResult = caplib::priceFxNonDeliverableForward(
-    fxNdf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
-ok = checkPricingResult("priceFxNonDeliverableForward", fxNdfPricingResult, "FX_NDF_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    2021.07.01, 2021.06.30, "FX_NDF_INST", false)
+assert 1, fxNdf == "FX_NDF_INST"
 
-print("");
-print("--- Test: FX European option ---");
+@testing:case="priceFxNonDeliverableForward -> [FX_NDF_INST_results, present_value reference]"
+fxNdfPricingResult = caplib::priceFxNonDeliverableForward(
+    fxNdf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)
+assert 1, isPricingResultsJson(fxNdfPricingResult, "FX_NDF_INST_results")
+assert 2, abs(presentValue(fxNdfPricingResult) - -435394.7797898732) < abs(-435394.7797898732) * 1.0e-9 + 1.0e-6
+
+@testing:case="createEuropeanOption -> FX_EO_INST"
 europeanOption = caplib::createEuropeanOption(
     "CALL", eurusdSpot, 2021.09.26, 2021.09.27,
-    1000000.0, currency, "SPOT", currency, underlying, "FX_EO_INST", false);
-ok = t("createEuropeanOption -> FX_EO_INST", europeanOption == "FX_EO_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-europeanPricingResult = caplib::priceFxEuropeanOption(
-    europeanOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxEuropeanOption", europeanPricingResult, "FX_EO_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    1000000.0, currency, "SPOT", currency, underlying, "FX_EO_INST", false)
+assert 1, europeanOption == "FX_EO_INST"
 
-print("");
-print("--- Test: FX American option ---");
+@testing:case="priceFxEuropeanOption -> [FX_EO_INST_results, present_value reference]"
+europeanPricingResult = caplib::priceFxEuropeanOption(
+    europeanOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(europeanPricingResult, "FX_EO_INST_results")
+assert 2, abs(presentValue(europeanPricingResult) - 23063.932727811134) < abs(23063.932727811134) * 1.0e-9 + 1.0e-6
+
+@testing:case="createAmericanOption -> FX_AM_INST"
 americanOption = caplib::createAmericanOption(
     "CALL", eurusdSpot, 2021.09.26, 2021.09.27, 1,
-    1000000.0, currency, "SPOT", currency, underlying, "FX_AM_INST", false);
-ok = t("createAmericanOption -> FX_AM_INST", americanOption == "FX_AM_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-americanPricingResult = caplib::priceFxAmericanOption(
-    americanOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxAmericanOption", americanPricingResult, "FX_AM_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    1000000.0, currency, "SPOT", currency, underlying, "FX_AM_INST", false)
+assert 1, americanOption == "FX_AM_INST"
 
-print("");
-print("--- Test: FX Asian option ---");
+@testing:case="priceFxAmericanOption -> [FX_AM_INST_results, present_value reference]"
+americanPricingResult = caplib::priceFxAmericanOption(
+    americanOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(americanPricingResult, "FX_AM_INST_results")
+assert 2, abs(presentValue(americanPricingResult) - 23049.409273482135) < abs(23049.409273482135) * 1.0e-9 + 1.0e-6
+
+@testing:case="createAsianOption -> FX_AS_INST"
 asianOption = caplib::createAsianOption(
     "CALL", eurusdSpot, 2021.09.26, 2021.09.27,
     "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD",
     "DISCRETE_OBSERVATION_TYPE", 1000000.0,
     currency, "SPOT", currency, underlying, "FX_AS_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createAsianOption -> FX_AS_INST", asianOption == "FX_AS_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-asianPricingResult = caplib::priceFxAsianOption(
-    asianOption, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxAsianOption", asianPricingResult, "FX_AS_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, asianOption == "FX_AS_INST"
 
-print("");
-print("--- Test: FX digital option ---");
+@testing:case="priceFxAsianOption -> [FX_AS_INST_results, present_value reference]"
+asianPricingResult = caplib::priceFxAsianOption(
+    asianOption, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(asianPricingResult, "FX_AS_INST_results")
+assert 2, abs(presentValue(asianPricingResult) - 12917.434832018096) < abs(12917.434832018096) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDigitalOption -> FX_DG_INST"
 digitalOption = caplib::createDigitalOption(
     "CALL", eurusdSpot, 2021.09.26, 2021.09.27,
-    0.0, 1.0, 1000000.0, currency, "SPOT", currency, underlying, "FX_DG_INST", false);
-ok = t("createDigitalOption -> FX_DG_INST", digitalOption == "FX_DG_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-digitalPricingResult = caplib::priceFxDigitalOption(
-    digitalOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxDigitalOption", digitalPricingResult, "FX_DG_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    0.0, 1.0, 1000000.0, currency, "SPOT", currency, underlying, "FX_DG_INST", false)
+assert 1, digitalOption == "FX_DG_INST"
 
-print("");
-print("--- Test: FX one-touch option ---");
+@testing:case="priceFxDigitalOption -> [FX_DG_INST_results, present_value reference]"
+digitalPricingResult = caplib::priceFxDigitalOption(
+    digitalOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(digitalPricingResult, "FX_DG_INST_results")
+assert 2, abs(presentValue(digitalPricingResult) - 659362.9006534135) < abs(659362.9006534135) * 1.0e-9 + 1.0e-6
+
+@testing:case="createOneTouchOption -> FX_OT_INST"
 oneTouchOption = caplib::createOneTouchOption(
     2021.09.26, 2021.09.27, "UP_IN", eurusdSpot * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
-    1.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_OT_INST", false);
-ok = t("createOneTouchOption -> FX_OT_INST", oneTouchOption == "FX_OT_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-oneTouchPricingResult = caplib::priceFxOneTouchOption(
-    oneTouchOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxOneTouchOption", oneTouchPricingResult, "FX_OT_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    1.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_OT_INST", false)
+assert 1, oneTouchOption == "FX_OT_INST"
 
-print("");
-print("--- Test: FX double-touch option ---");
+@testing:case="priceFxOneTouchOption -> [FX_OT_INST_results, present_value reference]"
+oneTouchPricingResult = caplib::priceFxOneTouchOption(
+    oneTouchOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(oneTouchPricingResult, "FX_OT_INST_results")
+assert 2, abs(presentValue(oneTouchPricingResult) - 287715.3800407353) < abs(287715.3800407353) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDoubleTouchOption -> FX_DT_INST"
 doubleTouchOption = caplib::createDoubleTouchOption(
     2021.09.26, 2021.09.27, "DOWN_IN", eurusdSpot * 0.95,
     "UP_IN", eurusdSpot * 1.05, "CONTINUOUS_OBSERVATION_TYPE",
     "PAY_AT_MATURITY", 1.0, 0.0, 1, 1000000.0,
-    currency, "SPOT", currency, underlying, "FX_DT_INST", false);
-ok = t("createDoubleTouchOption -> FX_DT_INST", doubleTouchOption == "FX_DT_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleTouchPricingResult = caplib::priceFxDoubleTouchOption(
-    doubleTouchOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxDoubleTouchOption", doubleTouchPricingResult, "FX_DT_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    currency, "SPOT", currency, underlying, "FX_DT_INST", false)
+assert 1, doubleTouchOption == "FX_DT_INST"
 
-print("");
-print("--- Test: FX single-barrier option ---");
+@testing:case="priceFxDoubleTouchOption -> [FX_DT_INST_results, present_value reference]"
+doubleTouchPricingResult = caplib::priceFxDoubleTouchOption(
+    doubleTouchOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(doubleTouchPricingResult, "FX_DT_INST_results")
+assert 2, abs(presentValue(doubleTouchPricingResult) - 515637.537791354) < abs(515637.537791354) * 1.0e-9 + 1.0e-6
+
+@testing:case="createSingleBarrierOption -> FX_SB_INST"
 singleBarrierOption = caplib::createSingleBarrierOption(
     "CALL", eurusdSpot, 2021.09.26, 2021.09.27,
     "UP_IN", eurusdSpot * 1.05, "CONTINUOUS_OBSERVATION_TYPE",
     "PAY_AT_MATURITY", 0.0, 0.0, 1, 1000000.0,
-    currency, "SPOT", currency, underlying, "FX_SB_INST", false);
-ok = t("createSingleBarrierOption -> FX_SB_INST", singleBarrierOption == "FX_SB_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-singleBarrierPricingResult = caplib::priceFxSingleBarrierOption(
-    singleBarrierOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxSingleBarrierOption", singleBarrierPricingResult, "FX_SB_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    currency, "SPOT", currency, underlying, "FX_SB_INST", false)
+assert 1, singleBarrierOption == "FX_SB_INST"
 
-print("");
-print("--- Test: FX double-barrier option ---");
+@testing:case="priceFxSingleBarrierOption -> [FX_SB_INST_results, present_value reference]"
+singleBarrierPricingResult = caplib::priceFxSingleBarrierOption(
+    singleBarrierOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(singleBarrierPricingResult, "FX_SB_INST_results")
+assert 2, abs(presentValue(singleBarrierPricingResult) - 17758.16956075137) < abs(17758.16956075137) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDoubleBarrierOption -> FX_DB_INST"
 doubleBarrierOption = caplib::createDoubleBarrierOption(
     "CALL", eurusdSpot, 2021.09.26, 2021.09.27,
     "DOWN_IN", eurusdSpot * 0.95, "UP_IN", eurusdSpot * 1.05,
     "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 0.0, 0.0, 1, 1000000.0,
-    currency, "SPOT", currency, underlying, "FX_DB_INST", false);
-ok = t("createDoubleBarrierOption -> FX_DB_INST", doubleBarrierOption == "FX_DB_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleBarrierPricingResult = caplib::priceFxDoubleBarrierOption(
-    doubleBarrierOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxDoubleBarrierOption", doubleBarrierPricingResult, "FX_DB_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    currency, "SPOT", currency, underlying, "FX_DB_INST", false)
+assert 1, doubleBarrierOption == "FX_DB_INST"
 
-print("");
-print("--- Test: FX single-shark-fin option ---");
+@testing:case="priceFxDoubleBarrierOption -> [FX_DB_INST_results, present_value reference]"
+doubleBarrierPricingResult = caplib::priceFxDoubleBarrierOption(
+    doubleBarrierOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(doubleBarrierPricingResult, "FX_DB_INST_results")
+assert 2, abs(presentValue(doubleBarrierPricingResult) - 17903.49887484456) < abs(17903.49887484456) * 1.0e-9 + 1.0e-6
+
+@testing:case="createSingleSharkFinOption -> FX_SF_INST"
 singleSharkFinOption = caplib::createSingleSharkFinOption(
     "CALL", eurusdSpot, 2021.09.26, 2021.09.27, 1.0,
     "RELATIVE_PERFORM_TYPE", "UP_OUT", eurusdSpot * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_SF_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createSingleSharkFinOption -> FX_SF_INST", singleSharkFinOption == "FX_SF_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-singleSharkFinPricingResult = caplib::priceFxSingleSharkFinOption(
-    singleSharkFinOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxSingleSharkFinOption", singleSharkFinPricingResult, "FX_SF_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, singleSharkFinOption == "FX_SF_INST"
 
-print("");
-print("--- Test: FX double-shark-fin option ---");
+@testing:case="priceFxSingleSharkFinOption -> [FX_SF_INST_results, present_value reference]"
+singleSharkFinPricingResult = caplib::priceFxSingleSharkFinOption(
+    singleSharkFinOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(singleSharkFinPricingResult, "FX_SF_INST_results")
+assert 2, abs(presentValue(singleSharkFinPricingResult) - 5042.700822131019) < abs(5042.700822131019) * 1.0e-9 + 1.0e-6
+
+@testing:case="createDoubleSharkFinOption -> FX_DS_INST"
 doubleSharkFinOption = caplib::createDoubleSharkFinOption(
     eurusdSpot, eurusdSpot, 2021.09.26, 2021.09.27, 1.0, 1.0,
     "ABSOLUTE_PERFORM_TYPE", eurusdSpot * 0.95, eurusdSpot * 1.05,
     "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
     0.0, 0.0, 0.0, 0.0, 1, 1000000.0,
     currency, "SPOT", currency, underlying, "FX_DS_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createDoubleSharkFinOption -> FX_DS_INST", doubleSharkFinOption == "FX_DS_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-doubleSharkFinPricingResult = caplib::priceFxDoubleSharkFinOption(
-    doubleSharkFinOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxDoubleSharkFinOption", doubleSharkFinPricingResult, "FX_DS_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, doubleSharkFinOption == "FX_DS_INST"
 
-print("");
-print("--- Test: FX range-accrual option ---");
+@testing:case="priceFxDoubleSharkFinOption -> [FX_DS_INST_results, present_value reference]"
+doubleSharkFinPricingResult = caplib::priceFxDoubleSharkFinOption(
+    doubleSharkFinOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(doubleSharkFinPricingResult, "FX_DS_INST_results")
+assert 2, abs(presentValue(doubleSharkFinPricingResult) - 11679.1322791014) < abs(11679.1322791014) * 1.0e-9 + 1.0e-6
+
+@testing:case="createRangeAccrualOption -> FX_RA_INST"
 rangeAccrualOption = caplib::createRangeAccrualOption(
     2021.09.26, 2021.09.27, 0.0, 0.01,
     eurusdSpot * 0.95, eurusdSpot * 1.05,
     1000000.0, currency, "SPOT", currency, underlying, "FX_RA_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createRangeAccrualOption -> FX_RA_INST", rangeAccrualOption == "FX_RA_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-rangeAccrualPricingResult = caplib::priceFxRangeAccrualOption(
-    rangeAccrualOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxRangeAccrualOption", rangeAccrualPricingResult, "FX_RA_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, rangeAccrualOption == "FX_RA_INST"
 
-print("");
-print("--- Test: FX airbag option ---");
+@testing:case="priceFxRangeAccrualOption -> [FX_RA_INST_results, present_value reference]"
+rangeAccrualPricingResult = caplib::priceFxRangeAccrualOption(
+    rangeAccrualOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(rangeAccrualPricingResult, "FX_RA_INST_results")
+assert 2, abs(presentValue(rangeAccrualPricingResult) - 8851.407821966865) < abs(8851.407821966865) * 1.0e-9 + 1.0e-6
+
+@testing:case="createAirbagOption -> FX_AB_INST"
 airbagOption = caplib::createAirbagOption(
     "CALL", 2021.09.26, 2021.09.27,
     eurusdSpot, eurusdSpot * 1.05, 1.0, 1.0, eurusdSpot,
     "DOWN_IN", eurusdSpot * 0.8, "DISCRETE_OBSERVATION_TYPE",
     1000000.0, currency, "SPOT", currency, underlying, "FX_AB_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createAirbagOption -> FX_AB_INST", airbagOption == "FX_AB_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-airbagPricingResult = caplib::priceFxAirbagOption(
-    airbagOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxAirbagOption", airbagPricingResult, "FX_AB_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, airbagOption == "FX_AB_INST"
 
-print("");
-print("--- Test: FX ping-pong option ---");
+@testing:case="priceFxAirbagOption -> [FX_AB_INST_results, present_value reference]"
+airbagPricingResult = caplib::priceFxAirbagOption(
+    airbagOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(airbagPricingResult, "FX_AB_INST_results")
+assert 2, abs(presentValue(airbagPricingResult) - 23077.89598077418) < abs(23077.89598077418) * 1.0e-9 + 1.0e-6
+
+@testing:case="createPingPongOption -> FX_PP_INST"
 pingPongOption = caplib::createPingPongOption(
     2021.09.26, 2021.09.27, "DOWN_IN", eurusdSpot * 0.95,
     "UP_IN", eurusdSpot * 1.05, "DISCRETE_OBSERVATION_TYPE",
     "PAY_AT_MATURITY", 0.015, 0.0, 1, 1000000.0,
     currency, "SPOT", currency, underlying, "FX_PP_INST",
-    dailyObsDates, dailyObsValues, dailyObsWeights, false);
-ok = t("createPingPongOption -> FX_PP_INST", pingPongOption == "FX_PP_INST");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-pingPongPricingResult = caplib::priceFxPingPongOption(
-    pingPongOption, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true);
-ok = checkPricingResult("priceFxPingPongOption", pingPongPricingResult, "FX_PP_INST_results");
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, pingPongOption == "FX_PP_INST"
 
-print("");
-print("--- Test: concurrent submitJob calls ---");
+@testing:case="priceFxPingPongOption -> [FX_PP_INST_results, present_value reference]"
+pingPongPricingResult = caplib::priceFxPingPongOption(
+    pingPongOption, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(pingPongPricingResult, "FX_PP_INST_results")
+assert 2, abs(presentValue(pingPongPricingResult) - 16.672620056172782) < abs(16.672620056172782) * 1.0e-9 + 1.0e-6
+
+// --- Concurrent submitJob calls ---
+@testing:case="four concurrent calcFxAtmStrike jobs -> identical reference"
 def fxAtmConcurrentJob() {
     return caplib::calcFxAtmStrike(
         "ATM_DNS_PIPS", 2021.09.26, "EURUSD_BUILT_VOL_SURF",
@@ -601,21 +583,96 @@ jobResult1 = getJobReturn(jobId1, true);
 jobResult2 = getJobReturn(jobId2, true);
 jobResult3 = getJobReturn(jobId3, true);
 jobResult4 = getJobReturn(jobId4, true);
-ok = t("four concurrent calcFxAtmStrike jobs -> identical reference",
-    abs(jobResult1 - 1.1818054618389189) < 1.0e-12 &&
-    jobResult1 == jobResult2 && jobResult2 == jobResult3 && jobResult3 == jobResult4);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+assert 1, abs(jobResult1 - 1.1818054618389189) < 1.0e-12 &&
+    jobResult1 == jobResult2 && jobResult2 == jobResult3 && jobResult3 == jobResult4
 
 // ============================================================================
-// Summary
+// Negative / exception validation
 // ============================================================================
-print("");
-print("============================================");
-print("  TEST RESULTS");
-print("  Passed: " + string(passNum) + " / " + string(testNum));
-print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
-print("============================================");
 
-if (passNum != testNum) {
-    throw "FX analytics tests failed";
+@testing:case="createFxOptionQuoteMatrix rejects terms/quoteNames length mismatch", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["ON", "1W"], quoteNames, quoteValues, "FX_BAD_QUOTES", true)
+
+
+
+@testing:case="priceFxForward rejects wrong mktData handle", exception=1
+caplib::priceFxForward(fxForward, asOfDate, usdCurve, cashAnalyticalSettings, fxRisk[0], "", "", true)
+
+@testing:case="createFxVolatilitySurface rejects terms/strikes column mismatch", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30, 2021.09.30], formStrikesMatrix, formVolsMatrix, linearVolSurfDefinition[0], fxMktConventions[0], "FX_BAD_VOL_SURF", false)
+
+@testing:case="createFxSpotRate keyword arguments unsupported", syntaxError=1
+caplib::createFxSpotRate(spotRate=eurusdSpot, leftCcy="EUR", rightCcy="USD", referenceDate=asOfDate, spotDate=2021.04.01, handle="FX_BAD_KW")
+
+
+// ============================================================================
+// Extended negative / exception validation
+// ============================================================================
+
+
+@testing:case="createFxNdfTemplate rejects INT settlementCurrency", exception=1
+caplib::createFxNdfTemplate("FX_BAD_NDF_1", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", [calHkhk, calGblo], 1, true)
+
+@testing:case="createFxMktDataSet rejects wrong discount curve handle", exception=1
+caplib::createFxMktDataSet(asOfDate, eurusdSpotRate[0], eurCurve, eurusdSpotRate[0], builtVolSurface[0], "", "FX_BAD_MKT_1", true)
+
+@testing:case="createFxForward rejects STRING notional", exception=1
+caplib::createFxForward("EUR", "1000000.0", "USD", 1176100.0, 2021.07.01, 2021.06.30, "FX_BAD_FWD_2", false)
+
+@testing:case="createFxVolatilitySurface rejects wrong smile definition handle", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, volSurface, fxMktConventions[0], "FX_BAD_VOL_SURF_2", false)
+
+// --- Multi-input correctness (different expiry / spot dates) ---
+@testing:case="calcFxForwardRate different expiry -> reference 1.1837639404632467"
+assert 1, abs(caplib::calcFxForwardRate(asOfDate, "EUR", "USD", 2022.01.01, eurusdSpotRate[0], usdCurve, eurCurve) - 1.1837639404632467) < 1.0e-12
+
+@testing:case="calcFxAtmStrike different spotDate -> reference 1.1799978331418322"
+assert 1, abs(caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.08.01, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve) - 1.1799978331418322) < 1.0e-12
+
+@testing:case="calcFxAtmStrike different spotDate -> reference 1.1831546875205545"
+assert 1, abs(caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.11.01, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve) - 1.1831546875205545) < 1.0e-12
+
+@testing:case="calcFxDeltaToStrike different expiry -> reference 1.2099756099954906"
+assert 1, abs(caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.08.01, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve) - 1.2099756099954906) < 1.0e-12
+
+// --- Determinism ---
+@testing:case="calcFxForwardRate repeated calls are deterministic"
+fwdR1 = caplib::calcFxForwardRate(asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve)
+fwdR2 = caplib::calcFxForwardRate(asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve)
+fwdR3 = caplib::calcFxForwardRate(asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve)
+assert 1, fwdR1 == fwdR2 && fwdR2 == fwdR3 && abs(fwdR1 - 1.178397818198062) < 1.0e-12
+
+@testing:case="calcFxSwapPoint repeated calls are deterministic"
+swpR1 = caplib::calcFxSwapPoint(asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve)
+swpR2 = caplib::calcFxSwapPoint(asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve)
+assert 1, swpR1 == swpR2 && abs(swpR1 - 0.002297818198062185) < 1.0e-12
+
+// --- Concurrency ---
+@testing:case="four concurrent calcFxForwardRate jobs -> identical reference"
+def fxFwdConcurrentJob() {
+    return caplib::calcFxForwardRate(2021.03.30, "EUR", "USD", 2021.07.01, "EURUSD_SPOT_RATE", "USD_DEPO", "EUR_EURUSD_FX");
 }
+jobSuffix2 = string(rand(1000000000, 1)[0]);
+jobId5 = submitJob("caplib_fx_fwd_" + jobSuffix2 + "_1", "caplib FX fwd concurrency 1", fxFwdConcurrentJob);
+jobId6 = submitJob("caplib_fx_fwd_" + jobSuffix2 + "_2", "caplib FX fwd concurrency 2", fxFwdConcurrentJob);
+jobId7 = submitJob("caplib_fx_fwd_" + jobSuffix2 + "_3", "caplib FX fwd concurrency 3", fxFwdConcurrentJob);
+jobId8 = submitJob("caplib_fx_fwd_" + jobSuffix2 + "_4", "caplib FX fwd concurrency 4", fxFwdConcurrentJob);
+jobResult5 = getJobReturn(jobId5, true);
+jobResult6 = getJobReturn(jobId6, true);
+jobResult7 = getJobReturn(jobId7, true);
+jobResult8 = getJobReturn(jobId8, true);
+assert 1, abs(jobResult5 - 1.178397818198062) < 1.0e-12 &&
+    jobResult5 == jobResult6 && jobResult6 == jobResult7 && jobResult7 == jobResult8
+
+
+// --- Matrix null / shape validation (fx option quote matrix) ---
+@testing:case="createFxOptionQuoteMatrix rejects zero-row matrix", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, quoteTerms, quoteNames, matrix(DOUBLE, 0, 18), "FX_BAD_QQ_1", true)
+
+@testing:case="createFxOptionQuoteMatrix rejects zero-column matrix", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, quoteTerms, quoteNames, matrix(DOUBLE, 5, 0), "FX_BAD_QQ_2", true)
+
+
+// --- INT parameter type validation (fed STRING) ---
+@testing:case="createVolSurfBuildSettings rejects STRING int parameter", exception=1
+caplib::createVolSurfBuildSettings("1", 0.5, "FX_BAD_VSB", true)

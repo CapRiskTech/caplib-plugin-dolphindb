@@ -1,13 +1,13 @@
 // ============================================================================
 // test_iranalytics.dos
 // Native DolphinDB IR Analytics tests.
+// Uses the native DolphinDB testing framework:
+//     test("test_iranalytics.dos")
 // ============================================================================
 
-print("============================================");
-print("  IR Analytics Test Suite                  ");
-print("============================================");
-
-print("--- Setup: IR fixtures ---");
+// ============================================================================
+// Setup: IR fixtures (plain script, executed before the test cases)
+// ============================================================================
 
 asOfDate = 2022.03.09;
 currency = "CNY";
@@ -61,67 +61,8 @@ xccyIrRisk = caplib::createXccyIrRiskSettings(irCurveRisk, priceRisk, thetaRisk,
 mktData = caplib::createIrMktDataSet(
     asOfDate, irCurve, [iborIndex[0]], [irCurve], "IR_MKT", true);
 
-print("  Setup fixtures loaded");
-
-testNum = 0;
-passNum = 0;
-
-def t(name, cond) {
-    if (cond) { print("  PASS: " + name); }
-    else      { print("  FAIL: " + name); }
-    return cond;
-}
-
-def isHandleJson(result, expectedHandle) {
-    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
-        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
-}
-
-def hasJsonField(json, fieldName) {
-    return strpos(json, "\"" + fieldName + "\"") >= 0;
-}
-
-def isPricingResultsJson(result, expectedHandle) {
-    return isHandleJson(result, expectedHandle) &&
-        hasJsonField(result[1], "present_value") &&
-        hasJsonField(result[1], "cash_value") &&
-        hasJsonField(result[1], "currency");
-}
-
-print("");
-print("--- Test 1: IR curve inputs/build settings ---");
-ok = t("createCalendar -> CAL_CFETS", calCfetsCreated);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createIborIndex -> [SHIBOR_3M, json]",
-    isHandleJson(iborIndex, "SHIBOR_3M") &&
-    hasJsonField(iborIndex[1], "name") &&
-    hasJsonField(iborIndex[1], "tenor"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createFixedLegDefinition -> [IR_FIXED_LEG, json]",
-    isHandleJson(fixedLeg, "IR_FIXED_LEG") &&
-    hasJsonField(fixedLeg[1], "leg_type") &&
-    hasJsonField(fixedLeg[1], "schedule_definition"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createFloatingLegDefinition -> [IR_FLOATING_LEG, json]",
-    isHandleJson(floatingLeg, "IR_FLOATING_LEG") &&
-    hasJsonField(floatingLeg[1], "leg_type") &&
-    hasJsonField(floatingLeg[1], "ibor_index"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createIrVanillaSwapTemplate -> [CNY_SHIBOR_3M, json]",
-    isHandleJson(swapTemplate, "CNY_SHIBOR_3M") &&
-    hasJsonField(swapTemplate[1], "instrument_name") &&
-    hasJsonField(swapTemplate[1], "leg_definition"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
 curveBuildSettings = caplib::createIrYieldCurveBuildSettings(
     curveName, 0, [currency], [curveName], [iborIndex[0]], [curveName], "IR_BUILD_SETTINGS", true);
-ok = t("createIrYieldCurveBuildSettings -> [IR_BUILD_SETTINGS, json]",
-    isHandleJson(curveBuildSettings, "IR_BUILD_SETTINGS"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 parCurve = caplib::createIrParRateCurve(
     asOfDate, currency, curveName,
@@ -131,8 +72,6 @@ parCurve = caplib::createIrParRateCurve(
     [100.0, 100.0, 100.0],
     [0.023, 0.024, 0.026],
     "IR_PAR_CURVE", true);
-ok = t("createIrParRateCurve -> [IR_PAR_CURVE, json]", isHandleJson(parCurve, "IR_PAR_CURVE"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 builderParCurve = caplib::createIrParRateCurve(
     asOfDate, currency, curveName,
@@ -142,9 +81,6 @@ builderParCurve = caplib::createIrParRateCurve(
     [100.0, 100.0, 100.0],
     [2.3, 2.4, 2.6],
     "IR_BUILDER_PAR_CURVE", true);
-ok = t("createIrParRateCurve builder fixture -> [IR_BUILDER_PAR_CURVE, json]",
-    isHandleJson(builderParCurve, "IR_BUILDER_PAR_CURVE"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
 builtSingleCcyCurve = caplib::buildIrSingleCurrencyCurve(
     asOfDate,
@@ -162,41 +98,129 @@ builtSingleCcyCurve = caplib::buildIrSingleCurrencyCurve(
     "SINGLE_THREADING_MODE",
     ["IR_BUILT_CURVE"],
     "IR_SINGLE_CCY_BUILD_OUTPUT", true);
-ok = t("buildIrSingleCurrencyCurve -> scalar conventions, [IR_SINGLE_CCY_BUILD_OUTPUT, json]",
-    isHandleJson(builtSingleCcyCurve, "IR_SINGLE_CCY_BUILD_OUTPUT") &&
-    hasJsonField(builtSingleCcyCurve[1], "target_curves"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
-print("");
-print("--- Test 2: IR market/risk factories ---");
-ok = t("createIrMktDataSet -> [IR_MKT, json]", isHandleJson(mktData, "IR_MKT"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createIrRiskSettings -> [IR_RISK, json]", isHandleJson(irRisk, "IR_RISK"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createXccyIrRiskSettings -> Python arg order [IR_XCCY_RISK, json]",
-    isHandleJson(xccyIrRisk, "IR_XCCY_RISK") &&
-    hasJsonField(xccyIrRisk[1], "ir_curve_settings") &&
-    hasJsonField(xccyIrRisk[1], "fx_settings") &&
-    hasJsonField(xccyIrRisk[1], "theta_settings"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-print("");
-print("--- Test 3: IR vanilla instrument pricing ---");
 swapPricingResult = caplib::priceIrVanillaInstrument(
     swap, asOfDate, mktData[0], pricingSettings, irRisk[0], "", "", true);
-ok = t("priceIrVanillaInstrument -> [IR_SWAP_results, PricingResults JSON fields]",
-    isPricingResultsJson(swapPricingResult, "IR_SWAP_results"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
-print("");
-print("============================================");
-print("  TEST RESULTS");
-print("  Passed: " + string(passNum) + " / " + string(testNum));
-print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
-print("============================================");
+// ============================================================================
+// Helper predicates
+// ============================================================================
 
-if (passNum != testNum) {
-    throw "IR analytics tests failed";
+def isHandleJson(result, expectedHandle) {
+    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
+        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
 }
+
+def hasJsonField(json, fieldName) {
+    return strpos(json, "\"" + fieldName + "\"") >= 0;
+}
+
+def isPricingResultsJson(result, expectedHandle) {
+    return isHandleJson(result, expectedHandle) &&
+        hasJsonField(result[1], "present_value") &&
+        hasJsonField(result[1], "cash_value") &&
+        hasJsonField(result[1], "currency");
+}
+def presentValue(pricingResult) {
+    json = pricingResult[1];
+    marker = "\"present_value\":";
+    start = strpos(json, marker);
+    if (start < 0) { return double(NULL); }
+    start += strlen(marker);
+    rest = substr(json, start);
+    end = strpos(rest, ",");
+    if (end < 0) { end = strpos(rest, "}"); }
+    return double(substr(rest, 0, end));
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+// --- IR curve inputs/build settings ---
+@testing:case="createCalendar -> CAL_CFETS"
+assert 1, calCfetsCreated
+
+@testing:case="createIborIndex -> [SHIBOR_3M, json]"
+assert 1, isHandleJson(iborIndex, "SHIBOR_3M") &&
+    hasJsonField(iborIndex[1], "name") &&
+    hasJsonField(iborIndex[1], "tenor")
+
+@testing:case="createFixedLegDefinition -> [IR_FIXED_LEG, json]"
+assert 1, isHandleJson(fixedLeg, "IR_FIXED_LEG") &&
+    hasJsonField(fixedLeg[1], "leg_type") &&
+    hasJsonField(fixedLeg[1], "schedule_definition")
+
+@testing:case="createFloatingLegDefinition -> [IR_FLOATING_LEG, json]"
+assert 1, isHandleJson(floatingLeg, "IR_FLOATING_LEG") &&
+    hasJsonField(floatingLeg[1], "leg_type") &&
+    hasJsonField(floatingLeg[1], "ibor_index")
+
+@testing:case="createIrVanillaSwapTemplate -> [CNY_SHIBOR_3M, json]"
+assert 1, isHandleJson(swapTemplate, "CNY_SHIBOR_3M") &&
+    hasJsonField(swapTemplate[1], "instrument_name") &&
+    hasJsonField(swapTemplate[1], "leg_definition")
+
+@testing:case="createIrYieldCurveBuildSettings -> [IR_BUILD_SETTINGS, json]"
+assert 1, isHandleJson(curveBuildSettings, "IR_BUILD_SETTINGS")
+
+@testing:case="createIrParRateCurve -> [IR_PAR_CURVE, json]"
+assert 1, isHandleJson(parCurve, "IR_PAR_CURVE")
+
+@testing:case="createIrParRateCurve builder fixture -> [IR_BUILDER_PAR_CURVE, json]"
+assert 1, isHandleJson(builderParCurve, "IR_BUILDER_PAR_CURVE")
+
+@testing:case="buildIrSingleCurrencyCurve -> scalar conventions, [IR_SINGLE_CCY_BUILD_OUTPUT, json]"
+assert 1, isHandleJson(builtSingleCcyCurve, "IR_SINGLE_CCY_BUILD_OUTPUT") &&
+    hasJsonField(builtSingleCcyCurve[1], "target_curves")
+
+// --- IR market/risk factories ---
+@testing:case="createIrMktDataSet -> [IR_MKT, json]"
+assert 1, isHandleJson(mktData, "IR_MKT")
+
+@testing:case="createIrRiskSettings -> [IR_RISK, json]"
+assert 1, isHandleJson(irRisk, "IR_RISK")
+
+@testing:case="createXccyIrRiskSettings -> Python arg order [IR_XCCY_RISK, json]"
+assert 1, isHandleJson(xccyIrRisk, "IR_XCCY_RISK") &&
+    hasJsonField(xccyIrRisk[1], "ir_curve_settings") &&
+    hasJsonField(xccyIrRisk[1], "fx_settings") &&
+    hasJsonField(xccyIrRisk[1], "theta_settings")
+
+// --- IR vanilla instrument pricing ---
+@testing:case="priceIrVanillaInstrument -> [IR_SWAP_results, present_value reference]"
+assert 1, isPricingResultsJson(swapPricingResult, "IR_SWAP_results")
+assert 2, abs(presentValue(swapPricingResult) - -33063.77790012206) < abs(-33063.77790012206) * 1.0e-9 + 1.0e-6
+
+// ============================================================================
+// Negative / exception validation
+// ============================================================================
+
+@testing:case="createIborIndex rejects INT tenor", exception=1
+caplib::createIborIndex(indexName, 3, currency, [calCfets], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+
+@testing:case="createIrMktDataSet rejects wrong discount curve handle", exception=1
+caplib::createIrMktDataSet(asOfDate, iborIndex[0], [iborIndex[0]], [irCurve], "IR_BAD_MKT", true)
+
+@testing:case="buildIrVanillaInstrument rejects negative notional", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, swapTemplate[0], -1000000.0, "", "IR_BAD_SWAP", false)
+
+@testing:case="createIrVanillaSwapTemplate rejects missing argument", syntaxError=1
+caplib::createIrVanillaSwapTemplate(curveName, 1)
+
+
+// ============================================================================
+// Extended negative / exception validation
+// ============================================================================
+
+@testing:case="createFixedLegDefinition rejects INT calendar", exception=1
+caplib::createFixedLegDefinition(currency, 1, "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "IR_BAD_FL_2", true)
+
+@testing:case="createIrYieldCurveBuildSettings rejects currency/curve length mismatch", exception=1
+caplib::createIrYieldCurveBuildSettings(curveName, 0, [currency, "USD"], [curveName], [iborIndex[0]], [curveName], "IR_BAD_BUILD_2", true)
+
+@testing:case="createIrParRateCurve rejects lengths mismatch", exception=1
+caplib::createIrParRateCurve(asOfDate, currency, curveName, [iborIndex[0], curveName], ["DEPOSIT"], ["3M"], [100.0], [0.023], "IR_BAD_PAR_2", true)
+
+@testing:case="buildIrVanillaInstrument rejects wrong template handle", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, fixedLeg[0], 1000000.0, "", "IR_BAD_SWAP_2", false)

@@ -1,20 +1,13 @@
 // ============================================================================
 // test_fianalytics.dos
 // Native DolphinDB FI Analytics tests.
+// Uses the native DolphinDB testing framework:
+//     test("test_fianalytics.dos")
 // ============================================================================
 
-print("============================================");
-print("  FI Analytics Test Suite                  ");
-print("============================================");
-
-testNum = 0;
-passNum = 0;
-
-def t(name, cond) {
-    if (cond) { print("  PASS: " + name); }
-    else      { print("  FAIL: " + name); }
-    return cond;
-}
+// ============================================================================
+// Helpers used by the fixtures
+// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -34,6 +27,17 @@ def isPricingResultsJson(result, expectedHandle) {
         hasJsonField(result[1], "present_value") &&
         hasJsonField(result[1], "cash_value") &&
         hasJsonField(result[1], "currency");
+}
+def presentValue(pricingResult) {
+    json = pricingResult[1];
+    marker = "\"present_value\":";
+    start = strpos(json, marker);
+    if (start < 0) { return double(NULL); }
+    start += strlen(marker);
+    rest = substr(json, start);
+    end = strpos(rest, ",");
+    if (end < 0) { end = strpos(rest, "}"); }
+    return double(substr(rest, 0, end));
 }
 
 def createStdFixedBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
@@ -64,7 +68,9 @@ def createStdZeroBondTemplate(instName, maturity, currency, calendarName, asOfDa
         "CONST_NOTIONAL", 0.0, true);
 }
 
-print("--- Setup: FI fixtures from test_fianalytics.py ---");
+// ============================================================================
+// Setup: FI fixtures from test_fianalytics.py
+// ============================================================================
 
 asOfDate = 2021.07.22;
 currency = "CNY";
@@ -197,146 +203,141 @@ vanillaBondRisk = caplib::createVanillaBondRiskSettings(
 pricingSettings = caplib::createPricingSettings(
     currency, "ANALYTICAL", 1, 1, "", "", "", "FI_PRICING", false);
 
-print("  Setup fixtures loaded");
-
-print("");
-print("--- Test 1: Python setup fixtures ---");
-ok = t("createCalendar -> CAL_CFETS with holidays/special business days", calCfetsCreated);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("Treasury standard template ladder -> 13 handles",
-    isHandleJson(cnyTreasZero1m, "CNY_TREAS_ZERO_1M") &&
-    isHandleJson(cnyTreasCpnA3m, "CNY_TREAS_CPN_A_3M") &&
-    isHandleJson(cnyTreasCpnSa30y, "CNY_TREAS_CPN_SA_30Y"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("MTN AAA standard template ladder -> 12 handles",
-    isHandleJson(cnyMtnAaaCpnA1m, "CNY_MTN_AAA_CPN_A_1M") &&
-    isHandleJson(cnyMtnAaaCpnA5y, "CNY_MTN_AAA_CPN_A_5Y") &&
-    isHandleJson(cnyMtnAaaCpnA9y, "CNY_MTN_AAA_CPN_A_9Y"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createVanillaBondTemplate -> CNY_TREAS_CPN_BOND_200014",
-    isHandleJson(cnyTreasCpnBond200014Template, "CNY_TREAS_CPN_BOND_200014") &&
-    hasJsonField(cnyTreasCpnBond200014Template[1], "instrument_name") &&
-    hasJsonField(cnyTreasCpnBond200014Template[1], "leg_definition"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-print("");
-print("--- Test 2: Bond par curve and build settings factories ---");
-ok = t("createBondParCurve -> treasury CFETS JSON",
-    isHandleJson(parCnyTreasStdCfets, cnyTreasStdCfetsName) &&
-    hasJsonField(parCnyTreasStdCfets[1], "reference_date") &&
-    hasJsonField(parCnyTreasStdCfets[1], "pillars") &&
-    hasJsonField(parCnyTreasStdCfets[1], "name"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createBondParCurve -> MTN AAA spread CFETS JSON",
-    isHandleJson(parCnyMtnAaaSprdStdCfets, cnyMtnAaaSprdStdCfetsName) &&
-    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "reference_date") &&
-    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "pillars") &&
-    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "name"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createBondYieldCurveBuildSettings -> treasury handle/json",
-    isHandleJson(cnyTreasBuildSettings, "CNY_TREAS_STD_CFETS_BUILD_SETTINGS") &&
-    hasJsonField(cnyTreasBuildSettings[1], "curve_name") &&
-    hasJsonField(cnyTreasBuildSettings[1], "curve_type"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createBondYieldCurveBuildSettings -> MTN handle/json",
-    isHandleJson(cnyMtnBuildSettings, "CNY_MTN_AAA_SPRD_STD_CFETS_BUILD_SETTINGS") &&
-    hasJsonField(cnyMtnBuildSettings[1], "curve_name") &&
-    hasJsonField(cnyMtnBuildSettings[1], "curve_type"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("buildBondYieldCurve -> [CNY_TREAS_STD_CFETS, json]",
-    isHandleJson(cnyTreasStdCfets, "CNY_TREAS_STD_CFETS") &&
-    hasJsonField(cnyTreasStdCfets[1], "curve"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("buildBondCreditSpreadCurve -> [CNY_MTN_AAA_SPRD_STD_CFETS, json]",
-    isHandleJson(cnyMtnAaaSprdStdCfets, "CNY_MTN_AAA_SPRD_STD_CFETS") &&
-    hasJsonField(cnyMtnAaaSprdStdCfets[1], "curve"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-print("");
-print("--- Test 3: FI market/risk factories ---");
-ok = t("createFiMktDataSet -> [FI_MKT, json]",
-    isHandleJson(fiMktData, "FI_MKT") &&
-    hasJsonField(fiMktData[1], "discount_curve") &&
-    hasJsonField(fiMktData[1], "spread_curve"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createBondMktDataSet -> [FI_BOND_MKT, json]",
-    isHandleJson(bondMktData, "FI_BOND_MKT") &&
-    hasJsonField(bondMktData[1], "discount_curve") &&
-    hasJsonField(bondMktData[1], "spread_curve"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createFiRiskSettings -> [FI_RISK, json]",
-    isHandleJson(fiRisk, "FI_RISK") &&
-    hasJsonField(fiRisk[1], "ir_curve_settings") &&
-    hasJsonField(fiRisk[1], "cs_curve_settings") &&
-    hasJsonField(fiRisk[1], "theta_settings"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-ok = t("createVanillaBondRiskSettings -> [FI_VANILLA_BOND_RISK, json]",
-    isHandleJson(vanillaBondRisk, "FI_VANILLA_BOND_RISK") &&
-    hasJsonField(vanillaBondRisk[1], "theta_settings"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-print("");
-print("--- Test 4: FI scalar calculators ---");
-conversionFactor = caplib::calcConversionFactor(
-    0.03, "ANNUAL", 0.03, 2025.07.22, asOfDate, 2021.07.22);
-// Frozen numeric references from the reviewed FI acceptance scenario.
-// These are external expected values, not values recomputed by the function under test.
-ok = t("calcConversionFactor -> reference 1.03",
-    abs(conversionFactor - 1.03) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-impliedRepoRate = caplib::calcImpliedRepoRate(
-    98.0, 1.0, 99.0, 0.03, asOfDate, 2021.07.22, 2021.09.22,
-    "ACT_365", 2022.07.22, "ANNUAL");
-ok = t("calcImpliedRepoRate -> reference -0.02916259367872241",
-    abs(impliedRepoRate - (-0.02916259367872241)) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-yieldToMaturity = caplib::calcYieldToMaturity(
-    asOfDate, "DISCRETE_COMPOUNDING", vanillaBond, cnyTreasStdCfets[0], 972294.9381034705,
-    "DIRTY_PRICE", "ANNUAL");
-ok = t("calcYieldToMaturity -> reference 0.03293703213453388",
-    abs(yieldToMaturity - 0.03293703213453388) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-fixedCpnBondParRate = caplib::calcFixedCpnBondParRate(
-    asOfDate, vanillaBond, cnyTreasStdCfets[0], "");
-ok = t("calcFixedCpnBondParRate -> reference 0.022307896014995623",
-    abs(fixedCpnBondParRate - 0.022307896014995623) < 1.0e-12);
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
-
-print("");
-print("--- Test 5: VanillaBond pricing and greeks path ---");
 vanillaBondPricingResult = caplib::priceVanillaBond(
     vanillaBond, asOfDate, fiMktData[0], pricingSettings, fiRisk[0], "", "", true);
-ok = t("priceVanillaBond -> [FI_VANILLA_BOND_results, PricingResults JSON fields]",
-    isPricingResultsJson(vanillaBondPricingResult, "FI_VANILLA_BOND_results"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 
-ok = t("priceVanillaBond greeks path -> sensitivity/cash-flow JSON present",
-    hasJsonField(vanillaBondPricingResult[1], "sensitivity") ||
+// ============================================================================
+// Tests
+// ============================================================================
+
+// --- Python setup fixtures ---
+@testing:case="createCalendar -> CAL_CFETS with holidays/special business days"
+assert 1, calCfetsCreated
+
+@testing:case="Treasury standard template ladder -> 13 handles"
+assert 1, isHandleJson(cnyTreasZero1m, "CNY_TREAS_ZERO_1M") &&
+    isHandleJson(cnyTreasCpnA3m, "CNY_TREAS_CPN_A_3M") &&
+    isHandleJson(cnyTreasCpnSa30y, "CNY_TREAS_CPN_SA_30Y")
+
+@testing:case="MTN AAA standard template ladder -> 12 handles"
+assert 1, isHandleJson(cnyMtnAaaCpnA1m, "CNY_MTN_AAA_CPN_A_1M") &&
+    isHandleJson(cnyMtnAaaCpnA5y, "CNY_MTN_AAA_CPN_A_5Y") &&
+    isHandleJson(cnyMtnAaaCpnA9y, "CNY_MTN_AAA_CPN_A_9Y")
+
+@testing:case="createVanillaBondTemplate -> CNY_TREAS_CPN_BOND_200014"
+assert 1, isHandleJson(cnyTreasCpnBond200014Template, "CNY_TREAS_CPN_BOND_200014") &&
+    hasJsonField(cnyTreasCpnBond200014Template[1], "instrument_name") &&
+    hasJsonField(cnyTreasCpnBond200014Template[1], "leg_definition")
+
+// --- Bond par curve and build settings factories ---
+@testing:case="createBondParCurve -> treasury CFETS JSON"
+assert 1, isHandleJson(parCnyTreasStdCfets, cnyTreasStdCfetsName) &&
+    hasJsonField(parCnyTreasStdCfets[1], "reference_date") &&
+    hasJsonField(parCnyTreasStdCfets[1], "pillars") &&
+    hasJsonField(parCnyTreasStdCfets[1], "name")
+
+@testing:case="createBondParCurve -> MTN AAA spread CFETS JSON"
+assert 1, isHandleJson(parCnyMtnAaaSprdStdCfets, cnyMtnAaaSprdStdCfetsName) &&
+    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "reference_date") &&
+    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "pillars") &&
+    hasJsonField(parCnyMtnAaaSprdStdCfets[1], "name")
+
+@testing:case="createBondYieldCurveBuildSettings -> treasury handle/json"
+assert 1, isHandleJson(cnyTreasBuildSettings, "CNY_TREAS_STD_CFETS_BUILD_SETTINGS") &&
+    hasJsonField(cnyTreasBuildSettings[1], "curve_name") &&
+    hasJsonField(cnyTreasBuildSettings[1], "curve_type")
+
+@testing:case="createBondYieldCurveBuildSettings -> MTN handle/json"
+assert 1, isHandleJson(cnyMtnBuildSettings, "CNY_MTN_AAA_SPRD_STD_CFETS_BUILD_SETTINGS") &&
+    hasJsonField(cnyMtnBuildSettings[1], "curve_name") &&
+    hasJsonField(cnyMtnBuildSettings[1], "curve_type")
+
+@testing:case="buildBondYieldCurve -> [CNY_TREAS_STD_CFETS, json]"
+assert 1, isHandleJson(cnyTreasStdCfets, "CNY_TREAS_STD_CFETS") &&
+    hasJsonField(cnyTreasStdCfets[1], "curve")
+
+@testing:case="buildBondCreditSpreadCurve -> [CNY_MTN_AAA_SPRD_STD_CFETS, json]"
+assert 1, isHandleJson(cnyMtnAaaSprdStdCfets, "CNY_MTN_AAA_SPRD_STD_CFETS") &&
+    hasJsonField(cnyMtnAaaSprdStdCfets[1], "curve")
+
+// --- FI market/risk factories ---
+@testing:case="createFiMktDataSet -> [FI_MKT, json]"
+assert 1, isHandleJson(fiMktData, "FI_MKT") &&
+    hasJsonField(fiMktData[1], "discount_curve") &&
+    hasJsonField(fiMktData[1], "spread_curve")
+
+@testing:case="createBondMktDataSet -> [FI_BOND_MKT, json]"
+assert 1, isHandleJson(bondMktData, "FI_BOND_MKT") &&
+    hasJsonField(bondMktData[1], "discount_curve") &&
+    hasJsonField(bondMktData[1], "spread_curve")
+
+@testing:case="createFiRiskSettings -> [FI_RISK, json]"
+assert 1, isHandleJson(fiRisk, "FI_RISK") &&
+    hasJsonField(fiRisk[1], "ir_curve_settings") &&
+    hasJsonField(fiRisk[1], "cs_curve_settings") &&
+    hasJsonField(fiRisk[1], "theta_settings")
+
+@testing:case="createVanillaBondRiskSettings -> [FI_VANILLA_BOND_RISK, json]"
+assert 1, isHandleJson(vanillaBondRisk, "FI_VANILLA_BOND_RISK") &&
+    hasJsonField(vanillaBondRisk[1], "theta_settings")
+
+// --- FI scalar calculators ---
+// Frozen numeric references from the reviewed FI acceptance scenario.
+// These are external expected values, not values recomputed by the function under test.
+@testing:case="calcConversionFactor -> reference 1.03"
+conversionFactor = caplib::calcConversionFactor(
+    0.03, "ANNUAL", 0.03, 2025.07.22, asOfDate, 2021.07.22)
+assert 1, abs(conversionFactor - 1.03) < 1.0e-12
+
+@testing:case="calcImpliedRepoRate -> reference -0.02916259367872241"
+impliedRepoRate = caplib::calcImpliedRepoRate(
+    98.0, 1.0, 99.0, 0.03, asOfDate, 2021.07.22, 2021.09.22,
+    "ACT_365", 2022.07.22, "ANNUAL")
+assert 1, abs(impliedRepoRate - (-0.02916259367872241)) < 1.0e-12
+
+@testing:case="calcYieldToMaturity -> reference 0.03293703213453388"
+yieldToMaturity = caplib::calcYieldToMaturity(
+    asOfDate, "DISCRETE_COMPOUNDING", vanillaBond, cnyTreasStdCfets[0], 972294.9381034705,
+    "DIRTY_PRICE", "ANNUAL")
+assert 1, abs(yieldToMaturity - 0.03293703213453388) < 1.0e-12
+
+@testing:case="calcFixedCpnBondParRate -> reference 0.022307896014995623"
+fixedCpnBondParRate = caplib::calcFixedCpnBondParRate(
+    asOfDate, vanillaBond, cnyTreasStdCfets[0], "")
+assert 1, abs(fixedCpnBondParRate - 0.022307896014995623) < 1.0e-12
+
+// --- VanillaBond pricing and greeks path ---
+@testing:case="priceVanillaBond -> [FI_VANILLA_BOND_results, present_value reference]"
+assert 1, isPricingResultsJson(vanillaBondPricingResult, "FI_VANILLA_BOND_results")
+assert 2, abs(presentValue(vanillaBondPricingResult) - 972284.4161978982) < abs(972284.4161978982) * 1.0e-9 + 1.0e-6
+
+
+@testing:case="priceVanillaBond greeks path -> sensitivity/cash-flow JSON present"
+assert 1, hasJsonField(vanillaBondPricingResult[1], "sensitivity") ||
     hasJsonField(vanillaBondPricingResult[1], "cash_flow_results") ||
-    hasJsonField(vanillaBondPricingResult[1], "specific_pricing_results"));
-testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
+    hasJsonField(vanillaBondPricingResult[1], "specific_pricing_results")
 
-print("");
-print("============================================");
-print("  TEST RESULTS");
-print("  Passed: " + string(passNum) + " / " + string(testNum));
-print("  Failed: " + string(testNum - passNum) + " / " + string(testNum));
-print("============================================");
+// ============================================================================
+// Negative / exception validation
+// ============================================================================
 
-if (passNum != testNum) {
-    throw "FI analytics tests failed";
-}
+@testing:case="createVanillaBondTemplate rejects INT maturity", exception=1
+caplib::createVanillaBondTemplate("FI_BAD_BOND", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, 5, 0.0, currency, 100.0, "ACT_365_FIXED", calCfets, "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+
+@testing:case="priceVanillaBond rejects wrong mktData handle", exception=1
+caplib::priceVanillaBond(vanillaBond, asOfDate, cnyTreasStdCfets[0], pricingSettings, fiRisk[0], "", "", true)
+
+@testing:case="createVanillaBondTemplate rejects invalid bond type enum", exception=1
+caplib::createVanillaBondTemplate("FI_BAD_BOND_2", "NOT_A_BOND_TYPE", asOfDate, 1, asOfDate, "5Y", 0.0, currency, 100.0, "ACT_365_FIXED", calCfets, "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+
+
+// ============================================================================
+// Extended negative / exception validation
+// ============================================================================
+
+@testing:case="createBondParCurve rejects names/quotes length mismatch", exception=1
+caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, take(0.02, 3), "YIELD_TO_MATURITY", "FI_BAD_PAR_2", true)
+
+
+@testing:case="buildVanillaBond rejects wrong template handle", exception=1
+caplib::buildVanillaBond(1000000.0, cnyTreasStdCfets[0], "", 2020.10.10, "FI_BAD_BOND_2", false)
