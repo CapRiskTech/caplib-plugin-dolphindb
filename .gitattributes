@@ -1,0 +1,5 @@
+# Shell scripts and DolphinDB scripts must stay LF: a CRLF shebang in
+# entrypoint.sh breaks container exec, and CRLF anywhere is fragile.
+*.sh text eol=lf
+*.dos text eol=lf
+*.cfg text eol=lf

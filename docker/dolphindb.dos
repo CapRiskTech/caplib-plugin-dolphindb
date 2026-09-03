@@ -1,12 +1,13 @@
 // ─────────────────────────────────────────────────────────────
 // DDB Auto-Startup Script
-// Executed automatically when DDB starts (placed in home directory)
+// Executed automatically when DDB starts (placed in home directory
+// /data/ddb/server of the official dolphindb image)
 // ─────────────────────────────────────────────────────────────
 
 // Load the caplib plugin
 try {
-    fns = loadPlugin("/opt/ddb/server/plugins/caplib/PluginCaplib.txt");
-    print("✓ caplib plugin loaded: " + size(fns) + " functions registered");
+    fns = loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt");
+    print("caplib plugin loaded: " + size(fns) + " functions registered");
 } catch(ex) {
-    print("✗ Failed to load caplib plugin: " + ex);
+    print("Failed to load caplib plugin: " + ex);
 }

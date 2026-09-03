@@ -1,112 +1,56 @@
-# Caplib Docker Deployment
+# Caplib DolphinDB Docker（自包含镜像）
 
-Standalone Docker environment packaging **DolphinDB 3.00.5 Community Edition** +
-**Caplib DolphinDB plugin** + **dqlibc C interop library** into a single runnable
-image. Useful for integration testing, CI/CD, and isolated pricing server deployment.
+把 **官方 DolphinDB 镜像** + **libstdc++ 兼容修复** + **Caplib 插件** 打包成单个自包含镜像。
+与 `docker-compose/` 用同一套机制，区别是这里**把插件打进镜像**（适合 CI / 独立部署），
+而 `docker-compose/` 把插件从宿主机挂载（适合本地开发 / 插件热更新）。
 
-## Directory Structure
+## 目录结构
 
 ```
 docker/
-├── README.md           ← this file
-├── Dockerfile           # multi-layer build definition (ubuntu:24.04 base)
-├── build.sh             # orchestrates .staging/ assembly + docker build
-├── entrypoint.sh        # DDB startup + plugin loading
-├── dolphindb.cfg        # Docker-optimized DDB config (16 GB memory)
-├── dolphindb.dos        # auto-startup script (loads plugin on boot)
-├── test_plugin.dos      # smoke test runnable inside DDB
-└── .staging/            # build-time artifact (gitignored, assembled by build.sh)
+├── README.md           ← 本文档
+├── Dockerfile          # 基于官方镜像 dolphindb/dolphindb:v3.00.5 + libstdc++ 修复 + 打入插件
+├── build.sh            # 下载插件 release → 校验 → 组装小 context → docker build（Linux/macOS）
+├── build.ps1 / build.bat  # 同上（Windows，无 Git Bash 时用）
+└── dolphindb.dos       # 启动时自动 loadPlugin
 ```
 
-## Container Filesystem Layout
+## 前置条件
 
-```
-/opt/ddb/server/
-├── dolphindb                    # DDB 3.00.5 binary
-├── libDolphinDB.so
-├── dolphindb.cfg                # Docker config (maxMemSize=16, localSite=0.0.0.0:8848)
-├── libstdc++.so.6.ddb-bundled   # renamed → system GCC 13 libstdc++ used instead
-├── dolphindb.dos                # auto-loads plugin at startup
-├── dolphindb.lic                # DDB license (from official distribution zip)
-├── local8848/                   # writable data volume
-├── log/                         # writable log volume
-└── plugins/
-    └── caplib/
-        ├── libPluginCaplib.so    # 202 user-facing functions, ABI0
-        ├── PluginCaplib.txt      # v3.00.5.0 format, from the Caplib release
-        ├── libdqlibc.so         # ABI0 variant — from the Caplib release
-        ├── dqlibc.lic           # bundled in the complete Caplib release
-        └── data/
-            └── calendars.bin    # calendar data
+- Docker（Linux/macOS/Windows 均可）
+- 网络：需拉取官方镜像（Docker Hub）+ 下载插件 release（GitHub，约 18MB）
+- （Linux）bash；（Windows）可选 `build.bat`，无需 Git Bash、无需 python
 
-/opt/ddb/
-├── entrypoint.sh                # container startup script
-└── test_plugin.dos              # smoke test script
-```
-
-## Prerequisites
-
-`build.sh` downloads the complete Caplib release automatically. The package
-already includes `dqlibc.lic`; set `DQLIBC_LICENSE_PATH` only when you need to
-override it with another license.
-
-| # | Artifact | Release Source | Notes |
-|---|----------|---------------|-------|
-| 1 | `libPluginCaplib.so` | `CapRiskTech/caplib-plugin-dolphindb` @ `0.0.10` | Built from `dqlibdolphin` commit `2867f08`; 202 user-facing functions, ABI0 |
-| 2 | `PluginCaplib.txt` | (bundled in above release) | **Configured** output, NOT source template |
-| 3 | `libdqlibc.so` | (bundled in above release) | ABI0 variant |
-| 4 | `calendars.bin` | (bundled in above release) | Calendar data |
-| 5 | `dqlibc.lic` | (bundled in above release) | RSA-signed license |
-| 6 | DolphinDB Server | **EXCEPTION** — DolphinDB official distribution | `dolphindb` binary + `libDolphinDB.so` |
-
-> The five Caplib artifacts come from the complete CapRiskTech release.
-> DolphinDB Server comes from the official DolphinDB
-> distribution (default URL: `https://cdn.dolphindb.cn/downloads/DolphinDB_Linux64_V3.00.5.zip`).
-> Override via `DDB_DOWNLOAD_URL` or provide a local zip via `DDB_ZIP_PATH`.
-
-**Authentication**: authenticate with GitHub CLI when required:
-```bash
-gh auth login
-```
-Or set `GITHUB_TOKEN` (requires `repo` scope).
-
-To use an existing license file instead of downloading the license release:
-```bash
-DQLIBC_LICENSE_PATH=~/.dqlib/dqlibc.lic bash docker/build.sh
-```
-
-## Quick Start
+## 快速开始
 
 ```bash
 cd caplib-plugin-dolphindb
 
-# Build image only
-bash docker/build.sh
+# Linux / macOS / Git Bash
+bash docker/build.sh                  # 只构建
+bash docker/build.sh --run            # 构建 + 启动容器
+bash docker/build.sh --test           # 构建 + 启动 + 运行插件测试套件
 
-# Build and run container (port 8848)
-bash docker/build.sh --run
-
-# Build, run, and smoke test
-bash docker/build.sh --test
+# Windows（无需 Git Bash）
+docker\build.bat --test
 ```
 
-### Manual Docker Commands
+脚本自动完成：下载 `0.0.10` release（缓存复用）→ 解压 → 校验（202 个函数、必需 API）→
+组装 build context → `docker build -t caplibdolphin:latest`。
+
+`--test` 会启动容器并运行打包的测试套件 `test_plugin.dos`（`/data/ddb/test_plugin.dos`），
+覆盖 7 项：loadPlugin、calcYearFraction、createIrYieldCurve、getObjectCacheJson、
+createPricingModelSettings、createPricingSettings、createEqRiskSettings，期望 **7/7**。
+需宿主机安装 `dolphindb` Python 包（`pip install dolphindb`）以连接 DDB 执行测试。
+
+### 运行
 
 ```bash
-# Run
 docker run -d -p 8848:8848 --name caplibdolphin caplibdolphin:latest
-
-# View logs
-docker logs -f caplibdolphin
-
-# Shell inside container
-docker exec -it caplibdolphin bash
-
-# Stop and remove
-docker stop caplibdolphin && docker rm caplibdolphin
+docker logs -f caplibdolphin        # 应看到 "caplib plugin loaded: 202 functions registered"
 ```
 
-## Connecting from DolphinDB Client
+### 连接
 
 ```python
 import dolphindb as ddb
@@ -114,231 +58,62 @@ import dolphindb as ddb
 s = ddb.session()
 s.connect("localhost", 8848, "admin", "123456")
 
-# Plugin is auto-loaded via dolphindb.dos at startup.
-# If needed, load manually:
-# s.run('loadPlugin("/opt/ddb/server/plugins/caplib/PluginCaplib.txt")')
-
-# Quick test
 r = s.run("caplib::calcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360)")
-print(r)  # → 1.013889
+print(r)  # 1.011111
 ```
 
-## Smoke Test
-
-Inside DDB (Python client or console), run the packaged test script:
-
-```dolphindb
-run("/opt/ddb/test_plugin.dos")
-```
-
-Tests covered:
-1. **loadPlugin** — verifies plugin loads and returns non-zero function count
-2. **calcYearFraction** — basic utility function, verifies ABI0 linkage
-3. **createIrYieldCurve** — ObjectCache-based factory, verifies curve construction
-4. **createPricingSettings** — settings factory, verifies enum resolution
-5. **createPricingModelSettings** — model settings factory
-6. **createEqRiskSettings** — handle-plus-JSON return path, verifies cache serialization
-
-Expected output:
-```
-═══════════════════════════════════════════
-  Results: 6/6 passed
-═══════════════════════════════════════════
-✓ ALL TESTS PASSED
-```
-
-## Configuration
-
-### dolphindb.cfg
-
-Docker-optimized settings for a single-node development server:
-
-| Parameter | Value | Reason |
-|-----------|-------|--------|
-| `localSite` | `0.0.0.0:8848:local8848` | Binds all interfaces for Docker port mapping |
-| `mode` | `single` | Single-node, no cluster |
-| `maxMemSize` | `16` | 16 GB — matches Docker memory limits |
-| `maxConnections` | `512` | Reasonable for dev/CI |
-| `workerNum` | `4` | Parallel job workers |
-| `localExecutors` | `3` | Local executor threads |
-| `enableAuditLog` | `false` | Disabled to reduce noise |
-| `perfMonitoring` | `false` | Disabled for dev |
-
-### dolphindb.dos (Auto-Startup)
-
-DDB automatically executes `dolphindb.dos` from its home directory at startup.
-The Docker version loads the Caplib plugin:
-
-```dolphindb
-try {
-    fns = loadPlugin("/opt/ddb/server/plugins/caplib/PluginCaplib.txt");
-    print("✓ Caplib plugin loaded: " + size(fns) + " functions registered");
-} catch(ex) {
-    print("✗ Failed to load Caplib plugin: " + ex);
-}
-```
-
-## Key Design Decisions
-
-### libstdc++ Compatibility (CRITICAL)
-
-DolphinDB 3.00.5 ships a `libstdc++.so.6` from GCC 4.x era (only up to
-`GLIBCXX_3.4.5`). Both `libdqlibc.so` and `libPluginCaplib.so` are built with
-GCC 13 and require `GLIBCXX_3.4.32`.
-
-**Fix**: Rename DDB's `libstdc++.so.6` → `libstdc++.so.6.ddb-bundled` so the
-system's GCC 13 `libstdc++.so.6` (from `ubuntu:24.04`) is used instead.
-
-Never delete the file — keep it as `.ddb-bundled` for traceability.
-
-### Timezone Database (tzdata)
-
-DDB exits with code 255 without a timezone database:
-```
-Can't find time zone database. Please use parameter tzdb to set the root directory.
-```
-
-**Fix**: Install `tzdata` package and pass `-tzdb /usr/share/zoneinfo` at startup.
-
-### Console Mode: `-console 0` (daemon)
-
-DDB in `-console 1` mode (interactive) reads from stdin. In Docker, stdin closes
-after the entrypoint script finishes, causing DDB to exit cleanly (code 0).
-
-**Fix**: Use `-console 0` (daemon mode) with `</dev/null` as belt-and-suspenders.
-
-### Network Binding
-
-`localSite=0.0.0.0:8848:local8848` binds all interfaces. Using `localhost`
-would only bind the loopback, making the port unreachable from the Docker host.
-
-### Plugin Auto-Load: dolphindb.dos, NOT curl
-
-DDB's HTTP endpoint expects JSON-formatted requests. Raw script text sent via
-`curl -X POST --data-binary` returns `"not a valid json request"`.
-
-**Fix**: Place `dolphindb.dos` in the DDB home directory — DDB automatically
-executes it at startup. Use a Python `dolphindb` client for programmatic invocation.
-
-### Plugin Placement: Outside `<home>/plugins/`
-
-DDB auto-scans `<home>/plugins/` at startup. If a plugin fails to load (format
-error, missing symbols, invalid license), DDB exits with code 255 **silently** —
-no log output, no error message.
-
-**Fix**: Place the plugin at `/opt/ddb/server/plugins/caplib/` and load it
-**manually** via `dolphindb.dos` or `loadPlugin()`. The plugin directory is
-OUTSIDE the auto-scan path.
-
-### RPATH Resolution
-
-`libPluginCaplib.so` has RPATH `$ORIGIN` (plus release build paths).
-The `$ORIGIN` entry means it searches for `libdqlibc.so` in the same directory.
-Placing `libdqlibc.so` next to the plugin satisfies this without `LD_LIBRARY_PATH`.
-
-### License Placement
-
-licensecc search order (from `license_verify.cpp`):
-1. `/etc/dqlib/dqlibc.lic`
-2. `$HOME/.dqlib/dqlibc.lic`
-3. Same directory as `libdqlibc.so` (via `dladdr`)
-
-**Priority 3** is most reliable in Docker — place `dqlibc.lic` next to `libdqlibc.so`.
-
-### PluginCaplib.txt: Build Output, NOT Source Template
-
-The source repository's `PluginCaplib.txt` has CMake template variables
-(`${PluginVersion}`, `${CMAKE_SHARED_LIBRARY_SUFFIX}`). DDB v3.00.5 rejects
-this. Always use the **configured output** bundled in the release archive.
-
-Pre-build verification:
-```bash
-# No comment lines (DDB v3.00.5 rejects #)
-grep -c '^#' PluginCaplib.txt    # → 0
-
-# All 8 fields (7 commas per function line)
-awk -F',' 'NR>1 && NF!=8 {print NR": "NF" fields"}' PluginCaplib.txt
-
-# maxArgCount >= minArgCount
-awk -F',' 'NR>1 && $4+0 > $5+0 {print NR": min="$4" > max="$5": "$1}' PluginCaplib.txt
-
-# Column 1 retains the PascalCase C++ symbol; column 2 is lowerCamelCase
-awk -F',' 'NR>1 && ($1 !~ /^[A-Z][A-Za-z0-9]*$/ || $2 !~ /^[a-z][A-Za-z0-9]*$/) {print NR": "$1", "$2}' PluginCaplib.txt
-```
-
-## build.sh Details
-
-`build.sh` assembles a staging directory at `docker/.staging/` (gitignored),
-then runs `docker build` with only that directory as context. This keeps the
-build context small and avoids accidentally including the full repo.
-
-### Assembly Steps
-
-1. **Download the complete `0.0.10` CapRiskTech release** → extract `libPluginCaplib.so`, `PluginCaplib.txt`, `libdqlibc.so`, `calendars.bin`, and `dqlibc.lic`
-2. **Download DolphinDB Server** from official distribution → extract `dolphindb` + `libDolphinDB.so` + `dolphindb.lic`
-3. **Prepare staging** — `rm -rf docker/.staging && mkdir -p`
-4. **Copy Docker sources** — Dockerfile, entrypoint.sh, config, .dos scripts
-5. **Copy downloaded artifacts** into staging directory
-6. **Build image** — `docker build -t caplibdolphin:latest .` from staging dir
-
-### Optional Flags
-
-| Flag | Behavior |
-|------|----------|
-| `--run` | Build + start container on port 8848 |
-| `--test` | Build + start + wait for HTTP (30s) + smoke test via curl |
-
-## Common Pitfalls
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| DDB exits code 255, no output | Plugin in auto-scan path failing to load | Move plugin outside `<home>/plugins/` |
-| DDB exits code 255, no output | Missing tzdata | `apt-get install tzdata` + `-tzdb /usr/share/zoneinfo` |
-| DDB exits code 0, no output | `-console 1` reads stdin, exits when stdin closes | Use `-console 0` + `</dev/null` |
-| Port 8848 unreachable from host | `localSite=localhost` only binds loopback | Set `localSite=0.0.0.0:8848:local8848` |
-| `GLIBCXX_3.4.32 not found` | DDB's bundled libstdc++ taking priority | Rename to `.ddb-bundled` |
-| `LICENSE_FILE_NOT_FOUND` | dqlibc.lic not in search path | Place next to libdqlibc.so |
-| Plugin fails to load or exposes no functions | C++ symbol or external name case mismatch in PluginCaplib.txt | Verify column 1 retains the PascalCase C++ symbol and column 2 is lowerCamelCase |
-| `Invalid plugin file` | Deployed source template (`${PluginVersion}`) | Use the configured `PluginCaplib.txt` from the release archive |
-| `minArgCount can't exceed maxArgCount` | Old `maxArgs=0` convention | Set `maxArgCount = minArgCount` |
-| `not a valid json request` from curl | DDB HTTP endpoint expects JSON | Use `dolphindb.dos` or Python client |
-| `std::bad_alloc` on ProcessRequest | Wrong ProcessRequest signature | ProcessRequest takes 6 args, not 3 |
-
-## Volumes & Persistence
-
-Two directories are declared as Docker volumes and persist across container restarts:
-
-- `/opt/ddb/server/local8848` — DDB's in-memory table persistence
-- `/opt/ddb/server/log` — DDB and plugin logs
-
-To inspect logs:
-```bash
-docker exec caplibdolphin tail -100 /opt/ddb/server/log/dolphindb.log
-```
-
-## Health Check
-
-The Dockerfile includes a health check that polls DDB's HTTP endpoint every 30 seconds:
+## 镜像内容
 
 ```
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -sf http://localhost:8848 || exit 1
+/data/ddb/server/              ← 官方镜像家目录
+├── libstdc++.so.6             # 覆盖为 ubuntu:24.04 的 glibc 版（含 GLIBCXX_3.4.32）
+├── dolphindb.dos              # 启动时自动 loadPlugin
+└── plugins/caplib/
+    ├── libPluginCaplib.so     # Caplib 插件（0.0.10）
+    ├── PluginCaplib.txt
+    ├── libdqlibc.so
+    ├── dqlibc.lic
+    └── data/calendars.bin
 ```
 
-Check health status:
-```bash
-docker inspect --format='{{.State.Health.Status}}' caplibdolphin
-```
+## 为什么这样设计（相比旧版 build.sh）
 
-## Rebuilding
+旧版自己下载 DolphinDB 发行包（129MB）、解压、扁平化、自写 entrypoint、装依赖，踩过
+一堆坑（下载慢、apt-get 502、entrypoint CRLF 崩溃、构建上下文 500MB…）。
 
-To rebuild after source changes:
+新版直接复用**官方 DolphinDB 镜像**（`docker-compose/` 已验证的方案），只做两件事：
 
-```bash
-# Rebuild the plugin
-cd dqlibdolphin
-cmake --build build -j$(nproc)
+1. **libstdc++ 修复**：Caplib 的 `libdqlibc.so` 需要 `GLIBCXX_3.4.32`，官方镜像自带的
+   libstdc++ 只到 `3.4.25`，`/usr/lib` 下又是 musl 版（与 glibc 服务器不兼容）。
+   从 `ubuntu:24.04` 复制一个 glibc 版覆盖。
+2. **打入插件 + dolphindb.dos**：容器启动时 DDB 自动执行 `dolphindb.dos` 完成 `loadPlugin`。
 
-# Rebuild Docker image
-bash docker/build.sh --test
-```
+没有 `apt-get`（不再撞 Ubuntu 502）、没有 129MB 下载、没有自写 entrypoint（不再有 CRLF 崩溃）。
+
+## 与 docker-compose/ 的对比
+
+| | `docker/`（本目录） | `docker-compose/` |
+|---|---|---|
+| 插件来源 | **打进镜像**（下载 release） | **宿主挂载** |
+| 产物 | `caplibdolphin:latest` 自包含镜像 | `dolphindb-caplib:v3.00.5` + compose 服务 |
+| libstdc++ 修复 | 相同 | 相同 |
+| 插件加载 | 相同（dolphindb.dos） | 相同（dolphindb.dos） |
+| 适用场景 | CI / 分发 / 无宿主依赖 | 本地开发 / 插件热更新 |
+
+## 环境变量
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `IMAGE_NAME` / `IMAGE_TAG` | `caplibdolphin` / `latest` | 镜像名 / 标签 |
+| `CAPLIB_PLUGIN_TAG` | `0.0.10` | 插件 release 版本（改版本时同步改 `EXPECTED_PLUGIN_FUNCTIONS`） |
+| `DDB_BASE_IMAGE` | `dolphindb/dolphindb:v3.00.5` | 基础镜像 |
+| `GITHUB_TOKEN` | 无 | 私有仓库时需要（当前 release 是公开的，无需） |
+
+## 常见问题
+
+| 现象 | 原因 / 处理 |
+|---|---|
+| 构建后 `docker images` 看不到镜像 | 检查 `docker context ls` / `DOCKER_HOST` —— 构建和查询可能连了不同 daemon（尤其 WSL 与 Docker Desktop 分离） |
+| 下载 `caplib-plugin-dolphindb-*.tar.gz` 很慢 / 卡住 | 脚本用 `curl --retry 5` + 断点续传，耐心等待或重跑；网络差可先手动 `curl -C -` 下好再重跑 |
+| 插件没加载 | `docker logs caplibdolphin` 看是否报 `loadPlugin` 错误；确认镜像内 `plugins/caplib/` 文件齐全 |
+| Windows checkout 后 dos/sh 变 CRLF | 仓库已配 `.gitattributes`（`*.sh`/`*.dos` 强制 LF）；build 脚本也会在进 context 前归一化 |

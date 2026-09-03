@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // caplib Docker Smoke Test
 // Run inside DDB after plugin is loaded:
-//   run("/opt/ddb/test_plugin.dos")
+//   run("/data/ddb/test_plugin.dos")
 // ─────────────────────────────────────────────────────────────
 
 testNum = 0;
@@ -22,7 +22,7 @@ print("  caplib Plugin Smoke Test");
 print("═══════════════════════════════════════════");
 
 // ─── Load Plugin ────────────────────────────────────────────
-pluginFile = "/opt/ddb/server/plugins/caplib/PluginCaplib.txt";
+pluginFile = "/data/ddb/server/plugins/caplib/PluginCaplib.txt";
 
 try {
     fns = loadPlugin(pluginFile);
@@ -30,8 +30,16 @@ try {
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
     print("  Registered functions: " + size(fns));
 } catch(ex) {
-    print("  loadPlugin error: " + ex);
-    testNum = testNum + 1;
+    // The plugin is already auto-loaded via dolphindb.dos at startup (so
+    // loadPlugin throws "already in use"). Verify it actually works by
+    // calling one of its functions; pass only if the call succeeds.
+    ok = false;
+    try {
+        r = caplib::calcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360);
+        ok = abs(r - 364.0/360.0) < 0.0001;
+    } catch(ex2) {}
+    ok = t("loadPlugin (already loaded via dolphindb.dos)", ok);
+    testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 }
 
 // ─── Basic non-proto function ───────────────────────────────
@@ -64,10 +72,11 @@ try {
     testNum = testNum + 1;
 }
 
-// getObjectCacheJson — cache JSON round-trip for visualization.
+// getObjectCacheJson — returns [handle, json]; verify the JSON round-trip.
 try {
-    curveJson = caplib::getObjectCacheJson("IrYieldCurve", "DISC_DOCKER");
-    ok = t("getObjectCacheJson(IrYieldCurve)", strlen(curveJson) > 0 && strpos(curveJson, "\"currency\"") >= 0);
+    r = caplib::getObjectCacheJson("IrYieldCurve", "DISC_DOCKER");
+    ok = t("getObjectCacheJson(IrYieldCurve) → [handle, json]",
+        size(r) == 2 && r[0] == "DISC_DOCKER" && strlen(r[1]) > 0 && strpos(r[1], "\"currency\"") >= 0);
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {
     print("  getObjectCacheJson error: " + ex);
