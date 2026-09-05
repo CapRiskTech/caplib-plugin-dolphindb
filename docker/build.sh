@@ -15,7 +15,8 @@
 #
 # Environment variables:
 #   DDB_BASE_IMAGE       Override base image (default dolphindb/dolphindb:v3.00.5)
-#   CAPLIB_PLUGIN_TAG    Override plugin release tag (default 0.0.10)
+#   CAPLIB_PLUGIN_TAG    Override plugin release tag (default 0.0.11)
+#   CAPLIB_PLUGIN_ARCHIVE  Use a local release archive (also works before publication)
 #   IMAGE_NAME / IMAGE_TAG   Override image name/tag (default caplibdolphin:latest)
 #   GITHUB_TOKEN         For private repos (this release is public; optional)
 # ─────────────────────────────────────────────────────────────
@@ -27,11 +28,11 @@ IMAGE_NAME="${IMAGE_NAME:-caplibdolphin}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 # ─── Release versions ───────────────────────────────────────
-CAPLIB_PLUGIN_TAG="${CAPLIB_PLUGIN_TAG:-0.0.10}"
+CAPLIB_PLUGIN_TAG="${CAPLIB_PLUGIN_TAG:-0.0.11}"
 CAPLIB_PLUGIN_REPO="CapRiskTech/caplib-plugin-dolphindb"
 CAPLIB_PLUGIN_ASSET="caplib-plugin-dolphindb-${CAPLIB_PLUGIN_TAG}.tar.gz"
 LICENSE_ASSET="dqlibc.lic"
-# Keep in sync with CAPLIB_PLUGIN_TAG (the 0.0.10 descriptor exports 202).
+# Keep in sync with CAPLIB_PLUGIN_TAG (the 0.0.11 descriptor exports 202).
 EXPECTED_PLUGIN_FUNCTIONS=202
 REQUIRED_PLUGIN_FUNCTIONS=(
     "createPricingModelSettings"
@@ -82,7 +83,14 @@ RELEASE_DIR="$SCRIPT_DIR/.cache/caplib-plugin-release"
 mkdir -p "$RELEASE_DIR"
 TARBALL="$RELEASE_DIR/$CAPLIB_PLUGIN_ASSET"
 
-if [ -s "$TARBALL" ] && tar -tzf "$TARBALL" >/dev/null 2>&1; then
+if [ -n "${CAPLIB_PLUGIN_ARCHIVE:-}" ]; then
+    [ -s "$CAPLIB_PLUGIN_ARCHIVE" ] || fail "Local archive does not exist or is empty: $CAPLIB_PLUGIN_ARCHIVE"
+    tar -tzf "$CAPLIB_PLUGIN_ARCHIVE" >/dev/null 2>&1 || fail "Invalid local plugin archive"
+    if [ ! "$CAPLIB_PLUGIN_ARCHIVE" -ef "$TARBALL" ]; then
+        cp "$CAPLIB_PLUGIN_ARCHIVE" "$TARBALL"
+    fi
+    info "Using local plugin archive: $CAPLIB_PLUGIN_ARCHIVE"
+elif [ -s "$TARBALL" ] && tar -tzf "$TARBALL" >/dev/null 2>&1; then
     info "Using cached $CAPLIB_PLUGIN_ASSET (delete docker/.cache to force re-download)"
 else
     rm -f "$TARBALL"
@@ -91,7 +99,15 @@ else
 fi
 
 info "Extracting $CAPLIB_PLUGIN_ASSET..."
-tar xzf "$RELEASE_DIR/$CAPLIB_PLUGIN_ASSET" -C "$RELEASE_DIR" --strip-components=1
+# Extract each archive into its own fresh directory: files omitted by a newer
+# archive must not be silently supplied by an older cached release.
+PACKAGE_DIR="$(mktemp -d "$RELEASE_DIR/extracted.XXXXXX")"
+trap 'rm -rf -- "$PACKAGE_DIR"' EXIT
+tar xzf "$TARBALL" -C "$PACKAGE_DIR" --strip-components=1
+RELEASE_DIR="$PACKAGE_DIR"
+if [ -f "$RELEASE_DIR/SHA256SUMS" ]; then
+    (cd "$RELEASE_DIR" && sha256sum -c SHA256SUMS) || fail "Plugin archive checksum verification failed"
+fi
 
 # ─── Step 2: Validate the release ───────────────────────────
 for f in "libPluginCaplib.so" "PluginCaplib.txt" "libdqlibc.so" "$LICENSE_ASSET"; do
@@ -140,6 +156,7 @@ echo ""
 info "Building image: $IMAGE_NAME:$IMAGE_TAG"
 cd "$CONTEXT"
 docker build \
+    --build-arg DDB_BASE_IMAGE="$DDB_BASE_IMAGE" \
     --build-arg CAPLIB_PLUGIN_TAG="$CAPLIB_PLUGIN_TAG" \
     -t "$IMAGE_NAME:$IMAGE_TAG" .
 

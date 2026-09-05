@@ -59,9 +59,10 @@
         <h2>安装插件</h2>
         <h3>版本要求</h3>
         <table class="param-table"><thead><tr><th>组件</th><th>要求</th></tr></thead><tbody>
-          <tr><td>DolphinDB Server</td><td>3.00.5 或更高版本；插件描述文件版本必须与 Server 一致</td></tr>
-          <tr><td>操作系统</td><td>Linux x86-64</td></tr>
+          <tr><td>DolphinDB Server</td><td>已验证 3.00.5；插件描述文件版本必须与 Server 一致</td></tr>
+          <tr><td>操作系统</td><td>Linux x86-64，glibc 2.38 或更高版本</td></tr>
           <tr><td>运行时 ABI</td><td>`_GLIBCXX_USE_CXX11_ABI=0`（ABI0）</td></tr>
+          <tr><td>C++ 运行库</td><td>GLIBCXX 3.4.23 / CXXABI 1.3.11；无需替换官方 v3.00.5 镜像的运行库</td></tr>
           <tr><td>License</td><td>有效的 `dqlibc.lic`</td></tr>
         </tbody></table>
         <h3>插件市场</h3>
@@ -71,8 +72,10 @@ listRemotePlugins()
 installPlugin("caplib")
 loadPlugin("caplib")</code></pre>
         <h3>预编译发行包</h3>
+        <p>版本 0.0.11 基于上游 <code>c0cb21d</code>，使用 GCC 8.4 / ABI0。下载<a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11">0.0.11 发行包</a>；参见<a href="../../GCC8_OFFICIAL_IMAGE.md">兼容性与升级说明</a>及<a href="../../../releases/0.0.11.md">发行说明</a>。</p>
         <p>若远程列表中没有 `caplib`，将 `libPluginCaplib.so`、生成后的 `PluginCaplib.txt`、`libdqlibc.so` 和 `dqlibc.lic` 放在同一目录，并把 `calendars.bin` 放到 `data/` 子目录：</p>
-        <pre><code>loadPlugin("/your/path/to/caplib/PluginCaplib.txt")</code></pre>
+        <pre><code>loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")</code></pre>
+        <p>停止服务后同时替换两个动态库，保留合法许可证和日历数据，再重启加载。挂载文件改变不会自动重载已加载的动态库。</p>
         <p>请使用本仓库发行包内已配置的 <code>PluginCaplib.txt</code>；不要部署源码仓库中的 CMake 模板。</p>
       </section>
 

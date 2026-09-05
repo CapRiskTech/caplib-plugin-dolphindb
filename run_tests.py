@@ -9,7 +9,7 @@ and the final pass/fail summary. Sets the process exit code for CI/scripting
 (0 = all passed, 1 = any failure or error).
 
 Usage:
-    python run_tests.py                                   # all 8 test files
+    python run_tests.py                                   # all 9 test files
     python run_tests.py --file test_validation.dos        # a single file
     python run_tests.py --container my-container          # custom container
     python run_tests.py --skip-copy                       # files already staged

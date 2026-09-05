@@ -173,8 +173,8 @@ caplib::createCalendar(calName STRING[, holidays DATE[]|INT[][, specialBusinessD
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
 | `calName` | STRING | 日历名称。 **有效性:** 每个名称必须是已注册的非空日历标识。 |
-| `holidays` | DATE[] or INT[] | 节假日日期数组。 **有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。 |
-| `specialBusinessDays` | DATE[] or INT[] | 特殊工作日日期数组。 **有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。 |
+| `holidays` | DATE[] or INT[] | 节假日日期数组。 **有效性:** 可省略；显式提供时必须是非空且不含空值的 DATE/INT 向量。与特殊工作日向量的长度互相独立；包装器不检查排序或日期先后关系。 |
+| `specialBusinessDays` | DATE[] or INT[] | 特殊工作日日期数组。 **有效性:** 可省略或为空向量；非空时必须是不含空值的 DATE/INT 向量。包装器不检查排序或日期先后关系。 |
 
 ##### 返回值
 
@@ -607,7 +607,7 @@ caplib::createMonteCarloSettings(numSimulations INT, uniformNumberType INT, seed
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `numSimulations` | INT | 蒙特卡洛模拟路径数量。 **有效性:** 必须严格为正；包装器通常仅检查类型。 |
+| `numSimulations` | INT | 蒙特卡洛模拟路径数量。 **有效性:** 包装器要求非空 INT 标量且严格为正。 |
 | `uniformNumberType` | INT | 均匀随机数生成器类型。 **有效性:** 可接受的整数代码：`0=SOBOL_NUMBER`, `1=MERSENNE_TWIST_19937_NUMBER`. |
 | `seed` | INT | 随机数种子。 **有效性:** 应为非负整数；包装器接受任意 INT。 |
 | `wienerBuildMethod` | INT | 维纳过程构建方法。 **有效性:** 可接受的整数代码：`0=INVALID_WIENER_PROCESS_BUILD_METHOD`, `1=BROWNIAN_BRIDGE_METHOD`, `2=INCREMENTAL_METHOD`. |
@@ -842,7 +842,7 @@ caplib::createThetaRiskSettings(theta BOOL, shift INT, scaling DOUBLE, handle ST
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `theta` | BOOL | 是否计算 Theta 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `theta` | BOOL | 是否计算 Theta 风险。 **有效性:** 必须是非空 BOOL 标量；兼容旧示例的 INT `0/1`。字符串、空值及其他整数会抛错。 |
 | `shift` | INT | 风险或校准计算使用的扰动大小。 **有效性:** 必须是 INT；除非另有说明，可为负、零或正。 |
 | `scaling` | DOUBLE | 风险扰动缩放因子。 **有效性:** 必须严格为正且有限；包装器仅检查 DOUBLE 类型。 |
 | `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
@@ -876,8 +876,8 @@ caplib::createScnSettings(min DOUBLE, max DOUBLE, size INT, scnGenType INT, hand
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `min` | DOUBLE | 情景网格下界。 **有效性:** 必须有限且严格小于 `max`；包装器不检查此关系。 |
-| `max` | DOUBLE | 情景网格上界。 **有效性:** 必须有限且严格大于 `min`；包装器不检查此关系。 |
+| `min` | DOUBLE | 情景网格下界。 **有效性:** 必须为有限、非空 DOUBLE 标量，且不得大于 `max`。建议使用严格递增的区间；包装器保留两端相等的兼容行为。 |
+| `max` | DOUBLE | 情景网格上界。 **有效性:** 必须为有限、非空 DOUBLE 标量，且不得小于 `min`。 |
 | `size` | INT | 情景网格点数量。 **有效性:** 必须严格为正；包装器通常仅检查类型。 |
 | `scnGenType` | INT | 情景生成类型。 **有效性:** 定义代码为 `0` 和 `1`；包装器字段为 int32，不拒绝其他整数。 |
 | `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
@@ -2888,7 +2888,7 @@ caplib::createIrYieldCurveBuildSettings(curveName STRING, useOnTnFxSwap BOOL, di
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
 | `curveName` | STRING | 曲线业务名称。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
-| `useOnTnFxSwap` | BOOL | 是否使用 ON/TN 外汇掉期工具构建曲线。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `useOnTnFxSwap` | BOOL | 是否使用 ON/TN 外汇掉期工具构建曲线。 **有效性:** 必须是非空 BOOL 标量；兼容旧示例的 INT `0/1`。字符串、空值及其他整数会抛错。 |
 | `discountCurrencyNames` | STRING[] | 币种代码。 **有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。 |
 | `discountCurveNames` | STRING[] | 贴现曲线名称数组。 **有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。 |
 | `forwardIndexNames` | STRING[] | 远期指数名称数组。 **有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。 |

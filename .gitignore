@@ -1,5 +1,6 @@
 # Published release archives are attached to GitHub Releases, not committed.
 caplib-plugin-dolphindb-*.tar.gz
+caplib-plugin-dolphindb-*.tar.gz.sha256
 
 # Docker build downloads and assembled contexts.
 docker/.cache/

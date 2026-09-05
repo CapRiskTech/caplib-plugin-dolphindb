@@ -59,9 +59,10 @@
         <h2>Install the plugin</h2>
         <h3>Requirements</h3>
         <table class="param-table"><thead><tr><th>Component</th><th>Requirement</th></tr></thead><tbody>
-          <tr><td>DolphinDB Server</td><td>3.00.5 or later; the descriptor version must match the Server version</td></tr>
-          <tr><td>Operating system</td><td>Linux x86-64</td></tr>
+          <tr><td>DolphinDB Server</td><td>Verified on 3.00.5; the descriptor must match the server version</td></tr>
+          <tr><td>Operating system</td><td>Linux x86-64, glibc 2.38 or newer</td></tr>
           <tr><td>Runtime ABI</td><td>`_GLIBCXX_USE_CXX11_ABI=0` (ABI0)</td></tr>
+          <tr><td>C++ runtime</td><td>GLIBCXX 3.4.23 / CXXABI 1.3.11; no replacement of the official v3.00.5 runtime</td></tr>
           <tr><td>License</td><td>A valid `dqlibc.lic`</td></tr>
         </tbody></table>
         <h3>Plugin repository</h3>
@@ -71,8 +72,10 @@ listRemotePlugins()
 installPlugin("caplib")
 loadPlugin("caplib")</code></pre>
         <h3>Prebuilt package</h3>
+        <p>Version 0.0.11 is built from upstream <code>c0cb21d</code>, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11">0.0.11 release</a>. See the <a href="../GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and <a href="../../releases/0.0.11.md">release notes</a>.</p>
         <p>If `caplib` is not listed remotely, place `libPluginCaplib.so`, the generated `PluginCaplib.txt`, `libdqlibc.so`, and `dqlibc.lic` together, with `calendars.bin` in the `data/` subdirectory:</p>
-        <pre><code>loadPlugin("/your/path/to/caplib/PluginCaplib.txt")</code></pre>
+        <pre><code>loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")</code></pre>
+        <p>Stop the server before replacing both native libraries, retain the valid license and calendar data, then restart and load the plugin. Updating mounted files does not reload an already loaded library.</p>
         <p>Use the configured <code>PluginCaplib.txt</code> from this repository's release archive; do not deploy the CMake template from the source repository.</p>
       </section>
 

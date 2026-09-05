@@ -1,18 +1,18 @@
 # Caplib DolphinDB Docker Compose
 
 轻量的 Docker Compose 部署方案：基于**官方 DolphinDB 镜像** `dolphindb/dolphindb:v3.00.5`，
-只修复 libstdc++ 兼容性问题，Caplib 插件通过**宿主机目录挂载**进容器，由 `dolphindb.dos`
+保留镜像自带的 libstdc++，将 0.0.11 GCC 8 插件通过**宿主机目录挂载**进容器，由 `dolphindb.dos`
 在启动时自动加载。
 
 与 `docker/`（`build.sh`）的区别：`docker/` 会下载 release 并把插件**打进镜像**（自包含）；
-本目录只挂载插件，改动插件无需重新构建镜像，适合本地开发与快速接入。
+本目录只挂载插件，更新插件文件后需要重启服务，但无需重新构建镜像。
 
 ## 目录结构
 
 ```
 docker-compose/
 ├── README.md           ← 本文档
-├── Dockerfile          # 修复 libstdc++（GLIBCXX_3.4.32）
+├── Dockerfile          # 保留官方镜像及原有 libstdc++
 ├── docker-compose.yml  # 服务编排（端口、插件挂载、dolphindb.dos 挂载）
 └── dolphindb.dos       # 启动时自动 loadPlugin
 ```
@@ -20,24 +20,23 @@ docker-compose/
 ## 前置条件
 
 - Docker + Docker Compose
-- Caplib 插件文件（来自 `0.0.10` release 归档，下载地址：
+- Caplib 插件文件（来自 `0.0.11` 发行包，下载地址：
   <https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases>）：
   `libPluginCaplib.so`、`PluginCaplib.txt`、`libdqlibc.so`、`dqlibc.lic`、
   `data/calendars.bin`
 
 ## 快速开始
 
-1. **编辑 `docker-compose.yml`**，把占位符 `这里写入插件位置` 替换成你本地插件目录的绝对路径：
+1. **设置 `CAPLIB_PLUGIN_DIR`** 为完整 0.0.11 插件目录的绝对路径：
 
-   ```yaml
-   volumes:
-     - 这里写入插件位置:/data/ddb/server/plugins/caplib   # ← 改成下面的形式
+   ```bash
+   export CAPLIB_PLUGIN_DIR=/home/user/caplib
    ```
 
-   - Windows 示例：`D:\work\caplib:/data/ddb/server/plugins/caplib`
-   - Linux 示例：`/home/user/caplib:/data/ddb/server/plugins/caplib`
+   Windows PowerShell 示例：`$env:CAPLIB_PLUGIN_DIR = 'D:\work\caplib'`。
+   插件以只读方式挂载到 `/data/ddb/server/plugins/caplib`。
 
-2. **构建镜像**（Dockerfile 需要从 ubuntu:24.04 复制 libstdc++，需联网）：
+2. **构建镜像**（仅复用官方镜像，不再拉取 Ubuntu 或复制运行库）：
 
    ```bash
    docker compose build
@@ -62,19 +61,17 @@ docker-compose/
    docker compose down
    ```
 
-## 为什么需要这个 Dockerfile（libstdc++ 修复）
+## C++ 运行库兼容性
 
-Caplib 插件的 `libdqlibc.so` 依赖 **GLIBCXX_3.4.32**（GCC 13 编译），但：
+旧 0.0.10 的 `libdqlibc.so` 要求 **GLIBCXX_3.4.32**（GCC 13），不适用于
+保留原运行库的镜像。0.0.11 同时重编译了两个动态库和全部 C++ 依赖：
 
-- 官方镜像自带的 `/data/ddb/server/libstdc++.so.6` 仅到 **GLIBCXX_3.4.25**
-- 镜像内 `/usr/lib` 的 libstdc++ 是 **musl 版**，与 glibc 的 DolphinDB 服务器不兼容
+- 插件最高要求 **GLIBCXX_3.4.20 / CXXABI_1.3.9**。
+- libdqlibc 最高要求 **GLIBCXX_3.4.23 / CXXABI_1.3.11**。
+- 官方 v3.00.5 镜像提供 **GLIBCXX_3.4.25 / CXXABI_1.3.11**，glibc 2.39。
 
-因此 Dockerfile 从 `ubuntu:24.04` 复制一个 glibc 版 `libstdc++.so.6`（含 3.4.32），
-覆盖到 `/data/ddb/server/libstdc++.so.6`：
-
-```dockerfile
-COPY --from=libstdc /usr/lib/x86_64-linux-gnu/libstdc++.so.6 /data/ddb/server/libstdc++.so.6
-```
+无需覆盖服务器的 `libstdc++.so.6`，也不能使用镜像内 musl 版 C++ 运行库替代。
+完整信息见 [官方镜像升级说明](../docs/GCC8_OFFICIAL_IMAGE.md)。
 
 ## 关键配置
 
@@ -110,5 +107,5 @@ s.run('loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")')
 - 插件目录保持放在 `plugins/caplib/` **子目录**，不要直接散在 `<home>/plugins/` 根下，
   以避免 DDB 启动时自动扫描插件目录因加载失败而静默退出（code 255）。
 - 修改 `docker-compose.yml` 或 `Dockerfile` 后需重新 `docker compose build`；
-  仅改插件文件内容则无需重建（插件走挂载，热生效）。
+  仅改插件文件内容则无需重建，但必须停止服务后替换两个动态库，再重启加载；不支持热重载。
 - `dqlibc.lic` 需与 `libdqlibc.so` 放在同一目录（licensecc 同目录查找优先），挂载目录里必须包含它。

@@ -1,16 +1,17 @@
 services:
   dolphindb:
-    # 基于官方镜像，但用 ubuntu:24.04 的 glibc 版 libstdc++ 替换了自带的旧版，
-    # 以满足 Caplib 插件 (libdqlibc.so) 对 GLIBCXX_3.4.32 的依赖。
+    # 使用 0.0.11 GCC 8 插件，保留官方镜像自带的 C++ 运行库。
     image: dolphindb-caplib:v3.00.5
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DDB_BASE_IMAGE: ${DDB_BASE_IMAGE:-dolphindb/dolphindb:v3.00.5}
     container_name: dolphindb-caplib
     ports:
       - "8848:8848"   # DolphinDB 客户端端口
       - "8900:8900"   # Web/集群端口
     volumes:
-      - 这里写入插件位置:/data/ddb/server/plugins/caplib
+      - ${CAPLIB_PLUGIN_DIR:?Set CAPLIB_PLUGIN_DIR to the extracted 0.0.11 plugin directory}:/data/ddb/server/plugins/caplib:ro
       - ./dolphindb.dos:/data/ddb/server/dolphindb.dos   # 启动时自动 loadPlugin
     restart: unless-stopped

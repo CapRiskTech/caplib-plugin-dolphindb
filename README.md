@@ -2,10 +2,14 @@
 
 Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件。插件通过 CapRiskTech 提供的 `dqlibc` 计算库，覆盖固定收益（Fixed Income，FI）、利率（Interest Rate，IR）、外汇（Foreign Exchange，FX）、权益（Equity，EQ）、商品（Commodity，CM）和信用（Credit，CR）等资产类别，可用于曲线构建、市场数据组装、金融工具创建、定价和风险分析。
 
-当前发行版本为 `0.0.10`，基于 `dqlibdolphin` 的 `release-caplib`
-提交 `2867f08` 构建，提供 202 个对外接口。完整文档入口：
+当前版本 `0.0.11`，基于 `dqlibdolphin` 的 `release-caplib`
+提交 `c0cb21d` 构建，仍提供 202 个对外接口。插件及 C++ 依赖使用 GCC 8.4 / ABI0，
+可使用官方 DolphinDB v3.00.5 镜像自带的 C++ 运行库，无需替换 `libstdc++.so.6`。
+下载 [0.0.11 发行包](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11)，详见 [发行说明](releases/0.0.11.md)。
+完整文档入口：
 
 - [完整中文使用说明](docs/DQLIB_DOCUMENTATION.md)
+- [官方镜像兼容性与升级说明](docs/GCC8_OFFICIAL_IMAGE.md)
 - [中文文档](docs/html/zh/index.html)
 - [English documentation](docs/html/index.html)
 - [文档语言入口](docs/index.html)
@@ -33,9 +37,10 @@ Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件�
 
 | 组件 | 要求 |
 | --- | --- |
-| DolphinDB Server | 3.00.5 或更高版本；插件描述文件中的版本必须与 Server 版本一致 |
-| 操作系统 | Linux x86-64（CentOS/RHEL 9 或 Ubuntu 22.04 及兼容发行版） |
+| DolphinDB Server | 已验证 v3.00.5；插件描述文件中的版本必须与 Server 版本一致，不承诺其他版本可直接加载 |
+| 操作系统 | Linux x86-64，glibc 2.38+；官方 v3.00.5 测试镜像为 glibc 2.39 |
 | 运行时 ABI | `_GLIBCXX_USE_CXX11_ABI=0`（ABI0） |
+| C++ 运行库 | 包内最高要求 `GLIBCXX_3.4.23` / `CXXABI_1.3.11`；官方镜像满足要求 |
 | 许可证 | 有效的 `dqlibc.lic` |
 
 ### 通过插件市场安装
@@ -54,8 +59,8 @@ loadPlugin("caplib")
 
 ### 使用预编译发行包安装
 
-1. 从本仓库的 GitHub Releases 下载
-   `caplib-plugin-dolphindb-0.0.10.tar.gz`。
+1. 从本仓库的 [GitHub Releases](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11)
+   下载 `caplib-plugin-dolphindb-0.0.11.tar.gz` 及其 SHA-256 校验文件。
 2. 将下列文件放在同一插件目录中，并保留 `data` 子目录：
 
    ```text
@@ -71,11 +76,15 @@ loadPlugin("caplib")
 3. 加载生成后的插件描述文件：
 
    ```dolphindb
-   loadPlugin("/your/path/to/caplib/PluginCaplib.txt")
+   loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")
    ```
 
 > `PluginCaplib.txt` 是 CMake 生成物。请使用发行包内已经配置好的文件，
 > 不要使用 `dqlibdolphin` 源码仓库中的 CMake 模板。
+
+官方镜像的插件目录为 `/data/ddb/server/plugins/caplib`。升级时需停止服务后
+替换完整目录中的两个动态库，不能只更新 `libPluginCaplib.so`；
+保留合法许可证和日历数据，然后重启并显式加载。挂载文件不会自动重载已加载的动态库。
 
 ## 核心概念
 
@@ -245,9 +254,28 @@ Docker 镜像构建、目录布局、启动、健康检查和故障排查见 [`d
 bash docker/build.sh --test
 ```
 
+使用本地包或离线构建：
+
+```bash
+CAPLIB_PLUGIN_ARCHIVE="$PWD/caplib-plugin-dolphindb-0.0.11.tar.gz" bash docker/build.sh
+```
+
+Windows 可先设置 `$env:CAPLIB_PLUGIN_ARCHIVE` 再运行 `docker\build.bat`。
+两种 Docker 部署方式均保留官方镜像的 C++ 运行库。
+
 ### 编译说明
 
-源码编译需要 DolphinDB Plugin SDK、ABI0 版本 `dqlibc`、Boost 和 log4cplus，以及 CMake 3.22+、GCC 9+ 和 Protobuf。完整说明见 [`BUILD_REQUIREMENTS.md`](BUILD_REQUIREMENTS.md)。
+本仓库分发插件，不包含 C++ 源码。源码构建要求见
+[上游 BUILD_REQUIREMENTS.md](https://github.com/dqlab/dqlibdolphin/blob/c0cb21d/BUILD_REQUIREMENTS.md)。
+GCC 8 兼容包的符号要求和验证方法见 [升级说明](docs/GCC8_OFFICIAL_IMAGE.md)。
+
+### 回归测试
+
+保留本仓库最新的原生 DolphinDB 测试，并新增上游 133 项参数校验回归。
+加载新插件后执行 `python run_tests.py --container <测试容器>`。
+`test_issues_regression.dos` 在一个原生测试用例中检查全部 133 项，并断言检查数量；
+任一子检查失败都会让该用例失败。完整 Monte Carlo 定价测试使用 `maxMemSize=16`，
+2 GB 配额会导致内存分配失败。
 
 ### License 说明
 
@@ -264,7 +292,7 @@ bash docker/build.sh --test
 | 现象 | 原因 | 处理方式 |
 | --- | --- | --- |
 | `Invalid plugin file` | 使用了带 CMake 变量的源模板，或描述文件版本不匹配 | 使用本仓库发行包内的 `PluginCaplib.txt`，并确保版本匹配 |
-| `GLIBCXX_* not found` | DolphinDB 自带的 `libstdc++.so.6` 过旧 | 使用匹配的运行环境；Docker 方案见 `docker/README.md` |
+| `GLIBCXX_* not found` | 加载了旧的 GCC 13 二进制，或混用了两个版本的动态库 | 同时替换为 0.0.11 GCC 8 包内两个动态库，保留镜像运行库；见 [升级说明](docs/GCC8_OFFICIAL_IMAGE.md) |
 | `LICENSE_FILE_NOT_FOUND` | 未找到 `dqlibc.lic` | 将许可证放到上述三个位置之一 |
 | 句柄类型错误 | 对象句柄的 protobuf 类型与参数要求不符 | 检查逐接口参数表中 `*Handle` 的来源和类型 |
 | 函数抛出异常 | 服务失败或插件参数校验失败 | 查看异常消息；插件不会返回部分结果 |

@@ -1,0 +1,230 @@
+// Upstream c0cb21d: run all 133 checks as one native testing case.
+@testing:case="issues regression: 133 validation and compatibility checks"
+// Regression coverage for issues.md (2026-09-03).
+// Load caplib, then run this file. Failures must be parameter-validation errors,
+// not unrelated service/fixture failures. Kept independent of other test suites.
+try { undef(`CAPLIB_ISSUES_RESULTS, SHARED); } catch(ex) {}
+share table(200:0, ["name", "passed"], [STRING, BOOL]) as CAPLIB_ISSUES_RESULTS;
+
+def issueResult(name, passed) {
+    tableInsert(CAPLIB_ISSUES_RESULTS, name, passed);
+    if (!passed) print("FAIL: " + name);
+    return passed;
+}
+
+def issueReject(name, scriptText, expectedText) {
+    try {
+        eval(parseExpr(scriptText));
+    } catch(ex) {
+        errorText = ex[1];
+        if (strpos(errorText, expectedText) >= 0) return issueResult(name, true);
+        print("Unexpected error for " + name + ": " + errorText);
+        return issueResult(name, false);
+    }
+    return issueResult(name, false);
+}
+
+def issueAccept(name, scriptText) {
+    try {
+        eval(parseExpr(scriptText));
+        return issueResult(name, true);
+    } catch(ex) {
+        print("Unexpected error for " + name + ": " + ex[1]);
+        return issueResult(name, false);
+    }
+}
+
+// #1, #2, #18: the six finite-difference method parameters are INT scalars.
+// Theta has no method parameter: its integer parameter is shift.
+riskCalls = [
+    "caplib::createIrCurveRiskSettings(1,1,0,0.0001,0.0002,{METHOD},0,1.0,0,\"ISS_IR\")",
+    "caplib::createCreditCurveRiskSettings(1,1,0.0001,{METHOD},0,1.0,0,\"ISS_CR\")",
+    "caplib::createDividendCurveRiskSettings(1,1,0.0001,{METHOD},0,1.0,0,\"ISS_DIV\")",
+    "caplib::createPriceRiskSettings(1,1,0,0.01,0.02,{METHOD},1.0,0,\"ISS_PRICE\")",
+    "caplib::createVolRiskSettings(1,1,0.01,{METHOD},0,1.0,0,\"ISS_VOL\")",
+    "caplib::createPriceVolRiskSettings(1,0.01,0.01,{METHOD},0,1.0,1.0,0,\"ISS_PV\")"
+];
+for (call in riskCalls) {
+    for (bad in ["\"1\"", "int()", "[1]", "1.0", "true"]) {
+        issueReject(call + " rejects " + bad, strReplace(call, "{METHOD}", bad), "Parameter method");
+    }
+    for (method in ["0", "1", "2"]) {
+        issueAccept(call + " accepts " + method, strReplace(call, "{METHOD}", method));
+    }
+}
+for (bad in ["\"1\"", "int()", "[1]", "1.0"]) {
+    issueReject("Theta shift rejects " + bad,
+        "caplib::createThetaRiskSettings(1," + bad + ",1.0,\"ISS_THETA\")", "Parameter shift");
+}
+issueReject("Theta flag rejects STRING",
+    "caplib::createThetaRiskSettings(\"1\",1,1.0,\"ISS_THETA\")", "Parameter theta");
+issueAccept("Theta permits negative shift",
+    "caplib::createThetaRiskSettings(true,-1,1.0,\"ISS_THETA\",true)");
+
+// #3: tSize must be non-null INT, not a string or a numeric coercion.
+pdeCall = "caplib::createPdeSettings({SIZE},201,-5.0,5.0,0,0,0.0,0.0,0,0,0.0,0.0,0,0.1,0.1,0.1,2,0,0,3,0,0,\"ISS_PDE\")";
+for (bad in ["\"101\"", "int()", "[101]", "101.0"]) {
+    issueReject("PDE tSize rejects " + bad, strReplace(pdeCall, "{SIZE}", bad), "Parameter tSize");
+}
+issueAccept("PDE valid with unused y/z grids", strReplace(pdeCall, "{SIZE}", "101"));
+
+// #4, #13: Monte Carlo simulation count must be a positive INT.
+mcCall = "caplib::createMonteCarloSettings({SIZE},1,1023,1,1,0,1,\"ISS_MC\")";
+for (bad in ["\"8096\"", "int()", "[8096]", "8096.0"]) {
+    issueReject("MC rejects " + bad, strReplace(mcCall, "{SIZE}", bad), "Parameter numSimulations");
+}
+for (bad in ["0", "-1"]) {
+    issueReject("MC rejects " + bad, strReplace(mcCall, "{SIZE}", bad), "numSimulations must be positive");
+}
+issueAccept("MC smallest positive count", strReplace(mcCall, "{SIZE}", "1"));
+
+// #5, #11: report lower/upper/numPoints correspond to min/max/size.
+issueReject("Scenario rejects null size",
+    "caplib::createScnSettings(-0.1,0.1,int(),0,\"ISS_SCN\")", "Parameter size");
+issueReject("Scenario rejects string size",
+    "caplib::createScnSettings(-0.1,0.1,\"11\",0,\"ISS_SCN\")", "Parameter size");
+issueReject("Scenario rejects inverted interval",
+    "caplib::createScnSettings(0.1,-0.1,11,0,\"ISS_SCN\")", "min <= max");
+issueAccept("Scenario ordered interval",
+    "caplib::createScnSettings(-0.1,0.1,11,0,\"ISS_SCN\",true)");
+issueAccept("Scenario equal endpoints remain accepted",
+    "caplib::createScnSettings(0.1,0.1,1,0,\"ISS_SCN_EQUAL\")");
+
+// #6: retain BOOL and legacy INT 0/1, plus scalar/vector currency support.
+irBuildCall = "caplib::createIrYieldCurveBuildSettings(\"ISS_CURVE\",{FLAG},\"CNY\",\"ISS_CURVE\",\"ISS_IBOR\",\"ISS_CURVE\",\"ISS_BUILD\")";
+for (bad in ["\"0\"", "bool()", "int()", "[false]", "2", "0.0"]) {
+    issueReject("IR build flag rejects " + bad, strReplace(irBuildCall, "{FLAG}", bad), "Parameter useOnTnFxSwap");
+}
+for (flag in ["false", "true", "0", "1"]) {
+    issueAccept("IR build accepts scalar strings and flag " + flag, strReplace(irBuildCall, "{FLAG}", flag));
+}
+issueAccept("IR build accepts string vectors",
+    "caplib::createIrYieldCurveBuildSettings(\"ISS_CURVE\",false,[\"CNY\"],[\"ISS_CURVE\"],[\"ISS_IBOR\"],[\"ISS_CURVE\"],\"ISS_BUILD_VEC\",true)");
+
+// #7-10: reject negative amounts before constructing/caching objects or calling services.
+issueReject("European negative nominal",
+    "caplib::createEuropeanOption(\"CALL\",100.0,2024.06.01,2024.06.03,-1.0,\"CNY\",\"SPOT\",\"CNY\",\"ISS_UNDERLYING\",\"ISS_BAD_EU\",true)", "Parameter nominal");
+issueAccept("European positive nominal",
+    "caplib::createEuropeanOption(\"CALL\",100.0,2024.06.01,2024.06.03,1000.0,\"CNY\",\"SPOT\",\"CNY\",\"ISS_UNDERLYING\",\"ISS_EU\",true)");
+issueReject("FX Forward negative buyAmount",
+    "caplib::createFxForward(\"USD\",-1.0,\"CNY\",7.0,2024.06.03,2024.06.01,\"ISS_FWD\")", "Parameter buyAmount");
+issueReject("FX Forward negative sellAmount",
+    "caplib::createFxForward(\"USD\",1.0,\"CNY\",-7.0,2024.06.03,2024.06.01,\"ISS_FWD\")", "Parameter sellAmount");
+issueAccept("FX Forward positive amounts",
+    "caplib::createFxForward(\"USD\",1.0,\"CNY\",7.0,2024.06.03,2024.06.01,\"ISS_FWD\",true)");
+issueReject("FX Spot negative value",
+    "caplib::createFxSpotRate(-7.0,\"USD\",\"CNY\",2024.06.01,2024.06.03,\"ISS_FX\")", "Parameter value");
+issueAccept("FX Spot positive value",
+    "caplib::createFxSpotRate(7.0,\"USD\",\"CNY\",2024.06.01,2024.06.03,\"ISS_FX\",true)");
+issueAccept("Calendar omitted holidays",
+    "caplib::createCalendar(\"CAL_CFETS\")");
+issueReject("CDS negative nominal",
+    "caplib::buildCreditDefaultSwap(-1000000.0,\"CNY\",2019.06.20,2024.06.20,\"PAY\",\"CASH\",1.0,1.0,\"SENIOR\",0.4,0.01,\"FLAT_SPREAD\",\"ACT_360\",\"QUARTERLY\",\"MODIFIED_FOLLOWING\",\"CAL_CFETS\",0.01,0,\"ISS_CDS_NAME\",\"ISS_CDS\")", "Parameter nominal");
+issueAccept("CDS positive nominal",
+    "caplib::buildCreditDefaultSwap(1000000.0,\"CNY\",2019.06.20,2024.06.20,\"PAY\",\"CASH\",1.0,1.0,\"SENIOR\",0.4,0.01,\"FLAT_SPREAD\",\"ACT_360\",\"QUARTERLY\",\"MODIFIED_FOLLOWING\",\"CAL_CFETS\",0.01,0,\"ISS_CDS_NAME\",\"ISS_CDS\")");
+
+// #12: a smile requires strictly increasing bounds.
+issueReject("Smile rejects 110.0 >= 90.0",
+    "caplib::createVolatilitySmile(\"STRIKE\",2024.01.01,[90.0,110.0],[0.2,0.21],\"LINEAR\",\"FLAT_EXTRAP\",1.0,take(double(),0),take(double(),0),110.0,90.0,\"ISS_SMILE\")", "lower < upper");
+issueReject("Smile rejects 90.0 >= 90.0",
+    "caplib::createVolatilitySmile(\"STRIKE\",2024.01.01,[90.0,110.0],[0.2,0.21],\"LINEAR\",\"FLAT_EXTRAP\",1.0,take(double(),0),take(double(),0),90.0,90.0,\"ISS_SMILE\")", "lower < upper");
+issueAccept("Smile valid bounds",
+    "caplib::createVolatilitySmile(\"STRIKE\",2024.01.01,[90.0,110.0],[0.2,0.21],\"LINEAR\",\"FLAT_EXTRAP\",1.0,take(double(),0),take(double(),0),90.0,110.0,\"ISS_SMILE\")");
+
+// #14, #19: both longer and shorter volatility arrays must be rejected.
+issueReject("Vol curve short vols",
+    "caplib::createVolatilityCurve(2024.01.01,[2024.06.01,2025.01.01],[0.2],\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_UNDERLYING\",\"ISS_VC\",true)", "pillarDates and vols");
+issueReject("Vol curve long vols",
+    "caplib::createVolatilityCurve(2024.01.01,[2024.06.01,2025.01.01],[0.2,0.21,0.22],\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_UNDERLYING\",\"ISS_VC\",true)", "pillarDates and vols");
+issueAccept("Vol curve matching lengths",
+    "caplib::createVolatilityCurve(2024.01.01,[2024.06.01,2025.01.01],[0.2,0.21],\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_UNDERLYING\",\"ISS_VC\",true)");
+
+// #15: explicitly supplied holidays must be non-empty and contain no nulls.
+issueReject("Calendar rejects take(int(),0)",
+    "caplib::createCalendar(\"ISS_CAL\",take(int(),0))", "Parameter holidays");
+issueReject("Calendar rejects [int(),int(),int()]",
+    "caplib::createCalendar(\"ISS_CAL\",[int(),int(),int()])", "Parameter holidays");
+issueReject("Calendar rejects [44654,int(),44656]",
+    "caplib::createCalendar(\"ISS_CAL\",[44654,int(),44656])", "Parameter holidays");
+issueReject("Calendar rejects take(date(),0)",
+    "caplib::createCalendar(\"ISS_CAL\",take(date(),0))", "Parameter holidays");
+issueReject("Calendar rejects [2024.01.01,date()]",
+    "caplib::createCalendar(\"ISS_CAL\",[2024.01.01,date()])", "Parameter holidays");
+issueAccept("Calendar INT serials",
+    "caplib::createCalendar(\"ISS_CAL_INT\",[44654,44656],[44655])");
+issueAccept("Calendar DATE values",
+    "caplib::createCalendar(\"ISS_CAL_DATE\",[2024.01.01,2024.01.03],[2024.01.02])");
+issueAccept("Calendar permits omitted special days",
+    "caplib::createCalendar(\"ISS_CAL_OMITTED\",[44654])");
+issueAccept("Calendar permits empty typed special days",
+    "caplib::createCalendar(\"ISS_CAL_EMPTY_SPECIAL\",[44654],take(int(),0))");
+issueAccept("Calendar permits empty untyped special days",
+    "caplib::createCalendar(\"ISS_CAL_EMPTY_SPECIAL\",[44654],[])");
+issueReject("Calendar special days reject null",
+    "caplib::createCalendar(\"ISS_CAL_NULL_SPECIAL\",[44654],[int()])", "Parameter specialBusinessDays");
+
+// #16: reject invalid labels and preserve each valid curve type in JSON.
+issueReject("Bond curve invalid type",
+    "caplib::createBondYieldCurveBuildSettings(\"ISS_BOND\",\"NOT_A_CURVE_TYPE\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_BOND_BUILD\")", "curveType");
+for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
+    curveResult = caplib::createBondYieldCurveBuildSettings(
+        "ISS_BOND", curveType, "LINEAR_INTERP", "FLAT_EXTRAP", "ISS_BOND_BUILD", true);
+    issueResult("Bond curve preserves " + curveType, strpos(curveResult[1], curveType) >= 0);
+}
+
+// #17, #20: validate every numeric cell for matrix, flat and nested vector forms.
+issueReject("Quotes reject null matrix([10.5,double()],[11.0,9.0])",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,double()],[11.0,9.0]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueReject("Quotes reject null matrix([10.5,8.5],[11.0,double()])",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,double()]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueReject("Quotes reject null matrix(take(double(),2),take(double(),2))",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix(take(double(),2),take(double(),2)),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueReject("Quotes reject null strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,9.0]),matrix([95.0,95.0],[105.0,double()]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter strikes");
+issueReject("Quotes reject empty rows",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix(DOUBLE,0,2),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "at least one row");
+issueReject("Quotes reject empty columns",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix(DOUBLE,2,0),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "rows must not be empty");
+issueReject("Quotes reject mismatched strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,9.0]),matrix([95.0,95.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "shape must match");
+issueAccept("Quotes valid matrix",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,9.0]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)");
+issueAccept("Quotes valid flat vectors",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,8.5],[95.0,105.0],\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)");
+issueReject("Quotes reject null flat vector",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,double()],[95.0,105.0],\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueAccept("Quotes valid nested vectors",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],([\"CALL\",\"PUT\"],[\"CALL\"]),([10.5,8.5],[11.0]),([95.0,105.0],[100.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)");
+issueReject("Quotes reject null nested vector",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],([\"CALL\",\"PUT\"],[\"CALL\"]),([10.5,8.5],[double()]),([95.0,105.0],[100.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+
+issueAccept("Quotes retain integer strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,8.5],[95,105],\"ISS_UNDERLYING\",\"ISS_INT_QUOTES\",true)");
+issueReject("Quotes reject null integer strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,8.5],[95,int()],\"ISS_UNDERLYING\",\"ISS_INT_QUOTES\",true)", "Parameter strikes");
+
+// A rejected update must not replace an existing cached object.
+beforeRejectedUpdate = caplib::getObjectCacheJson("OptionQuoteMatrix", "ISS_QUOTES")[1];
+issueReject("Reject overwrite with invalid quotes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,double()]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueResult("Invalid quotes leave cache unchanged",
+    beforeRejectedUpdate == caplib::getObjectCacheJson("OptionQuoteMatrix", "ISS_QUOTES")[1]);
+
+// Preserve the documented calendar scalar alternatives and date ordering.
+issueAccept("IborIndex accepts scalar calendar",
+    "caplib::createIborIndex(\"ISS_IBOR\",\"3M\",\"CNY\",\"CAL_CFETS\",1,\"ACT_360\",\"MODIFIED_FOLLOWING\",\"INVALID_DATE_ROLL_CONVENTION\",\"STANDARD_IBOR_INDEX\",true)");
+issueAccept("FX SpotTemplate accepts scalar calendar",
+    "caplib::createFxSpotTemplate(\"ISS_SPOT_TPL\",\"EURUSD\",\"FOLLOWING\",\"CAL_CFETS\",\"2d\",true)");
+issueAccept("YearFraction accepts reversed dates",
+    "caplib::calcYearFraction(2024.12.30,2024.01.01,\"ACTUAL_360\")");
+issueAccept("IR curve retains permissive reference date ordering",
+    "caplib::createIrYieldCurve(2025.01.01,[2024.01.01,2024.06.01],[0.02,0.03],\"ZERO_RATE\",\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"CONTINUOUS_COMPOUNDING\",\"CNY\",\"ISS_CURVE\",\"ISS_ORDER\",false)");
+
+issuesSummary = select count(*) as total, sum(passed) as passed from CAPLIB_ISSUES_RESULTS;
+print(issuesSummary);
+if (issuesSummary.total[0] != issuesSummary.passed[0]) {
+    throw "Caplib issues regression failures: " + string(issuesSummary.total[0] - issuesSummary.passed[0]);
+}
+
+assert 1, issuesSummary.total[0] == 133
+

@@ -10,7 +10,7 @@
 #   powershell -File docker\build.ps1 [--run|--test]   (equivalent)
 #
 # Environment variables (same as build.sh):
-#   DDB_BASE_IMAGE, CAPLIB_PLUGIN_TAG, IMAGE_NAME, IMAGE_TAG, GITHUB_TOKEN
+#   DDB_BASE_IMAGE, CAPLIB_PLUGIN_TAG, CAPLIB_PLUGIN_ARCHIVE, IMAGE_NAME, IMAGE_TAG, GITHUB_TOKEN
 # ─────────────────────────────────────────────────────────────
 # NOTE: deliberately NOT setting $ErrorActionPreference='Stop'. On Windows
 # PowerShell 5.1, a native command writing to stderr (e.g. `docker rm -f` on a
@@ -35,7 +35,7 @@ $tar = Join-Path $env:SystemRoot 'System32\tar.exe'
 
 $env:IMAGE_NAME = if ($env:IMAGE_NAME) { $env:IMAGE_NAME } else { 'caplibdolphin' }
 $env:IMAGE_TAG  = if ($env:IMAGE_TAG)  { $env:IMAGE_TAG  } else { 'latest' }
-$CAPLIB_PLUGIN_TAG = if ($env:CAPLIB_PLUGIN_TAG) { $env:CAPLIB_PLUGIN_TAG } else { '0.0.10' }
+$CAPLIB_PLUGIN_TAG = if ($env:CAPLIB_PLUGIN_TAG) { $env:CAPLIB_PLUGIN_TAG } else { '0.0.11' }
 $CAPLIB_PLUGIN_REPO  = 'CapRiskTech/caplib-plugin-dolphindb'
 $CAPLIB_PLUGIN_ASSET = "caplib-plugin-dolphindb-$CAPLIB_PLUGIN_TAG.tar.gz"
 $LICENSE_ASSET = 'dqlibc.lic'
@@ -64,6 +64,18 @@ New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
 $tgz = Join-Path $releaseDir $CAPLIB_PLUGIN_ASSET
 # Release assets are immutable per tag — reuse a valid cached tarball.
 $useCache = $false
+if ($env:CAPLIB_PLUGIN_ARCHIVE) {
+    $localArchive = Get-Item -LiteralPath $env:CAPLIB_PLUGIN_ARCHIVE -ErrorAction SilentlyContinue
+    if (-not $localArchive -or $localArchive.PSIsContainer -or $localArchive.Length -eq 0) {
+        Fail "Local plugin archive does not exist or is empty: $env:CAPLIB_PLUGIN_ARCHIVE"
+    }
+    & $tar -tzf $localArchive.FullName *> $null
+    if ($LASTEXITCODE -ne 0) { Fail 'Invalid local plugin archive' }
+    if ($localArchive.FullName -ne [System.IO.Path]::GetFullPath($tgz)) {
+        Copy-Item -LiteralPath $localArchive.FullName -Destination $tgz -ErrorAction Stop
+    }
+    Info "Using local plugin archive: $($localArchive.FullName)"
+}
 if ((Test-Path $tgz) -and ((Get-Item $tgz).Length -gt 0)) {
     & $tar -tzf $tgz *> $null
     if ($LASTEXITCODE -eq 0) { $useCache = $true }
@@ -83,8 +95,28 @@ if ($useCache) {
 }
 
 Info "Extracting $CAPLIB_PLUGIN_ASSET..."
+# Do not reuse extracted files from another release.
+$releaseDir = Join-Path $releaseDir ("extracted." + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $releaseDir -ErrorAction Stop | Out-Null
 & $tar -xzf $tgz -C $releaseDir --strip-components=1
 if ($LASTEXITCODE -ne 0) { Fail "tar extraction failed for $CAPLIB_PLUGIN_ASSET" }
+if (Test-Path -LiteralPath (Join-Path $releaseDir 'SHA256SUMS')) {
+    foreach ($checksumLine in Get-Content -LiteralPath (Join-Path $releaseDir 'SHA256SUMS')) {
+        if ($checksumLine -notmatch '^([a-fA-F0-9]{64}) [ *](.+)$') {
+            Fail 'Invalid SHA256SUMS entry'
+        }
+        $expectedHash = $Matches[1]
+        $checksumRoot = [System.IO.Path]::GetFullPath($releaseDir) + [System.IO.Path]::DirectorySeparatorChar
+        $checksumPath = [System.IO.Path]::GetFullPath((Join-Path $releaseDir $Matches[2]))
+        if (-not $checksumPath.StartsWith($checksumRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            Fail 'SHA256SUMS path is outside the extracted package'
+        }
+        if (-not (Test-Path -LiteralPath $checksumPath) -or
+            (Get-FileHash -LiteralPath $checksumPath -Algorithm SHA256).Hash -ne $expectedHash) {
+            Fail "Plugin archive checksum verification failed: $($Matches[2])"
+        }
+    }
+}
 
 # ─── Step 2: Validate the release ───────────────────────────
 foreach ($f in @('libPluginCaplib.so', 'PluginCaplib.txt', 'libdqlibc.so', $LICENSE_ASSET)) {
@@ -105,7 +137,12 @@ foreach ($fn in $REQUIRED_PLUGIN_FUNCTIONS) {
 Info "Validated: $pluginFunctionCount functions, required APIs present"
 
 # ─── Step 3: Assemble build context (small) ─────────────────
-if (Test-Path $context) { Remove-Item $context -Recurse -Force }
+$expectedContext = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '.staging'))
+$context = [System.IO.Path]::GetFullPath($context)
+if ($context -ne $expectedContext -or (Split-Path -Leaf $context) -ne '.staging') {
+    Fail 'Unsafe build context path'
+}
+if (Test-Path -LiteralPath $context) { Remove-Item -LiteralPath $context -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $context | Out-Null
 Copy-Item (Join-Path $scriptDir 'Dockerfile') $context
 # Normalize to LF (Windows checkout CRLF breaks .dos scripts in-container).
@@ -129,11 +166,20 @@ if (Test-Path (Join-Path $releaseDir 'data\calendars.bin')) {
 }
 Info "Build context ready: $context"
 
+# Remove only the unique extraction directory created by this invocation.
+$extractionPath = [System.IO.Path]::GetFullPath($releaseDir)
+$releaseCacheRoot = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '.cache\caplib-plugin-release')) + [System.IO.Path]::DirectorySeparatorChar
+if (-not $extractionPath.StartsWith($releaseCacheRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+    (Split-Path -Leaf $extractionPath) -notmatch '^extracted\.[a-f0-9]{32}$') {
+    Fail 'Unsafe extraction cleanup path'
+}
+Remove-Item -LiteralPath $extractionPath -Recurse -Force -ErrorAction Stop
+
 # ─── Step 4: Build Docker image ─────────────────────────────
 Info "Building image: $env:IMAGE_NAME`:$env:IMAGE_TAG"
 Push-Location $context
 try {
-    docker build --build-arg "CAPLIB_PLUGIN_TAG=$CAPLIB_PLUGIN_TAG" -t "$env:IMAGE_NAME`:$env:IMAGE_TAG" .
+    docker build --build-arg "DDB_BASE_IMAGE=$DDB_BASE_IMAGE" --build-arg "CAPLIB_PLUGIN_TAG=$CAPLIB_PLUGIN_TAG" -t "$env:IMAGE_NAME`:$env:IMAGE_TAG" .
     if ($LASTEXITCODE -ne 0) { Fail 'docker build failed' }
 } finally {
     Pop-Location
