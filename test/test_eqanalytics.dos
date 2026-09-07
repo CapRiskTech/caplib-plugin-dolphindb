@@ -601,3 +601,15 @@ caplib::createEqRiskSettings(int(), 1, 1, 1, "EQ_NULL_METHOD", true)
 // --- INT parameter type validation (fed STRING) ---
 @testing:case="createVolSurfBuildSettings rejects STRING int parameter", exception=1
 caplib::createVolSurfBuildSettings("1", 0.5, "EQ_BAD_VSB", true)
+
+
+// ============================================================================
+// Issues.md regression (0.0.11 validation fixes)
+// ============================================================================
+
+// --- #7: nominal must not be negative ---
+@testing:case="createEuropeanOption rejects negative nominal", exception=1
+caplib::createEuropeanOption("CALL", 100.0, 2024.06.01, 2024.06.03, -1.0, "CNY", "SPOT", "CNY", "EQNEG_UNDERLYING", "EQNEG_BAD_EU", true)
+
+@testing:case="createEuropeanOption accepts positive nominal"
+assert 1, caplib::createEuropeanOption("CALL", 100.0, 2024.06.01, 2024.06.03, 1000.0, "CNY", "SPOT", "CNY", "EQNEG_UNDERLYING", "EQNEG_EU") == "EQNEG_EU"

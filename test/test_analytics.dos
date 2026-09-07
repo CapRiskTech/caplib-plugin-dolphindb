@@ -469,3 +469,113 @@ caplib::createPricingSettings(["CNY", "USD"], "ANALYTICAL", 1, 1, "", "", "", "A
 
 @testing:case="createScnSettings rejects vector lower", exception=1
 caplib::createScnSettings([-0.1, -0.2], 0.1, 5, 0, "AN_BAD_SCN_F", false)
+
+
+// ============================================================================
+// Issues.md regression (0.0.11 validation fixes) — analytics-side items
+// ============================================================================
+
+// --- #3: createPdeSettings tSize type validation ---
+@testing:case="createPdeSettings rejects STRING tSize", exception=1
+caplib::createPdeSettings("101", 201, -5.0, 5.0, 0, 0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0, 0.1, 0.1, 0.1, 2, 0, 0, 3, 0, 0, "ANEG_PDE_S")
+
+@testing:case="createPdeSettings rejects null tSize", exception=1
+caplib::createPdeSettings(int(), 201, -5.0, 5.0, 0, 0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0, 0.1, 0.1, 0.1, 2, 0, 0, 3, 0, 0, "ANEG_PDE_N")
+
+// --- #4, #13: createMonteCarloSettings numSimulations type and positivity ---
+@testing:case="createMonteCarloSettings rejects STRING numSimulations", exception=1
+caplib::createMonteCarloSettings("8096", 1, 1023, 1, 1, 0, 1, "ANEG_MC_S")
+
+@testing:case="createMonteCarloSettings rejects null numSimulations", exception=1
+caplib::createMonteCarloSettings(int(), 1, 1023, 1, 1, 0, 1, "ANEG_MC_N")
+
+@testing:case="createMonteCarloSettings rejects zero numSimulations", exception=1
+caplib::createMonteCarloSettings(0, 1, 1023, 1, 1, 0, 1, "ANEG_MC_Z")
+
+@testing:case="createMonteCarloSettings rejects negative numSimulations", exception=1
+caplib::createMonteCarloSettings(-1, 1, 1023, 1, 1, 0, 1, "ANEG_MC_NEG")
+
+@testing:case="createMonteCarloSettings accepts smallest positive count"
+assert 1, caplib::createMonteCarloSettings(1, 1, 1023, 1, 1, 0, 1, "ANEG_MC_OK") == "ANEG_MC_OK"
+
+// --- #5, #11: createScnSettings numPoints type and interval ordering ---
+@testing:case="createScnSettings rejects null numPoints", exception=1
+caplib::createScnSettings(-0.1, 0.1, int(), 0, "ANEG_SCN_N")
+
+@testing:case="createScnSettings rejects STRING numPoints", exception=1
+caplib::createScnSettings(-0.1, 0.1, "11", 0, "ANEG_SCN_S")
+
+@testing:case="createScnSettings rejects inverted interval", exception=1
+caplib::createScnSettings(0.1, -0.1, 11, 0, "ANEG_SCN_INV")
+
+@testing:case="createScnSettings accepts equal endpoints"
+assert 1, caplib::createScnSettings(0.1, 0.1, 1, 0, "ANEG_SCN_EQ") == "ANEG_SCN_EQ"
+
+// --- #6: createIrYieldCurveBuildSettings useOnTnFxSwap BOOL validation ---
+@testing:case="createIrYieldCurveBuildSettings rejects STRING useOnTnFxSwap", exception=1
+caplib::createIrYieldCurveBuildSettings("ANEG_CURVE", "0", "CNY", "ANEG_CURVE", "ANEG_IBOR", "ANEG_CURVE", "ANEG_BUILD_S")
+
+@testing:case="createIrYieldCurveBuildSettings rejects null useOnTnFxSwap", exception=1
+caplib::createIrYieldCurveBuildSettings("ANEG_CURVE", bool(), "CNY", "ANEG_CURVE", "ANEG_IBOR", "ANEG_CURVE", "ANEG_BUILD_N")
+
+@testing:case="createIrYieldCurveBuildSettings rejects out-of-range INT useOnTnFxSwap", exception=1
+caplib::createIrYieldCurveBuildSettings("ANEG_CURVE", 2, "CNY", "ANEG_CURVE", "ANEG_IBOR", "ANEG_CURVE", "ANEG_BUILD_I")
+
+@testing:case="createIrYieldCurveBuildSettings rejects DOUBLE useOnTnFxSwap", exception=1
+caplib::createIrYieldCurveBuildSettings("ANEG_CURVE", 0.0, "CNY", "ANEG_CURVE", "ANEG_IBOR", "ANEG_CURVE", "ANEG_BUILD_D")
+
+@testing:case="createIrYieldCurveBuildSettings accepts legacy INT 0/1 flags"
+assert 1, caplib::createIrYieldCurveBuildSettings("ANEG_CURVE", 1, "CNY", "ANEG_CURVE", "ANEG_IBOR", "ANEG_CURVE", "ANEG_BUILD_OK") == "ANEG_BUILD_OK"
+
+// --- #14, #19: createVolatilityCurve length consistency ---
+@testing:case="createVolatilityCurve rejects shorter vols", exception=1
+caplib::createVolatilityCurve(2024.01.01, [2024.06.01, 2025.01.01], [0.2], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "AN_UNDERLYING", "ANEG_VC_SHORT", true)
+
+@testing:case="createVolatilityCurve rejects longer vols", exception=1
+caplib::createVolatilityCurve(2024.01.01, [2024.06.01, 2025.01.01], [0.2, 0.21, 0.22], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "AN_UNDERLYING", "ANEG_VC_LONG", true)
+
+@testing:case="createVolatilityCurve accepts matching lengths"
+assert 1, caplib::createVolatilityCurve(2024.01.01, [2024.06.01, 2025.01.01], [0.2, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "AN_UNDERLYING", "ANEG_VC_OK") == "ANEG_VC_OK"
+
+// --- #1, #2, #18: risk settings method must be a valid INT enum ---
+@testing:case="createIrCurveRiskSettings rejects STRING method", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 0, 0.0001, 0.0002, "1", 0, 1.0, 0, "ANEG_IRR_S")
+
+@testing:case="createIrCurveRiskSettings rejects null method", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 0, 0.0001, 0.0002, int(), 0, 1.0, 0, "ANEG_IRR_N")
+
+@testing:case="createIrCurveRiskSettings rejects vector method", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 0, 0.0001, 0.0002, [1], 0, 1.0, 0, "ANEG_IRR_V")
+
+@testing:case="createIrCurveRiskSettings rejects DOUBLE method", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 0, 0.0001, 0.0002, 1.0, 0, 1.0, 0, "ANEG_IRR_D")
+
+@testing:case="createIrCurveRiskSettings rejects BOOL method", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 0, 0.0001, 0.0002, true, 0, 1.0, 0, "ANEG_IRR_B")
+
+@testing:case="createCreditCurveRiskSettings rejects STRING method", exception=1
+caplib::createCreditCurveRiskSettings(1, 1, 0.0001, "1", 0, 1.0, 0, "ANEG_CRR")
+
+@testing:case="createDividendCurveRiskSettings rejects STRING method", exception=1
+caplib::createDividendCurveRiskSettings(1, 1, 0.0001, "1", 0, 1.0, 0, "ANEG_DVR")
+
+@testing:case="createPriceRiskSettings rejects STRING method", exception=1
+caplib::createPriceRiskSettings(1, 1, 0, 0.01, 0.02, "1", 1.0, 0, "ANEG_PR")
+
+@testing:case="createVolRiskSettings rejects STRING method", exception=1
+caplib::createVolRiskSettings(1, 1, 0.01, "1", 0, 1.0, 0, "ANEG_VR")
+
+@testing:case="createPriceVolRiskSettings rejects STRING method", exception=1
+caplib::createPriceVolRiskSettings(1, 0.01, 0.01, "1", 0, 1.0, 1.0, 0, "ANEG_PVR")
+
+@testing:case="createThetaRiskSettings rejects STRING shift", exception=1
+caplib::createThetaRiskSettings(1, "1", 1.0, "ANEG_TH_S")
+
+@testing:case="createThetaRiskSettings rejects null shift", exception=1
+caplib::createThetaRiskSettings(1, int(), 1.0, "ANEG_TH_N")
+
+@testing:case="createThetaRiskSettings rejects STRING theta flag", exception=1
+caplib::createThetaRiskSettings("1", 1, 1.0, "ANEG_TH_F")
+
+@testing:case="createThetaRiskSettings accepts negative shift"
+assert 1, caplib::createThetaRiskSettings(true, -1, 1.0, "ANEG_TH_OK") == "ANEG_TH_OK"

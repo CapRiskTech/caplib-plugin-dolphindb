@@ -166,3 +166,15 @@ caplib::createCdsPricingSettings(1, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE
 
 @testing:case="buildCreditCurve rejects wrong discount curve handle", exception=1
 caplib::buildCreditCurve(asOfDate, creditParCurve[0], baseCreditCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "CR_BAD_CC_2", true)
+
+
+// ============================================================================
+// Issues.md regression (0.0.11 validation fixes)
+// ============================================================================
+
+// --- #10: CDS notional must not be negative ---
+@testing:case="buildCreditDefaultSwap rejects negative notional", exception=1
+caplib::buildCreditDefaultSwap(-1000000.0, "CNY", 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "CRNEG_CDS_NAME", "CRNEG_CDS")
+
+@testing:case="buildCreditDefaultSwap accepts positive notional"
+assert 1, caplib::buildCreditDefaultSwap(1000000.0, "CNY", 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "CRNEG_CDS_NAME", "CRNEG_CDS_OK") == "CRNEG_CDS_OK"

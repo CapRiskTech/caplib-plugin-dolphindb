@@ -1,12 +1,8 @@
 services:
   dolphindb:
     # 使用 0.0.11 GCC 8 插件，保留官方镜像自带的 C++ 运行库。
-    image: dolphindb-caplib:v3.00.5
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        DDB_BASE_IMAGE: ${DDB_BASE_IMAGE:-dolphindb/dolphindb:v3.00.5}
+    # 0.0.11 起无需任何自定义镜像，直接使用官方镜像。
+    image: ${DDB_BASE_IMAGE:-dolphindb/dolphindb:v3.00.5}
     container_name: dolphindb-caplib
     ports:
       - "8848:8848"   # DolphinDB 客户端端口

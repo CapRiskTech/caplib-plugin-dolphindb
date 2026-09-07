@@ -12,7 +12,6 @@
 ```
 docker-compose/
 ├── README.md           ← 本文档
-├── Dockerfile          # 保留官方镜像及原有 libstdc++
 ├── docker-compose.yml  # 服务编排（端口、插件挂载、dolphindb.dos 挂载）
 └── dolphindb.dos       # 启动时自动 loadPlugin
 ```
@@ -36,26 +35,20 @@ docker-compose/
    Windows PowerShell 示例：`$env:CAPLIB_PLUGIN_DIR = 'D:\work\caplib'`。
    插件以只读方式挂载到 `/data/ddb/server/plugins/caplib`。
 
-2. **构建镜像**（仅复用官方镜像，不再拉取 Ubuntu 或复制运行库）：
-
-   ```bash
-   docker compose build
-   ```
-
-3. **启动**：
+2. **启动**（直接使用官方镜像，无需构建）：
 
    ```bash
    docker compose up -d
    ```
 
-4. **查看日志**（确认插件已加载）：
+3. **查看日志**（确认插件已加载）：
 
    ```bash
    docker compose logs -f dolphindb
    # 应能看到 loadPlugin 相关的 regist: 输出，无报错
    ```
 
-5. **停止 / 移除**：
+4. **停止 / 移除**：
 
    ```bash
    docker compose down
@@ -77,7 +70,7 @@ docker-compose/
 
 | 项 | 说明 |
 |---|---|
-| 镜像 | `dolphindb-caplib:v3.00.5`（由本目录 Dockerfile 本地构建） |
+| 镜像 | `dolphindb/dolphindb:v3.00.5`（官方镜像；可用环境变量 `DDB_BASE_IMAGE` 覆盖） |
 | 端口 `8848` | DolphinDB 客户端连接 |
 | 端口 `8900` | Web / 集群端口 |
 | 插件挂载 | `<宿主机插件目录>:/data/ddb/server/plugins/caplib` |
@@ -106,6 +99,6 @@ s.run('loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")')
 
 - 插件目录保持放在 `plugins/caplib/` **子目录**，不要直接散在 `<home>/plugins/` 根下，
   以避免 DDB 启动时自动扫描插件目录因加载失败而静默退出（code 255）。
-- 修改 `docker-compose.yml` 或 `Dockerfile` 后需重新 `docker compose build`；
-  仅改插件文件内容则无需重建，但必须停止服务后替换两个动态库，再重启加载；不支持热重载。
+- 修改 `docker-compose.yml` 后重新 `docker compose up -d` 即可生效；
+  仅改插件文件内容则无需任何重建，但必须停止服务后替换两个动态库，再重启加载；不支持热重载。
 - `dqlibc.lic` 需与 `libdqlibc.so` 放在同一目录（licensecc 同目录查找优先），挂载目录里必须包含它。

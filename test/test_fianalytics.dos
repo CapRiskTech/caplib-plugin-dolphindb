@@ -341,3 +341,19 @@ caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, take(0.02, 3),
 
 @testing:case="buildVanillaBond rejects wrong template handle", exception=1
 caplib::buildVanillaBond(1000000.0, cnyTreasStdCfets[0], "", 2020.10.10, "FI_BAD_BOND_2", false)
+
+
+// ============================================================================
+// Issues.md regression (0.0.11 validation fixes)
+// ============================================================================
+
+// --- #16: bond curve curveType enum validation ---
+@testing:case="createBondYieldCurveBuildSettings rejects invalid curveType", exception=1
+caplib::createBondYieldCurveBuildSettings("FINEG_BOND", "NOT_A_CURVE_TYPE", "LINEAR_INTERP", "FLAT_EXTRAP", "FINEG_BOND_BUILD")
+
+@testing:case="createBondYieldCurveBuildSettings preserves all valid curveTypes"
+for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
+    handle = "FINEG_BOND_BUILD_" + curveType;
+    result = caplib::createBondYieldCurveBuildSettings("FINEG_BOND", curveType, "LINEAR_INTERP", "FLAT_EXTRAP", handle, true);
+    assert 1, result[0] == handle && strpos(result[1], curveType) >= 0
+}

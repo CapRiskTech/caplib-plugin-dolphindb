@@ -293,3 +293,71 @@ caplib::createFlatIrYieldCurve(2024.01.01, "CNY", 0.02, "VAL_EXTRA_FLAT", false,
 
 @testing:case="createVolatilitySmile rejects extra argument", syntaxError=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", 2024.01.01, [90.0, 100.0], [0.20, 0.20], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, take(double(), 0), take(double(), 0), 90.0, 110.0, "VAL_EXTRA_SMILE", false, 1)
+
+
+// ============================================================================
+// Issues.md regression (0.0.11 validation fixes) — validation-side items
+// ============================================================================
+
+// --- #12: volatility smile bounds must be strictly increasing ---
+@testing:case="createVolatilitySmile rejects lower > upper", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", 2024.01.01, [90.0, 110.0], [0.2, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, take(double(), 0), take(double(), 0), 110.0, 90.0, "VNEG_SMILE_INV")
+
+@testing:case="createVolatilitySmile rejects lower == upper", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", 2024.01.01, [90.0, 110.0], [0.2, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, take(double(), 0), take(double(), 0), 90.0, 90.0, "VNEG_SMILE_EQ")
+
+@testing:case="createVolatilitySmile accepts valid bounds"
+assert 1, caplib::createVolatilitySmile("STRIKE_VOL_SMILE", 2024.01.01, [90.0, 110.0], [0.2, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, take(double(), 0), take(double(), 0), 90.0, 110.0, "VNEG_SMILE_OK") == "VNEG_SMILE_OK"
+
+// --- #15: createCalendar holidays must be non-empty and null-free ---
+@testing:case="createCalendar rejects zero-length holidays", exception=1
+caplib::createCalendar("VNEG_CAL_1", take(int(), 0))
+
+@testing:case="createCalendar rejects all-null holidays", exception=1
+caplib::createCalendar("VNEG_CAL_2", [int(), int(), int()])
+
+@testing:case="createCalendar rejects partially-null holidays", exception=1
+caplib::createCalendar("VNEG_CAL_3", [44654, int(), 44656])
+
+@testing:case="createCalendar rejects zero-length DATE holidays", exception=1
+caplib::createCalendar("VNEG_CAL_4", take(date(), 0))
+
+@testing:case="createCalendar rejects partially-null DATE holidays", exception=1
+caplib::createCalendar("VNEG_CAL_5", [2024.01.01, date()])
+
+@testing:case="createCalendar rejects null specialBusinessDays", exception=1
+caplib::createCalendar("VNEG_CAL_6", [44654], [int()])
+
+@testing:case="createCalendar accepts INT serial holidays"
+assert 1, caplib::createCalendar("VNEG_CAL_INT", [44654, 44656], [44655])
+
+@testing:case="createCalendar accepts DATE holidays"
+assert 1, caplib::createCalendar("VNEG_CAL_DATE", [2024.01.01, 2024.01.03], [2024.01.02])
+
+@testing:case="createCalendar permits omitted special days"
+assert 1, caplib::createCalendar("VNEG_CAL_OMIT", [44654])
+
+// --- #17, #20: createOptionQuoteMatrix cell/shape validation ---
+@testing:case="createOptionQuoteMatrix rejects partially-null values matrix", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, double()], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "VNEG_UNDERLYING", "VNEG_OQ_1", true)
+
+@testing:case="createOptionQuoteMatrix rejects all-null values matrix", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix(take(double(), 2), take(double(), 2)), matrix([95.0, 95.0], [105.0, 105.0]), "VNEG_UNDERLYING", "VNEG_OQ_2", true)
+
+@testing:case="createOptionQuoteMatrix rejects null strikes cell", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, double()]), "VNEG_UNDERLYING", "VNEG_OQ_3", true)
+
+@testing:case="createOptionQuoteMatrix rejects zero-row values matrix", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix(DOUBLE, 0, 2), matrix([95.0, 95.0], [105.0, 105.0]), "VNEG_UNDERLYING", "VNEG_OQ_4", true)
+
+@testing:case="createOptionQuoteMatrix rejects zero-column values matrix", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix(DOUBLE, 2, 0), matrix([95.0, 95.0], [105.0, 105.0]), "VNEG_UNDERLYING", "VNEG_OQ_5", true)
+
+@testing:case="createOptionQuoteMatrix rejects mismatched strikes shape", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0]), "VNEG_UNDERLYING", "VNEG_OQ_6", true)
+
+@testing:case="createOptionQuoteMatrix rejects null flat values vector", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], ["CALL", "PUT"], [10.5, double()], [95.0, 105.0], "VNEG_UNDERLYING", "VNEG_OQ_7", true)
+
+@testing:case="createOptionQuoteMatrix accepts valid matrix"
+assert 1, caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2024.01.01, [], [2024.06.01, 2024.09.01], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "VNEG_UNDERLYING", "VNEG_OQ_OK") == "VNEG_OQ_OK"

@@ -496,3 +496,15 @@ caplib::createCmRiskSettings(int(), 1, 1, 1, "CM_NULL_METHOD", true)
 // --- INT parameter type validation (fed STRING) ---
 @testing:case="createVolSurfBuildSettings rejects STRING int parameter", exception=1
 caplib::createVolSurfBuildSettings("1", 0.5, "CM_BAD_VSB", true)
+
+
+// ============================================================================
+// Issues.md regression (0.0.11 validation fixes)
+// ============================================================================
+
+// --- #4: MC simulation count type validation (CM variant) ---
+@testing:case="createMonteCarloSettings rejects STRING numSimulations", exception=1
+caplib::createMonteCarloSettings("8096", 1, 1023, 1, 1, 0, 1, "CMNEG_MC_S")
+
+@testing:case="createMonteCarloSettings rejects zero numSimulations", exception=1
+caplib::createMonteCarloSettings(0, 1, 1023, 1, 1, 0, 1, "CMNEG_MC_Z")

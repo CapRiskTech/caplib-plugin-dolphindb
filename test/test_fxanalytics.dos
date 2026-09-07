@@ -676,3 +676,24 @@ caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, quoteTerms, quoteNames
 // --- INT parameter type validation (fed STRING) ---
 @testing:case="createVolSurfBuildSettings rejects STRING int parameter", exception=1
 caplib::createVolSurfBuildSettings("1", 0.5, "FX_BAD_VSB", true)
+
+
+// ============================================================================
+// Issues.md regression (0.0.11 validation fixes)
+// ============================================================================
+
+// --- #8, #9: FX amounts and spot rates must not be negative ---
+@testing:case="createFxForward rejects negative buyAmount", exception=1
+caplib::createFxForward("USD", -1.0, "CNY", 7.0, 2024.06.03, 2024.06.01, "FXNEG_FWD_B")
+
+@testing:case="createFxForward rejects negative sellAmount", exception=1
+caplib::createFxForward("USD", 1.0, "CNY", -7.0, 2024.06.03, 2024.06.01, "FXNEG_FWD_S")
+
+@testing:case="createFxForward accepts positive amounts"
+assert 1, caplib::createFxForward("USD", 1.0, "CNY", 7.0, 2024.06.03, 2024.06.01, "FXNEG_FWD_OK") == "FXNEG_FWD_OK"
+
+@testing:case="createFxSpotRate rejects negative value", exception=1
+caplib::createFxSpotRate(-7.0, "USD", "CNY", 2024.06.01, 2024.06.03, "FXNEG_SPOT")
+
+@testing:case="createFxSpotRate accepts positive value"
+assert 1, caplib::createFxSpotRate(7.0, "USD", "CNY", 2024.06.01, 2024.06.03, "FXNEG_SPOT_OK") == "FXNEG_SPOT_OK"
