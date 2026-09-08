@@ -66,7 +66,13 @@ def ensure_container(container):
 
 
 def stage_files(container, local_dir, remote_dir):
-    print(f"-> Staging {local_dir}/*.dos -> {container}:{remote_dir}/")
+    print(f"-> Staging {local_dir} -> {container}:{remote_dir}/")
+    # clear the remote dir first: docker cp overlays and would leave stale
+    # files from earlier runs behind (test() would then execute them too).
+    r = sh(["docker", "exec", container, "rm", "-rf", remote_dir])
+    if r.returncode != 0:
+        print(f"FATAL: docker exec rm -rf failed: {r.stderr.strip()}")
+        return False
     r = sh(["docker", "exec", container, "mkdir", "-p", remote_dir])
     if r.returncode != 0:
         print(f"FATAL: docker exec mkdir failed: {r.stderr.strip()}")
@@ -90,7 +96,7 @@ def wait_ready(host, port, timeout=90):
     return False
 
 
-def run_tests(host, port, user, password, remote_dir, single_file):
+def run_tests(host, port, user, password, remote_dir, single_file, local_dir):
     try:
         import dolphindb as ddb
     except ImportError:
@@ -98,19 +104,37 @@ def run_tests(host, port, user, password, remote_dir, single_file):
         print(f'  Install it with:  {sys.executable} -m pip install dolphindb')
         return None, False
 
-    target = f"{remote_dir}/{single_file}" if single_file else remote_dir
     s = ddb.session()
     s.connect(host, port, user, password)
-    print(f"-> Running test(\"{target}\") ...")
-    result = s.run(f'test("{target}")')
-    result = result or ""
-    print(result)
-    m = re.search(r"#Fail/#Total Testing Cases:\s*(\d+)/(\d+)", result)
-    if not m:
-        print("WARN: could not parse the test summary from the output above.")
-        return None, False
-    fail, total = int(m.group(1)), int(m.group(2))
-    return (total - fail, fail), True
+
+    if single_file:
+        targets = [f"{remote_dir}/{single_file}"]
+    else:
+        # test() does NOT recurse into subdirectories: run the remote root
+        # (top-level .dos files), then each subdirectory mirrored from local.
+        subdirs = sorted(
+            d.name for d in os.scandir(local_dir) if d.is_dir()
+        ) if os.path.isdir(local_dir) else []
+        targets = [remote_dir] + [f"{remote_dir}/{d}" for d in subdirs]
+        if subdirs:
+            print("-> Subdirectories detected; running each in turn "
+                  "(test() does not recurse): " + ", ".join(subdirs))
+
+    total_passed, total_failed, ok = 0, 0, True
+    for target in targets:
+        print(f"-> Running test(\"{target}\") ...")
+        result = s.run(f'test("{target}")')
+        result = result or ""
+        print(result)
+        m = re.search(r"#Fail/#Total Testing Cases:\s*(\d+)/(\d+)", result)
+        if not m:
+            print(f"WARN: could not parse the test summary for {target}.")
+            ok = False
+            continue
+        fail, total = int(m.group(1)), int(m.group(2))
+        total_passed += total - fail
+        total_failed += fail
+    return (total_passed, total_failed), ok
 
 
 def main():
@@ -139,7 +163,7 @@ def main():
 
     try:
         summary, parsed = run_tests(args.host, args.port, args.user, args.password,
-                                    args.remote_dir, args.file)
+                                    args.remote_dir, args.file, args.local_dir)
     except Exception as e:
         print(f"FATAL: test run failed: {e}")
         sys.exit(1)
