@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createDoubleSharkFinOption (CM) -> handle"
 inst = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice * 0.95, underlyingPrice * 1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_DS", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_DS"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createDoubleSharkFinOption rejects missing argument", syntaxError=1
+caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X")
+
+@testing:case="createDoubleSharkFinOption rejects extra argument", syntaxError=1
+caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createDoubleSharkFinOption rejects wrong type for lowerStrike", exception=1
+caplib::createDoubleSharkFinOption("bad", 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects wrong type for upperStrike", exception=1
+caplib::createDoubleSharkFinOption(0.02, "bad", 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects wrong type for expiry", exception=1
+caplib::createDoubleSharkFinOption(0.02, 0.02, "bad", 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects null lowerStrike", exception=1
+caplib::createDoubleSharkFinOption(double(), 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects null upperStrike", exception=1
+caplib::createDoubleSharkFinOption(0.02, double(), 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects vector for scalar lowerStrike", exception=1
+caplib::createDoubleSharkFinOption([0.02], 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects scalar for vector fixingDates", exception=1
+caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects partially-null vector fixingDates", exception=1
+caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects empty vector fixingDates", exception=1
+caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)

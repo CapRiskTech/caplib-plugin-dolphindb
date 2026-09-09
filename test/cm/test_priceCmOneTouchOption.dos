@@ -230,3 +230,31 @@ inst = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingP
 r = caplib::priceCmOneTouchOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
 assert 1, isPricingResultsJson(r, "TF_CM_OT_results")
 assert 2, abs(presentValue(r) - 717144.5895025163) < abs(717144.5895025163) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmOneTouchOption rejects missing argument", syntaxError=1
+caplib::priceCmOneTouchOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceCmOneTouchOption rejects extra argument", syntaxError=1
+caplib::priceCmOneTouchOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceCmOneTouchOption rejects wrong type for pricingDate", exception=1
+caplib::priceCmOneTouchOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmOneTouchOption rejects wrong type for mode", exception=1
+caplib::priceCmOneTouchOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceCmOneTouchOption rejects null pricingDate", exception=1
+caplib::priceCmOneTouchOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmOneTouchOption rejects null mode", exception=1
+caplib::priceCmOneTouchOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceCmOneTouchOption rejects vector for scalar pricingDate", exception=1
+caplib::priceCmOneTouchOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmOneTouchOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceCmOneTouchOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

@@ -269,3 +269,19 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 @testing:case="calcFxDeltaToStrike -> reference 1.2185761274280187"
 r = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 assert 1, abs(r - 1.2185761274280187) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxDeltaToStrike rejects null deltaType", exception=1
+caplib::calcFxDeltaToStrike(string(), 0.02, 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcFxDeltaToStrike rejects null delta", exception=1
+caplib::calcFxDeltaToStrike("X", double(), 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcFxDeltaToStrike rejects vector for scalar deltaType", exception=1
+caplib::calcFxDeltaToStrike(["X"], 0.02, 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcFxDeltaToStrike rejects nonexistent handle volSurfaceHandle", exception=1
+caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")

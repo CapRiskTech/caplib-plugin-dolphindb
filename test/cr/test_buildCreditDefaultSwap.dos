@@ -125,3 +125,16 @@ assert 1, b == "TF_CDS"
 
 @testing:case="buildCreditDefaultSwap rejects negative notional", exception=1
 caplib::buildCreditDefaultSwap(-1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_BAD", false)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCreditDefaultSwap rejects null nominal", exception=1
+caplib::buildCreditDefaultSwap(double(), "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false)
+
+@testing:case="buildCreditDefaultSwap rejects null currency", exception=1
+caplib::buildCreditDefaultSwap(0.02, string(), 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false)
+
+@testing:case="buildCreditDefaultSwap rejects vector for scalar nominal", exception=1
+caplib::buildCreditDefaultSwap([0.02], "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false)

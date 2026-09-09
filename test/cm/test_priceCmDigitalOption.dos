@@ -230,3 +230,31 @@ inst = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.
 r = caplib::priceCmDigitalOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
 assert 1, isPricingResultsJson(r, "TF_CM_DG_results")
 assert 2, abs(presentValue(r) - 35825584006.30071) < abs(35825584006.30071) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmDigitalOption rejects missing argument", syntaxError=1
+caplib::priceCmDigitalOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceCmDigitalOption rejects extra argument", syntaxError=1
+caplib::priceCmDigitalOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceCmDigitalOption rejects wrong type for pricingDate", exception=1
+caplib::priceCmDigitalOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmDigitalOption rejects wrong type for mode", exception=1
+caplib::priceCmDigitalOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceCmDigitalOption rejects null pricingDate", exception=1
+caplib::priceCmDigitalOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmDigitalOption rejects null mode", exception=1
+caplib::priceCmDigitalOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceCmDigitalOption rejects vector for scalar pricingDate", exception=1
+caplib::priceCmDigitalOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmDigitalOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceCmDigitalOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

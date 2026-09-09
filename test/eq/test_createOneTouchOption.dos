@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createOneTouchOption (CM) -> handle"
 inst = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice * 1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_OT", false);
 assert 1, inst == "TF_CM_OT"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createOneTouchOption rejects missing argument", syntaxError=1
+caplib::createOneTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X")
+
+@testing:case="createOneTouchOption rejects extra argument", syntaxError=1
+caplib::createOneTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createOneTouchOption rejects wrong type for expiry", exception=1
+caplib::createOneTouchOption("bad", 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects wrong type for delivery", exception=1
+caplib::createOneTouchOption(2024.01.01, "bad", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects wrong type for barrierType", exception=1
+caplib::createOneTouchOption(2024.01.01, 2024.01.01, 1, 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects null expiry", exception=1
+caplib::createOneTouchOption(date(), 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects null delivery", exception=1
+caplib::createOneTouchOption(2024.01.01, date(), "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects vector for scalar expiry", exception=1
+caplib::createOneTouchOption([2024.01.01], 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects scalar for vector fixingDates", exception=1
+caplib::createOneTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects partially-null vector fixingDates", exception=1
+caplib::createOneTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createOneTouchOption rejects empty vector fixingDates", exception=1
+caplib::createOneTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)

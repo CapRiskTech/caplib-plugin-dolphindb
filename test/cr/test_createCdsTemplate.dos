@@ -125,3 +125,19 @@ assert 1, isHandleJson(r, "TF_CDS_TPL")
 
 @testing:case="createCdsTemplate rejects INT instrumentName", exception=1
 caplib::createCdsTemplate(1, "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+@testing:case="createCdsTemplate rejects invalid settlementType", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL2", "1d", "NOT_A_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCdsTemplate rejects null instName", exception=1
+caplib::createCdsTemplate(string(), "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
+
+@testing:case="createCdsTemplate rejects null startDelay", exception=1
+caplib::createCdsTemplate("X", string(), "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
+
+@testing:case="createCdsTemplate rejects vector for scalar instName", exception=1
+caplib::createCdsTemplate(["X"], "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)

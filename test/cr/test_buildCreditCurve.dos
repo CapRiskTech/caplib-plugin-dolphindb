@@ -125,3 +125,19 @@ assert 1, isHandleJson(r, "TF_CR_BUILT")
 
 @testing:case="buildCreditCurve rejects wrong discount curve handle", exception=1
 caplib::buildCreditCurve(asOfDate, creditParCurve[0], creditParCurve[0], "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCreditCurve rejects null asOfDate", exception=1
+caplib::buildCreditCurve(date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="buildCreditCurve rejects null curveName", exception=1
+caplib::buildCreditCurve(2024.01.01, "X", "X", string(), "X", "X", false)
+
+@testing:case="buildCreditCurve rejects vector for scalar asOfDate", exception=1
+caplib::buildCreditCurve([2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="buildCreditCurve rejects nonexistent handle parCurveHandle", exception=1
+caplib::buildCreditCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", false)

@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createSingleSharkFinOption (CM) -> handle"
 inst = caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice * 1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_SF"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createSingleSharkFinOption rejects missing argument", syntaxError=1
+caplib::createSingleSharkFinOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X")
+
+@testing:case="createSingleSharkFinOption rejects extra argument", syntaxError=1
+caplib::createSingleSharkFinOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createSingleSharkFinOption rejects wrong type for payoffType", exception=1
+caplib::createSingleSharkFinOption(1, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects wrong type for strike", exception=1
+caplib::createSingleSharkFinOption("X", "bad", 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects wrong type for expiry", exception=1
+caplib::createSingleSharkFinOption("X", 0.02, "bad", 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects null payoffType", exception=1
+caplib::createSingleSharkFinOption(string(), 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects null strike", exception=1
+caplib::createSingleSharkFinOption("X", double(), 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects vector for scalar payoffType", exception=1
+caplib::createSingleSharkFinOption(["X"], 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects scalar for vector fixingDates", exception=1
+caplib::createSingleSharkFinOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects partially-null vector fixingDates", exception=1
+caplib::createSingleSharkFinOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createSingleSharkFinOption rejects empty vector fixingDates", exception=1
+caplib::createSingleSharkFinOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)

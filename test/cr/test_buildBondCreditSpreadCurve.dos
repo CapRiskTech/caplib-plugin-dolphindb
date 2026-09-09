@@ -221,3 +221,19 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 @testing:case="buildBondCreditSpreadCurve -> [handle, json]"
 r = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true);
 assert 1, isHandleJson(r, "TF_FI_SPRD")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondCreditSpreadCurve rejects null referenceDate", exception=1
+caplib::buildBondCreditSpreadCurve(date(), "X", "X", "X", "X", "X", false, "X", false)
+
+@testing:case="buildBondCreditSpreadCurve rejects null curveName", exception=1
+caplib::buildBondCreditSpreadCurve(2024.01.01, string(), "X", "X", "X", "X", false, "X", false)
+
+@testing:case="buildBondCreditSpreadCurve rejects vector for scalar referenceDate", exception=1
+caplib::buildBondCreditSpreadCurve([2024.01.01], "X", "X", "X", "X", "X", false, "X", false)
+
+@testing:case="buildBondCreditSpreadCurve rejects nonexistent handle parCurveHandle", exception=1
+caplib::buildBondCreditSpreadCurve(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", false, "X", false)

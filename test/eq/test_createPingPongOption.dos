@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createPingPongOption (CM) -> handle"
 inst = caplib::createPingPongOption(2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_PP", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_PP"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPingPongOption rejects missing argument", syntaxError=1
+caplib::createPingPongOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X")
+
+@testing:case="createPingPongOption rejects extra argument", syntaxError=1
+caplib::createPingPongOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createPingPongOption rejects wrong type for expiry", exception=1
+caplib::createPingPongOption("bad", 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects wrong type for delivery", exception=1
+caplib::createPingPongOption(2024.01.01, "bad", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects wrong type for lowerBarrierType", exception=1
+caplib::createPingPongOption(2024.01.01, 2024.01.01, 1, 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects null expiry", exception=1
+caplib::createPingPongOption(date(), 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects null delivery", exception=1
+caplib::createPingPongOption(2024.01.01, date(), "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects vector for scalar expiry", exception=1
+caplib::createPingPongOption([2024.01.01], 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects scalar for vector fixingDates", exception=1
+caplib::createPingPongOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects partially-null vector fixingDates", exception=1
+caplib::createPingPongOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createPingPongOption rejects empty vector fixingDates", exception=1
+caplib::createPingPongOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)

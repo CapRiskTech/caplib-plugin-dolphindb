@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createAirbagOption (CM) -> handle"
 inst = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_AB"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createAirbagOption rejects missing argument", syntaxError=1
+caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X")
+
+@testing:case="createAirbagOption rejects extra argument", syntaxError=1
+caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createAirbagOption rejects wrong type for payoffType", exception=1
+caplib::createAirbagOption(1, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects wrong type for expiry", exception=1
+caplib::createAirbagOption("X", "bad", 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects wrong type for delivery", exception=1
+caplib::createAirbagOption("X", 2024.01.01, "bad", 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects null payoffType", exception=1
+caplib::createAirbagOption(string(), 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects null expiry", exception=1
+caplib::createAirbagOption("X", date(), 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects vector for scalar payoffType", exception=1
+caplib::createAirbagOption(["X"], 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects scalar for vector fixingDates", exception=1
+caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects partially-null vector fixingDates", exception=1
+caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects empty vector fixingDates", exception=1
+caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)

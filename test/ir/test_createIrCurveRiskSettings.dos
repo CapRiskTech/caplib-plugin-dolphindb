@@ -77,3 +77,6 @@ caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, "bad", 0, 1, 1.0e-4, 0, "TF_I
 
 @testing:case="createIrCurveRiskSettings rejects wrong type for method", exception=1
 caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, "1", 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)
+
+@testing:case="createIrCurveRiskSettings rejects null method", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, int(), 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)

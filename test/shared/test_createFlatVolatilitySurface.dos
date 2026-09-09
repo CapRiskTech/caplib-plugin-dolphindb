@@ -82,3 +82,12 @@ caplib::createFlatVolatilitySurface(asOfDate, "bad", "TF_UNDERLYING", "TF_FLAT_V
 
 @testing:case="createFlatVolatilitySurface rejects wrong type for underlying", exception=1
 caplib::createFlatVolatilitySurface(asOfDate, 0.20, 1, "TF_FLAT_VOL_SURFACE", false)
+
+@testing:case="createFlatVolatilitySurface rejects null referenceDate", exception=1
+caplib::createFlatVolatilitySurface(date(), 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_SURFACE", false)
+
+@testing:case="createFlatVolatilitySurface rejects null volatility", exception=1
+caplib::createFlatVolatilitySurface(asOfDate, double(), "TF_UNDERLYING", "TF_FLAT_VOL_SURFACE", false)
+
+@testing:case="createFlatVolatilitySurface rejects vector for scalar referenceDate", exception=1
+caplib::createFlatVolatilitySurface([2024.01.01], 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_SURFACE", false)

@@ -221,3 +221,16 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 @testing:case="createBondMktDataSet -> [handle, json]"
 r = caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", true);
 assert 1, isHandleJson(r, "TF_FI_BOND_MKT")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondMktDataSet rejects null asOfDate", exception=1
+caplib::createBondMktDataSet(date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="createBondMktDataSet rejects null discountCurve", exception=1
+caplib::createBondMktDataSet(2024.01.01, string(), "X", "X", "X", "X", false)
+
+@testing:case="createBondMktDataSet rejects vector for scalar asOfDate", exception=1
+caplib::createBondMktDataSet([2024.01.01], "X", "X", "X", "X", "X", false)

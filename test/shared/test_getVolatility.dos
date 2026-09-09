@@ -71,3 +71,16 @@ assert 1, isMatrix(volatilities) &&
 
 @testing:case="getVolatility rejects unknown handle", exception=1
 caplib::getVolatility("TF_HANDLE_DOES_NOT_EXIST", curveDates, [95.0, 105.0])
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="getVolatility rejects partially-null vector termDates", exception=1
+caplib::getVolatility(flatVolSurface, [2024.01.01, date()], [95.0, 105.0])
+
+@testing:case="getVolatility rejects empty vector termDates", exception=1
+caplib::getVolatility(flatVolSurface, take(date, 0), [95.0, 105.0])
+
+@testing:case="getVolatility rejects nonexistent handle volSurfaceHandle", exception=1
+caplib::getVolatility("TF_HANDLE_DOES_NOT_EXIST", curveDates, [95.0, 105.0])

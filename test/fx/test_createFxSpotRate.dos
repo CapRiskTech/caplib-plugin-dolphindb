@@ -272,3 +272,16 @@ assert 1, isHandleJson(r, "TF_FXSPOT") && hasJsonField(r[1], "fx_rate")
 
 @testing:case="createFxSpotRate rejects negative value", exception=1
 caplib::createFxSpotRate(-7.0, "USD", "CNY", asOfDate, 2021.04.01, "TF_FXSPOT_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSpotRate rejects null value", exception=1
+caplib::createFxSpotRate(double(), "X", "X", 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxSpotRate rejects null refDate", exception=1
+caplib::createFxSpotRate(0.02, "X", "X", date(), 2024.01.01, "X", false)
+
+@testing:case="createFxSpotRate rejects vector for scalar value", exception=1
+caplib::createFxSpotRate([0.02], "X", "X", 2024.01.01, 2024.01.01, "X", false)

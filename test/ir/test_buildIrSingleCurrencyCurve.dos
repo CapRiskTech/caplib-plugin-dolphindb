@@ -126,3 +126,28 @@ try {
 
 @testing:case="buildIrSingleCurrencyCurve rejects wrong par curve handle", exception=1
 caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], ["TF_HANDLE_DOES_NOT_EXIST"], ["TF_HANDLE_DOES_NOT_EXIST"], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", 0, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrSingleCurrencyCurve rejects null referenceDate", exception=1
+caplib::buildIrSingleCurrencyCurve(date(), ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrSingleCurrencyCurve rejects null dayCountConvention", exception=1
+caplib::buildIrSingleCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], string(), "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrSingleCurrencyCurve rejects vector for scalar referenceDate", exception=1
+caplib::buildIrSingleCurrencyCurve([2024.01.01], ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrSingleCurrencyCurve rejects scalar for vector targetCurveNames", exception=1
+caplib::buildIrSingleCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrSingleCurrencyCurve rejects partially-null vector targetCurveNames", exception=1
+caplib::buildIrSingleCurrencyCurve(2024.01.01, ["X", string()], ["X"], ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrSingleCurrencyCurve rejects empty vector targetCurveNames", exception=1
+caplib::buildIrSingleCurrencyCurve(2024.01.01, take(string, 0), ["X"], ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrSingleCurrencyCurve rejects nonexistent handle buildSettingsHandles", exception=1
+caplib::buildIrSingleCurrencyCurve(2024.01.01, ["X"], "TF_HANDLE_DOES_NOT_EXIST", ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)

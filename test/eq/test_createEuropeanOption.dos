@@ -228,3 +228,31 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createEuropeanOption (CM) -> handle"
 inst = caplib::createEuropeanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_EO", false);
 assert 1, inst == "TF_CM_EO"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEuropeanOption rejects missing argument", syntaxError=1
+caplib::createEuropeanOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X")
+
+@testing:case="createEuropeanOption rejects extra argument", syntaxError=1
+caplib::createEuropeanOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="createEuropeanOption rejects wrong type for payoffType", exception=1
+caplib::createEuropeanOption(1, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createEuropeanOption rejects wrong type for strike", exception=1
+caplib::createEuropeanOption("X", "bad", 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createEuropeanOption rejects wrong type for expiry", exception=1
+caplib::createEuropeanOption("X", 0.02, "bad", 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createEuropeanOption rejects null payoffType", exception=1
+caplib::createEuropeanOption(string(), 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createEuropeanOption rejects null strike", exception=1
+caplib::createEuropeanOption("X", double(), 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createEuropeanOption rejects vector for scalar payoffType", exception=1
+caplib::createEuropeanOption(["X"], 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)

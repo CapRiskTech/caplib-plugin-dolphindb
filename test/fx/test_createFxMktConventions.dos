@@ -269,3 +269,19 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 @testing:case="createFxMktConventions -> [handle, json]"
 r = caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FX_CONV", true);
 assert 1, isHandleJson(r, "TF_FX_CONV")
+
+@testing:case="createFxMktConventions rejects invalid atmType", exception=1
+caplib::createFxMktConventions("EURUSD", "NOT_AN_ATM", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FX_CONV_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxMktConventions rejects null ccyPair", exception=1
+caplib::createFxMktConventions(string(), "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxMktConventions rejects null atmType", exception=1
+caplib::createFxMktConventions("X", string(), "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxMktConventions rejects vector for scalar ccyPair", exception=1
+caplib::createFxMktConventions(["X"], "X", "X", "X", "X", "X", "X", "X", false)

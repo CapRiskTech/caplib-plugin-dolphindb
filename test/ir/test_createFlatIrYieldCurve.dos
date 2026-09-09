@@ -88,3 +88,12 @@ caplib::createFlatIrYieldCurve(asOfDate, 1, 0.02, "TF_FLAT_IR_CURVE", false)
 
 @testing:case="createFlatIrYieldCurve rejects wrong type for rate", exception=1
 caplib::createFlatIrYieldCurve(asOfDate, "CNY", "bad", "TF_FLAT_IR_CURVE", false)
+
+@testing:case="createFlatIrYieldCurve rejects null referenceDate", exception=1
+caplib::createFlatIrYieldCurve(date(), "CNY", 0.02, "TF_FLAT_IR_CURVE", false)
+
+@testing:case="createFlatIrYieldCurve rejects null rate", exception=1
+caplib::createFlatIrYieldCurve(asOfDate, "CNY", double(), "TF_FLAT_IR_CURVE", false)
+
+@testing:case="createFlatIrYieldCurve rejects vector for scalar referenceDate", exception=1
+caplib::createFlatIrYieldCurve([2024.01.01], "CNY", 0.02, "TF_FLAT_IR_CURVE", false)

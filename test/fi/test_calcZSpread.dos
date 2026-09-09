@@ -73,3 +73,12 @@ caplib::calcZSpread(0.02, "bad", "X", "X", "X")
 
 @testing:case="calcZSpread rejects wrong type for bondBytes", exception=1
 caplib::calcZSpread(0.02, 2024.01.01, 1, "X", "X")
+
+@testing:case="calcZSpread rejects null npv", exception=1
+caplib::calcZSpread(double(), 2024.01.01, "X", "X", "X")
+
+@testing:case="calcZSpread rejects null calculationDate", exception=1
+caplib::calcZSpread(0.02, date(), "X", "X", "X")
+
+@testing:case="calcZSpread rejects vector for scalar npv", exception=1
+caplib::calcZSpread([0.02], 2024.01.01, "X", "X", "X")

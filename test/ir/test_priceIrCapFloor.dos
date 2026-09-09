@@ -142,3 +142,15 @@ caplib::priceIrCapFloor("X", "bad", "X", "X", "X", "X", "X", false)
 
 @testing:case="priceIrCapFloor rejects wrong type for mode", exception=1
 caplib::priceIrCapFloor("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceIrCapFloor rejects null pricingDate", exception=1
+caplib::priceIrCapFloor("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrCapFloor rejects null mode", exception=1
+caplib::priceIrCapFloor("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceIrCapFloor rejects vector for scalar pricingDate", exception=1
+caplib::priceIrCapFloor("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrCapFloor rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceIrCapFloor("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

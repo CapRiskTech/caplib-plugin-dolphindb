@@ -82,3 +82,21 @@ caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], "bad", "CONTINUO
 
 @testing:case="createDividendCurve rejects wrong type for dividendType", exception=1
 caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, 1, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+
+@testing:case="createDividendCurve rejects null referenceDate", exception=1
+caplib::createDividendCurve(date(), curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+
+@testing:case="createDividendCurve rejects null yieldStartDate", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], date(), "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+
+@testing:case="createDividendCurve rejects vector for scalar referenceDate", exception=1
+caplib::createDividendCurve([2024.01.01], curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+
+@testing:case="createDividendCurve rejects scalar for vector pillarDates", exception=1
+caplib::createDividendCurve(asOfDate, [2024.01.01], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+
+@testing:case="createDividendCurve rejects partially-null vector pillarDates", exception=1
+caplib::createDividendCurve(asOfDate, [2024.01.01, date()], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+
+@testing:case="createDividendCurve rejects empty vector pillarDates", exception=1
+caplib::createDividendCurve(asOfDate, take(date, 0), [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)

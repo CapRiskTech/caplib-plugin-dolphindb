@@ -121,3 +121,19 @@ fxSpot = caplib::createFxSpotRate(6.9, "USD", "CNY", irAsOfDate, 2022.03.16, "TF
 @testing:case="createIrCrossCcyMktDataSet -> handle + json"
 xmd = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", true);
 assert 1, isHandleJson(xmd, "TF_IR_XMKT")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrCrossCcyMktDataSet rejects null asOfDate", exception=1
+caplib::createIrCrossCcyMktDataSet(date(), irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
+
+@testing:case="createIrCrossCcyMktDataSet rejects partially-null vector underlyingInterestRates", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, ["X", string()], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
+
+@testing:case="createIrCrossCcyMktDataSet rejects empty vector underlyingInterestRates", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, take(string, 0), [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
+
+@testing:case="createIrCrossCcyMktDataSet rejects nonexistent handle baseDiscountCurveHandle", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, "TF_HANDLE_DOES_NOT_EXIST", [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", false)

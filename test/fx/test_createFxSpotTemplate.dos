@@ -273,3 +273,16 @@ assert 1, isHandleJson(r, "TF_FX_SPOT_TPL") && hasJsonField(r[1], "spot_delay")
 @testing:case="createFxSpotTemplate accepts scalar calendar"
 r2 = caplib::createFxSpotTemplate("TF_FX_SPOT_TPL_SCALAR", "EURUSD", "FOLLOWING", "CAL_CFETS", "2d", true);
 assert 1, isHandleJson(r2, "TF_FX_SPOT_TPL_SCALAR")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSpotTemplate rejects null instName", exception=1
+caplib::createFxSpotTemplate(string(), "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxSpotTemplate rejects null currencyPair", exception=1
+caplib::createFxSpotTemplate("X", string(), "X", "X", "X", "X", false)
+
+@testing:case="createFxSpotTemplate rejects vector for scalar instName", exception=1
+caplib::createFxSpotTemplate(["X"], "X", "X", "X", "X", "X", false)

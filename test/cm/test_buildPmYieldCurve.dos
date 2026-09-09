@@ -134,3 +134,19 @@ pyc = caplib::buildPmYieldCurve(2022.03.09, pmParRateCurve[0], irCurve, pmCashTe
     assert 1, true
 }
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildPmYieldCurve rejects null referenceDate", exception=1
+caplib::buildPmYieldCurve(date(), "X", "X", "X", 0.02, false, "X", "X", "X", "X", "X", 0.02, "X", "X", "X", false)
+
+@testing:case="buildPmYieldCurve rejects null spotPrice", exception=1
+caplib::buildPmYieldCurve(2024.01.01, "X", "X", "X", double(), false, "X", "X", "X", "X", "X", 0.02, "X", "X", "X", false)
+
+@testing:case="buildPmYieldCurve rejects vector for scalar referenceDate", exception=1
+caplib::buildPmYieldCurve([2024.01.01], "X", "X", "X", 0.02, false, "X", "X", "X", "X", "X", 0.02, "X", "X", "X", false)
+
+@testing:case="buildPmYieldCurve rejects nonexistent handle parCurveHandle", exception=1
+caplib::buildPmYieldCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", 0.02, false, "X", "X", "X", "X", "X", 0.02, "X", "X", "X", false)

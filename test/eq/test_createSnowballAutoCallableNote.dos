@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createSnowballAutoCallableNote (CM) -> handle"
 inst = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice * 1.05, "DOWN_IN", underlyingPrice * 0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.22, 2020.08.22, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_SN"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createSnowballAutoCallableNote rejects missing argument", syntaxError=1
+caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X")
+
+@testing:case="createSnowballAutoCallableNote rejects extra argument", syntaxError=1
+caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createSnowballAutoCallableNote rejects wrong type for couponRate", exception=1
+caplib::createSnowballAutoCallableNote("bad", 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects wrong type for startDate", exception=1
+caplib::createSnowballAutoCallableNote(0.02, "bad", [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects wrong type for dayCount", exception=1
+caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], 1, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects null couponRate", exception=1
+caplib::createSnowballAutoCallableNote(double(), 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects null startDate", exception=1
+caplib::createSnowballAutoCallableNote(0.02, date(), [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects vector for scalar couponRate", exception=1
+caplib::createSnowballAutoCallableNote([0.02], 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects scalar for vector couponDates", exception=1
+caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects partially-null vector couponDates", exception=1
+caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01, date()], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSnowballAutoCallableNote rejects empty vector couponDates", exception=1
+caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, take(date, 0), "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)

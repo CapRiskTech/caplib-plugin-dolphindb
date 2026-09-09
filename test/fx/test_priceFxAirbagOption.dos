@@ -271,3 +271,31 @@ inst = caplib::createAirbagOption("CALL", 2021.09.26, 2021.09.27, eurusdSpot, eu
 r = caplib::priceFxAirbagOption(inst, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_FX_AB_results")
 assert 2, abs(presentValue(r) - 23077.89598077418) < abs(23077.89598077418) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxAirbagOption rejects missing argument", syntaxError=1
+caplib::priceFxAirbagOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceFxAirbagOption rejects extra argument", syntaxError=1
+caplib::priceFxAirbagOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceFxAirbagOption rejects wrong type for pricingDate", exception=1
+caplib::priceFxAirbagOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxAirbagOption rejects wrong type for mode", exception=1
+caplib::priceFxAirbagOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceFxAirbagOption rejects null pricingDate", exception=1
+caplib::priceFxAirbagOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxAirbagOption rejects null mode", exception=1
+caplib::priceFxAirbagOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxAirbagOption rejects vector for scalar pricingDate", exception=1
+caplib::priceFxAirbagOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxAirbagOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxAirbagOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

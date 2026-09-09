@@ -114,3 +114,21 @@ caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, 1, "ACT_365_FIXED"
 
 @testing:case="createIrYieldCurve rejects wrong type for dcc", exception=1
 caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, "ZERO_RATE", 1, "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+
+@testing:case="createIrYieldCurve rejects null referenceDate", exception=1
+caplib::createIrYieldCurve(date(), curveDates, curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+
+@testing:case="createIrYieldCurve rejects null curveType", exception=1
+caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, string(), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+
+@testing:case="createIrYieldCurve rejects vector for scalar referenceDate", exception=1
+caplib::createIrYieldCurve([2024.01.01], curveDates, curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+
+@testing:case="createIrYieldCurve rejects scalar for vector pillarDates", exception=1
+caplib::createIrYieldCurve(asOfDate, [2024.01.01], curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+
+@testing:case="createIrYieldCurve rejects partially-null vector pillarDates", exception=1
+caplib::createIrYieldCurve(asOfDate, [2024.01.01, date()], curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+
+@testing:case="createIrYieldCurve rejects empty vector pillarDates", exception=1
+caplib::createIrYieldCurve(asOfDate, take(date, 0), curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)

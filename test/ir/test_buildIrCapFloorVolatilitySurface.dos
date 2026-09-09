@@ -145,3 +145,15 @@ caplib::buildIrCapFloorVolatilitySurface("X", "bad", "X", "X", "X", "X", 0.02, "
 
 @testing:case="buildIrCapFloorVolatilitySurface rejects wrong type for displacement", exception=1
 caplib::buildIrCapFloorVolatilitySurface("X", 2024.01.01, "X", "X", "X", "X", "bad", "X", "X", false)
+
+@testing:case="buildIrCapFloorVolatilitySurface rejects null iborIndex", exception=1
+caplib::buildIrCapFloorVolatilitySurface(string(), 2024.01.01, "X", "X", "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloorVolatilitySurface rejects null referenceDate", exception=1
+caplib::buildIrCapFloorVolatilitySurface("X", date(), "X", "X", "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloorVolatilitySurface rejects vector for scalar iborIndex", exception=1
+caplib::buildIrCapFloorVolatilitySurface(["X"], 2024.01.01, "X", "X", "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloorVolatilitySurface rejects nonexistent handle quoteMatrixHandle", exception=1
+caplib::buildIrCapFloorVolatilitySurface("X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", 0.02, "X", "X", false)

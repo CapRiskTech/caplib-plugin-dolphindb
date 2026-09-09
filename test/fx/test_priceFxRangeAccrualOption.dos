@@ -271,3 +271,31 @@ inst = caplib::createRangeAccrualOption(2021.09.26, 2021.09.27, 0.0, 0.01, eurus
 r = caplib::priceFxRangeAccrualOption(inst, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_FX_RA_results")
 assert 2, abs(presentValue(r) - 8851.407821966865) < abs(8851.407821966865) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxRangeAccrualOption rejects missing argument", syntaxError=1
+caplib::priceFxRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceFxRangeAccrualOption rejects extra argument", syntaxError=1
+caplib::priceFxRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceFxRangeAccrualOption rejects wrong type for pricingDate", exception=1
+caplib::priceFxRangeAccrualOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxRangeAccrualOption rejects wrong type for mode", exception=1
+caplib::priceFxRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceFxRangeAccrualOption rejects null pricingDate", exception=1
+caplib::priceFxRangeAccrualOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxRangeAccrualOption rejects null mode", exception=1
+caplib::priceFxRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxRangeAccrualOption rejects vector for scalar pricingDate", exception=1
+caplib::priceFxRangeAccrualOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxRangeAccrualOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxRangeAccrualOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

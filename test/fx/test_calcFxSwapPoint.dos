@@ -269,3 +269,19 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 @testing:case="calcFxSwapPoint -> reference 0.002297818198062185"
 r = caplib::calcFxSwapPoint(asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 assert 1, abs(r - 0.002297818198062185) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxSwapPoint rejects null calculationDate", exception=1
+caplib::calcFxSwapPoint(date(), "X", "X", 2024.01.01, "X", "X", "X")
+
+@testing:case="calcFxSwapPoint rejects null leftCcy", exception=1
+caplib::calcFxSwapPoint(2024.01.01, string(), "X", 2024.01.01, "X", "X", "X")
+
+@testing:case="calcFxSwapPoint rejects vector for scalar calculationDate", exception=1
+caplib::calcFxSwapPoint([2024.01.01], "X", "X", 2024.01.01, "X", "X", "X")
+
+@testing:case="calcFxSwapPoint rejects nonexistent handle fxSpotRateHandle", exception=1
+caplib::calcFxSwapPoint(2024.01.01, "X", "X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X")

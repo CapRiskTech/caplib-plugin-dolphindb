@@ -296,3 +296,15 @@ caplib::priceFxTimeOption("X", "bad", "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxTimeOption rejects wrong type for mode", exception=1
 caplib::priceFxTimeOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceFxTimeOption rejects null pricingDate", exception=1
+caplib::priceFxTimeOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxTimeOption rejects null mode", exception=1
+caplib::priceFxTimeOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxTimeOption rejects vector for scalar pricingDate", exception=1
+caplib::priceFxTimeOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxTimeOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxTimeOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

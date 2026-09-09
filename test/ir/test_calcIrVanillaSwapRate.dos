@@ -122,3 +122,19 @@ try {
     assert 1, true
 }
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcIrVanillaSwapRate rejects null calculationDate", exception=1
+caplib::calcIrVanillaSwapRate(date(), "X", "X", "X", "X")
+
+@testing:case="calcIrVanillaSwapRate rejects null tenor", exception=1
+caplib::calcIrVanillaSwapRate(2024.01.01, "X", string(), "X", "X")
+
+@testing:case="calcIrVanillaSwapRate rejects vector for scalar calculationDate", exception=1
+caplib::calcIrVanillaSwapRate([2024.01.01], "X", "X", "X", "X")
+
+@testing:case="calcIrVanillaSwapRate rejects nonexistent handle swapTemplateHandle", exception=1
+caplib::calcIrVanillaSwapRate(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")

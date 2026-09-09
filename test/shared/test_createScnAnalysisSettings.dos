@@ -83,3 +83,15 @@ caplib::createScnAnalysisSettings(1, priceScn, volScn, 1, "TF_SCN_SETTINGS", fal
 
 @testing:case="createScnAnalysisSettings rejects wrong type for threading", exception=1
 caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, "1", "TF_SCN_SETTINGS", false)
+
+@testing:case="createScnAnalysisSettings rejects null scnType", exception=1
+caplib::createScnAnalysisSettings(string(), priceScn, volScn, 1, "TF_SCN_SETTINGS", false)
+
+@testing:case="createScnAnalysisSettings rejects null threading", exception=1
+caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, int(), "TF_SCN_SETTINGS", false)
+
+@testing:case="createScnAnalysisSettings rejects vector for scalar scnType", exception=1
+caplib::createScnAnalysisSettings(["X"], priceScn, volScn, 1, "TF_SCN_SETTINGS", false)
+
+@testing:case="createScnAnalysisSettings rejects nonexistent handle priceHandle", exception=1
+caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", "TF_HANDLE_DOES_NOT_EXIST", volScn, 1, "TF_SCN_SETTINGS", false)

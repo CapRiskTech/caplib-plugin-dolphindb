@@ -118,3 +118,25 @@ assert 1, isHandleJson(prc, "TF_IR_PAR")
 
 @testing:case="createIrParRateCurve rejects lengths mismatch", exception=1
 caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName], ["DEPOSIT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrParRateCurve rejects null asOfDate", exception=1
+caplib::createIrParRateCurve(date(), "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+
+@testing:case="createIrParRateCurve rejects null currency", exception=1
+caplib::createIrParRateCurve(2024.01.01, string(), "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+
+@testing:case="createIrParRateCurve rejects vector for scalar asOfDate", exception=1
+caplib::createIrParRateCurve([2024.01.01], "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+
+@testing:case="createIrParRateCurve rejects scalar for vector instNames", exception=1
+caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+
+@testing:case="createIrParRateCurve rejects partially-null vector instNames", exception=1
+caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X", string()], ["X"], ["X"], [0.02], [0.02], "X", false)
+
+@testing:case="createIrParRateCurve rejects empty vector instNames", exception=1
+caplib::createIrParRateCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"], [0.02], [0.02], "X", false)

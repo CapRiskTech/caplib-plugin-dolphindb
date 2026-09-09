@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createPhoenixAutoCallableNote (CM) -> handle"
 inst = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice * 1.1, "DOWN_IN", underlyingPrice * 0.9, "SELL", "PUT", underlyingPrice * 0.85, 2020.08.19, 2020.08.20, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_PH"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPhoenixAutoCallableNote rejects missing argument", syntaxError=1
+caplib::createPhoenixAutoCallableNote("X", 0.02, 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X")
+
+@testing:case="createPhoenixAutoCallableNote rejects extra argument", syntaxError=1
+caplib::createPhoenixAutoCallableNote("X", 0.02, 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createPhoenixAutoCallableNote rejects wrong type for couponPayoffType", exception=1
+caplib::createPhoenixAutoCallableNote(1, 0.02, 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects wrong type for couponStrike", exception=1
+caplib::createPhoenixAutoCallableNote("X", "bad", 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects wrong type for couponRate", exception=1
+caplib::createPhoenixAutoCallableNote("X", 0.02, "bad", "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects null couponPayoffType", exception=1
+caplib::createPhoenixAutoCallableNote(string(), 0.02, 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects null couponStrike", exception=1
+caplib::createPhoenixAutoCallableNote("X", double(), 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects vector for scalar couponPayoffType", exception=1
+caplib::createPhoenixAutoCallableNote(["X"], 0.02, 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects scalar for vector couponDates", exception=1
+caplib::createPhoenixAutoCallableNote("X", 0.02, 0.02, "X", 2024.01.01, [2024.01.01], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects partially-null vector couponDates", exception=1
+caplib::createPhoenixAutoCallableNote("X", 0.02, 0.02, "X", 2024.01.01, [2024.01.01, date()], "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createPhoenixAutoCallableNote rejects empty vector couponDates", exception=1
+caplib::createPhoenixAutoCallableNote("X", 0.02, 0.02, "X", 2024.01.01, take(date, 0), "X", 0.02, "X", 0.02, "X", "X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)

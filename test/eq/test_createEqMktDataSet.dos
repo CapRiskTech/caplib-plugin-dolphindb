@@ -160,3 +160,19 @@ mktData = caplib::createEqMktDataSet(
 @testing:case="createEqMktDataSet -> [handle, json]"
 r = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_EQ_MKT", true);
 assert 1, isHandleJson(r, "TF_EQ_MKT")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqMktDataSet rejects null asOfDate", exception=1
+caplib::createEqMktDataSet(date(), "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+
+@testing:case="createEqMktDataSet rejects null underlying", exception=1
+caplib::createEqMktDataSet(2024.01.01, string(), 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+
+@testing:case="createEqMktDataSet rejects vector for scalar asOfDate", exception=1
+caplib::createEqMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+
+@testing:case="createEqMktDataSet rejects nonexistent handle dcHandle", exception=1
+caplib::createEqMktDataSet(2024.01.01, "X", 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", 0.02, "X", false)

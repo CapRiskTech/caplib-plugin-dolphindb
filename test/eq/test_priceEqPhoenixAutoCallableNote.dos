@@ -162,3 +162,31 @@ inst = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT
 r = caplib::priceEqPhoenixAutoCallableNote(inst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_PH_results")
 assert 2, abs(presentValue(r) - 796791.6203146721) < abs(796791.6203146721) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects missing argument", syntaxError=1
+caplib::priceEqPhoenixAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects extra argument", syntaxError=1
+caplib::priceEqPhoenixAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects wrong type for pricingDate", exception=1
+caplib::priceEqPhoenixAutoCallableNote("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects wrong type for mode", exception=1
+caplib::priceEqPhoenixAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects null pricingDate", exception=1
+caplib::priceEqPhoenixAutoCallableNote("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects null mode", exception=1
+caplib::priceEqPhoenixAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects vector for scalar pricingDate", exception=1
+caplib::priceEqPhoenixAutoCallableNote("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqPhoenixAutoCallableNote rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceEqPhoenixAutoCallableNote("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

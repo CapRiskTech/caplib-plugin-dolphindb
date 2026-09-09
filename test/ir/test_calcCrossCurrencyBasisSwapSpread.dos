@@ -130,3 +130,19 @@ try {
 
 @testing:case="calcCrossCurrencyBasisSwapSpread rejects refDate after spotDate", exception=1
 caplib::calcCrossCurrencyBasisSwapSpread(2022.03.01, irSwapTemplate[0], "1Y", 6.9, "CNY", "USD", 2022.03.05, 2022.03.02, irCurve, irCurve, usdCurve, usdCurve)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcCrossCurrencyBasisSwapSpread rejects null calculationDate", exception=1
+caplib::calcCrossCurrencyBasisSwapSpread(date(), "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcCrossCurrencyBasisSwapSpread rejects null tenor", exception=1
+caplib::calcCrossCurrencyBasisSwapSpread(2024.01.01, "X", string(), 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcCrossCurrencyBasisSwapSpread rejects vector for scalar calculationDate", exception=1
+caplib::calcCrossCurrencyBasisSwapSpread([2024.01.01], "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcCrossCurrencyBasisSwapSpread rejects nonexistent handle swapTemplateHandle", exception=1
+caplib::calcCrossCurrencyBasisSwapSpread(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X", "X")

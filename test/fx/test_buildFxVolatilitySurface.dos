@@ -269,3 +269,19 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 @testing:case="buildFxVolatilitySurface -> [handle, json]"
 r = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_FX_BUILT_VOL", true);
 assert 1, isHandleJson(r, "TF_FX_BUILT_VOL")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildFxVolatilitySurface rejects null referenceDate", exception=1
+caplib::buildFxVolatilitySurface(date(), "X", "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="buildFxVolatilitySurface rejects null leftCcy", exception=1
+caplib::buildFxVolatilitySurface(2024.01.01, string(), "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="buildFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
+caplib::buildFxVolatilitySurface([2024.01.01], "X", "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="buildFxVolatilitySurface rejects nonexistent handle marketConventionsHandle", exception=1
+caplib::buildFxVolatilitySurface(2024.01.01, "X", "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "X", false)

@@ -271,3 +271,19 @@ inst = caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021
 r = caplib::priceFxSwap(inst, asOfDate, eurusdMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_FX_SWAP_P_results")
 assert 2, abs(presentValue(r) - -327785.54562939936) < abs(-327785.54562939936) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxSwap rejects null pricingDate", exception=1
+caplib::priceFxSwap("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxSwap rejects null mode", exception=1
+caplib::priceFxSwap("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxSwap rejects vector for scalar pricingDate", exception=1
+caplib::priceFxSwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxSwap rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxSwap("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

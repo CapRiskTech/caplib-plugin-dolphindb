@@ -122,3 +122,16 @@ cds = caplib::buildCreditDefaultSwap(
 @testing:case="createCrRiskSettings -> [handle, json]"
 r = caplib::createCrRiskSettings(irRisk, creditRisk, thetaRisk, "TF_CR_RISKSET_NAME", "TF_CR_RISKSET", true);
 assert 1, isHandleJson(r, "TF_CR_RISKSET")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCrRiskSettings rejects null irCurveSettings", exception=1
+caplib::createCrRiskSettings(string(), "X", "X", "X", "X", false)
+
+@testing:case="createCrRiskSettings rejects null csCurveSettings", exception=1
+caplib::createCrRiskSettings("X", string(), "X", "X", "X", false)
+
+@testing:case="createCrRiskSettings rejects vector for scalar irCurveSettings", exception=1
+caplib::createCrRiskSettings(["X"], "X", "X", "X", "X", false)

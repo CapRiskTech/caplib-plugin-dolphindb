@@ -271,3 +271,31 @@ inst = caplib::createEuropeanOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, 
 r = caplib::priceFxEuropeanOption(inst, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_FX_EO_results")
 assert 2, abs(presentValue(r) - 23063.932727811134) < abs(23063.932727811134) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxEuropeanOption rejects missing argument", syntaxError=1
+caplib::priceFxEuropeanOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceFxEuropeanOption rejects extra argument", syntaxError=1
+caplib::priceFxEuropeanOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceFxEuropeanOption rejects wrong type for pricingDate", exception=1
+caplib::priceFxEuropeanOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxEuropeanOption rejects wrong type for mode", exception=1
+caplib::priceFxEuropeanOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceFxEuropeanOption rejects null pricingDate", exception=1
+caplib::priceFxEuropeanOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxEuropeanOption rejects null mode", exception=1
+caplib::priceFxEuropeanOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxEuropeanOption rejects vector for scalar pricingDate", exception=1
+caplib::priceFxEuropeanOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxEuropeanOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxEuropeanOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

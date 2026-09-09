@@ -69,3 +69,16 @@ assert 1, isDoubleVector(zeroRates) &&
 
 @testing:case="getZeroRate rejects unknown handle", exception=1
 caplib::getZeroRate("TF_HANDLE_DOES_NOT_EXIST", curveDates)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="getZeroRate rejects partially-null vector dates", exception=1
+caplib::getZeroRate(flatIrCurve, [2024.01.01, date()])
+
+@testing:case="getZeroRate rejects empty vector dates", exception=1
+caplib::getZeroRate(flatIrCurve, take(date, 0))
+
+@testing:case="getZeroRate rejects nonexistent handle irCurveHandle", exception=1
+caplib::getZeroRate("TF_HANDLE_DOES_NOT_EXIST", curveDates)

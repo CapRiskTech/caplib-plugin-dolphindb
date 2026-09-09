@@ -272,3 +272,16 @@ assert 1, r == "TF_FX_FWD"
 
 @testing:case="createFxForward rejects negative buyAmount", exception=1
 caplib::createFxForward("EUR", -1.0, "USD", 1176100.0, 2021.07.01, 2021.06.30, "TF_FX_FWD_BAD", false)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxForward rejects null buyAmount", exception=1
+caplib::createFxForward("X", double(), "X", 0.02, 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxForward rejects null sellAmount", exception=1
+caplib::createFxForward("X", 0.02, "X", double(), 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxForward rejects vector for scalar buyCurrency", exception=1
+caplib::createFxForward(["X"], 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", false)

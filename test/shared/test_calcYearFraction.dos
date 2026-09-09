@@ -83,3 +83,12 @@ caplib::calcYearFraction(2025.01.01, "bad", "ACTUAL_360")
 
 @testing:case="calcYearFraction rejects wrong type for dayCountConvention", exception=1
 caplib::calcYearFraction(2025.01.01, 2025.12.31, 1)
+
+@testing:case="calcYearFraction rejects null startDate", exception=1
+caplib::calcYearFraction(date(), 2025.12.31, "ACTUAL_360")
+
+@testing:case="calcYearFraction rejects null endDate", exception=1
+caplib::calcYearFraction(2025.01.01, date(), "ACTUAL_360")
+
+@testing:case="calcYearFraction rejects vector for scalar startDate", exception=1
+caplib::calcYearFraction([2024.01.01], 2025.12.31, "ACTUAL_360")

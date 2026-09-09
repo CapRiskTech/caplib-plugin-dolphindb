@@ -70,3 +70,12 @@ caplib::createStaticData(1, "X")
 
 @testing:case="createStaticData rejects wrong type for staticDataBytes", exception=1
 caplib::createStaticData("CALENDAR", 1)
+
+@testing:case="createStaticData rejects null staticDataType", exception=1
+caplib::createStaticData(string(), "X")
+
+@testing:case="createStaticData rejects null staticDataBytes", exception=1
+caplib::createStaticData("CALENDAR", string())
+
+@testing:case="createStaticData rejects vector for scalar staticDataType", exception=1
+caplib::createStaticData(["X"], "X")

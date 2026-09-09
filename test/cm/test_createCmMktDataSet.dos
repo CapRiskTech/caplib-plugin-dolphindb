@@ -228,3 +228,16 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createCmMktDataSet -> [handle, json]"
 r = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_CM_MKT", true);
 assert 1, isHandleJson(r, "TF_CM_MKT")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCmMktDataSet rejects null asOfDate", exception=1
+caplib::createCmMktDataSet(date(), "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+
+@testing:case="createCmMktDataSet rejects null underlying", exception=1
+caplib::createCmMktDataSet(2024.01.01, string(), 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+
+@testing:case="createCmMktDataSet rejects vector for scalar asOfDate", exception=1
+caplib::createCmMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)

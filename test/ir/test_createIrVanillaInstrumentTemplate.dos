@@ -119,3 +119,25 @@ assert 1, isHandleJson(r, "TF_IR_VIT")
 @testing:case="createIrVanillaInstrumentTemplate capfloor variant"
 r2 = caplib::createIrVanillaInstrumentTemplate("IR_CAP_FLOOR", "TF_IR_VIT_CF", "SPOTSTART", 1, [irFloatingLeg[0]], "TF_IR_VIT_CF", true);
 assert 1, isHandleJson(r2, "TF_IR_VIT_CF")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrVanillaInstrumentTemplate rejects null instType", exception=1
+caplib::createIrVanillaInstrumentTemplate(string(), "X", "X", 1, ["X"], "X", false)
+
+@testing:case="createIrVanillaInstrumentTemplate rejects null instName", exception=1
+caplib::createIrVanillaInstrumentTemplate("X", string(), "X", 1, ["X"], "X", false)
+
+@testing:case="createIrVanillaInstrumentTemplate rejects vector for scalar instType", exception=1
+caplib::createIrVanillaInstrumentTemplate(["X"], "X", "X", 1, ["X"], "X", false)
+
+@testing:case="createIrVanillaInstrumentTemplate rejects scalar for vector legDefinitions", exception=1
+caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, ["X"], "X", false)
+
+@testing:case="createIrVanillaInstrumentTemplate rejects partially-null vector legDefinitions", exception=1
+caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, ["X", string()], "X", false)
+
+@testing:case="createIrVanillaInstrumentTemplate rejects empty vector legDefinitions", exception=1
+caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, take(string, 0), "X", false)

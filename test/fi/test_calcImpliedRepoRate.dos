@@ -55,3 +55,16 @@ def isMatrix(value) {
 @testing:case="calcImpliedRepoRate -> DOUBLE"
 r = caplib::calcImpliedRepoRate(100.5, 1.02, 99.8, 0.03, 2025.03.01, 2024.12.01, 2025.03.15, "ACT_360", 2025.06.01, "SEMIANNUAL");
 assert 1, typestr(r) == "DOUBLE"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcImpliedRepoRate rejects null futPrice", exception=1
+caplib::calcImpliedRepoRate(double(), 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 2024.01.01, "X", 2024.01.01, "X")
+
+@testing:case="calcImpliedRepoRate rejects null conversionFactor", exception=1
+caplib::calcImpliedRepoRate(0.02, double(), 0.02, 0.02, 2024.01.01, 2024.01.01, 2024.01.01, "X", 2024.01.01, "X")
+
+@testing:case="calcImpliedRepoRate rejects vector for scalar futPrice", exception=1
+caplib::calcImpliedRepoRate([0.02], 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 2024.01.01, "X", 2024.01.01, "X")

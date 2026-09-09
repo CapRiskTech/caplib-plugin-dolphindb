@@ -69,3 +69,19 @@ assert 1, isDoubleVector(creditSpreads) &&
 
 @testing:case="getCreditSpread rejects unknown handle", exception=1
 caplib::getCreditSpread("TF_HANDLE_DOES_NOT_EXIST", curveDates)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="getCreditSpread rejects scalar for vector dates", exception=1
+caplib::getCreditSpread("X", [2024.01.01])
+
+@testing:case="getCreditSpread rejects partially-null vector dates", exception=1
+caplib::getCreditSpread("X", [2024.01.01, date()])
+
+@testing:case="getCreditSpread rejects empty vector dates", exception=1
+caplib::getCreditSpread("X", take(date, 0))
+
+@testing:case="getCreditSpread rejects nonexistent handle creditCurveHandle", exception=1
+caplib::getCreditSpread("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01])

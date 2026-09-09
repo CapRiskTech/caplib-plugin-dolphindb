@@ -77,3 +77,6 @@ caplib::createVolRiskSettings(1, 1, 0.01, "1", 0, 0.01, 0, "TF_VOL_RISK", false)
 
 @testing:case="createVolRiskSettings rejects wrong type for scaling", exception=1
 caplib::createVolRiskSettings(1, 1, 0.01, 0, 0, "bad", 0, "TF_VOL_RISK", false)
+
+@testing:case="createVolRiskSettings rejects null method", exception=1
+caplib::createVolRiskSettings(1, 1, 0.01, int(), 0, 0.01, 0, "TF_VOL_RISK", false)

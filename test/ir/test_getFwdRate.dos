@@ -69,3 +69,22 @@ assert 1, isDoubleVector(fwdRates) &&
 
 @testing:case="getFwdRate rejects unknown handle", exception=1
 caplib::getFwdRate("TF_HANDLE_DOES_NOT_EXIST", curveDates, 0.25)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="getFwdRate rejects null tenor", exception=1
+caplib::getFwdRate(flatIrCurve, curveDates, double())
+
+@testing:case="getFwdRate rejects vector for scalar tenor", exception=1
+caplib::getFwdRate(flatIrCurve, curveDates, [0.02])
+
+@testing:case="getFwdRate rejects partially-null vector dates", exception=1
+caplib::getFwdRate(flatIrCurve, [2024.01.01, date()], 0.25)
+
+@testing:case="getFwdRate rejects empty vector dates", exception=1
+caplib::getFwdRate(flatIrCurve, take(date, 0), 0.25)
+
+@testing:case="getFwdRate rejects nonexistent handle irCurveHandle", exception=1
+caplib::getFwdRate("TF_HANDLE_DOES_NOT_EXIST", curveDates, 0.25)

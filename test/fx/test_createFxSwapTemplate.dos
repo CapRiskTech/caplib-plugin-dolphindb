@@ -271,3 +271,16 @@ r = caplib::createFxSwapTemplate("TF_FX_SWP_TPL", "SPOTSTART", "EURUSD", ["CAL_E
 assert 1, isHandleJson(r, "TF_FX_SWP_TPL") && hasJsonField(r[1], "start_convention")
 
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSwapTemplate rejects null instName", exception=1
+caplib::createFxSwapTemplate(string(), "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxSwapTemplate rejects null startConvention", exception=1
+caplib::createFxSwapTemplate("X", string(), "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxSwapTemplate rejects vector for scalar instName", exception=1
+caplib::createFxSwapTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", false)

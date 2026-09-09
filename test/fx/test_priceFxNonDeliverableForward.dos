@@ -271,3 +271,19 @@ inst = caplib::createFxNonDeliverableForward("USD", 10000.0, "CNH", 66916.0, "US
 r = caplib::priceFxNonDeliverableForward(inst, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_FX_NDF_P_results")
 assert 2, abs(presentValue(r) - -435394.7797898732) < abs(-435394.7797898732) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxNonDeliverableForward rejects null pricingDate", exception=1
+caplib::priceFxNonDeliverableForward("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxNonDeliverableForward rejects null mode", exception=1
+caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxNonDeliverableForward rejects vector for scalar pricingDate", exception=1
+caplib::priceFxNonDeliverableForward("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxNonDeliverableForward rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxNonDeliverableForward("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

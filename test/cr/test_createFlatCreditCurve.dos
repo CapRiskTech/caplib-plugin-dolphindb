@@ -79,3 +79,12 @@ caplib::createFlatCreditCurve("bad", 0.002, "TF_FLAT_CR_CURVE", false)
 
 @testing:case="createFlatCreditCurve rejects wrong type for hazardRate", exception=1
 caplib::createFlatCreditCurve(asOfDate, "bad", "TF_FLAT_CR_CURVE", false)
+
+@testing:case="createFlatCreditCurve rejects null referenceDate", exception=1
+caplib::createFlatCreditCurve(date(), 0.002, "TF_FLAT_CR_CURVE", false)
+
+@testing:case="createFlatCreditCurve rejects null hazardRate", exception=1
+caplib::createFlatCreditCurve(asOfDate, double(), "TF_FLAT_CR_CURVE", false)
+
+@testing:case="createFlatCreditCurve rejects vector for scalar referenceDate", exception=1
+caplib::createFlatCreditCurve([2024.01.01], 0.002, "TF_FLAT_CR_CURVE", false)

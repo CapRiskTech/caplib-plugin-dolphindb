@@ -271,3 +271,31 @@ inst = caplib::createPingPongOption(2021.09.26, 2021.09.27, "DOWN_IN", eurusdSpo
 r = caplib::priceFxPingPongOption(inst, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_FX_PP_results")
 assert 2, abs(presentValue(r) - 16.672620056172782) < abs(16.672620056172782) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxPingPongOption rejects missing argument", syntaxError=1
+caplib::priceFxPingPongOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceFxPingPongOption rejects extra argument", syntaxError=1
+caplib::priceFxPingPongOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceFxPingPongOption rejects wrong type for pricingDate", exception=1
+caplib::priceFxPingPongOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxPingPongOption rejects wrong type for mode", exception=1
+caplib::priceFxPingPongOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceFxPingPongOption rejects null pricingDate", exception=1
+caplib::priceFxPingPongOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxPingPongOption rejects null mode", exception=1
+caplib::priceFxPingPongOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxPingPongOption rejects vector for scalar pricingDate", exception=1
+caplib::priceFxPingPongOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxPingPongOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxPingPongOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

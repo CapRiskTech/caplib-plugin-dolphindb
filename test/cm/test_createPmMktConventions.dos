@@ -70,3 +70,10 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 @testing:case="createPmMktConventions -> [handle, json]"
 r = caplib::createPmMktConventions("ATM", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true);
 assert 1, isHandleJson(r, "TF_PM_CONV")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmMktConventions rejects vector for scalar atmType", exception=1
+caplib::createPmMktConventions(["X"], "X", "X", "X", "X", "X", "X", "X", false)

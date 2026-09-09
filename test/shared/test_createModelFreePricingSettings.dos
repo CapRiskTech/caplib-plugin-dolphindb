@@ -74,3 +74,12 @@ caplib::createModelFreePricingSettings("CNY", "1", 0, "TF_MODEL_FREE_PRICING", f
 
 @testing:case="createModelFreePricingSettings rejects wrong type for cashFlows", exception=1
 caplib::createModelFreePricingSettings("CNY", 1, "1", "TF_MODEL_FREE_PRICING", false)
+
+@testing:case="createModelFreePricingSettings rejects null incCurrent", exception=1
+caplib::createModelFreePricingSettings("CNY", int(), 0, "TF_MODEL_FREE_PRICING", false)
+
+@testing:case="createModelFreePricingSettings rejects null cashFlows", exception=1
+caplib::createModelFreePricingSettings("CNY", 1, int(), "TF_MODEL_FREE_PRICING", false)
+
+@testing:case="createModelFreePricingSettings rejects vector for scalar currency", exception=1
+caplib::createModelFreePricingSettings(["X"], 1, 0, "TF_MODEL_FREE_PRICING", false)

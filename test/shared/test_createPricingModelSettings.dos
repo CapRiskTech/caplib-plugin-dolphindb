@@ -74,3 +74,12 @@ caplib::createPricingModelSettings(1, "", 0, [0.0], "TF_BSM_MODEL", false)
 
 @testing:case="createPricingModelSettings rejects wrong type for asset", exception=1
 caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", 1, 0, [0.0], "TF_BSM_MODEL", false)
+
+@testing:case="createPricingModelSettings rejects null modelName", exception=1
+caplib::createPricingModelSettings(string(), "", 0, [0.0], "TF_BSM_MODEL", false)
+
+@testing:case="createPricingModelSettings rejects vector for scalar modelName", exception=1
+caplib::createPricingModelSettings(["X"], "", 0, [0.0], "TF_BSM_MODEL", false)
+
+@testing:case="createPricingModelSettings rejects empty vector constantParams", exception=1
+caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, take(double, 0), "TF_BSM_MODEL", false)

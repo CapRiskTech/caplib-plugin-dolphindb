@@ -115,3 +115,10 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 @testing:case="createIrRiskSettings -> handle + json"
 r = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
 assert 1, isHandleJson(r, "TF_IR_RISK") && hasJsonField(r[1], "ir_curve_settings")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrRiskSettings rejects nonexistent handle irCurveRiskSettingsHandle", exception=1
+caplib::createIrRiskSettings("TF_HANDLE_DOES_NOT_EXIST", irThetaRisk, "TF_IR_RISK", false)

@@ -82,3 +82,21 @@ caplib::createCreditCurve(asOfDate, curveDates, [0.002, 0.0025], 1, "LINEAR_INTE
 
 @testing:case="createCreditCurve rejects wrong type for interp", exception=1
 caplib::createCreditCurve(asOfDate, curveDates, [0.002, 0.0025], "ACT_365_FIXED", 1, "FLAT_EXTRAP", "TF_CR_CURVE", "TF_CR_CURVE", false)
+
+@testing:case="createCreditCurve rejects null referenceDate", exception=1
+caplib::createCreditCurve(date(), curveDates, [0.002, 0.0025], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CR_CURVE", "TF_CR_CURVE", false)
+
+@testing:case="createCreditCurve rejects null dcc", exception=1
+caplib::createCreditCurve(asOfDate, curveDates, [0.002, 0.0025], string(), "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CR_CURVE", "TF_CR_CURVE", false)
+
+@testing:case="createCreditCurve rejects vector for scalar referenceDate", exception=1
+caplib::createCreditCurve([2024.01.01], curveDates, [0.002, 0.0025], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CR_CURVE", "TF_CR_CURVE", false)
+
+@testing:case="createCreditCurve rejects scalar for vector pillarDates", exception=1
+caplib::createCreditCurve(asOfDate, [2024.01.01], [0.002, 0.0025], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CR_CURVE", "TF_CR_CURVE", false)
+
+@testing:case="createCreditCurve rejects partially-null vector pillarDates", exception=1
+caplib::createCreditCurve(asOfDate, [2024.01.01, date()], [0.002, 0.0025], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CR_CURVE", "TF_CR_CURVE", false)
+
+@testing:case="createCreditCurve rejects empty vector pillarDates", exception=1
+caplib::createCreditCurve(asOfDate, take(date, 0), [0.002, 0.0025], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CR_CURVE", "TF_CR_CURVE", false)

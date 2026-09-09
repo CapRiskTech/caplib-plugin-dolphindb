@@ -62,3 +62,16 @@ assert 1, calendarCreated;
 @testing:case="createIrLegDefinition -> [handle, json]"
 r = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true);
 assert 1, isHandleJson(r, "TF_IR_LEG")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrLegDefinition rejects null legType", exception=1
+caplib::createIrLegDefinition(string(), "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "X", false)
+
+@testing:case="createIrLegDefinition rejects null currency", exception=1
+caplib::createIrLegDefinition("X", string(), "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "X", false)
+
+@testing:case="createIrLegDefinition rejects vector for scalar legType", exception=1
+caplib::createIrLegDefinition(["X"], "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "X", false)

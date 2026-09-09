@@ -162,3 +162,31 @@ inst = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, 2.958, 3.54960
 r = caplib::priceEqAirbagOption(inst, asOfDate, mktData[0], bsmPdeSettings, eqNoRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_AB_results")
 assert 2, abs(presentValue(r) - 127038.95439429874) < abs(127038.95439429874) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqAirbagOption rejects missing argument", syntaxError=1
+caplib::priceEqAirbagOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceEqAirbagOption rejects extra argument", syntaxError=1
+caplib::priceEqAirbagOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceEqAirbagOption rejects wrong type for pricingDate", exception=1
+caplib::priceEqAirbagOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqAirbagOption rejects wrong type for mode", exception=1
+caplib::priceEqAirbagOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceEqAirbagOption rejects null pricingDate", exception=1
+caplib::priceEqAirbagOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqAirbagOption rejects null mode", exception=1
+caplib::priceEqAirbagOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceEqAirbagOption rejects vector for scalar pricingDate", exception=1
+caplib::priceEqAirbagOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqAirbagOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceEqAirbagOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

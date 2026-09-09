@@ -230,3 +230,31 @@ inst = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 20
 r = caplib::priceCmSingleBarrierOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
 assert 1, isPricingResultsJson(r, "TF_CM_SB_results")
 assert 2, abs(presentValue(r) - 3900655553.4487686) < abs(3900655553.4487686) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmSingleBarrierOption rejects missing argument", syntaxError=1
+caplib::priceCmSingleBarrierOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceCmSingleBarrierOption rejects extra argument", syntaxError=1
+caplib::priceCmSingleBarrierOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceCmSingleBarrierOption rejects wrong type for pricingDate", exception=1
+caplib::priceCmSingleBarrierOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmSingleBarrierOption rejects wrong type for mode", exception=1
+caplib::priceCmSingleBarrierOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceCmSingleBarrierOption rejects null pricingDate", exception=1
+caplib::priceCmSingleBarrierOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmSingleBarrierOption rejects null mode", exception=1
+caplib::priceCmSingleBarrierOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceCmSingleBarrierOption rejects vector for scalar pricingDate", exception=1
+caplib::priceCmSingleBarrierOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmSingleBarrierOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceCmSingleBarrierOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

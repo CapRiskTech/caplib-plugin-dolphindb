@@ -85,3 +85,21 @@ caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, 1, "FLAT_EXTRAP
 
 @testing:case="createAssetYieldCurve rejects wrong type for extrap", exception=1
 caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", 1, "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)
+
+@testing:case="createAssetYieldCurve rejects null referenceDate", exception=1
+caplib::createAssetYieldCurve(date(), curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)
+
+@testing:case="createAssetYieldCurve rejects null interp", exception=1
+caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, string(), "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)
+
+@testing:case="createAssetYieldCurve rejects vector for scalar referenceDate", exception=1
+caplib::createAssetYieldCurve([2024.01.01], curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)
+
+@testing:case="createAssetYieldCurve rejects scalar for vector pillarDates", exception=1
+caplib::createAssetYieldCurve(asOfDate, [2024.01.01], curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)
+
+@testing:case="createAssetYieldCurve rejects partially-null vector pillarDates", exception=1
+caplib::createAssetYieldCurve(asOfDate, [2024.01.01, date()], curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)
+
+@testing:case="createAssetYieldCurve rejects empty vector pillarDates", exception=1
+caplib::createAssetYieldCurve(asOfDate, take(date, 0), curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)

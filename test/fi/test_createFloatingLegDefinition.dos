@@ -115,3 +115,27 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 @testing:case="createFloatingLegDefinition -> [handle, json]"
 leg = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
 assert 1, isHandleJson(leg, "TF_IR_FLOATING_LEG") && hasJsonField(leg[1], "ibor_index")
+
+@testing:case="createFloatingLegDefinition calendar/fixingCalendars scalar/scalar"
+legSS = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL1", "CAL1", "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_LEG_SS", true);
+assert 1, isHandleJson(legSS, "TF_LEG_SS")
+
+@testing:case="createFloatingLegDefinition calendar/fixingCalendars vector/vector with independent lengths"
+legVV = caplib::createFloatingLegDefinition("CNY", iborIndex[0], ["CAL1", "CAL2"], ["CAL1"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_LEG_VV", true);
+assert 1, isHandleJson(legVV, "TF_LEG_VV")
+
+@testing:case="createFloatingLegDefinition rejects null calendar vector element", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], ["CAL1", string()], "CAL1", "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_LEG_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFloatingLegDefinition rejects null payDayOffset", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", int(), "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+@testing:case="createFloatingLegDefinition rejects null fixingDayOffset", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", int(), "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+@testing:case="createFloatingLegDefinition rejects vector for scalar currency", exception=1
+caplib::createFloatingLegDefinition(["X"], iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)

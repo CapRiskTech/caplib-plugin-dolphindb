@@ -70,3 +70,16 @@ assert 1, isDoubleVector(discountFactors) &&
 
 @testing:case="getDiscountFactor rejects wrong curve handle type", exception=1
 caplib::getDiscountFactor("TF_HANDLE_DOES_NOT_EXIST", curveDates)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="getDiscountFactor rejects partially-null vector dates", exception=1
+caplib::getDiscountFactor(flatIrCurve, [2024.01.01, date()])
+
+@testing:case="getDiscountFactor rejects empty vector dates", exception=1
+caplib::getDiscountFactor(flatIrCurve, take(date, 0))
+
+@testing:case="getDiscountFactor rejects nonexistent handle irCurveHandle", exception=1
+caplib::getDiscountFactor("TF_HANDLE_DOES_NOT_EXIST", curveDates)

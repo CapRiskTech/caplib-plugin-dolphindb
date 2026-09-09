@@ -126,3 +126,19 @@ assert 2, abs(presentValue(cdsPricingResult) - -4324.565959039959) < abs(-4324.5
 
 @testing:case="priceCreditDefaultSwap rejects wrong mktData handle", exception=1
 caplib::priceCreditDefaultSwap(cds, asOfDate, discountCurve, pricingSettings[0], crRisk[0], "", "", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCreditDefaultSwap rejects null pricingDate", exception=1
+caplib::priceCreditDefaultSwap("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCreditDefaultSwap rejects null mode", exception=1
+caplib::priceCreditDefaultSwap("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceCreditDefaultSwap rejects vector for scalar pricingDate", exception=1
+caplib::priceCreditDefaultSwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCreditDefaultSwap rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceCreditDefaultSwap("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

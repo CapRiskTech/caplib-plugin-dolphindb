@@ -292,3 +292,19 @@ jobResult3 = getJobReturn(jobId3, true);
 jobResult4 = getJobReturn(jobId4, true);
 assert 1, abs(jobResult1 - 1.1818054618389189) < 1.0e-12 &&
     jobResult1 == jobResult2 && jobResult2 == jobResult3 && jobResult3 == jobResult4
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxAtmStrike rejects null atmType", exception=1
+caplib::calcFxAtmStrike(string(), 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcFxAtmStrike rejects null expiryDate", exception=1
+caplib::calcFxAtmStrike("X", date(), "X", "X", "X", "X")
+
+@testing:case="calcFxAtmStrike rejects vector for scalar atmType", exception=1
+caplib::calcFxAtmStrike(["X"], 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="calcFxAtmStrike rejects nonexistent handle volSurfaceHandle", exception=1
+caplib::calcFxAtmStrike("X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")

@@ -77,3 +77,6 @@ caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, "1", 1, 1.0e-4, 0, "TF_CR_RI
 
 @testing:case="createCreditCurveRiskSettings rejects wrong type for scaling", exception=1
 caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, "bad", 0, "TF_CR_RISK", false)
+
+@testing:case="createCreditCurveRiskSettings rejects null method", exception=1
+caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, int(), 1, 1.0e-4, 0, "TF_CR_RISK", false)

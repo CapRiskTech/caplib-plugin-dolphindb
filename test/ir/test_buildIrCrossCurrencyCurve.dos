@@ -131,3 +131,28 @@ cbs = caplib::createIrYieldCurveBuildSettings(irCurveName, false, ["CNY"], [irCu
     assert 1, true
 }
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrCrossCurrencyCurve rejects null referenceDate", exception=1
+caplib::buildIrCrossCurrencyCurve(date(), ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects null dayCountConvention", exception=1
+caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], string(), "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects vector for scalar referenceDate", exception=1
+caplib::buildIrCrossCurrencyCurve([2024.01.01], ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects scalar for vector targetCurveNames", exception=1
+caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects partially-null vector targetCurveNames", exception=1
+caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X", string()], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects empty vector targetCurveNames", exception=1
+caplib::buildIrCrossCurrencyCurve(2024.01.01, take(string, 0), ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects nonexistent handle buildSettingsHandles", exception=1
+caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], "TF_HANDLE_DOES_NOT_EXIST", ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)

@@ -128,3 +128,19 @@ try {
     assert 1, true
 }
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcCrossCurrencySwapRate rejects null calculationDate", exception=1
+caplib::calcCrossCurrencySwapRate(date(), "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X")
+
+@testing:case="calcCrossCurrencySwapRate rejects null tenor", exception=1
+caplib::calcCrossCurrencySwapRate(2024.01.01, "X", string(), 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X")
+
+@testing:case="calcCrossCurrencySwapRate rejects vector for scalar calculationDate", exception=1
+caplib::calcCrossCurrencySwapRate([2024.01.01], "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X")
+
+@testing:case="calcCrossCurrencySwapRate rejects nonexistent handle swapTemplateHandle", exception=1
+caplib::calcCrossCurrencySwapRate(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X")

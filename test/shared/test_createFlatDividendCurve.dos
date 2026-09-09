@@ -82,3 +82,12 @@ caplib::createFlatDividendCurve(asOfDate, "bad", "TF_FLAT_DIVIDEND_CURVE", "TF_F
 
 @testing:case="createFlatDividendCurve rejects wrong type for curveName", exception=1
 caplib::createFlatDividendCurve(asOfDate, 0.01, 1, "TF_FLAT_DIVIDEND_CURVE", false)
+
+@testing:case="createFlatDividendCurve rejects null referenceDate", exception=1
+caplib::createFlatDividendCurve(date(), 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+
+@testing:case="createFlatDividendCurve rejects null dividend", exception=1
+caplib::createFlatDividendCurve(asOfDate, double(), "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+
+@testing:case="createFlatDividendCurve rejects vector for scalar referenceDate", exception=1
+caplib::createFlatDividendCurve([2024.01.01], 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)

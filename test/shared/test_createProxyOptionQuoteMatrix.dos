@@ -85,3 +85,15 @@ caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, "bad", 101
 
 @testing:case="createProxyOptionQuoteMatrix rejects wrong type for underlyingPrice", exception=1
 caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, 100.0, "bad", "TF_PROXY_OPTION_QUOTES", false)
+
+@testing:case="createProxyOptionQuoteMatrix rejects null refUnderlyingPrice", exception=1
+caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, double(), 101.0, "TF_PROXY_OPTION_QUOTES", false)
+
+@testing:case="createProxyOptionQuoteMatrix rejects null underlyingPrice", exception=1
+caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, 100.0, double(), "TF_PROXY_OPTION_QUOTES", false)
+
+@testing:case="createProxyOptionQuoteMatrix rejects vector for scalar underlyingName", exception=1
+caplib::createProxyOptionQuoteMatrix(["X"], flatVolSurface, 100.0, 101.0, "TF_PROXY_OPTION_QUOTES", false)
+
+@testing:case="createProxyOptionQuoteMatrix rejects nonexistent handle refVolSurfaceHandle", exception=1
+caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", "TF_HANDLE_DOES_NOT_EXIST", 100.0, 101.0, "TF_PROXY_OPTION_QUOTES", false)

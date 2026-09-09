@@ -62,3 +62,13 @@ assert 1, calendarCreated;
 @testing:case="createInterestPaymentScheduleDefinition -> [handle, json]"
 r = caplib::createInterestPaymentScheduleDefinition("CAL_CFETS", "QUARTERLY", "IN_ADVANCE", 0, "MODIFIED_FOLLOWING", "TF_SCHED_PAY", true);
 assert 1, isHandleJson(r, "TF_SCHED_PAY")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestPaymentScheduleDefinition rejects null payDayOffset", exception=1
+caplib::createInterestPaymentScheduleDefinition("X", "X", "X", int(), "X", "X", false)
+
+@testing:case="createInterestPaymentScheduleDefinition rejects vector for scalar calendars", exception=1
+caplib::createInterestPaymentScheduleDefinition(["X"], "X", "X", 1, "X", "X", false)

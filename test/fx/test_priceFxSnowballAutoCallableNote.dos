@@ -271,3 +271,31 @@ inst = caplib::createSnowballAutoCallableNote(0.12, 2021.03.31, [2021.06.30, 202
 r = caplib::priceFxSnowballAutoCallableNote(inst, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_FX_SN_results")
 assert 2, presentValue(r) == presentValue(r)  // no legacy reference; finite check
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxSnowballAutoCallableNote rejects missing argument", syntaxError=1
+caplib::priceFxSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceFxSnowballAutoCallableNote rejects extra argument", syntaxError=1
+caplib::priceFxSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceFxSnowballAutoCallableNote rejects wrong type for pricingDate", exception=1
+caplib::priceFxSnowballAutoCallableNote("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxSnowballAutoCallableNote rejects wrong type for mode", exception=1
+caplib::priceFxSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceFxSnowballAutoCallableNote rejects null pricingDate", exception=1
+caplib::priceFxSnowballAutoCallableNote("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxSnowballAutoCallableNote rejects null mode", exception=1
+caplib::priceFxSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceFxSnowballAutoCallableNote rejects vector for scalar pricingDate", exception=1
+caplib::priceFxSnowballAutoCallableNote("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxSnowballAutoCallableNote rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceFxSnowballAutoCallableNote("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

@@ -134,3 +134,19 @@ pvs = caplib::buildPmVolatilitySurface(2022.03.09, "AU.SHFE", pmVolDef[0], pmOpt
     assert 1, true
 }
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildPmVolatilitySurface rejects null referenceDate", exception=1
+caplib::buildPmVolatilitySurface(date(), "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="buildPmVolatilitySurface rejects null underlying", exception=1
+caplib::buildPmVolatilitySurface(2024.01.01, string(), "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="buildPmVolatilitySurface rejects vector for scalar referenceDate", exception=1
+caplib::buildPmVolatilitySurface([2024.01.01], "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="buildPmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", "X", "X", "X", "X", false)

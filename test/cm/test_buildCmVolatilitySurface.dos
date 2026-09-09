@@ -228,3 +228,28 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="buildCmVolatilitySurface -> [handle, json]"
 r = caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true);
 assert 1, isHandleJson(r, "TF_CM_VOL") && hasJsonField(r[1], "vol_smiles")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCmVolatilitySurface rejects null referenceDate", exception=1
+caplib::buildCmVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "X", false)
+
+@testing:case="buildCmVolatilitySurface rejects null underlying", exception=1
+caplib::buildCmVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "X", false)
+
+@testing:case="buildCmVolatilitySurface rejects vector for scalar referenceDate", exception=1
+caplib::buildCmVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "X", false)
+
+@testing:case="buildCmVolatilitySurface rejects scalar for vector underlyingPrices", exception=1
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", false)
+
+@testing:case="buildCmVolatilitySurface rejects partially-null vector underlyingPrices", exception=1
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X", "X", "X", "X", false)
+
+@testing:case="buildCmVolatilitySurface rejects empty vector underlyingPrices", exception=1
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "X", false)
+
+@testing:case="buildCmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "X", false)

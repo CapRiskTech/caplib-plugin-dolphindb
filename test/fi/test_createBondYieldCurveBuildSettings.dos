@@ -231,3 +231,16 @@ for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
     result = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", curveType, "LINEAR_INTERP", "FLAT_EXTRAP", handle, true);
     assert 1, result[0] == handle && strpos(result[1], curveType) >= 0
 }
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondYieldCurveBuildSettings rejects null curveName", exception=1
+caplib::createBondYieldCurveBuildSettings(string(), "X", "X", "X", "X", false)
+
+@testing:case="createBondYieldCurveBuildSettings rejects null curveType", exception=1
+caplib::createBondYieldCurveBuildSettings("X", string(), "X", "X", "X", false)
+
+@testing:case="createBondYieldCurveBuildSettings rejects vector for scalar curveName", exception=1
+caplib::createBondYieldCurveBuildSettings(["X"], "X", "X", "X", "X", false)

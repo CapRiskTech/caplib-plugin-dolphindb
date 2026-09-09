@@ -230,3 +230,31 @@ inst = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "AC
 r = caplib::priceCmSnowballAutoCallableNote(inst, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true);
 assert 1, isPricingResultsJson(r, "TF_CM_SN_results")
 assert 2, abs(presentValue(r) - 981543.8093879742) < abs(981543.8093879742) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmSnowballAutoCallableNote rejects missing argument", syntaxError=1
+caplib::priceCmSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceCmSnowballAutoCallableNote rejects extra argument", syntaxError=1
+caplib::priceCmSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceCmSnowballAutoCallableNote rejects wrong type for pricingDate", exception=1
+caplib::priceCmSnowballAutoCallableNote("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmSnowballAutoCallableNote rejects wrong type for mode", exception=1
+caplib::priceCmSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceCmSnowballAutoCallableNote rejects null pricingDate", exception=1
+caplib::priceCmSnowballAutoCallableNote("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmSnowballAutoCallableNote rejects null mode", exception=1
+caplib::priceCmSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceCmSnowballAutoCallableNote rejects vector for scalar pricingDate", exception=1
+caplib::priceCmSnowballAutoCallableNote("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmSnowballAutoCallableNote rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceCmSnowballAutoCallableNote("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

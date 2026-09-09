@@ -224,3 +224,19 @@ assert 2, abs(presentValue(vanillaBondPricingResult) - 972284.4161978982) < abs(
 
 @testing:case="priceVanillaBond rejects wrong mktData handle", exception=1
 caplib::priceVanillaBond(vanillaBond, asOfDate, cnyTreasCpnBond200014Template[0], pricingSettings, fiRisk[0], "", "", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceVanillaBond rejects null pricingDate", exception=1
+caplib::priceVanillaBond("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceVanillaBond rejects null mode", exception=1
+caplib::priceVanillaBond("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceVanillaBond rejects vector for scalar pricingDate", exception=1
+caplib::priceVanillaBond("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceVanillaBond rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceVanillaBond("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

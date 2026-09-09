@@ -78,3 +78,9 @@ caplib::createThetaRiskSettings(1, "1", 1.0 / 365.0, "TF_THETA_RISK", false)
 
 @testing:case="createThetaRiskSettings rejects wrong type for scaling", exception=1
 caplib::createThetaRiskSettings(1, 1, "bad", "TF_THETA_RISK", false)
+
+@testing:case="createThetaRiskSettings rejects null shift", exception=1
+caplib::createThetaRiskSettings(1, int(), 1.0 / 365.0, "TF_THETA_RISK", false)
+
+@testing:case="createThetaRiskSettings rejects vector for scalar shift", exception=1
+caplib::createThetaRiskSettings(1, [1], 1.0 / 365.0, "TF_THETA_RISK", false)

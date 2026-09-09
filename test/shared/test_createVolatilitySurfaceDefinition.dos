@@ -80,3 +80,12 @@ caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", 1, "FLAT_EXTRAP", 
 
 @testing:case="createVolatilitySurfaceDefinition rejects wrong type for smileExtrapMethod", exception=1
 caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", 1, "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects null volSmileType", exception=1
+caplib::createVolatilitySurfaceDefinition(string(), "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects null smileMethod", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", string(), "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects vector for scalar volSmileType", exception=1
+caplib::createVolatilitySurfaceDefinition(["X"], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)

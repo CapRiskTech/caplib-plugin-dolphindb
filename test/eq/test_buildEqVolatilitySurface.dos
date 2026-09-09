@@ -160,3 +160,28 @@ mktData = caplib::createEqMktDataSet(
 @testing:case="buildEqVolatilitySurface -> [handle, json]"
 r = caplib::buildEqVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0], [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0], bsmAnalyticalSettings, "TF_EQ_VOL", true);
 assert 1, isHandleJson(r, "TF_EQ_VOL")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildEqVolatilitySurface rejects null referenceDate", exception=1
+caplib::buildEqVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+
+@testing:case="buildEqVolatilitySurface rejects null underlying", exception=1
+caplib::buildEqVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+
+@testing:case="buildEqVolatilitySurface rejects vector for scalar referenceDate", exception=1
+caplib::buildEqVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+
+@testing:case="buildEqVolatilitySurface rejects scalar for vector underlyingPrices", exception=1
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+
+@testing:case="buildEqVolatilitySurface rejects partially-null vector underlyingPrices", exception=1
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X", "X", "X", "X", "X", false)
+
+@testing:case="buildEqVolatilitySurface rejects empty vector underlyingPrices", exception=1
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "X", "X", false)
+
+@testing:case="buildEqVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "X", "X", false)

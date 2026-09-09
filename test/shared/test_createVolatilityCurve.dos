@@ -88,3 +88,21 @@ caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], 1, "LINEAR_INT
 
 @testing:case="createVolatilityCurve rejects wrong type for interp", exception=1
 caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", 1, "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+@testing:case="createVolatilityCurve rejects null referenceDate", exception=1
+caplib::createVolatilityCurve(date(), curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+@testing:case="createVolatilityCurve rejects null dcc", exception=1
+caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], string(), "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+@testing:case="createVolatilityCurve rejects vector for scalar referenceDate", exception=1
+caplib::createVolatilityCurve([2024.01.01], curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+@testing:case="createVolatilityCurve rejects scalar for vector pillarDates", exception=1
+caplib::createVolatilityCurve(asOfDate, [2024.01.01], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+@testing:case="createVolatilityCurve rejects partially-null vector pillarDates", exception=1
+caplib::createVolatilityCurve(asOfDate, [2024.01.01, date()], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+@testing:case="createVolatilityCurve rejects empty vector pillarDates", exception=1
+caplib::createVolatilityCurve(asOfDate, take(date, 0), [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)

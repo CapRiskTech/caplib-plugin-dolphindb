@@ -273,3 +273,16 @@ assert 1, isHandleJson(r, "TF_FX_MKT")
 @testing:case="createFxMktDataSet empty vol surface fallback"
 r2 = caplib::createFxMktDataSet(asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "TF_FX_MKT_FALLBACK", true);
 assert 1, isHandleJson(r2, "TF_FX_MKT_FALLBACK") && hasJsonField(r2[1], "vol_surf")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxMktDataSet rejects null asOfDate", exception=1
+caplib::createFxMktDataSet(date(), "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxMktDataSet rejects null domDiscountCurve", exception=1
+caplib::createFxMktDataSet(2024.01.01, string(), "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxMktDataSet rejects vector for scalar asOfDate", exception=1
+caplib::createFxMktDataSet([2024.01.01], "X", "X", "X", "X", "X", "X", false)

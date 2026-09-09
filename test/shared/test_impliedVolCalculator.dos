@@ -92,3 +92,19 @@ assert 1, iv > 0.0 && iv < 5.0
 
 @testing:case="impliedVolCalculator repeated call is deterministic"
 assert 1, caplib::impliedVolCalculator(asOfDate, 100.0, flatIrCurve, flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0) == iv
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="impliedVolCalculator rejects null calculationDate", exception=1
+caplib::impliedVolCalculator(date(), 100.0, flatIrCurve, flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+
+@testing:case="impliedVolCalculator rejects null underlyingPrice", exception=1
+caplib::impliedVolCalculator(asOfDate, double(), flatIrCurve, flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+
+@testing:case="impliedVolCalculator rejects vector for scalar calculationDate", exception=1
+caplib::impliedVolCalculator([2024.01.01], 100.0, flatIrCurve, flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+
+@testing:case="impliedVolCalculator rejects nonexistent handle discountCurveHandle", exception=1
+caplib::impliedVolCalculator(asOfDate, 100.0, "TF_HANDLE_DOES_NOT_EXIST", flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)

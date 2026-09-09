@@ -221,3 +221,19 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 @testing:case="buildBondYieldCurve -> [handle, json]"
 r = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", true);
 assert 1, isHandleJson(r, "TF_FI_YC")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondYieldCurve rejects null referenceDate", exception=1
+caplib::buildBondYieldCurve(date(), "X", "X", "X", "X", "X", "X", "X", false, "X", "X", false)
+
+@testing:case="buildBondYieldCurve rejects null curveName", exception=1
+caplib::buildBondYieldCurve(2024.01.01, "X", string(), "X", "X", "X", "X", "X", false, "X", "X", false)
+
+@testing:case="buildBondYieldCurve rejects vector for scalar referenceDate", exception=1
+caplib::buildBondYieldCurve([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false, "X", "X", false)
+
+@testing:case="buildBondYieldCurve rejects nonexistent handle buildSettingsHandle", exception=1
+caplib::buildBondYieldCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", "X", "X", false, "X", "X", false)

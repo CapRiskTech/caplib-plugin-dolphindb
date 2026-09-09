@@ -82,3 +82,12 @@ caplib::createFlatVolCurve(asOfDate, "bad", "TF_UNDERLYING", "TF_FLAT_VOL_CURVE"
 
 @testing:case="createFlatVolCurve rejects wrong type for underlying", exception=1
 caplib::createFlatVolCurve(asOfDate, 0.20, 1, "TF_FLAT_VOL_CURVE", false)
+
+@testing:case="createFlatVolCurve rejects null referenceDate", exception=1
+caplib::createFlatVolCurve(date(), 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+
+@testing:case="createFlatVolCurve rejects null volatility", exception=1
+caplib::createFlatVolCurve(asOfDate, double(), "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+
+@testing:case="createFlatVolCurve rejects vector for scalar referenceDate", exception=1
+caplib::createFlatVolCurve([2024.01.01], 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)

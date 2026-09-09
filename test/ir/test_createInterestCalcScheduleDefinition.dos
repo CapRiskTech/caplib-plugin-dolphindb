@@ -62,3 +62,10 @@ assert 1, calendarCreated;
 @testing:case="createInterestCalcScheduleDefinition -> [handle, json]"
 r = caplib::createInterestCalcScheduleDefinition("CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "INVALID_DATE_ROLL_CONVENTION", "TF_SCHED_CALC", true);
 assert 1, isHandleJson(r, "TF_SCHED_CALC")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestCalcScheduleDefinition rejects vector for scalar calendars", exception=1
+caplib::createInterestCalcScheduleDefinition(["X"], "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "INVALID_DATE_ROLL_CONVENTION", "TF_SCHED_CALC", false)

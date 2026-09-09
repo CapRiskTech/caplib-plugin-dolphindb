@@ -64,3 +64,10 @@ r = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MOD
 assert 1, isHandleJson(r, "TF_DEPO")
 
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createDepoTemplate rejects vector for scalar instName", exception=1
+caplib::createDepoTemplate(["X"], "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)

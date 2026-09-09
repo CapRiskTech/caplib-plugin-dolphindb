@@ -87,3 +87,12 @@ caplib::createPricingSettings(1, "ANALYTICAL", 0, 0, bsmModel, "", "", "TF_PRICI
 
 @testing:case="createPricingSettings rejects wrong type for pricingMethod", exception=1
 caplib::createPricingSettings("CNY", 1, 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
+
+@testing:case="createPricingSettings rejects null pricingMethod", exception=1
+caplib::createPricingSettings("CNY", string(), 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
+
+@testing:case="createPricingSettings rejects vector for scalar currency", exception=1
+caplib::createPricingSettings(["X"], "ANALYTICAL", 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
+
+@testing:case="createPricingSettings rejects nonexistent handle modelHandle", exception=1
+caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "TF_HANDLE_DOES_NOT_EXIST", "", "", "TF_PRICING_SETTINGS", false)

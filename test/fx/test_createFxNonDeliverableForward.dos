@@ -269,3 +269,16 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 @testing:case="createFxNonDeliverableForward -> handle"
 r = caplib::createFxNonDeliverableForward("USD", 10000.0, "CNH", 66916.0, "USD", 2021.07.01, 2021.06.30, "TF_FX_NDF", false);
 assert 1, r == "TF_FX_NDF"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxNonDeliverableForward rejects null buyAmount", exception=1
+caplib::createFxNonDeliverableForward("X", double(), "X", 0.02, "X", 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxNonDeliverableForward rejects null sellAmount", exception=1
+caplib::createFxNonDeliverableForward("X", 0.02, "X", double(), "X", 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxNonDeliverableForward rejects vector for scalar buyCurrency", exception=1
+caplib::createFxNonDeliverableForward(["X"], 0.02, "X", 0.02, "X", 2024.01.01, 2024.01.01, "X", false)

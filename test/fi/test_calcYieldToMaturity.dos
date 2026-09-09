@@ -221,3 +221,19 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 @testing:case="calcYieldToMaturity -> DOUBLE near coupon rate"
 r = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL");
 assert 1, typestr(r) == "DOUBLE"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcYieldToMaturity rejects null calculationDate", exception=1
+caplib::calcYieldToMaturity(date(), "X", "X", "X", 0.02, "X", "X")
+
+@testing:case="calcYieldToMaturity rejects null compoundingType", exception=1
+caplib::calcYieldToMaturity(2024.01.01, string(), "X", "X", 0.02, "X", "X")
+
+@testing:case="calcYieldToMaturity rejects vector for scalar calculationDate", exception=1
+caplib::calcYieldToMaturity([2024.01.01], "X", "X", "X", 0.02, "X", "X")
+
+@testing:case="calcYieldToMaturity rejects nonexistent handle bondHandle", exception=1
+caplib::calcYieldToMaturity(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X")

@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createAsianOption (CM) -> handle"
 inst = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_AS", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_AS"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createAsianOption rejects missing argument", syntaxError=1
+caplib::createAsianOption("X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X")
+
+@testing:case="createAsianOption rejects extra argument", syntaxError=1
+caplib::createAsianOption("X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createAsianOption rejects wrong type for payoffType", exception=1
+caplib::createAsianOption(1, 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects wrong type for strike", exception=1
+caplib::createAsianOption("X", "bad", 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects wrong type for expiry", exception=1
+caplib::createAsianOption("X", 0.02, "bad", 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects null payoffType", exception=1
+caplib::createAsianOption(string(), 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects null strike", exception=1
+caplib::createAsianOption("X", double(), 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects vector for scalar payoffType", exception=1
+caplib::createAsianOption(["X"], 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects scalar for vector fixingDates", exception=1
+caplib::createAsianOption("X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects partially-null vector fixingDates", exception=1
+caplib::createAsianOption("X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createAsianOption rejects empty vector fixingDates", exception=1
+caplib::createAsianOption("X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)

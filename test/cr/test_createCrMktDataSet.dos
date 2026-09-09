@@ -122,3 +122,16 @@ cds = caplib::buildCreditDefaultSwap(
 @testing:case="createCrMktDataSet -> [handle, json]"
 r = caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve[0], "TF_CR_MKT_NAME", "TF_CR_MKT", true);
 assert 1, isHandleJson(r, "TF_CR_MKT")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCrMktDataSet rejects null asOfDate", exception=1
+caplib::createCrMktDataSet(date(), "X", "X", "X", "X", false)
+
+@testing:case="createCrMktDataSet rejects null discountCurve", exception=1
+caplib::createCrMktDataSet(2024.01.01, string(), "X", "X", "X", false)
+
+@testing:case="createCrMktDataSet rejects vector for scalar asOfDate", exception=1
+caplib::createCrMktDataSet([2024.01.01], "X", "X", "X", "X", false)

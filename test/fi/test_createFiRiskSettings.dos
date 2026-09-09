@@ -221,3 +221,16 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 @testing:case="createFiRiskSettings -> [handle, json]"
 r = caplib::createFiRiskSettings(irRisk, creditRisk, thetaRisk, "TF_FI_RISK_NAME", "TF_FI_RISK", true);
 assert 1, isHandleJson(r, "TF_FI_RISK")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFiRiskSettings rejects null irCurveSettings", exception=1
+caplib::createFiRiskSettings(string(), "X", "X", "X", "X", false)
+
+@testing:case="createFiRiskSettings rejects null csCurveSettings", exception=1
+caplib::createFiRiskSettings("X", string(), "X", "X", "X", false)
+
+@testing:case="createFiRiskSettings rejects vector for scalar irCurveSettings", exception=1
+caplib::createFiRiskSettings(["X"], "X", "X", "X", "X", false)

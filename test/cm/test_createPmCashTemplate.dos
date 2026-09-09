@@ -70,3 +70,13 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 @testing:case="createPmCashTemplate -> [handle, json]"
 r = caplib::createPmCashTemplate("TF_PM_CASH", 0, "FOLLOWING", "CAL_CFETS", "ACT_365_FIXED", true);
 assert 1, isHandleJson(r, "TF_PM_CASH")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmCashTemplate rejects null startDelay", exception=1
+caplib::createPmCashTemplate("X", int(), "X", "X", "X", false)
+
+@testing:case="createPmCashTemplate rejects vector for scalar instName", exception=1
+caplib::createPmCashTemplate(["X"], 1, "X", "X", "X", false)

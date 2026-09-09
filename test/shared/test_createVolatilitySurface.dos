@@ -99,3 +99,21 @@ caplib::createVolatilitySurface(volSurfaceDefinition, "bad", [volSmile1d, volSmi
 
 @testing:case="createVolatilitySurface rejects wrong type for underlying", exception=1
 caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], curveDates, 1, "TF_VOL_SURFACE", false)
+
+@testing:case="createVolatilitySurface rejects null referenceDate", exception=1
+caplib::createVolatilitySurface(volSurfaceDefinition, date(), [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+
+@testing:case="createVolatilitySurface rejects vector for scalar referenceDate", exception=1
+caplib::createVolatilitySurface(volSurfaceDefinition, [2024.01.01], [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+
+@testing:case="createVolatilitySurface rejects scalar for vector termDates", exception=1
+caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], [2024.01.01], "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+
+@testing:case="createVolatilitySurface rejects partially-null vector termDates", exception=1
+caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], [2024.01.01, date()], "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+
+@testing:case="createVolatilitySurface rejects empty vector termDates", exception=1
+caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], take(date, 0), "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+
+@testing:case="createVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
+caplib::createVolatilitySurface("TF_HANDLE_DOES_NOT_EXIST", asOfDate, [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)

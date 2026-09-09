@@ -245,3 +245,16 @@ r2 = caplib::createVanillaBondTemplate(
     "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
     "CONST_NOTIONAL", 0.0, true);
 assert 1, isHandleJson(r2, "TF_FI_ZCB_TPL")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVanillaBondTemplate rejects null instName", exception=1
+caplib::createVanillaBondTemplate(string(), "X", 2024.01.01, 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false)
+
+@testing:case="createVanillaBondTemplate rejects null vanillaBondType", exception=1
+caplib::createVanillaBondTemplate("X", string(), 2024.01.01, 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false)
+
+@testing:case="createVanillaBondTemplate rejects vector for scalar instName", exception=1
+caplib::createVanillaBondTemplate(["X"], "X", 2024.01.01, 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false)

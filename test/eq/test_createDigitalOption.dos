@@ -228,3 +228,31 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createDigitalOption (CM) -> handle"
 inst = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_DG", false);
 assert 1, inst == "TF_CM_DG"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createDigitalOption rejects missing argument", syntaxError=1
+caplib::createDigitalOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X")
+
+@testing:case="createDigitalOption rejects extra argument", syntaxError=1
+caplib::createDigitalOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="createDigitalOption rejects wrong type for payoffType", exception=1
+caplib::createDigitalOption(1, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createDigitalOption rejects wrong type for strike", exception=1
+caplib::createDigitalOption("X", "bad", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createDigitalOption rejects wrong type for expiry", exception=1
+caplib::createDigitalOption("X", 0.02, "bad", 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createDigitalOption rejects null payoffType", exception=1
+caplib::createDigitalOption(string(), 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createDigitalOption rejects null strike", exception=1
+caplib::createDigitalOption("X", double(), 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createDigitalOption rejects vector for scalar payoffType", exception=1
+caplib::createDigitalOption(["X"], 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false)

@@ -230,3 +230,31 @@ inst = caplib::createDoubleTouchOption(2020.08.19, 2020.08.20, "DOWN_IN", underl
 r = caplib::priceCmDoubleTouchOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
 assert 1, isPricingResultsJson(r, "TF_CM_DT_results")
 assert 2, abs(presentValue(r) - 987357.584775172) < abs(987357.584775172) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmDoubleTouchOption rejects missing argument", syntaxError=1
+caplib::priceCmDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceCmDoubleTouchOption rejects extra argument", syntaxError=1
+caplib::priceCmDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceCmDoubleTouchOption rejects wrong type for pricingDate", exception=1
+caplib::priceCmDoubleTouchOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmDoubleTouchOption rejects wrong type for mode", exception=1
+caplib::priceCmDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceCmDoubleTouchOption rejects null pricingDate", exception=1
+caplib::priceCmDoubleTouchOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmDoubleTouchOption rejects null mode", exception=1
+caplib::priceCmDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceCmDoubleTouchOption rejects vector for scalar pricingDate", exception=1
+caplib::priceCmDoubleTouchOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmDoubleTouchOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceCmDoubleTouchOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

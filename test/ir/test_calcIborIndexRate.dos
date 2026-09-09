@@ -122,3 +122,19 @@ try {
     assert 1, true
 }
 assert 1, true
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcIborIndexRate rejects scalar for vector fixingDates", exception=1
+caplib::calcIborIndexRate([2024.01.01], "X", "X")
+
+@testing:case="calcIborIndexRate rejects partially-null vector fixingDates", exception=1
+caplib::calcIborIndexRate([2024.01.01, date()], "X", "X")
+
+@testing:case="calcIborIndexRate rejects empty vector fixingDates", exception=1
+caplib::calcIborIndexRate(take(date, 0), "X", "X")
+
+@testing:case="calcIborIndexRate rejects nonexistent handle iborIndexHandle", exception=1
+caplib::calcIborIndexRate([2024.01.01], "TF_HANDLE_DOES_NOT_EXIST", "X")

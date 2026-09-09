@@ -123,3 +123,19 @@ assert 1, isPricingResultsJson(cached, "TF_IR_SWAP_results") &&
 
 @testing:case="priceIrVanillaInstrument rejects wrong mktData handle", exception=1
 caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irCurve, irPricingSettings, irRisk[0], "", "", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceIrVanillaInstrument rejects null pricingDate", exception=1
+caplib::priceIrVanillaInstrument("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrVanillaInstrument rejects null mode", exception=1
+caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceIrVanillaInstrument rejects vector for scalar pricingDate", exception=1
+caplib::priceIrVanillaInstrument("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrVanillaInstrument rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceIrVanillaInstrument("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

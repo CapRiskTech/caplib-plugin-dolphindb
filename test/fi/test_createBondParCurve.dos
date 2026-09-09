@@ -224,3 +224,28 @@ assert 1, isHandleJson(p, "TF_FI_PAR")
 
 @testing:case="createBondParCurve rejects names/quotes length mismatch", exception=1
 caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, take(0.02, 3), "YIELD_TO_MATURITY", "TF_FI_PAR_BAD", true)
+
+@testing:case="createBondParCurve rejects invalid quoteType", exception=1
+caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "NOT_A_QUOTE_TYPE", "TF_FI_PAR_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondParCurve rejects null referenceDate", exception=1
+caplib::createBondParCurve(date(), "X", ["X"], [0.02], "X", "X", false)
+
+@testing:case="createBondParCurve rejects null currency", exception=1
+caplib::createBondParCurve(2024.01.01, string(), ["X"], [0.02], "X", "X", false)
+
+@testing:case="createBondParCurve rejects vector for scalar referenceDate", exception=1
+caplib::createBondParCurve([2024.01.01], "X", ["X"], [0.02], "X", "X", false)
+
+@testing:case="createBondParCurve rejects scalar for vector instrumentNames", exception=1
+caplib::createBondParCurve(2024.01.01, "X", ["X"], [0.02], "X", "X", false)
+
+@testing:case="createBondParCurve rejects partially-null vector instrumentNames", exception=1
+caplib::createBondParCurve(2024.01.01, "X", ["X", string()], [0.02], "X", "X", false)
+
+@testing:case="createBondParCurve rejects empty vector instrumentNames", exception=1
+caplib::createBondParCurve(2024.01.01, "X", take(string, 0), [0.02], "X", "X", false)

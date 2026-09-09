@@ -118,3 +118,19 @@ assert 1, isHandleJson(imd, "TF_IR_MKT")
 
 @testing:case="createIrMktDataSet rejects wrong discount curve handle", exception=1
 caplib::createIrMktDataSet(irAsOfDate, iborIndex[0], [iborIndex[0]], [irCurve], "TF_IR_MKT_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrMktDataSet rejects null asOfDate", exception=1
+caplib::createIrMktDataSet(date(), irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", false)
+
+@testing:case="createIrMktDataSet rejects partially-null vector underlyingInterestRates", exception=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, ["X", string()], [irCurve], "TF_IR_MKT", false)
+
+@testing:case="createIrMktDataSet rejects empty vector underlyingInterestRates", exception=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, take(string, 0), [irCurve], "TF_IR_MKT", false)
+
+@testing:case="createIrMktDataSet rejects nonexistent handle discountCurveHandle", exception=1
+caplib::createIrMktDataSet(irAsOfDate, "TF_HANDLE_DOES_NOT_EXIST", [iborIndex[0]], [irCurve], "TF_IR_MKT", false)

@@ -71,3 +71,12 @@ caplib::createVolSurfBuildSettings("1", 0.5, "TF_VOL_SURF_BUILD", false)
 
 @testing:case="createVolSurfBuildSettings rejects wrong type for fixedParamValue", exception=1
 caplib::createVolSurfBuildSettings(1, "bad", "TF_VOL_SURF_BUILD", false)
+
+@testing:case="createVolSurfBuildSettings rejects null fixedParamIndex", exception=1
+caplib::createVolSurfBuildSettings(int(), 0.5, "TF_VOL_SURF_BUILD", false)
+
+@testing:case="createVolSurfBuildSettings rejects null fixedParamValue", exception=1
+caplib::createVolSurfBuildSettings(1, double(), "TF_VOL_SURF_BUILD", false)
+
+@testing:case="createVolSurfBuildSettings rejects vector for scalar fixedParamIndex", exception=1
+caplib::createVolSurfBuildSettings([1], 0.5, "TF_VOL_SURF_BUILD", false)

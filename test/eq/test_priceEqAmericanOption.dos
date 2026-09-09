@@ -162,3 +162,31 @@ inst = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08
 r = caplib::priceEqAmericanOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_AM_results")
 assert 2, abs(presentValue(r) - 191589.25981578798) < abs(191589.25981578798) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqAmericanOption rejects missing argument", syntaxError=1
+caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceEqAmericanOption rejects extra argument", syntaxError=1
+caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceEqAmericanOption rejects wrong type for pricingDate", exception=1
+caplib::priceEqAmericanOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqAmericanOption rejects wrong type for mode", exception=1
+caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceEqAmericanOption rejects null pricingDate", exception=1
+caplib::priceEqAmericanOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqAmericanOption rejects null mode", exception=1
+caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceEqAmericanOption rejects vector for scalar pricingDate", exception=1
+caplib::priceEqAmericanOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqAmericanOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceEqAmericanOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

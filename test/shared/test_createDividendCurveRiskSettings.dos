@@ -77,3 +77,6 @@ caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, "1", 0, 2.0e-4, 0, "TF_DIV
 
 @testing:case="createDividendCurveRiskSettings rejects wrong type for scaling", exception=1
 caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, 0, 0, "bad", 0, "TF_DIV_RISK", false)
+
+@testing:case="createDividendCurveRiskSettings rejects null method", exception=1
+caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, int(), 0, 2.0e-4, 0, "TF_DIV_RISK", false)

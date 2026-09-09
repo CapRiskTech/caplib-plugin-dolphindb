@@ -73,3 +73,6 @@ caplib::createCalendar("TF_CAL", [2024.01.01], [2024.01.01], 1)
 
 @testing:case="createCalendar rejects wrong type for calName", exception=1
 caplib::createCalendar(1, [2024.01.01], [2024.01.01])
+
+@testing:case="createCalendar rejects vector for scalar calName", exception=1
+caplib::createCalendar(["X"], [2024.01.01], [2024.01.01])

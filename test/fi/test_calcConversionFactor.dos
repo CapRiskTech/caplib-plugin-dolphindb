@@ -55,3 +55,16 @@ def isMatrix(value) {
 @testing:case="calcConversionFactor -> DOUBLE in (0, 2)"
 r = caplib::calcConversionFactor(0.03, "ANNUAL", 0.06, 2026.06.01, 2025.06.10, 2025.03.01);
 assert 1, typestr(r) == "DOUBLE" && r > 0.0 && r < 2.0
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcConversionFactor rejects null bondCouponRate", exception=1
+caplib::calcConversionFactor(double(), "X", 0.02, 2024.01.01, 2024.01.01, 2024.01.01)
+
+@testing:case="calcConversionFactor rejects null bondCpnFreq", exception=1
+caplib::calcConversionFactor(0.02, string(), 0.02, 2024.01.01, 2024.01.01, 2024.01.01)
+
+@testing:case="calcConversionFactor rejects vector for scalar bondCouponRate", exception=1
+caplib::calcConversionFactor([0.02], "X", 0.02, 2024.01.01, 2024.01.01, 2024.01.01)

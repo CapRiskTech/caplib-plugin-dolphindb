@@ -273,3 +273,16 @@ assert 1, isHandleJson(r, "TF_FX_RISK")
 @testing:case="createFxRiskSettings option subset"
 r2 = caplib::createFxRiskSettings(irCurveRisk, priceRisk, "", "", "", "", "TF_FX_RISK_OPT", true);
 assert 1, isHandleJson(r2, "TF_FX_RISK_OPT")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxRiskSettings rejects null irCurveSettings", exception=1
+caplib::createFxRiskSettings(string(), "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxRiskSettings rejects null priceSettings", exception=1
+caplib::createFxRiskSettings("X", string(), "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxRiskSettings rejects vector for scalar irCurveSettings", exception=1
+caplib::createFxRiskSettings(["X"], "X", "X", "X", "X", "X", "X", false)

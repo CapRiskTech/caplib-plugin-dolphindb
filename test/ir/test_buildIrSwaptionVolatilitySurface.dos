@@ -114,3 +114,19 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 
 @testing:case="buildIrSwaptionVolatilitySurface rejects curve handle as quoteCubeHandle", exception=1
 caplib::buildIrSwaptionVolatilitySurface("SWAPTION", irAsOfDate, irCurve, irCurve, irCurve, irCurve, "TF_HANDLE_DOES_NOT_EXIST", "TF_HANDLE_DOES_NOT_EXIST", "TF_BAD_SWAPTION", false)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrSwaptionVolatilitySurface rejects null instName", exception=1
+caplib::buildIrSwaptionVolatilitySurface(string(), 2024.01.01, "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="buildIrSwaptionVolatilitySurface rejects null referenceDate", exception=1
+caplib::buildIrSwaptionVolatilitySurface("X", date(), "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="buildIrSwaptionVolatilitySurface rejects vector for scalar instName", exception=1
+caplib::buildIrSwaptionVolatilitySurface(["X"], 2024.01.01, "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="buildIrSwaptionVolatilitySurface rejects nonexistent handle quoteCubeHandle", exception=1
+caplib::buildIrSwaptionVolatilitySurface("X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", "X", "X", false)

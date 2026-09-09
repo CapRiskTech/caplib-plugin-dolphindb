@@ -162,3 +162,31 @@ inst = caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 20
 r = caplib::priceEqDoubleBarrierOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
 assert 1, isPricingResultsJson(r, "TF_DB_results")
 assert 2, abs(presentValue(r) - 191716.56241849496) < abs(191716.56241849496) * 1.0e-9 + 1.0e-6
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqDoubleBarrierOption rejects missing argument", syntaxError=1
+caplib::priceEqDoubleBarrierOption("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceEqDoubleBarrierOption rejects extra argument", syntaxError=1
+caplib::priceEqDoubleBarrierOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceEqDoubleBarrierOption rejects wrong type for pricingDate", exception=1
+caplib::priceEqDoubleBarrierOption("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqDoubleBarrierOption rejects wrong type for mode", exception=1
+caplib::priceEqDoubleBarrierOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceEqDoubleBarrierOption rejects null pricingDate", exception=1
+caplib::priceEqDoubleBarrierOption("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqDoubleBarrierOption rejects null mode", exception=1
+caplib::priceEqDoubleBarrierOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceEqDoubleBarrierOption rejects vector for scalar pricingDate", exception=1
+caplib::priceEqDoubleBarrierOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqDoubleBarrierOption rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceEqDoubleBarrierOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

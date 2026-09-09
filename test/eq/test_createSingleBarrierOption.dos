@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createSingleBarrierOption (CM) -> handle"
 inst = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice * 1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_SB", false);
 assert 1, inst == "TF_CM_SB"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createSingleBarrierOption rejects missing argument", syntaxError=1
+caplib::createSingleBarrierOption("X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X")
+
+@testing:case="createSingleBarrierOption rejects extra argument", syntaxError=1
+caplib::createSingleBarrierOption("X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createSingleBarrierOption rejects wrong type for payoffType", exception=1
+caplib::createSingleBarrierOption(1, 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects wrong type for strike", exception=1
+caplib::createSingleBarrierOption("X", "bad", 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects wrong type for expiry", exception=1
+caplib::createSingleBarrierOption("X", 0.02, "bad", 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects null payoffType", exception=1
+caplib::createSingleBarrierOption(string(), 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects null strike", exception=1
+caplib::createSingleBarrierOption("X", double(), 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects vector for scalar payoffType", exception=1
+caplib::createSingleBarrierOption(["X"], 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects scalar for vector fixingDates", exception=1
+caplib::createSingleBarrierOption("X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects partially-null vector fixingDates", exception=1
+caplib::createSingleBarrierOption("X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createSingleBarrierOption rejects empty vector fixingDates", exception=1
+caplib::createSingleBarrierOption("X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)

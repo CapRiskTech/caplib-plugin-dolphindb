@@ -125,3 +125,16 @@ assert 1, isHandleJson(r, "TF_CDS_PRC")
 
 @testing:case="createCdsPricingSettings rejects INT currency", exception=1
 caplib::createCdsPricingSettings(1, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDS_PRC_NAME", "TF_CDS_PRC_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCdsPricingSettings rejects null pricingCurrency", exception=1
+caplib::createCdsPricingSettings(string(), false, false, false, "X", "X", "X", "X", "X", false)
+
+@testing:case="createCdsPricingSettings rejects null numericalFix", exception=1
+caplib::createCdsPricingSettings("X", false, false, false, string(), "X", "X", "X", "X", false)
+
+@testing:case="createCdsPricingSettings rejects vector for scalar pricingCurrency", exception=1
+caplib::createCdsPricingSettings(["X"], false, false, false, "X", "X", "X", "X", "X", false)

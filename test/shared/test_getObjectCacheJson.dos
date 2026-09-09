@@ -77,3 +77,13 @@ caplib::getObjectCacheJson("FxSpotRate", "TF_IR_CURVE")
 
 @testing:case="getObjectCacheJson rejects unsupported protobuf type", exception=1
 caplib::getObjectCacheJson("NotAProtoType", "TF_IR_CURVE")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="getObjectCacheJson rejects null protobufType", exception=1
+caplib::getObjectCacheJson(string(), irCurve)
+
+@testing:case="getObjectCacheJson rejects vector for scalar protobufType", exception=1
+caplib::getObjectCacheJson(["X"], irCurve)

@@ -221,3 +221,16 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 @testing:case="createVanillaBondRiskSettings -> [handle, json]"
 r = caplib::createVanillaBondRiskSettings("", "", 1, "TF_FI_VB_RISK_NAME", "TF_FI_VB_RISK", true);
 assert 1, isHandleJson(r, "TF_FI_VB_RISK")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVanillaBondRiskSettings rejects null dv01", exception=1
+caplib::createVanillaBondRiskSettings(string(), "X", false, "X", "X", false)
+
+@testing:case="createVanillaBondRiskSettings rejects null cs01", exception=1
+caplib::createVanillaBondRiskSettings("X", string(), false, "X", "X", false)
+
+@testing:case="createVanillaBondRiskSettings rejects vector for scalar dv01", exception=1
+caplib::createVanillaBondRiskSettings(["X"], "X", false, "X", "X", false)

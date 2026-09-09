@@ -224,3 +224,16 @@ assert 1, b == "TF_FI_BOND"
 
 @testing:case="buildVanillaBond rejects wrong template handle", exception=1
 caplib::buildVanillaBond(1000000.0, cnyTreasStdCfets[0], "", 2020.10.10, "TF_FI_BOND_BAD", false)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildVanillaBond rejects null nominal", exception=1
+caplib::buildVanillaBond(double(), "X", "X", 2024.01.01, "X", false)
+
+@testing:case="buildVanillaBond rejects null instTemplate", exception=1
+caplib::buildVanillaBond(0.02, string(), "X", 2024.01.01, "X", false)
+
+@testing:case="buildVanillaBond rejects vector for scalar nominal", exception=1
+caplib::buildVanillaBond([0.02], "X", "X", 2024.01.01, "X", false)

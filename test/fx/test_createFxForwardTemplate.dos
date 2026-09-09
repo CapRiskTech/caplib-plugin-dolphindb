@@ -269,3 +269,16 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 @testing:case="createFxForwardTemplate -> [handle, json]"
 r = caplib::createFxForwardTemplate("TF_FX_FWD_TPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", ["CAL_EUTA", "CAL_GBLO"], true);
 assert 1, isHandleJson(r, "TF_FX_FWD_TPL") && hasJsonField(r[1], "fixing_offset")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxForwardTemplate rejects null instName", exception=1
+caplib::createFxForwardTemplate(string(), "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxForwardTemplate rejects null fixingOffset", exception=1
+caplib::createFxForwardTemplate("X", string(), "X", "X", "X", "X", false)
+
+@testing:case="createFxForwardTemplate rejects vector for scalar instName", exception=1
+caplib::createFxForwardTemplate(["X"], "X", "X", "X", "X", "X", false)

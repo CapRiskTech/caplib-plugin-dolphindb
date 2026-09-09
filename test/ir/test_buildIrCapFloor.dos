@@ -142,3 +142,15 @@ caplib::buildIrCapFloor("X", "bad", 2024.01.01, 2024.01.01, "X", 0.02, "X", "X",
 
 @testing:case="buildIrCapFloor rejects wrong type for startDate", exception=1
 caplib::buildIrCapFloor("X", 0.02, "bad", 2024.01.01, "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloor rejects null type", exception=1
+caplib::buildIrCapFloor(string(), 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloor rejects null strike", exception=1
+caplib::buildIrCapFloor("X", double(), 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloor rejects vector for scalar type", exception=1
+caplib::buildIrCapFloor(["X"], 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloor rejects nonexistent handle instTemplateHandle", exception=1
+caplib::buildIrCapFloor("X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", false)

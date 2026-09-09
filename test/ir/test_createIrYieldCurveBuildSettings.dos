@@ -121,3 +121,13 @@ caplib::createIrYieldCurveBuildSettings(irCurveName, "0", "CNY", irCurveName, ib
 
 @testing:case="createIrYieldCurveBuildSettings rejects currency/curve length mismatch", exception=1
 caplib::createIrYieldCurveBuildSettings(irCurveName, false, ["CNY", "USD"], [irCurveName], [iborIndex[0]], [irCurveName], "TF_IR_CBS_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrYieldCurveBuildSettings rejects partially-null vector discountCurrencyNames", exception=1
+caplib::createIrYieldCurveBuildSettings("X", false, ["X", string()], ["X"], ["X"], ["X"], "X", false)
+
+@testing:case="createIrYieldCurveBuildSettings rejects empty vector discountCurrencyNames", exception=1
+caplib::createIrYieldCurveBuildSettings("X", false, take(string, 0), ["X"], ["X"], ["X"], "X", false)

@@ -84,3 +84,12 @@ caplib::createScnSettings(-0.1, "bad", 5, 0, "TF_PRICE_SCN", false)
 
 @testing:case="createScnSettings rejects wrong type for size", exception=1
 caplib::createScnSettings(-0.1, 0.1, "1", 0, "TF_PRICE_SCN", false)
+
+@testing:case="createScnSettings rejects null min", exception=1
+caplib::createScnSettings(double(), 0.1, 5, 0, "TF_PRICE_SCN", false)
+
+@testing:case="createScnSettings rejects null max", exception=1
+caplib::createScnSettings(-0.1, double(), 5, 0, "TF_PRICE_SCN", false)
+
+@testing:case="createScnSettings rejects vector for scalar min", exception=1
+caplib::createScnSettings([0.02], 0.1, 5, 0, "TF_PRICE_SCN", false)

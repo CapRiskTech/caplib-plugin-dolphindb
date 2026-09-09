@@ -77,3 +77,6 @@ caplib::createPriceVolRiskSettings(1, 0.01, "bad", 0, 0, 0.01, 0.01, 0, "TF_PRIC
 
 @testing:case="createPriceVolRiskSettings rejects wrong type for method", exception=1
 caplib::createPriceVolRiskSettings(1, 0.01, 0.01, "1", 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)
+
+@testing:case="createPriceVolRiskSettings rejects null method", exception=1
+caplib::createPriceVolRiskSettings(1, 0.01, 0.01, int(), 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)

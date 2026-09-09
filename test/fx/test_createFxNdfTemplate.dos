@@ -269,3 +269,16 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 @testing:case="createFxNdfTemplate -> [handle, json]"
 r = caplib::createFxNdfTemplate("TF_FX_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK", "CAL_GBLO"], "USD", true);
 assert 1, isHandleJson(r, "TF_FX_NDF_TPL") && hasJsonField(r[1], "settlement_currency")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxNdfTemplate rejects null instName", exception=1
+caplib::createFxNdfTemplate(string(), "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxNdfTemplate rejects null fixingOffset", exception=1
+caplib::createFxNdfTemplate("X", string(), "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxNdfTemplate rejects vector for scalar instName", exception=1
+caplib::createFxNdfTemplate(["X"], "X", "X", "X", "X", "X", "X", false)

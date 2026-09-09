@@ -66,3 +66,16 @@ r = caplib::createBondLegDefinition(
     0, "MODIFIED_FOLLOWING", "", "", "ANNUAL",
     "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", true);
 assert 1, isHandleJson(r, "TF_FI_LEG")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondLegDefinition rejects null settlementDays", exception=1
+caplib::createBondLegDefinition("X", int(), "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
+
+@testing:case="createBondLegDefinition rejects null payDayOffset", exception=1
+caplib::createBondLegDefinition("X", 1, "X", "X", "X", "X", "X", "X", "X", int(), "X", "X", "X", "X", "X", "X", 1, "X", false)
+
+@testing:case="createBondLegDefinition rejects vector for scalar bondType", exception=1
+caplib::createBondLegDefinition(["X"], 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)

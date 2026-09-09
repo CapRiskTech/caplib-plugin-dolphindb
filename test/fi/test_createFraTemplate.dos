@@ -115,3 +115,16 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 @testing:case="createFraTemplate -> [handle, json]"
 r = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, true);
 assert 1, isHandleJson(r, "TF_FRA")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFraTemplate rejects null instName", exception=1
+caplib::createFraTemplate(string(), "X", "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", 1, false)
+
+@testing:case="createFraTemplate rejects null refIndex", exception=1
+caplib::createFraTemplate("X", string(), "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", 1, false)
+
+@testing:case="createFraTemplate rejects vector for scalar instName", exception=1
+caplib::createFraTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", 1, false)

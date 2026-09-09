@@ -150,3 +150,15 @@ caplib::priceIrMtmCrossCurrencySwap("X", "bad", "X", "X", "X", "X", "X", false)
 
 @testing:case="priceIrMtmCrossCurrencySwap rejects wrong type for mode", exception=1
 caplib::priceIrMtmCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+
+@testing:case="priceIrMtmCrossCurrencySwap rejects null pricingDate", exception=1
+caplib::priceIrMtmCrossCurrencySwap("X", date(), "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrMtmCrossCurrencySwap rejects null mode", exception=1
+caplib::priceIrMtmCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+
+@testing:case="priceIrMtmCrossCurrencySwap rejects vector for scalar pricingDate", exception=1
+caplib::priceIrMtmCrossCurrencySwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrMtmCrossCurrencySwap rejects nonexistent handle instrumentHandle", exception=1
+caplib::priceIrMtmCrossCurrencySwap("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)

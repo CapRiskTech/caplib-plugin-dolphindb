@@ -118,3 +118,10 @@ assert 1, isHandleJson(tpl, "TF_IR_SWAP_TPL") && hasJsonField(tpl[1], "instrumen
 
 @testing:case="createIrVanillaSwapTemplate rejects missing argument", syntaxError=1
 caplib::createIrVanillaSwapTemplate("CNY_SHIBOR_3M", 1)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrVanillaSwapTemplate rejects vector for scalar instName", exception=1
+caplib::createIrVanillaSwapTemplate(["X"], 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", false)

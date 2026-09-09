@@ -145,3 +145,15 @@ caplib::buildIrEuropeanSwaption(2024.01.01, "bad", "X", 2024.01.01, 0.02, "X", "
 
 @testing:case="buildIrEuropeanSwaption rejects wrong type for settlementType", exception=1
 caplib::buildIrEuropeanSwaption(2024.01.01, 2024.01.01, 1, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrEuropeanSwaption rejects null exerciseDate", exception=1
+caplib::buildIrEuropeanSwaption(date(), 2024.01.01, "X", 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrEuropeanSwaption rejects null settlementDate", exception=1
+caplib::buildIrEuropeanSwaption(2024.01.01, date(), "X", 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrEuropeanSwaption rejects vector for scalar exerciseDate", exception=1
+caplib::buildIrEuropeanSwaption([2024.01.01], 2024.01.01, "X", 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrEuropeanSwaption rejects nonexistent handle instTemplateHandle", exception=1
+caplib::buildIrEuropeanSwaption(2024.01.01, 2024.01.01, "X", 2024.01.01, 0.02, "X", "X", 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", false)

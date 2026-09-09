@@ -221,3 +221,16 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 @testing:case="calcFixedCpnBondParRate -> DOUBLE"
 r = caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0]);
 assert 1, typestr(r) == "DOUBLE"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFixedCpnBondParRate rejects null calculationDate", exception=1
+caplib::calcFixedCpnBondParRate(date(), "X", "X", "X")
+
+@testing:case="calcFixedCpnBondParRate rejects vector for scalar calculationDate", exception=1
+caplib::calcFixedCpnBondParRate([2024.01.01], "X", "X", "X")
+
+@testing:case="calcFixedCpnBondParRate rejects nonexistent handle bondHandle", exception=1
+caplib::calcFixedCpnBondParRate(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X")

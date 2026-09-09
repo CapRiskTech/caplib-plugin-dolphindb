@@ -228,3 +228,40 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createRangeAccrualOption (CM) -> handle"
 inst = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice * 0.95, underlyingPrice * 1.05, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 assert 1, inst == "TF_CM_RA"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createRangeAccrualOption rejects missing argument", syntaxError=1
+caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X")
+
+@testing:case="createRangeAccrualOption rejects extra argument", syntaxError=1
+caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false, 1)
+
+@testing:case="createRangeAccrualOption rejects wrong type for expiry", exception=1
+caplib::createRangeAccrualOption("bad", 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects wrong type for delivery", exception=1
+caplib::createRangeAccrualOption(2024.01.01, "bad", 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects wrong type for asset", exception=1
+caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, "bad", 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects null expiry", exception=1
+caplib::createRangeAccrualOption(date(), 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects null delivery", exception=1
+caplib::createRangeAccrualOption(2024.01.01, date(), 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects vector for scalar expiry", exception=1
+caplib::createRangeAccrualOption([2024.01.01], 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects scalar for vector fixingDates", exception=1
+caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects partially-null vector fixingDates", exception=1
+caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", [2024.01.01, date()], [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects empty vector fixingDates", exception=1
+caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)
