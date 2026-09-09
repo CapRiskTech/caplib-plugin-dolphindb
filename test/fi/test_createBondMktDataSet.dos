@@ -240,3 +240,6 @@ caplib::createBondMktDataSet(2024.01.01, string(), "X", "X", "X", "X", false)
 
 @testing:case="createBondMktDataSet rejects vector for scalar asOfDate", exception=1
 caplib::createBondMktDataSet([2024.01.01], "X", "X", "X", "X", "X", false)
+
+@testing:case="createBondMktDataSet rejects keyword arguments", syntaxError=1
+caplib::createBondMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", forwardCurve="X", name="X", tag="X", returnJson=false)

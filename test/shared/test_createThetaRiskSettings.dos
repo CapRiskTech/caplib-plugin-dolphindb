@@ -84,3 +84,6 @@ caplib::createThetaRiskSettings(1, int(), 1.0 / 365.0, "TF_THETA_RISK", false)
 
 @testing:case="createThetaRiskSettings rejects vector for scalar shift", exception=1
 caplib::createThetaRiskSettings(1, [1], 1.0 / 365.0, "TF_THETA_RISK", false)
+
+@testing:case="createThetaRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createThetaRiskSettings(theta=1, shift=1, scaling=1.0 / 365.0, handle="TF_THETA_RISK", returnJson=false)

@@ -244,3 +244,6 @@ caplib::buildEqIndexDividendCurve(2024.01.01, take(date, 0), [0.02], table([1], 
 
 @testing:case="buildEqIndexDividendCurve rejects nonexistent handle discountCurveHandle", exception=1
 caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", false)
+
+@testing:case="buildEqIndexDividendCurve rejects keyword arguments", syntaxError=1
+caplib::buildEqIndexDividendCurve(asOfDate=2024.01.01, termDates=[2024.01.01], futurePrices=[0.02], optionPrices=table([1], [2]), spot=0.02, discountCurveHandle="X", handle="X", returnJson=false)

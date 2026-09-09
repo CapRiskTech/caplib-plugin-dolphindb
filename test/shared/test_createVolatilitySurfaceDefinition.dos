@@ -89,3 +89,6 @@ caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", string(), "FLAT_EX
 
 @testing:case="createVolatilitySurfaceDefinition rejects vector for scalar volSmileType", exception=1
 caplib::createVolatilitySurfaceDefinition(["X"], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects keyword arguments", syntaxError=1
+caplib::createVolatilitySurfaceDefinition(volSmileType="STRIKE_VOL_SMILE", smileMethod="LINEAR_SMILE_METHOD", smileExtrapMethod="FLAT_EXTRAP", timeInterpMethod="LINEAR_IN_VOLATILITY", timeExtrapMethod="FLAT_IN_VOLATILITY", dayCountConvention="ACT_365_FIXED", volType="LOG_NORMAL_VOL_TYPE", wingStrikeType="ABOSULTE_STRIKE", lower=90.0, upper=110.0, handle="TF_VOL_SURFACE_DEFINITION", returnJson=false)

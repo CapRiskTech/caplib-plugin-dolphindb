@@ -80,3 +80,6 @@ caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, 0, 0, "bad", 0, "TF_DIV_RI
 
 @testing:case="createDividendCurveRiskSettings rejects null method", exception=1
 caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, int(), 0, 2.0e-4, 0, "TF_DIV_RISK", false)
+
+@testing:case="createDividendCurveRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createDividendCurveRiskSettings(delta=1, gamma=1, shift=2.0e-4, method=0, granularity=0, scaling=2.0e-4, threading=0, handle="TF_DIV_RISK", returnJson=false)

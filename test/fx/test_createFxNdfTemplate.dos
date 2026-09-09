@@ -288,3 +288,6 @@ caplib::createFxNdfTemplate("X", string(), "X", "X", "X", "X", "X", false)
 
 @testing:case="createFxNdfTemplate rejects vector for scalar instName", exception=1
 caplib::createFxNdfTemplate(["X"], "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxNdfTemplate rejects keyword arguments", syntaxError=1
+caplib::createFxNdfTemplate(instName="X", fixingOffset="X", currencyPair="X", deliveryDayConvention="X", fixingDayConvention="X", calendars="X", settlementCurrency="X", returnJson=false)

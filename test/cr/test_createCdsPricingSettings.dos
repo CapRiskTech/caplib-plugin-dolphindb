@@ -144,3 +144,6 @@ caplib::createCdsPricingSettings("X", false, false, false, string(), "X", "X", "
 
 @testing:case="createCdsPricingSettings rejects vector for scalar pricingCurrency", exception=1
 caplib::createCdsPricingSettings(["X"], false, false, false, "X", "X", "X", "X", "X", false)
+
+@testing:case="createCdsPricingSettings rejects keyword arguments", syntaxError=1
+caplib::createCdsPricingSettings(pricingCurrency="X", includeCurrentFlow=false, cashFlows=false, includeSettlementFlow=false, numericalFix="X", accrualBias="X", fwdsInCpnPeriod="X", name="X", tag="X", returnJson=false)

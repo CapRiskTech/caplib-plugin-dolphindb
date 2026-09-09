@@ -256,3 +256,6 @@ caplib::createEuropeanOption("X", double(), 2024.01.01, 2024.01.01, 0.02, "X", "
 
 @testing:case="createEuropeanOption rejects vector for scalar payoffType", exception=1
 caplib::createEuropeanOption(["X"], 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createEuropeanOption rejects keyword arguments", syntaxError=1
+caplib::createEuropeanOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", returnJson=false)

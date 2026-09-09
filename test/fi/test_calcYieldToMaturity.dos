@@ -218,9 +218,13 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 // Tests
 // ============================================================================
 
-@testing:case="calcYieldToMaturity -> DOUBLE near coupon rate"
-r = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL");
-assert 1, typestr(r) == "DOUBLE"
+@testing:case="calcYieldToMaturity -> frozen reference (price 99.5)"
+r1 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL");
+assert 1, abs(r1 - 0.022491085767160423) < 1.0e-12
+
+@testing:case="calcYieldToMaturity -> frozen reference (price 101.0, higher price lower yield)"
+r2 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 101.0, "CLEAN_PRICE", "ANNUAL");
+assert 1, abs(r2 - 0.01882428726065859) < 1.0e-12 && r2 < r1
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -243,3 +247,6 @@ caplib::calcYieldToMaturity([2024.01.01], "X", "X", "X", 0.02, "X", "X")
 
 @testing:case="calcYieldToMaturity rejects nonexistent handle bondHandle", exception=1
 caplib::calcYieldToMaturity(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X")
+
+@testing:case="calcYieldToMaturity rejects keyword arguments", syntaxError=1
+caplib::calcYieldToMaturity(calculationDate=2024.01.01, compoundingType="X", bondHandle="X", forwardCurveHandle="X", price=0.02, priceType="X", frequency="X")

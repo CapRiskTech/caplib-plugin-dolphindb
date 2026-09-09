@@ -70,6 +70,15 @@ caplib::createVolatilityCurve(asOfDate, curveDates, [0.2], "ACT_365_FIXED", "LIN
 @testing:case="createVolatilityCurve rejects longer vols", exception=1
 caplib::createVolatilityCurve(asOfDate, curveDates, [0.2, 0.21, 0.22], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_BAD", true)
 
+@testing:case="createVolatilityCurve supports boundary vector lengths 1/1024/65536"
+for (n in [1, 1024, 65536]) {
+    datesN = 2022.03.10 + 0..(n - 1);
+    valsN = take(0.02, n);
+    handleN = "TF_BND_" + string(n);
+    resultN = caplib::createVolatilityCurve(asOfDate, datesN, valsN, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", handleN, false);
+    assert 1, resultN == handleN
+}
+
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
@@ -106,3 +115,6 @@ caplib::createVolatilityCurve(asOfDate, [2024.01.01, date()], [0.20, 0.21], "ACT
 
 @testing:case="createVolatilityCurve rejects empty vector pillarDates", exception=1
 caplib::createVolatilityCurve(asOfDate, take(date, 0), [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+@testing:case="createVolatilityCurve rejects keyword arguments", syntaxError=1
+caplib::createVolatilityCurve(referenceDate=asOfDate, pillarDates=curveDates, vols=[0.20, 0.21], dcc="ACT_365_FIXED", interp="LINEAR_INTERP", extrap="FLAT_EXTRAP", underlying="TF_UNDERLYING", handle="TF_VOL_CURVE", returnJson=false)

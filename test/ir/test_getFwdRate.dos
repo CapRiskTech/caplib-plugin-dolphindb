@@ -94,3 +94,6 @@ caplib::getFwdRate(flatIrCurve, take(date, 0), 0.25)
 
 @testing:case="getFwdRate rejects nonexistent handle irCurveHandle", exception=1
 caplib::getFwdRate("TF_HANDLE_DOES_NOT_EXIST", curveDates, 0.25)
+
+@testing:case="getFwdRate rejects keyword arguments", syntaxError=1
+caplib::getFwdRate(irCurveHandle=flatIrCurve, dates=curveDates, tenor=0.25)

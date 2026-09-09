@@ -288,3 +288,6 @@ caplib::createFxForwardTemplate("X", string(), "X", "X", "X", "X", false)
 
 @testing:case="createFxForwardTemplate rejects vector for scalar instName", exception=1
 caplib::createFxForwardTemplate(["X"], "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxForwardTemplate rejects keyword arguments", syntaxError=1
+caplib::createFxForwardTemplate(instName="X", fixingOffset="X", currencyPair="X", deliveryDayConvention="X", fixingDayConvention="X", calendars="X", returnJson=false)

@@ -131,3 +131,6 @@ caplib::createIrVanillaSwapTemplate("CNY_SHIBOR_3M", 1, irFixedLeg[0], irFloatin
 
 @testing:case="createIrVanillaSwapTemplate rejects vector for scalar instName", exception=1
 caplib::createIrVanillaSwapTemplate(["X"], 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", false)
+
+@testing:case="createIrVanillaSwapTemplate rejects keyword arguments", syntaxError=1
+caplib::createIrVanillaSwapTemplate(instName="CNY_SHIBOR_3M", startDelay=1, leg1Definition=irFixedLeg[0], leg2Definition=irFloatingLeg[0], startConvention="SPOTSTART", returnJson=false)

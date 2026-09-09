@@ -264,3 +264,6 @@ caplib::createVanillaBondTemplate("X", string(), 2024.01.01, 1, 2024.01.01, "X",
 
 @testing:case="createVanillaBondTemplate rejects vector for scalar instName", exception=1
 caplib::createVanillaBondTemplate(["X"], "X", 2024.01.01, 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false)
+
+@testing:case="createVanillaBondTemplate rejects keyword arguments", syntaxError=1
+caplib::createVanillaBondTemplate(instName="X", vanillaBondType="X", issueDate=2024.01.01, settlementDays=1, startDate=2024.01.01, maturity="X", rate=0.02, currency="X", issuePrice=0.02, dayCount="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, exCouponPeriod="X", exCouponCalendar="X", exCouponDayConvention="X", exCouponEndOfMonth=false, notionalType="X", recoveryRate=0.02, returnJson=false)

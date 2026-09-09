@@ -91,3 +91,6 @@ caplib::createFlatVolatilitySurface(asOfDate, double(), "TF_UNDERLYING", "TF_FLA
 
 @testing:case="createFlatVolatilitySurface rejects vector for scalar referenceDate", exception=1
 caplib::createFlatVolatilitySurface([2024.01.01], 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_SURFACE", false)
+
+@testing:case="createFlatVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::createFlatVolatilitySurface(referenceDate=asOfDate, volatility=0.20, underlying="TF_UNDERLYING", handle="TF_FLAT_VOL_SURFACE", returnJson=false)

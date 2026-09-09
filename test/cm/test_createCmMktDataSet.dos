@@ -247,3 +247,6 @@ caplib::createCmMktDataSet(2024.01.01, string(), 0.02, "X", "X", "X", "X", "X", 
 
 @testing:case="createCmMktDataSet rejects vector for scalar asOfDate", exception=1
 caplib::createCmMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+
+@testing:case="createCmMktDataSet rejects keyword arguments", syntaxError=1
+caplib::createCmMktDataSet(asOfDate=2024.01.01, underlying="X", underlyingPrice=0.02, discountCurve="X", dividendCurve="X", volSurface="X", quantoDiscountCurve="X", quantoFxVolCurve="X", quantoCorrelation=0.02, handle="X", returnJson=false)

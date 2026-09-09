@@ -80,3 +80,6 @@ caplib::createVolSurfBuildSettings(1, double(), "TF_VOL_SURF_BUILD", false)
 
 @testing:case="createVolSurfBuildSettings rejects vector for scalar fixedParamIndex", exception=1
 caplib::createVolSurfBuildSettings([1], 0.5, "TF_VOL_SURF_BUILD", false)
+
+@testing:case="createVolSurfBuildSettings rejects keyword arguments", syntaxError=1
+caplib::createVolSurfBuildSettings(fixedParamIndex=1, fixedParamValue=0.5, handle="TF_VOL_SURF_BUILD", returnJson=false)

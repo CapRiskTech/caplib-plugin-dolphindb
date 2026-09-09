@@ -85,3 +85,6 @@ caplib::calcZSpread(0.02, date(), "X", "X", "X")
 
 @testing:case="calcZSpread rejects vector for scalar npv", exception=1
 caplib::calcZSpread([0.02], 2024.01.01, "X", "X", "X")
+
+@testing:case="calcZSpread rejects keyword arguments", syntaxError=1
+caplib::calcZSpread(npv=0.02, calculationDate=2024.01.01, bondBytes="X", discountCurveBytes="X", spreadCurveBytes="X")

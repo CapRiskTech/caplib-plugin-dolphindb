@@ -292,3 +292,6 @@ caplib::createFxRiskSettings("X", string(), "X", "X", "X", "X", "X", false)
 
 @testing:case="createFxRiskSettings rejects vector for scalar irCurveSettings", exception=1
 caplib::createFxRiskSettings(["X"], "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createFxRiskSettings(irCurveSettings="X", priceSettings="X", volSettings="X", priceVolSettings="X", thetaSettings="X", name="X", tag="X", returnJson=false)

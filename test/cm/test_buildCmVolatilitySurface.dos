@@ -259,3 +259,6 @@ caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X"
 
 @testing:case="buildCmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "X", false)
+
+@testing:case="buildCmVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::buildCmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", handle="X", returnJson=false)

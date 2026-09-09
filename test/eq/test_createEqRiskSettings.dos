@@ -153,3 +153,6 @@ caplib::createEqRiskSettings(false, false, false, false)
 
 @testing:case="createEqRiskSettings rejects extra argument", syntaxError=1
 caplib::createEqRiskSettings(false, false, false, false, "X", false, 1)
+
+@testing:case="createEqRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createEqRiskSettings(irDelta=false, priceDelta=false, volVega=false, theta=false, handle="X", returnJson=false)

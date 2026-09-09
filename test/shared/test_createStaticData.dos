@@ -82,3 +82,6 @@ caplib::createStaticData("CALENDAR", string())
 
 @testing:case="createStaticData rejects vector for scalar staticDataType", exception=1
 caplib::createStaticData(["X"], "X")
+
+@testing:case="createStaticData rejects keyword arguments", syntaxError=1
+caplib::createStaticData(staticDataType="CALENDAR", staticDataBytes="X")

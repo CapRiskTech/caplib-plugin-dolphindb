@@ -182,3 +182,6 @@ caplib::createEqMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.0
 
 @testing:case="createEqMktDataSet rejects nonexistent handle dcHandle", exception=1
 caplib::createEqMktDataSet(2024.01.01, "X", 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", 0.02, "X", false)
+
+@testing:case="createEqMktDataSet rejects keyword arguments", syntaxError=1
+caplib::createEqMktDataSet(asOfDate=2024.01.01, underlying="X", underlyingPrice=0.02, dcHandle="X", divHandle="X", volHandle="X", quantoDcHandle="X", quantoFxVolHandle="X", quantoCorrelation=0.02, handle="X", returnJson=false)

@@ -240,3 +240,6 @@ caplib::createCmRiskSettings(false, false, false, false)
 
 @testing:case="createCmRiskSettings rejects extra argument", syntaxError=1
 caplib::createCmRiskSettings(false, false, false, false, "X", false, 1)
+
+@testing:case="createCmRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createCmRiskSettings(irDelta=false, priceDelta=false, volVega=false, theta=false, handle="X", returnJson=false)

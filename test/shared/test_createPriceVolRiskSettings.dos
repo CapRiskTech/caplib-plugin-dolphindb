@@ -80,3 +80,6 @@ caplib::createPriceVolRiskSettings(1, 0.01, 0.01, "1", 0, 0.01, 0.01, 0, "TF_PRI
 
 @testing:case="createPriceVolRiskSettings rejects null method", exception=1
 caplib::createPriceVolRiskSettings(1, 0.01, 0.01, int(), 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)
+
+@testing:case="createPriceVolRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createPriceVolRiskSettings(vanna=1, priceShift=0.01, volShift=0.01, method=0, granularity=0, priceScaling=0.01, volScaling=0.01, threading=0, handle="TF_PRICE_VOL_RISK", returnJson=false)

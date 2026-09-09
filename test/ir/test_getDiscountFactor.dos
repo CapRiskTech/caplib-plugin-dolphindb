@@ -89,3 +89,6 @@ caplib::getDiscountFactor(flatIrCurve, take(date, 0))
 
 @testing:case="getDiscountFactor rejects nonexistent handle irCurveHandle", exception=1
 caplib::getDiscountFactor("TF_HANDLE_DOES_NOT_EXIST", curveDates)
+
+@testing:case="getDiscountFactor rejects keyword arguments", syntaxError=1
+caplib::getDiscountFactor(irCurveHandle=flatIrCurve, dates=curveDates)

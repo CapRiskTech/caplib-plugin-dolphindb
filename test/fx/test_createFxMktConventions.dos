@@ -291,3 +291,6 @@ caplib::createFxMktConventions("X", string(), "X", "X", "X", "X", "X", "X", fals
 
 @testing:case="createFxMktConventions rejects vector for scalar ccyPair", exception=1
 caplib::createFxMktConventions(["X"], "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxMktConventions rejects keyword arguments", syntaxError=1
+caplib::createFxMktConventions(ccyPair="X", atmType="X", shortDeltaType="X", longDeltaType="X", deltaCutoff="X", riskReversal="X", smileQuoteType="X", tag="X", returnJson=false)

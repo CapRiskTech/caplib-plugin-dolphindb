@@ -92,3 +92,6 @@ caplib::getSurvivalProbability("X", take(date, 0))
 
 @testing:case="getSurvivalProbability rejects nonexistent handle creditCurveHandle", exception=1
 caplib::getSurvivalProbability("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01])
+
+@testing:case="getSurvivalProbability rejects keyword arguments", syntaxError=1
+caplib::getSurvivalProbability(creditCurveHandle="X", dates=[2024.01.01])

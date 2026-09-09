@@ -128,3 +128,6 @@ caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_X
 
 @testing:case="createXccyIrRiskSettings rejects nonexistent handle irCurveRiskSettingsHandle", exception=1
 caplib::createXccyIrRiskSettings("TF_HANDLE_DOES_NOT_EXIST", irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", false)
+
+@testing:case="createXccyIrRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createXccyIrRiskSettings(irCurveRiskSettingsHandle=irCurveRisk, fxRiskSettingsHandle=irPriceRisk, thetaRiskSettingsHandle=irThetaRisk, handle="TF_IR_XCCY_RISK", returnJson=false)

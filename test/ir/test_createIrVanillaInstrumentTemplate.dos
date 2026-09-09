@@ -147,3 +147,6 @@ caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, ["X", string()], "X"
 
 @testing:case="createIrVanillaInstrumentTemplate rejects empty vector legDefinitions", exception=1
 caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, take(string, 0), "X", false)
+
+@testing:case="createIrVanillaInstrumentTemplate rejects keyword arguments", syntaxError=1
+caplib::createIrVanillaInstrumentTemplate(instType="X", instName="X", startConvention="X", startDelay=1, legDefinitions=["X"], tag="X", returnJson=false)

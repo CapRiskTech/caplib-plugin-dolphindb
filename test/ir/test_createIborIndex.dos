@@ -129,8 +129,14 @@ caplib::createIborIndex("TF_IBOR_BAD", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360",
 @testing:case="createIborIndex rejects missing argument", syntaxError=1
 caplib::createIborIndex("SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"])
 
+@testing:case="createIborIndex rejects extra argument", syntaxError=1
+caplib::createIborIndex("SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false, 1, 1)
+
 @testing:case="createIborIndex rejects null startDelay", exception=1
 caplib::createIborIndex("SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"], int(), "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 
 @testing:case="createIborIndex rejects vector for scalar indexName", exception=1
 caplib::createIborIndex(["X"], "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+
+@testing:case="createIborIndex rejects keyword arguments", syntaxError=1
+caplib::createIborIndex(indexName="SHIBOR_3M", indexTenor="3M", indexCcy="CNY", calendarList=["CAL_CFETS"], startDelay=1, dayCount="ACT_360", interestDayConvention="MODIFIED_FOLLOWING", dateRollConvention="INVALID_DATE_ROLL_CONVENTION", iborType="STANDARD_IBOR_INDEX", returnJson=false)

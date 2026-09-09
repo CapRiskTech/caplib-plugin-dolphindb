@@ -114,3 +114,6 @@ caplib::impliedVolCalculator([2024.01.01], 100.0, flatIrCurve, flatDividendCurve
 
 @testing:case="impliedVolCalculator rejects nonexistent handle discountCurveHandle", exception=1
 caplib::impliedVolCalculator(asOfDate, 100.0, "TF_HANDLE_DOES_NOT_EXIST", flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+
+@testing:case="impliedVolCalculator rejects keyword arguments", syntaxError=1
+caplib::impliedVolCalculator(calculationDate=asOfDate, underlyingPrice=100.0, discountCurveHandle=flatIrCurve, assetCurveHandle=flatDividendCurve, pricingSettingsHandle=pricingSettings, optionPrice=5.0, payoffType="CALL", exerciseType="EUROPEAN", expiryDate=2022.09.09, strike=100.0)

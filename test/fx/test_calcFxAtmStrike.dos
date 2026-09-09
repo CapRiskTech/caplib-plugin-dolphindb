@@ -270,6 +270,11 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 r = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 assert 1, abs(r - 1.1818054618389189) < 1.0e-12
 
+@testing:case="calcFxAtmStrike repeated calls are deterministic"
+rep1 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+rep2 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+assert 1, rep1 == rep2
+
 @testing:case="calcFxAtmStrike multiple expiries -> reviewed references"
 short = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.06.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 long = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.12.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
@@ -314,3 +319,6 @@ caplib::calcFxAtmStrike(["X"], 2024.01.01, "X", "X", "X", "X")
 
 @testing:case="calcFxAtmStrike rejects nonexistent handle volSurfaceHandle", exception=1
 caplib::calcFxAtmStrike("X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")
+
+@testing:case="calcFxAtmStrike rejects keyword arguments", syntaxError=1
+caplib::calcFxAtmStrike(atmType="X", expiryDate=2024.01.01, volSurfaceHandle="X", fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")

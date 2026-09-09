@@ -154,3 +154,6 @@ caplib::priceIrCapFloor("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceIrCapFloor rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceIrCapFloor("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrCapFloor rejects keyword arguments", syntaxError=1
+caplib::priceIrCapFloor(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)

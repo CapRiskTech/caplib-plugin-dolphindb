@@ -76,3 +76,6 @@ caplib::createIrSwaptionQuoteCube(string(), "X", false)
 
 @testing:case="createIrSwaptionQuoteCube rejects vector for scalar inputBytes", exception=1
 caplib::createIrSwaptionQuoteCube(["X"], "X", false)
+
+@testing:case="createIrSwaptionQuoteCube rejects keyword arguments", syntaxError=1
+caplib::createIrSwaptionQuoteCube(inputBytes="X", handle="X", returnJson=false)

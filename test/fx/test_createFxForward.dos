@@ -291,3 +291,6 @@ caplib::createFxForward("X", 0.02, "X", double(), 2024.01.01, 2024.01.01, "X", f
 
 @testing:case="createFxForward rejects vector for scalar buyCurrency", exception=1
 caplib::createFxForward(["X"], 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxForward rejects keyword arguments", syntaxError=1
+caplib::createFxForward(buyCurrency="X", buyAmount=0.02, sellCurrency="X", sellAmount=0.02, deliveryDate=2024.01.01, expiryDate=2024.01.01, tag="X", returnJson=false)

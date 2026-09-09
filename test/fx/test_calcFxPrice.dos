@@ -71,3 +71,6 @@ caplib::calcFxPrice(0.02, string(), "X", 0.02, "X", "X")
 
 @testing:case="calcFxPrice rejects null destCcy", exception=1
 caplib::calcFxPrice(0.02, "X", string(), 0.02, "X", "X")
+
+@testing:case="calcFxPrice rejects keyword arguments", syntaxError=1
+caplib::calcFxPrice(amount=0.02, currency="X", destCcy="X", fxRate=0.02, baseCcy="X", targetCcy="X")

@@ -157,3 +157,6 @@ caplib::buildIrEuropeanSwaption([2024.01.01], 2024.01.01, "X", 2024.01.01, 0.02,
 
 @testing:case="buildIrEuropeanSwaption rejects nonexistent handle instTemplateHandle", exception=1
 caplib::buildIrEuropeanSwaption(2024.01.01, 2024.01.01, "X", 2024.01.01, 0.02, "X", "X", 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", false)
+
+@testing:case="buildIrEuropeanSwaption rejects keyword arguments", syntaxError=1
+caplib::buildIrEuropeanSwaption(exerciseDate=2024.01.01, settlementDate=2024.01.01, settlementType="X", swapMaturity=2024.01.01, fixedRate=0.02, payReceive="X", currency="X", notionalAmount=0.02, instTemplateHandle="X", handle="X", returnJson=false)

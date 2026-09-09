@@ -52,9 +52,16 @@ def isMatrix(value) {
 // Tests
 // ============================================================================
 
-@testing:case="calcImpliedRepoRate -> DOUBLE"
-r = caplib::calcImpliedRepoRate(100.5, 1.02, 99.8, 0.03, 2025.03.01, 2024.12.01, 2025.03.15, "ACT_360", 2025.06.01, "SEMIANNUAL");
-assert 1, typestr(r) == "DOUBLE"
+@testing:case="calcImpliedRepoRate -> frozen reference (set 1)"
+r1 = caplib::calcImpliedRepoRate(100.5, 1.02, 99.8, 0.03, 2025.03.01, 2024.12.01, 2025.03.15, "ACT_360", 2025.06.01, "SEMIANNUAL");
+assert 1, abs(r1 - 0.722881295730624) < 1.0e-12
+
+@testing:case="calcImpliedRepoRate -> frozen reference (set 2, different inputs)"
+r2 = caplib::calcImpliedRepoRate(101.0, 1.01, 100.2, 0.025, 2025.06.01, 2025.03.01, 2025.06.15, "ACT_360", 2025.09.01, "QUARTERLY");
+assert 1, abs(r2 - 0.4863486466703943) < 1.0e-12
+
+@testing:case="calcImpliedRepoRate repeated calls are deterministic"
+assert 1, caplib::calcImpliedRepoRate(100.5, 1.02, 99.8, 0.03, 2025.03.01, 2024.12.01, 2025.03.15, "ACT_360", 2025.06.01, "SEMIANNUAL") == r1
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -74,3 +81,6 @@ caplib::calcImpliedRepoRate(0.02, double(), 0.02, 0.02, 2024.01.01, 2024.01.01, 
 
 @testing:case="calcImpliedRepoRate rejects vector for scalar futPrice", exception=1
 caplib::calcImpliedRepoRate([0.02], 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 2024.01.01, "X", 2024.01.01, "X")
+
+@testing:case="calcImpliedRepoRate rejects keyword arguments", syntaxError=1
+caplib::calcImpliedRepoRate(futPrice=0.02, conversionFactor=0.02, bondCleanPrice=0.02, bondCpnRate=0.02, asOfDate=2024.01.01, lastCpnDate=2024.01.01, settlementDate=2024.01.01, dayCount="X", nextCpnDate=2024.01.01, cpnFreq="X")

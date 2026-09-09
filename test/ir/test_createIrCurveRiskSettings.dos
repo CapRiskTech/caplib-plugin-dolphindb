@@ -80,3 +80,6 @@ caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, "1", 1, 1.0e-4, 0, "T
 
 @testing:case="createIrCurveRiskSettings rejects null method", exception=1
 caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, int(), 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)
+
+@testing:case="createIrCurveRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createIrCurveRiskSettings(delta=1, gamma=1, curvature=1, shift=1.0e-4, curvatureShift=5.0e-3, method=0, granularity=1, scaling=1.0e-4, threading=0, handle="TF_IR_CURVE_RISK", returnJson=false)

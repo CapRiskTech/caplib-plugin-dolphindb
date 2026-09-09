@@ -64,6 +64,15 @@ curveValues = [0.02, 0.025];
 result = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
 assert 1, result == "TF_DIVIDEND_CURVE"
 
+@testing:case="createDividendCurve supports boundary vector lengths 1/1024/65536"
+for (n in [1, 1024, 65536]) {
+    datesN = 2022.03.10 + 0..(n - 1);
+    valsN = take(0.02, n);
+    handleN = "TF_BND_" + string(n);
+    resultN = caplib::createDividendCurve(asOfDate, datesN, valsN, asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", handleN, handleN, false);
+    assert 1, resultN == handleN
+}
+
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
@@ -100,3 +109,6 @@ caplib::createDividendCurve(asOfDate, [2024.01.01, date()], [0.01, 0.01], asOfDa
 
 @testing:case="createDividendCurve rejects empty vector pillarDates", exception=1
 caplib::createDividendCurve(asOfDate, take(date, 0), [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+
+@testing:case="createDividendCurve rejects keyword arguments", syntaxError=1
+caplib::createDividendCurve(referenceDate=asOfDate, pillarDates=curveDates, pillarValues=[0.01, 0.01], yieldStartDate=asOfDate, dividendType="CONTINUOUS", dcc="ACT_365_FIXED", interp="LINEAR_INTERP", extrap="FLAT_EXTRAP", compounding="CONTINUOUS_COMPOUNDING", name="TF_DIVIDEND_CURVE", handle="TF_DIVIDEND_CURVE", returnJson=false)

@@ -134,3 +134,6 @@ caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED
 
 @testing:case="createFixedLegDefinition rejects vector for scalar currency", exception=1
 caplib::createFixedLegDefinition(["X"], "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+
+@testing:case="createFixedLegDefinition rejects keyword arguments", syntaxError=1
+caplib::createFixedLegDefinition(currency="CNY", calendar="CAL_CFETS", freq="QUARTERLY", dayCount="ACT_365_FIXED", interestDayConvention="MODIFIED_FOLLOWING", stubPolicy="INITIAL", brokenPeriodType="LONG", payDayOffset=0, payDayConvention="MODIFIED_FOLLOWING", notionalExchange="INVALID_NOTIONAL_EXCHANGE", tag="TF_IR_FIXED_LEG", returnJson=false)

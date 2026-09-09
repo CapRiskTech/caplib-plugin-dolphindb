@@ -147,3 +147,6 @@ caplib::buildCreditCurve([2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="buildCreditCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildCreditCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", false)
+
+@testing:case="buildCreditCurve rejects keyword arguments", syntaxError=1
+caplib::buildCreditCurve(asOfDate=2024.01.01, parCurveHandle="X", discountCurveHandle="X", curveName="X", method="X", handle="X", returnJson=false)

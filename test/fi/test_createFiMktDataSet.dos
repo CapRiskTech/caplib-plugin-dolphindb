@@ -240,3 +240,6 @@ caplib::createFiMktDataSet(2024.01.01, string(), "X", "X", "X", "X", "X", "X", f
 
 @testing:case="createFiMktDataSet rejects vector for scalar asOfDate", exception=1
 caplib::createFiMktDataSet([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFiMktDataSet rejects keyword arguments", syntaxError=1
+caplib::createFiMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", underlyingDiscountCurve="X", underlyingIncomeCurve="X", underlyingForwardCurve="X", name="X", tag="X", returnJson=false)

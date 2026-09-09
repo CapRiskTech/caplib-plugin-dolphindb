@@ -140,3 +140,6 @@ caplib::createIrMktDataSet(irAsOfDate, irCurve, take(string, 0), [irCurve], "TF_
 
 @testing:case="createIrMktDataSet rejects nonexistent handle discountCurveHandle", exception=1
 caplib::createIrMktDataSet(irAsOfDate, "TF_HANDLE_DOES_NOT_EXIST", [iborIndex[0]], [irCurve], "TF_IR_MKT", false)
+
+@testing:case="createIrMktDataSet rejects keyword arguments", syntaxError=1
+caplib::createIrMktDataSet(asOfDate=irAsOfDate, discountCurveHandle=irCurve, underlyingInterestRates=[iborIndex[0]], forwardCurveHandles=[irCurve], handle="TF_IR_MKT", returnJson=false)

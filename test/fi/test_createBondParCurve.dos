@@ -255,3 +255,6 @@ caplib::createBondParCurve(2024.01.01, "X", ["X", string()], [0.02], "X", "X", f
 
 @testing:case="createBondParCurve rejects empty vector instrumentNames", exception=1
 caplib::createBondParCurve(2024.01.01, "X", take(string, 0), [0.02], "X", "X", false)
+
+@testing:case="createBondParCurve rejects keyword arguments", syntaxError=1
+caplib::createBondParCurve(referenceDate=2024.01.01, currency="X", instrumentNames=["X"], quotes=[0.02], quoteType="X", curveName="X", returnJson=false)

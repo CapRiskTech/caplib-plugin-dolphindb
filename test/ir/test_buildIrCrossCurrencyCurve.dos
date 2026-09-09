@@ -162,3 +162,6 @@ caplib::buildIrCrossCurrencyCurve(2024.01.01, take(string, 0), ["X"], ["X"], "X"
 
 @testing:case="buildIrCrossCurrencyCurve rejects nonexistent handle buildSettingsHandles", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], "TF_HANDLE_DOES_NOT_EXIST", ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects keyword arguments", syntaxError=1
+caplib::buildIrCrossCurrencyCurve(referenceDate=2024.01.01, targetCurveNames=["X"], buildSettingsHandles=["X"], parCurveHandles=["X"], dayCountConvention="X", compoundingType="X", frequency="X", otherCurveHandles=["X"], fxSpotHandle="X", buildingMethod="X", calcJacobian=false, shift=0.02, finiteDifferenceMethod="X", threadingMode="X", targetCurveHandles=["X"], outputHandle="X", returnJson=false)

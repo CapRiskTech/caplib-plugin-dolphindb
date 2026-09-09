@@ -83,3 +83,6 @@ caplib::createModelFreePricingSettings("CNY", 1, int(), "TF_MODEL_FREE_PRICING",
 
 @testing:case="createModelFreePricingSettings rejects vector for scalar currency", exception=1
 caplib::createModelFreePricingSettings(["X"], 1, 0, "TF_MODEL_FREE_PRICING", false)
+
+@testing:case="createModelFreePricingSettings rejects keyword arguments", syntaxError=1
+caplib::createModelFreePricingSettings(currency="CNY", incCurrent=1, cashFlows=0, handle="TF_MODEL_FREE_PRICING", returnJson=false)

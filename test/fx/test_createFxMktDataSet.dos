@@ -292,3 +292,6 @@ caplib::createFxMktDataSet(2024.01.01, string(), "X", "X", "X", "X", "X", false)
 
 @testing:case="createFxMktDataSet rejects vector for scalar asOfDate", exception=1
 caplib::createFxMktDataSet([2024.01.01], "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxMktDataSet rejects keyword arguments", syntaxError=1
+caplib::createFxMktDataSet(asOfDate=2024.01.01, domDiscountCurve="X", forDiscountCurve="X", spot="X", volSurface="X", name="X", tag="X", returnJson=false)

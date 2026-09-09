@@ -96,3 +96,6 @@ caplib::createPricingSettings(["X"], "ANALYTICAL", 0, 0, bsmModel, "", "", "TF_P
 
 @testing:case="createPricingSettings rejects nonexistent handle modelHandle", exception=1
 caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "TF_HANDLE_DOES_NOT_EXIST", "", "", "TF_PRICING_SETTINGS", false)
+
+@testing:case="createPricingSettings rejects keyword arguments", syntaxError=1
+caplib::createPricingSettings(currency="CNY", pricingMethod="ANALYTICAL", incCurrent=0, cashFlows=0, modelHandle=bsmModel, pdeHandle="", mcHandle="", handle="TF_PRICING_SETTINGS", returnJson=false)

@@ -120,3 +120,6 @@ caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [0.02, double()], [0
 
 @testing:case="createVolatilitySmile rejects empty vector strikes", exception=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, take(double, 0), [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+
+@testing:case="createVolatilitySmile rejects keyword arguments", syntaxError=1
+caplib::createVolatilitySmile(volSmileType="STRIKE_VOL_SMILE", referenceDate=asOfDate, strikes=[90.0, 100.0, 110.0], vols=[0.22, 0.20, 0.21], smileMethod="LINEAR_SMILE_METHOD", extrapMethod="FLAT_EXTRAP", term=1.0, modelParams=array(DOUBLE, 0), auxiliaryParams=array(DOUBLE, 0), lower=90.0, upper=110.0, handle="TF_VOL_SMILE", returnJson=false)

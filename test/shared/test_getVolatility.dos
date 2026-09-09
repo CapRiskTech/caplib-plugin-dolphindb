@@ -90,3 +90,6 @@ caplib::getVolatility(flatVolSurface, take(date, 0), [95.0, 105.0])
 
 @testing:case="getVolatility rejects nonexistent handle volSurfaceHandle", exception=1
 caplib::getVolatility("TF_HANDLE_DOES_NOT_EXIST", curveDates, [95.0, 105.0])
+
+@testing:case="getVolatility rejects keyword arguments", syntaxError=1
+caplib::getVolatility(volSurfaceHandle=flatVolSurface, termDates=curveDates, strikes=[95.0, 105.0])

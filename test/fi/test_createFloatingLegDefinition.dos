@@ -145,3 +145,6 @@ caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFET
 
 @testing:case="createFloatingLegDefinition rejects vector for scalar currency", exception=1
 caplib::createFloatingLegDefinition(["X"], iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+@testing:case="createFloatingLegDefinition rejects keyword arguments", syntaxError=1
+caplib::createFloatingLegDefinition(currency="CNY", refIndex=iborIndex[0], calendar="CAL_CFETS", fixingCalendars=["CAL_CFETS"], freq="QUARTERLY", fixingFreq="QUARTERLY", dayCount="ACT_360", paymentDiscountMethod="NO_DISCOUNT", rateCalcMethod="STANDARD", spread=false, interestDayConvention="MODIFIED_FOLLOWING", stubPolicy="INITIAL", brokenPeriodType="LONG", payDayOffset=0, payDayConvention="MODIFIED_FOLLOWING", fixingDayConvention="MODIFIED_PRECEDING", fixingMode="IN_ADVANCE", fixingDayOffset=-1, notionalExchange="INVALID_NOTIONAL_EXCHANGE", tag="TF_IR_FLOATING_LEG", returnJson=false)

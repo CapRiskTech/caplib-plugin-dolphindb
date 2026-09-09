@@ -270,6 +270,12 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 r = caplib::createFxSpotRate(1.1761, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT", true);
 assert 1, isHandleJson(r, "TF_FXSPOT") && hasJsonField(r[1], "fx_rate")
 
+@testing:case="createFxSpotRate omitted returnJson uses default"
+assert 1, caplib::createFxSpotRate(1.1761, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT_OMIT") == "TF_FXSPOT_OMIT"
+
+@testing:case="createFxSpotRate null returnJson uses default"
+assert 1, caplib::createFxSpotRate(1.1761, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT_NULL", bool()) == "TF_FXSPOT_NULL"
+
 @testing:case="createFxSpotRate rejects negative value", exception=1
 caplib::createFxSpotRate(-7.0, "USD", "CNY", asOfDate, 2021.04.01, "TF_FXSPOT_BAD", true)
 
@@ -291,3 +297,6 @@ caplib::createFxSpotRate(0.02, "X", "X", date(), 2024.01.01, "X", false)
 
 @testing:case="createFxSpotRate rejects vector for scalar value", exception=1
 caplib::createFxSpotRate([0.02], "X", "X", 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxSpotRate rejects keyword arguments", syntaxError=1
+caplib::createFxSpotRate(value=0.02, baseCurrency="X", targetCurrency="X", refDate=2024.01.01, spotDate=2024.01.01, tag="X", returnJson=false)

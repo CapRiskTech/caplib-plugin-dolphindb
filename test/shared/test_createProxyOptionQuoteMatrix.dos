@@ -97,3 +97,6 @@ caplib::createProxyOptionQuoteMatrix(["X"], flatVolSurface, 100.0, 101.0, "TF_PR
 
 @testing:case="createProxyOptionQuoteMatrix rejects nonexistent handle refVolSurfaceHandle", exception=1
 caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", "TF_HANDLE_DOES_NOT_EXIST", 100.0, 101.0, "TF_PROXY_OPTION_QUOTES", false)
+
+@testing:case="createProxyOptionQuoteMatrix rejects keyword arguments", syntaxError=1
+caplib::createProxyOptionQuoteMatrix(underlyingName="TF_UNDERLYING", refVolSurfaceHandle=flatVolSurface, refUnderlyingPrice=100.0, underlyingPrice=101.0, handle="TF_PROXY_OPTION_QUOTES", returnJson=false)

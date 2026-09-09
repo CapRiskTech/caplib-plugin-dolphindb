@@ -172,3 +172,6 @@ caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01, date()], ma
 
 @testing:case="createEqOptionQuoteMatrix rejects empty vector termDates", exception=1
 caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, take(date, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects keyword arguments", syntaxError=1
+caplib::createEqOptionQuoteMatrix(exerciseType="X", underlyingType="X", asOfDate=2024.01.01, termDates=[2024.01.01], payoffTypes=matrix([0.2]), optionPrices=matrix([0.2]), optionStrikes=matrix([0.2]), underlying="X", handle="X", returnJson=false)

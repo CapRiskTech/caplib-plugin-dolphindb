@@ -240,3 +240,6 @@ caplib::createFiRiskSettings("X", string(), "X", "X", "X", false)
 
 @testing:case="createFiRiskSettings rejects vector for scalar irCurveSettings", exception=1
 caplib::createFiRiskSettings(["X"], "X", "X", "X", "X", false)
+
+@testing:case="createFiRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createFiRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="X", tag="X", returnJson=false)

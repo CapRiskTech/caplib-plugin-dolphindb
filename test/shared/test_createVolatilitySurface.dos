@@ -117,3 +117,6 @@ caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, vol
 
 @testing:case="createVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
 caplib::createVolatilitySurface("TF_HANDLE_DOES_NOT_EXIST", asOfDate, [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+
+@testing:case="createVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::createVolatilitySurface(definitionHandle=volSurfaceDefinition, referenceDate=asOfDate, volSmileHandles=[volSmile1d, volSmile3y], termDates=curveDates, underlying="TF_UNDERLYING", handle="TF_VOL_SURFACE", returnJson=false)

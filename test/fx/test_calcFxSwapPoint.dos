@@ -270,6 +270,10 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 r = caplib::calcFxSwapPoint(asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 assert 1, abs(r - 0.002297818198062185) < 1.0e-12
 
+@testing:case="calcFxSwapPoint -> frozen reference (set 2, later delivery)"
+r2 = caplib::calcFxSwapPoint(asOfDate, "EUR", "USD", 2021.10.01, eurusdSpotRate[0], usdCurve, eurCurve);
+assert 1, abs(r2 - 0.004651950680687911) < 1.0e-12 && r2 > r
+
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
@@ -291,3 +295,6 @@ caplib::calcFxSwapPoint([2024.01.01], "X", "X", 2024.01.01, "X", "X", "X")
 
 @testing:case="calcFxSwapPoint rejects nonexistent handle fxSpotRateHandle", exception=1
 caplib::calcFxSwapPoint(2024.01.01, "X", "X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X")
+
+@testing:case="calcFxSwapPoint rejects keyword arguments", syntaxError=1
+caplib::calcFxSwapPoint(calculationDate=2024.01.01, leftCcy="X", rightCcy="X", deliveryDate=2024.01.01, fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")

@@ -86,3 +86,6 @@ caplib::createPmCashTemplate("X", int(), "X", "X", "X", false)
 
 @testing:case="createPmCashTemplate rejects vector for scalar instName", exception=1
 caplib::createPmCashTemplate(["X"], 1, "X", "X", "X", false)
+
+@testing:case="createPmCashTemplate rejects keyword arguments", syntaxError=1
+caplib::createPmCashTemplate(instName="X", startDelay=1, deliveryDayConvention="X", calendars="X", dayCount="X", returnJson=false)

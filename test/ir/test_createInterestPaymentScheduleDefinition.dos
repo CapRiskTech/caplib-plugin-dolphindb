@@ -78,3 +78,6 @@ caplib::createInterestPaymentScheduleDefinition("X", "X", "X", int(), "X", "X", 
 
 @testing:case="createInterestPaymentScheduleDefinition rejects vector for scalar calendars", exception=1
 caplib::createInterestPaymentScheduleDefinition(["X"], "X", "X", 1, "X", "X", false)
+
+@testing:case="createInterestPaymentScheduleDefinition rejects keyword arguments", syntaxError=1
+caplib::createInterestPaymentScheduleDefinition(calendars="X", frequency="X", payDayMode="X", payDayOffset=1, payDayConvention="X", tag="X", returnJson=false)

@@ -265,3 +265,6 @@ caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02,
 
 @testing:case="createRangeAccrualOption rejects empty vector fixingDates", exception=1
 caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)
+
+@testing:case="createRangeAccrualOption rejects keyword arguments", syntaxError=1
+caplib::createRangeAccrualOption(expiry=2024.01.01, delivery=2024.01.01, asset=0.02, cash=0.02, lowerBarrier=0.02, upperBarrier=0.02, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)

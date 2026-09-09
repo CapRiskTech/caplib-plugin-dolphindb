@@ -88,3 +88,6 @@ caplib::createFlatCreditCurve(asOfDate, double(), "TF_FLAT_CR_CURVE", false)
 
 @testing:case="createFlatCreditCurve rejects vector for scalar referenceDate", exception=1
 caplib::createFlatCreditCurve([2024.01.01], 0.002, "TF_FLAT_CR_CURVE", false)
+
+@testing:case="createFlatCreditCurve rejects keyword arguments", syntaxError=1
+caplib::createFlatCreditCurve(referenceDate=asOfDate, hazardRate=0.002, handle="TF_FLAT_CR_CURVE", returnJson=false)

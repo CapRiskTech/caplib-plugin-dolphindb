@@ -293,3 +293,6 @@ caplib::priceFxSwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxSwap rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceFxSwap("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxSwap rejects keyword arguments", syntaxError=1
+caplib::priceFxSwap(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)

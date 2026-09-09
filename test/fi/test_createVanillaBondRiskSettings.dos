@@ -240,3 +240,6 @@ caplib::createVanillaBondRiskSettings("X", string(), false, "X", "X", false)
 
 @testing:case="createVanillaBondRiskSettings rejects vector for scalar dv01", exception=1
 caplib::createVanillaBondRiskSettings(["X"], "X", false, "X", "X", false)
+
+@testing:case="createVanillaBondRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createVanillaBondRiskSettings(dv01="X", cs01="X", theta=false, name="X", tag="X", returnJson=false)

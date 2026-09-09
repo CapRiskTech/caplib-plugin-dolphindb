@@ -117,3 +117,6 @@ caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X", string()], [0.02], matrix(
 
 @testing:case="createIrCapFloorQuoteMatrix rejects empty vector terms", exception=1
 caplib::createIrCapFloorQuoteMatrix(2024.01.01, take(string, 0), [0.02], matrix([0.2]), "X", 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects keyword arguments", syntaxError=1
+caplib::createIrCapFloorQuoteMatrix(asOfDate=2024.01.01, terms=["X"], strikes=[0.02], vols=matrix([0.2]), instName="X", factor=0.02, handle="X", returnJson=false)

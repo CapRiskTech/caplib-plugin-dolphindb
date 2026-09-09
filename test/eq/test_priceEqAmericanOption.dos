@@ -190,3 +190,6 @@ caplib::priceEqAmericanOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqAmericanOption rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceEqAmericanOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="priceEqAmericanOption rejects keyword arguments", syntaxError=1
+caplib::priceEqAmericanOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)

@@ -265,3 +265,6 @@ caplib::createDoubleTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X
 
 @testing:case="createDoubleTouchOption rejects empty vector fixingDates", exception=1
 caplib::createDoubleTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)
+
+@testing:case="createDoubleTouchOption rejects keyword arguments", syntaxError=1
+caplib::createDoubleTouchOption(expiry=2024.01.01, delivery=2024.01.01, lowerBarrierType="X", lowerBarrierValue=0.02, upperBarrierType="X", upperBarrierValue=0.02, barrierObsType="X", paymentType="X", cash=0.02, asset=0.02, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)

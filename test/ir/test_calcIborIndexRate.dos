@@ -144,3 +144,6 @@ caplib::calcIborIndexRate(take(date, 0), "X", "X")
 
 @testing:case="calcIborIndexRate rejects nonexistent handle iborIndexHandle", exception=1
 caplib::calcIborIndexRate([2024.01.01], "TF_HANDLE_DOES_NOT_EXIST", "X")
+
+@testing:case="calcIborIndexRate rejects keyword arguments", syntaxError=1
+caplib::calcIborIndexRate(fixingDates=[2024.01.01], iborIndexHandle="X", irYieldCurveHandle="X")

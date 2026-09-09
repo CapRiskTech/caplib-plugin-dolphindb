@@ -134,3 +134,6 @@ caplib::createFraTemplate("X", string(), "X", "X", "X", "X", "X", "X", "X", 1, "
 
 @testing:case="createFraTemplate rejects vector for scalar instName", exception=1
 caplib::createFraTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", 1, false)
+
+@testing:case="createFraTemplate rejects keyword arguments", syntaxError=1
+caplib::createFraTemplate(instName="X", refIndex="X", currency="X", calendar="X", fixingCalendars="X", freq="X", dayCount="X", paymentDiscountMethod="X", interestDayConvention="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingDayOffset=1, returnJson=false)

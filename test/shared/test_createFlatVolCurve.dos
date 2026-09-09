@@ -91,3 +91,6 @@ caplib::createFlatVolCurve(asOfDate, double(), "TF_UNDERLYING", "TF_FLAT_VOL_CUR
 
 @testing:case="createFlatVolCurve rejects vector for scalar referenceDate", exception=1
 caplib::createFlatVolCurve([2024.01.01], 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+
+@testing:case="createFlatVolCurve rejects keyword arguments", syntaxError=1
+caplib::createFlatVolCurve(referenceDate=asOfDate, volatility=0.20, underlying="TF_UNDERLYING", handle="TF_FLAT_VOL_CURVE", returnJson=false)

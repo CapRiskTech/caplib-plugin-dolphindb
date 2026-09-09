@@ -258,3 +258,6 @@ caplib::priceCmDigitalOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmDigitalOption rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceCmDigitalOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCmDigitalOption rejects keyword arguments", syntaxError=1
+caplib::priceCmDigitalOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)

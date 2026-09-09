@@ -80,3 +80,6 @@ caplib::createVolRiskSettings(1, 1, 0.01, 0, 0, "bad", 0, "TF_VOL_RISK", false)
 
 @testing:case="createVolRiskSettings rejects null method", exception=1
 caplib::createVolRiskSettings(1, 1, 0.01, int(), 0, 0.01, 0, "TF_VOL_RISK", false)
+
+@testing:case="createVolRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createVolRiskSettings(vega=1, volga=1, shift=0.01, method=0, granularity=0, scaling=0.01, threading=0, handle="TF_VOL_RISK", returnJson=false)

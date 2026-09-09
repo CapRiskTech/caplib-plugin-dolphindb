@@ -256,3 +256,6 @@ caplib::createAmericanOption("X", double(), 2024.01.01, 2024.01.01, 1, 0.02, "X"
 
 @testing:case="createAmericanOption rejects vector for scalar payoffType", exception=1
 caplib::createAmericanOption(["X"], 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createAmericanOption rejects keyword arguments", syntaxError=1
+caplib::createAmericanOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", returnJson=false)

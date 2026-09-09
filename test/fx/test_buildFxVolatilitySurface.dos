@@ -291,3 +291,6 @@ caplib::buildFxVolatilitySurface([2024.01.01], "X", "X", "X", "X", 0.02, 2024.01
 
 @testing:case="buildFxVolatilitySurface rejects nonexistent handle marketConventionsHandle", exception=1
 caplib::buildFxVolatilitySurface(2024.01.01, "X", "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="buildFxVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::buildFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", marketConventionsHandle="X", quoteMatrixHandle="X", spotRate=0.02, spotRefDate=2024.01.01, spotDate=2024.01.01, domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X", definitionHandle="X", buildSettingsHandle="X", handle="X", returnJson=false)

@@ -91,3 +91,6 @@ caplib::createFlatDividendCurve(asOfDate, double(), "TF_FLAT_DIVIDEND_CURVE", "T
 
 @testing:case="createFlatDividendCurve rejects vector for scalar referenceDate", exception=1
 caplib::createFlatDividendCurve([2024.01.01], 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+
+@testing:case="createFlatDividendCurve rejects keyword arguments", syntaxError=1
+caplib::createFlatDividendCurve(referenceDate=asOfDate, dividend=0.01, curveName="TF_FLAT_DIVIDEND_CURVE", handle="TF_FLAT_DIVIDEND_CURVE", returnJson=false)

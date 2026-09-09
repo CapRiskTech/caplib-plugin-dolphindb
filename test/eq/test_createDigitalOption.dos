@@ -256,3 +256,6 @@ caplib::createDigitalOption("X", double(), 2024.01.01, 2024.01.01, 0.02, 0.02, 0
 
 @testing:case="createDigitalOption rejects vector for scalar payoffType", exception=1
 caplib::createDigitalOption(["X"], 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createDigitalOption rejects keyword arguments", syntaxError=1
+caplib::createDigitalOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, cash=0.02, asset=0.02, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", returnJson=false)

@@ -81,5 +81,11 @@ caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]))
 @testing:case="createPmParRateCurve rejects extra argument", syntaxError=1
 caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]), "X", false, 1)
 
+@testing:case="createPmParRateCurve rejects null asOfDate", exception=1
+caplib::createPmParRateCurve(date(), "X", "X", matrix([0.2]), "X", false)
+
 @testing:case="createPmParRateCurve rejects vector for scalar asOfDate", exception=1
 caplib::createPmParRateCurve([2024.01.01], "X", "X", matrix([0.2]), "X", false)
+
+@testing:case="createPmParRateCurve rejects keyword arguments", syntaxError=1
+caplib::createPmParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", pillarsTable=matrix([0.2]), tag="X", returnJson=false)

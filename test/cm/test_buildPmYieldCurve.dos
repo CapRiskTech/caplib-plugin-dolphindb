@@ -156,3 +156,6 @@ caplib::buildPmYieldCurve([2024.01.01], "X", "X", "X", 0.02, false, "X", "X", "X
 
 @testing:case="buildPmYieldCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildPmYieldCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", 0.02, false, "X", "X", "X", "X", "X", 0.02, "X", "X", "X", false)
+
+@testing:case="buildPmYieldCurve rejects keyword arguments", syntaxError=1
+caplib::buildPmYieldCurve(referenceDate=2024.01.01, parCurveHandle="X", discountCurveHandle="X", pmTemplateHandle="X", spotPrice=0.02, calcJacobian=false, dayCount="X", interpMethod="X", extrapMethod="X", curveType="X", curveName="X", shift=0.02, method="X", mode="X", handle="X", returnJson=false)

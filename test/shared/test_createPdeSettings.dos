@@ -83,3 +83,6 @@ caplib::createPdeSettings(101, 201, -5.0, "bad", 0, 11, 0.0, 10.0, 1, 3, -4.0, 4
 
 @testing:case="createPdeSettings rejects vector for scalar tSize", exception=1
 caplib::createPdeSettings([1], 201, -5.0, 5.0, 0, 11, 0.0, 10.0, 1, 3, -4.0, 4.0, 0, 0.1, 0.1, 1.0, 2, 1, 1, 3, 1, 1, "TF_PDE_SETTINGS", false)
+
+@testing:case="createPdeSettings rejects keyword arguments", syntaxError=1
+caplib::createPdeSettings(tSize=101, xSize=201, xMin=-5.0, xMax=5.0, xMinMaxType=0, ySize=11, yMin=0.0, yMax=10.0, yMinMaxType=1, zSize=3, zMin=-4.0, zMax=4.0, zMinMaxType=0, xDensity=0.1, yDensity=0.1, zDensity=1.0, xGridType=2, yGridType=1, zGridType=1, xInterp=3, yInterp=1, zInterp=1, handle="TF_PDE_SETTINGS", returnJson=false)

@@ -88,3 +88,6 @@ caplib::getZeroRate(flatIrCurve, take(date, 0))
 
 @testing:case="getZeroRate rejects nonexistent handle irCurveHandle", exception=1
 caplib::getZeroRate("TF_HANDLE_DOES_NOT_EXIST", curveDates)
+
+@testing:case="getZeroRate rejects keyword arguments", syntaxError=1
+caplib::getZeroRate(irCurveHandle=flatIrCurve, dates=curveDates)

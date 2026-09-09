@@ -85,3 +85,6 @@ caplib::createBondLegDefinition("X", 1, "X", "X", "X", "X", "X", "X", "X", int()
 
 @testing:case="createBondLegDefinition rejects vector for scalar bondType", exception=1
 caplib::createBondLegDefinition(["X"], 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
+
+@testing:case="createBondLegDefinition rejects keyword arguments", syntaxError=1
+caplib::createBondLegDefinition(bondType="X", settlementDays=1, currency="X", dayCount="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, instName="X", returnJson=false)

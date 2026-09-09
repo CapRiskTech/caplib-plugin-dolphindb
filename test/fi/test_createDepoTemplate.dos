@@ -77,3 +77,6 @@ caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIE
 
 @testing:case="createDepoTemplate rejects vector for scalar instName", exception=1
 caplib::createDepoTemplate(["X"], "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+
+@testing:case="createDepoTemplate rejects keyword arguments", syntaxError=1
+caplib::createDepoTemplate(instName="TF_DEPO", currency="CNY", calendar="CAL_CFETS", startDelay=0, dayCount="ACT_360", interestDayConvention="MODIFIED_FOLLOWING", payDayOffset=0, payDayConvention="FOLLOWING", startConvention="SPOTSTART", returnJson=false)

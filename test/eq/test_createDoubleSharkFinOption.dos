@@ -265,3 +265,6 @@ caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.0
 
 @testing:case="createDoubleSharkFinOption rejects empty vector fixingDates", exception=1
 caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, "X", 0.02, 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)
+
+@testing:case="createDoubleSharkFinOption rejects keyword arguments", syntaxError=1
+caplib::createDoubleSharkFinOption(lowerStrike=0.02, upperStrike=0.02, expiry=2024.01.01, delivery=2024.01.01, lowerParticipation=0.02, upperParticipation=0.02, performanceType="X", lowerBarrier=0.02, upperBarrier=0.02, barrierObsType="X", paymentType="X", lowerCashRebate=0.02, lowerAssetRebate=0.02, upperCashRebate=0.02, upperAssetRebate=0.02, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)

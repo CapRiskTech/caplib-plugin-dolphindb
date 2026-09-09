@@ -299,3 +299,6 @@ caplib::priceFxDoubleSharkFinOption("X", [2024.01.01], "X", "X", "X", "X", "X", 
 
 @testing:case="priceFxDoubleSharkFinOption rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceFxDoubleSharkFinOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxDoubleSharkFinOption rejects keyword arguments", syntaxError=1
+caplib::priceFxDoubleSharkFinOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)

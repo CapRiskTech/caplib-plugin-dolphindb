@@ -121,6 +121,28 @@ cached = caplib::getObjectCacheJson("PricingResults", "TF_IR_SWAP_results");
 assert 1, isPricingResultsJson(cached, "TF_IR_SWAP_results") &&
     abs(presentValue(cached) - -33063.77790012206) < abs(-33063.77790012206) * 1.0e-9 + 1.0e-6
 
+@testing:case="priceIrVanillaInstrument repeated calls produce identical present_value"
+p2 = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
+p3 = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
+assert 1, presentValue(p2) == presentValue(p3) && presentValue(p2) == presentValue(irSwapPricingResult)
+
+@testing:case="four concurrent priceIrVanillaInstrument jobs -> identical present_value"
+def irPriceJob() {
+    return caplib::priceIrVanillaInstrument("TF_IR_SWAP", 2022.03.09, "TF_IR_MKT", "TF_IR_PRICING", "TF_IR_RISK", "", "", true);
+}
+jobSuffix = string(rand(1000000000, 1)[0]);
+j1 = submitJob("caplib_ir_" + jobSuffix + "_1", "ir 1", irPriceJob);
+j2 = submitJob("caplib_ir_" + jobSuffix + "_2", "ir 2", irPriceJob);
+j3 = submitJob("caplib_ir_" + jobSuffix + "_3", "ir 3", irPriceJob);
+j4 = submitJob("caplib_ir_" + jobSuffix + "_4", "ir 4", irPriceJob);
+rj1 = getJobReturn(j1, true);
+rj2 = getJobReturn(j2, true);
+rj3 = getJobReturn(j3, true);
+rj4 = getJobReturn(j4, true);
+assert 1, presentValue(rj1) == presentValue(rj2) && presentValue(rj2) == presentValue(rj3) &&
+    presentValue(rj3) == presentValue(rj4) &&
+    abs(presentValue(rj1) - -33063.77790012206) < abs(-33063.77790012206) * 1.0e-9 + 1.0e-6
+
 @testing:case="priceIrVanillaInstrument rejects wrong mktData handle", exception=1
 caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irCurve, irPricingSettings, irRisk[0], "", "", true)
 
@@ -145,3 +167,6 @@ caplib::priceIrVanillaInstrument("X", [2024.01.01], "X", "X", "X", "X", "X", fal
 
 @testing:case="priceIrVanillaInstrument rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceIrVanillaInstrument("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="priceIrVanillaInstrument rejects keyword arguments", syntaxError=1
+caplib::priceIrVanillaInstrument(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)

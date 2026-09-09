@@ -147,3 +147,6 @@ caplib::createCdsTemplate("X", string(), "X", 0.02, 0.02, "X", 0.02, "X", "X", "
 
 @testing:case="createCdsTemplate rejects vector for scalar instName", exception=1
 caplib::createCdsTemplate(["X"], "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
+
+@testing:case="createCdsTemplate rejects keyword arguments", syntaxError=1
+caplib::createCdsTemplate(instName="X", startDelay="X", settlementType="X", referencePrice=0.02, leverage=0.02, creditProtectionType="X", recoveryRate=0.02, creditPremiumType="X", dayCount="X", frequency="X", businessDayConvention="X", calendars="X", rebateAccrual=false, returnJson=false)

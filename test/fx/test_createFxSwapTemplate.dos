@@ -290,3 +290,6 @@ caplib::createFxSwapTemplate("X", string(), "X", "X", "X", "X", "X", "X", false)
 
 @testing:case="createFxSwapTemplate rejects vector for scalar instName", exception=1
 caplib::createFxSwapTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxSwapTemplate rejects keyword arguments", syntaxError=1
+caplib::createFxSwapTemplate(instName="X", startConvention="X", currencyPair="X", calendars="X", startDayConvention="X", endDayConvention="X", fixingOffset="X", fixingDayConvention="X", returnJson=false)

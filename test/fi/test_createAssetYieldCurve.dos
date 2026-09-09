@@ -67,6 +67,15 @@ assert 1, result == "TF_ASSET_YC"
 @testing:case="createAssetYieldCurve rejects scalar pillarValues", exception=1
 caplib::createAssetYieldCurve(asOfDate, curveDates, 0.02, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC_BAD", "TF_ASSET_YC_BAD", false)
 
+@testing:case="createAssetYieldCurve supports boundary vector lengths 1/1024/65536"
+for (n in [1, 1024, 65536]) {
+    datesN = 2022.03.10 + 0..(n - 1);
+    valsN = take(0.02, n);
+    handleN = "TF_BND_" + string(n);
+    resultN = caplib::createAssetYieldCurve(asOfDate, datesN, valsN, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["P" + string(n)], handleN, handleN, false);
+    assert 1, resultN == handleN
+}
+
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
@@ -103,3 +112,6 @@ caplib::createAssetYieldCurve(asOfDate, [2024.01.01, date()], curveValues, "LINE
 
 @testing:case="createAssetYieldCurve rejects empty vector pillarDates", exception=1
 caplib::createAssetYieldCurve(asOfDate, take(date, 0), curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "TF_ASSET_YC", "TF_ASSET_YC", false)
+
+@testing:case="createAssetYieldCurve rejects keyword arguments", syntaxError=1
+caplib::createAssetYieldCurve(referenceDate=asOfDate, pillarDates=curveDates, pillarValues=curveValues, interp="LINEAR_INTERP", extrap="FLAT_EXTRAP", dcc="ACT_365_FIXED", compounding="CONTINUOUS_COMPOUNDING", pillarNames=["1D", "3Y"], curveName="TF_ASSET_YC", handle="TF_ASSET_YC", returnJson=false)

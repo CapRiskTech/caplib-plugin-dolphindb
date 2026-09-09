@@ -150,3 +150,6 @@ caplib::calcCrossCurrencySwapRate([2024.01.01], "X", "X", 0.02, "X", "X", 2024.0
 
 @testing:case="calcCrossCurrencySwapRate rejects nonexistent handle swapTemplateHandle", exception=1
 caplib::calcCrossCurrencySwapRate(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X")
+
+@testing:case="calcCrossCurrencySwapRate rejects keyword arguments", syntaxError=1
+caplib::calcCrossCurrencySwapRate(calculationDate=2024.01.01, swapTemplateHandle="X", tenor="X", fxRate=0.02, baseCcy="X", targetCcy="X", refDate=2024.01.01, spotDate=2024.01.01, targetDiscountCurveHandle="X", baseDiscountCurveHandle="X", baseForwardCurveHandle="X")

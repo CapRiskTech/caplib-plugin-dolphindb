@@ -243,3 +243,6 @@ caplib::buildVanillaBond(0.02, string(), "X", 2024.01.01, "X", false)
 
 @testing:case="buildVanillaBond rejects vector for scalar nominal", exception=1
 caplib::buildVanillaBond([0.02], "X", "X", 2024.01.01, "X", false)
+
+@testing:case="buildVanillaBond rejects keyword arguments", syntaxError=1
+caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=2024.01.01, tag="X", returnJson=false)

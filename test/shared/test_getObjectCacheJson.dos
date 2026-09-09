@@ -93,3 +93,6 @@ caplib::getObjectCacheJson(string(), irCurve)
 
 @testing:case="getObjectCacheJson rejects vector for scalar protobufType", exception=1
 caplib::getObjectCacheJson(["X"], irCurve)
+
+@testing:case="getObjectCacheJson rejects keyword arguments", syntaxError=1
+caplib::getObjectCacheJson(protobufType="IrYieldCurve", handle=irCurve)

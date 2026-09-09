@@ -146,3 +146,6 @@ caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X", string()], ["X"], ["X"]
 
 @testing:case="createIrParRateCurve rejects empty vector instNames", exception=1
 caplib::createIrParRateCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"], [0.02], [0.02], "X", false)
+
+@testing:case="createIrParRateCurve rejects keyword arguments", syntaxError=1
+caplib::createIrParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", instNames=["X"], instTypes=["X"], instTerms=["X"], factors=[0.02], quotes=[0.02], handle="X", returnJson=false)

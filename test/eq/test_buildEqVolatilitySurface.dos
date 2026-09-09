@@ -191,3 +191,6 @@ caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X"
 
 @testing:case="buildEqVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
 caplib::buildEqVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "X", "X", false)
+
+@testing:case="buildEqVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::buildEqVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", dividendCurveHandle="X", buildSettingsHandle="X", pricingSettingsHandle="X", handle="X", returnJson=false)

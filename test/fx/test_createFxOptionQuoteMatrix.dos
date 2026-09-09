@@ -300,3 +300,6 @@ caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X", string()], ["X"], 
 
 @testing:case="createFxOptionQuoteMatrix rejects empty vector terms", exception=1
 caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, take(string, 0), ["X"], matrix([0.2]), "X", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects keyword arguments", syntaxError=1
+caplib::createFxOptionQuoteMatrix(leftCcy="X", rightCcy="X", asOfDate=2024.01.01, terms=["X"], quoteNames=["X"], quotes=matrix([0.2]), handle="X", returnJson=false)

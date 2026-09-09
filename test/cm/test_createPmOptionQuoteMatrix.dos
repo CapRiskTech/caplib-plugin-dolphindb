@@ -98,3 +98,6 @@ caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X", string()], matrix([0.2]
 
 @testing:case="createPmOptionQuoteMatrix rejects empty vector terms", exception=1
 caplib::createPmOptionQuoteMatrix("X", 2024.01.01, take(string, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false)
+
+@testing:case="createPmOptionQuoteMatrix rejects keyword arguments", syntaxError=1
+caplib::createPmOptionQuoteMatrix(underlying="X", asOfDate=2024.01.01, terms=["X"], payoffTypes=matrix([0.2]), deltas=matrix([0.2]), quotes=matrix([0.2]), handle="X", returnJson=false)

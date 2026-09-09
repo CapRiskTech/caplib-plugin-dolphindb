@@ -137,3 +137,6 @@ caplib::createIrYieldCurveBuildSettings("X", false, ["X", string()], ["X"], ["X"
 
 @testing:case="createIrYieldCurveBuildSettings rejects empty vector discountCurrencyNames", exception=1
 caplib::createIrYieldCurveBuildSettings("X", false, take(string, 0), ["X"], ["X"], ["X"], "X", false)
+
+@testing:case="createIrYieldCurveBuildSettings rejects keyword arguments", syntaxError=1
+caplib::createIrYieldCurveBuildSettings(curveName="X", useOnTnFxSwap=false, discountCurrencyNames=["X"], discountCurveNames=["X"], forwardIndexNames=["X"], forwardCurveNames=["X"], handle="X", returnJson=false)

@@ -80,3 +80,6 @@ caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, "bad", 0, "TF_CR_RISK"
 
 @testing:case="createCreditCurveRiskSettings rejects null method", exception=1
 caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, int(), 1, 1.0e-4, 0, "TF_CR_RISK", false)
+
+@testing:case="createCreditCurveRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createCreditCurveRiskSettings(delta=1, gamma=1, shift=1.0e-4, method=0, granularity=1, scaling=1.0e-4, threading=0, handle="TF_CR_RISK", returnJson=false)

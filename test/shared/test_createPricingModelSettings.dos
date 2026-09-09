@@ -56,6 +56,12 @@ def isMatrix(value) {
 result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_MODEL", false)
 assert 1, result == "TF_BSM_MODEL"
 
+@testing:case="createPricingModelSettings omitted returnJson uses default"
+assert 1, caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_OMIT") == "TF_BSM_OMIT"
+
+@testing:case="createPricingModelSettings null returnJson uses default"
+assert 1, caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_NULL", bool()) == "TF_BSM_NULL"
+
 @testing:case="createPricingModelSettings rejects invalid model enum", exception=1
 caplib::createPricingModelSettings("NOT_A_MODEL", "", 0, [0.0], "TF_MODEL_BAD", false)
 
@@ -83,3 +89,6 @@ caplib::createPricingModelSettings(["X"], "", 0, [0.0], "TF_BSM_MODEL", false)
 
 @testing:case="createPricingModelSettings rejects empty vector constantParams", exception=1
 caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, take(double, 0), "TF_BSM_MODEL", false)
+
+@testing:case="createPricingModelSettings rejects keyword arguments", syntaxError=1
+caplib::createPricingModelSettings(modelName="BLACK_SCHOLES_MERTON", asset="", calibrated=0, constantParams=[0.0], handle="TF_BSM_MODEL", returnJson=false)

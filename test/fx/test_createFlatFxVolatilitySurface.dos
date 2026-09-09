@@ -288,3 +288,6 @@ caplib::createFlatFxVolatilitySurface(2024.01.01, "X", double(), "X", false)
 
 @testing:case="createFlatFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
 caplib::createFlatFxVolatilitySurface([2024.01.01], "X", 0.02, "X", false)
+
+@testing:case="createFlatFxVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::createFlatFxVolatilitySurface(referenceDate=2024.01.01, currencyPair="X", vol=0.02, tag="X", returnJson=false)

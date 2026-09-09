@@ -95,3 +95,6 @@ caplib::createScnAnalysisSettings(["X"], priceScn, volScn, 1, "TF_SCN_SETTINGS",
 
 @testing:case="createScnAnalysisSettings rejects nonexistent handle priceHandle", exception=1
 caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", "TF_HANDLE_DOES_NOT_EXIST", volScn, 1, "TF_SCN_SETTINGS", false)
+
+@testing:case="createScnAnalysisSettings rejects keyword arguments", syntaxError=1
+caplib::createScnAnalysisSettings(scnType="PRICE_VOL_SCN_ANALYSIS", priceHandle=priceScn, volHandle=volScn, threading=1, handle="TF_SCN_SETTINGS", returnJson=false)

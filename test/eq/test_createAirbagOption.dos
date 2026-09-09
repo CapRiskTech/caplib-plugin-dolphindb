@@ -265,3 +265,6 @@ caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 
 
 @testing:case="createAirbagOption rejects empty vector fixingDates", exception=1
 caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", take(date, 0), [0.02], [0.02], false)
+
+@testing:case="createAirbagOption rejects keyword arguments", syntaxError=1
+caplib::createAirbagOption(payoffType="X", expiry=2024.01.01, delivery=2024.01.01, lowerStrike=0.02, upperStrike=0.02, lowerGearing=0.02, upperGearing=0.02, knockInStrike=0.02, barrierType="X", barrierValue=0.02, barrierObsType="X", nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)

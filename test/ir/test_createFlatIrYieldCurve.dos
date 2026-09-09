@@ -97,3 +97,6 @@ caplib::createFlatIrYieldCurve(asOfDate, "CNY", double(), "TF_FLAT_IR_CURVE", fa
 
 @testing:case="createFlatIrYieldCurve rejects vector for scalar referenceDate", exception=1
 caplib::createFlatIrYieldCurve([2024.01.01], "CNY", 0.02, "TF_FLAT_IR_CURVE", false)
+
+@testing:case="createFlatIrYieldCurve rejects keyword arguments", syntaxError=1
+caplib::createFlatIrYieldCurve(referenceDate=asOfDate, currency="CNY", rate=0.02, handle="TF_FLAT_IR_CURVE", returnJson=false)

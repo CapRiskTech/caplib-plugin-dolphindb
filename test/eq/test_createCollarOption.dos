@@ -179,3 +179,6 @@ caplib::createCollarOption("X", double(), 0.02, 0.02, 0.02, 2024.01.01, 2024.01.
 
 @testing:case="createCollarOption rejects vector for scalar payoffType", exception=1
 caplib::createCollarOption(["X"], 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+
+@testing:case="createCollarOption rejects keyword arguments", syntaxError=1
+caplib::createCollarOption(payoffType="X", lowerGearing=0.02, upperGearing=0.02, lowerStrike=0.02, upperStrike=0.02, expiry=2024.01.01, delivery=2024.01.01, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", returnJson=false)

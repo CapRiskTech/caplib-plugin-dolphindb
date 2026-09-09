@@ -148,3 +148,6 @@ caplib::priceCreditDefaultSwap("X", [2024.01.01], "X", "X", "X", "X", "X", false
 
 @testing:case="priceCreditDefaultSwap rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceCreditDefaultSwap("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+
+@testing:case="priceCreditDefaultSwap rejects keyword arguments", syntaxError=1
+caplib::priceCreditDefaultSwap(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)

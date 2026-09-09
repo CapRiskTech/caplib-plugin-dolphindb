@@ -83,3 +83,6 @@ caplib::createPmMktConventions("X", "X", "X", "X", "X", "X", "X", "X", false, 1)
 
 @testing:case="createPmMktConventions rejects vector for scalar atmType", exception=1
 caplib::createPmMktConventions(["X"], "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createPmMktConventions rejects keyword arguments", syntaxError=1
+caplib::createPmMktConventions(atmType="X", shortDeltaType="X", longDeltaType="X", deltaCutoff="X", riskReversal="X", smileQuoteType="X", underlying="X", tag="X", returnJson=false)

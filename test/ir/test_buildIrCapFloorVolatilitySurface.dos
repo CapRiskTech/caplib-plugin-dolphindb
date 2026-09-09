@@ -157,3 +157,6 @@ caplib::buildIrCapFloorVolatilitySurface(["X"], 2024.01.01, "X", "X", "X", "X", 
 
 @testing:case="buildIrCapFloorVolatilitySurface rejects nonexistent handle quoteMatrixHandle", exception=1
 caplib::buildIrCapFloorVolatilitySurface("X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", 0.02, "X", "X", false)
+
+@testing:case="buildIrCapFloorVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::buildIrCapFloorVolatilitySurface(iborIndex="X", referenceDate=2024.01.01, quoteMatrixHandle="X", discountCurveHandle="X", forwardCurveHandle="X", definitionHandle="X", displacement=0.02, name="X", handle="X", returnJson=false)

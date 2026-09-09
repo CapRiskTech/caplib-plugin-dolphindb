@@ -243,3 +243,6 @@ caplib::buildBondCreditSpreadCurve([2024.01.01], "X", "X", "X", "X", "X", false,
 
 @testing:case="buildBondCreditSpreadCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildBondCreditSpreadCurve(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", false, "X", false)
+
+@testing:case="buildBondCreditSpreadCurve rejects keyword arguments", syntaxError=1
+caplib::buildBondCreditSpreadCurve(referenceDate=2024.01.01, curveName="X", parCurveHandle="X", discountCurveHandle="X", forwardCurveHandle="X", buildingMethod="X", calcJacobian=false, handle="X", returnJson=false)

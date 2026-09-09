@@ -136,3 +136,6 @@ caplib::buildIrSwaptionVolatilitySurface(["X"], 2024.01.01, "X", "X", "X", "X", 
 
 @testing:case="buildIrSwaptionVolatilitySurface rejects nonexistent handle quoteCubeHandle", exception=1
 caplib::buildIrSwaptionVolatilitySurface("X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="buildIrSwaptionVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::buildIrSwaptionVolatilitySurface(instName="X", referenceDate=2024.01.01, quoteCubeHandle="X", discountCurveHandle="X", forwardCurveHandle="X", definitionHandle="X", buildSettingsHandle="X", underlyingSwapTemplateHandle="X", handle="X", returnJson=false)

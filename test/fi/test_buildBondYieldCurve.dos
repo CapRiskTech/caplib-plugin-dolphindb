@@ -243,3 +243,6 @@ caplib::buildBondYieldCurve([2024.01.01], "X", "X", "X", "X", "X", "X", "X", fal
 
 @testing:case="buildBondYieldCurve rejects nonexistent handle buildSettingsHandle", exception=1
 caplib::buildBondYieldCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", "X", "X", false, "X", "X", false)
+
+@testing:case="buildBondYieldCurve rejects keyword arguments", syntaxError=1
+caplib::buildBondYieldCurve(referenceDate=2024.01.01, buildSettingsHandle="X", curveName="X", parCurveHandle="X", dayCount="X", compoundingType="X", frequency="X", buildingMethod="X", calcJacobian=false, forwardCurveHandle="X", handle="X", returnJson=false)

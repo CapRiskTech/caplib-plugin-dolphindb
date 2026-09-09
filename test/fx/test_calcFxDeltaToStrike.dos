@@ -291,3 +291,6 @@ caplib::calcFxDeltaToStrike(["X"], 0.02, 2024.01.01, "X", "X", "X", "X")
 
 @testing:case="calcFxDeltaToStrike rejects nonexistent handle volSurfaceHandle", exception=1
 caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")
+
+@testing:case="calcFxDeltaToStrike rejects keyword arguments", syntaxError=1
+caplib::calcFxDeltaToStrike(deltaType="X", delta=0.02, expiryDate=2024.01.01, volSurfaceHandle="X", fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")

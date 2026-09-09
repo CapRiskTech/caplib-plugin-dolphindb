@@ -141,3 +141,6 @@ caplib::createCrRiskSettings("X", string(), "X", "X", "X", false)
 
 @testing:case="createCrRiskSettings rejects vector for scalar irCurveSettings", exception=1
 caplib::createCrRiskSettings(["X"], "X", "X", "X", "X", false)
+
+@testing:case="createCrRiskSettings rejects keyword arguments", syntaxError=1
+caplib::createCrRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="X", tag="X", returnJson=false)

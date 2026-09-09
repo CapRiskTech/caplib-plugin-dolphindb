@@ -132,3 +132,6 @@ caplib::createIrYieldCurve(asOfDate, [2024.01.01, date()], curveValues, "ZERO_RA
 
 @testing:case="createIrYieldCurve rejects empty vector pillarDates", exception=1
 caplib::createIrYieldCurve(asOfDate, take(date, 0), curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+
+@testing:case="createIrYieldCurve rejects keyword arguments", syntaxError=1
+caplib::createIrYieldCurve(referenceDate=asOfDate, pillarDates=curveDates, pillarValues=curveValues, curveType="ZERO_RATE", dcc="ACT_365_FIXED", interp="LINEAR_INTERP", extrap="FLAT_EXTRAP", compounding="CONTINUOUS_COMPOUNDING", currency="CNY", name="CNY_SHIBOR_3M", handle="TF_IR_CURVE", returnJson=false)

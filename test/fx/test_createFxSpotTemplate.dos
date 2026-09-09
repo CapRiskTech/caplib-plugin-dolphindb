@@ -292,3 +292,6 @@ caplib::createFxSpotTemplate("X", string(), "X", "X", "X", "X", false)
 
 @testing:case="createFxSpotTemplate rejects vector for scalar instName", exception=1
 caplib::createFxSpotTemplate(["X"], "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxSpotTemplate rejects keyword arguments", syntaxError=1
+caplib::createFxSpotTemplate(instName="X", currencyPair="X", spotDayConvention="X", calendars="X", spotDelay="X", handle="X", returnJson=false)

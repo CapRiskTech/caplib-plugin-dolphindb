@@ -80,3 +80,6 @@ caplib::createMonteCarloSettings(int(), 1, -1, 2, 1, 1, 101, "TF_MC_SETTINGS", f
 
 @testing:case="createMonteCarloSettings rejects vector for scalar numSimulations", exception=1
 caplib::createMonteCarloSettings([1], 1, -1, 2, 1, 1, 101, "TF_MC_SETTINGS", false)
+
+@testing:case="createMonteCarloSettings rejects keyword arguments", syntaxError=1
+caplib::createMonteCarloSettings(numSimulations=3000, uniformNumberType=1, seed=-1, wienerBuildMethod=2, gaussianMethod=1, useAntithetic=1, numSteps=101, handle="TF_MC_SETTINGS", returnJson=false)

@@ -250,3 +250,6 @@ caplib::createBondYieldCurveBuildSettings("X", string(), "X", "X", "X", false)
 
 @testing:case="createBondYieldCurveBuildSettings rejects vector for scalar curveName", exception=1
 caplib::createBondYieldCurveBuildSettings(["X"], "X", "X", "X", "X", false)
+
+@testing:case="createBondYieldCurveBuildSettings rejects keyword arguments", syntaxError=1
+caplib::createBondYieldCurveBuildSettings(curveName="X", curveType="X", interpMethod="X", extrapMethod="X", tag="X", returnJson=false)

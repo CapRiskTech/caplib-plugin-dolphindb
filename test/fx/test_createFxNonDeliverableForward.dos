@@ -288,3 +288,6 @@ caplib::createFxNonDeliverableForward("X", 0.02, "X", double(), "X", 2024.01.01,
 
 @testing:case="createFxNonDeliverableForward rejects vector for scalar buyCurrency", exception=1
 caplib::createFxNonDeliverableForward(["X"], 0.02, "X", 0.02, "X", 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxNonDeliverableForward rejects keyword arguments", syntaxError=1
+caplib::createFxNonDeliverableForward(buyCurrency="X", buyAmount=0.02, sellCurrency="X", sellAmount=0.02, settlementCurrency="X", deliveryDate=2024.01.01, expiryDate=2024.01.01, tag="X", returnJson=false)

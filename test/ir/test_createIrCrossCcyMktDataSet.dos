@@ -143,3 +143,6 @@ caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, take(string, 0), [irCurv
 
 @testing:case="createIrCrossCcyMktDataSet rejects nonexistent handle baseDiscountCurveHandle", exception=1
 caplib::createIrCrossCcyMktDataSet(irAsOfDate, "TF_HANDLE_DOES_NOT_EXIST", [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
+
+@testing:case="createIrCrossCcyMktDataSet rejects keyword arguments", syntaxError=1
+caplib::createIrCrossCcyMktDataSet(asOfDate=irAsOfDate, baseDiscountCurveHandle=irCurve, underlyingInterestRates=[iborIndex[0]], forwardCurveHandles=[irCurve], crossCcyDiscountCurveHandle=usdCurve, fxSpotHandle=fxSpot[0], handle="TF_IR_XMKT", returnJson=false)

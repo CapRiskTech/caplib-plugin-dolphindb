@@ -81,3 +81,6 @@ caplib::createIrLegDefinition("X", string(), "X", "X", "X", "X", "X", false, fal
 
 @testing:case="createIrLegDefinition rejects vector for scalar legType", exception=1
 caplib::createIrLegDefinition(["X"], "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "X", false)
+
+@testing:case="createIrLegDefinition rejects keyword arguments", syntaxError=1
+caplib::createIrLegDefinition(legType="X", currency="X", dayCount="X", refIndex="X", paymentDiscountMethod="X", rateCalcMethod="X", notionalExchange="X", spread=false, fxConvert=false, fxReset=false, calendar="X", freq="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, tag="X", returnJson=false)

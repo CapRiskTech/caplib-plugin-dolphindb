@@ -288,3 +288,6 @@ caplib::createFxSwap("X", 0.02, "X", double(), 2024.01.01, 2024.01.01, "X", 0.02
 
 @testing:case="createFxSwap rejects vector for scalar nearBuyCurrency", exception=1
 caplib::createFxSwap(["X"], 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", false)
+
+@testing:case="createFxSwap rejects keyword arguments", syntaxError=1
+caplib::createFxSwap(nearBuyCurrency="X", nearBuyAmount=0.02, nearSellCurrency="X", nearSellAmount=0.02, nearDeliveryDate=2024.01.01, nearExpiryDate=2024.01.01, farBuyCurrency="X", farBuyAmount=0.02, farSellCurrency="X", farSellAmount=0.02, farDeliveryDate=2024.01.01, farExpiryDate=2024.01.01, tag="X", returnJson=false)

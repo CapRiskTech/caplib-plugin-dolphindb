@@ -308,3 +308,6 @@ caplib::createFxVolatilitySurface(2024.01.01, "X", "X", take(date, 0), matrix([0
 
 @testing:case="createFxVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
 caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "TF_HANDLE_DOES_NOT_EXIST", "X", "X", false)
+
+@testing:case="createFxVolatilitySurface rejects keyword arguments", syntaxError=1
+caplib::createFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", termDates=[2024.01.01], strikes=matrix([0.2]), volatilities=matrix([0.2]), definitionHandle="X", marketConventionsHandle="X", handle="X", returnJson=false)
