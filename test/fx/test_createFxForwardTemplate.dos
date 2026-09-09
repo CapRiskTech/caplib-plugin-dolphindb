@@ -274,6 +274,12 @@ assert 1, isHandleJson(r, "TF_FX_FWD_TPL") && hasJsonField(r[1], "fixing_offset"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFxForwardTemplate rejects missing argument", syntaxError=1
+caplib::createFxForwardTemplate("X", "X", "X", "X", "X")
+
+@testing:case="createFxForwardTemplate rejects extra argument", syntaxError=1
+caplib::createFxForwardTemplate("X", "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createFxForwardTemplate rejects null instName", exception=1
 caplib::createFxForwardTemplate(string(), "X", "X", "X", "X", "X", false)
 

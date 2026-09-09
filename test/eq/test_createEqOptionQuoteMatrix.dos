@@ -144,3 +144,31 @@ assert 1, isHandleJson(r, "TF_EQ_OQ")
 
 @testing:case="createEqOptionQuoteMatrix rejects zero-column strikes matrix", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, matrix(DOUBLE, 4, 0), underlying, "TF_EQ_OQ_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqOptionQuoteMatrix rejects missing argument", syntaxError=1
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X")
+
+@testing:case="createEqOptionQuoteMatrix rejects extra argument", syntaxError=1
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false, 1)
+
+@testing:case="createEqOptionQuoteMatrix rejects null exerciseType", exception=1
+caplib::createEqOptionQuoteMatrix(string(), "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects null underlyingType", exception=1
+caplib::createEqOptionQuoteMatrix("X", string(), 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects vector for scalar exerciseType", exception=1
+caplib::createEqOptionQuoteMatrix(["X"], "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects scalar for vector termDates", exception=1
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects partially-null vector termDates", exception=1
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01, date()], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects empty vector termDates", exception=1
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, take(date, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)

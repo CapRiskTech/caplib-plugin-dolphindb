@@ -82,6 +82,12 @@ caplib::getObjectCacheJson("NotAProtoType", "TF_IR_CURVE")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="getObjectCacheJson rejects missing argument", syntaxError=1
+caplib::getObjectCacheJson("IrYieldCurve")
+
+@testing:case="getObjectCacheJson rejects extra argument", syntaxError=1
+caplib::getObjectCacheJson("IrYieldCurve", irCurve, 1)
+
 @testing:case="getObjectCacheJson rejects null protobufType", exception=1
 caplib::getObjectCacheJson(string(), irCurve)
 

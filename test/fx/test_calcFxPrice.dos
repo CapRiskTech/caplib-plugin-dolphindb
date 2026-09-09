@@ -60,6 +60,12 @@ assert 1, typestr(r) == "DOUBLE" && abs(r - 6900.0) < 1.0e-9
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcFxPrice rejects missing argument", syntaxError=1
+caplib::calcFxPrice(0.02, "X", "X", 0.02, "X")
+
+@testing:case="calcFxPrice rejects extra argument", syntaxError=1
+caplib::calcFxPrice(0.02, "X", "X", 0.02, "X", "X", 1)
+
 @testing:case="calcFxPrice rejects null currency", exception=1
 caplib::calcFxPrice(0.02, string(), "X", 0.02, "X", "X")
 

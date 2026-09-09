@@ -123,6 +123,12 @@ caplib::createIrMktDataSet(irAsOfDate, iborIndex[0], [iborIndex[0]], [irCurve], 
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createIrMktDataSet rejects missing argument", syntaxError=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve])
+
+@testing:case="createIrMktDataSet rejects extra argument", syntaxError=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", false, 1)
+
 @testing:case="createIrMktDataSet rejects null asOfDate", exception=1
 caplib::createIrMktDataSet(date(), irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", false)
 

@@ -274,6 +274,12 @@ assert 1, abs(r - 0.002297818198062185) < 1.0e-12
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcFxSwapPoint rejects missing argument", syntaxError=1
+caplib::calcFxSwapPoint(2024.01.01, "X", "X", 2024.01.01, "X", "X")
+
+@testing:case="calcFxSwapPoint rejects extra argument", syntaxError=1
+caplib::calcFxSwapPoint(2024.01.01, "X", "X", 2024.01.01, "X", "X", "X", 1)
+
 @testing:case="calcFxSwapPoint rejects null calculationDate", exception=1
 caplib::calcFxSwapPoint(date(), "X", "X", 2024.01.01, "X", "X", "X")
 

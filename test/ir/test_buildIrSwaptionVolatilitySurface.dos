@@ -119,6 +119,12 @@ caplib::buildIrSwaptionVolatilitySurface("SWAPTION", irAsOfDate, irCurve, irCurv
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildIrSwaptionVolatilitySurface rejects missing argument", syntaxError=1
+caplib::buildIrSwaptionVolatilitySurface("X", 2024.01.01, "X", "X", "X", "X", "X", "X")
+
+@testing:case="buildIrSwaptionVolatilitySurface rejects extra argument", syntaxError=1
+caplib::buildIrSwaptionVolatilitySurface("X", 2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="buildIrSwaptionVolatilitySurface rejects null instName", exception=1
 caplib::buildIrSwaptionVolatilitySurface(string(), 2024.01.01, "X", "X", "X", "X", "X", "X", "X", false)
 

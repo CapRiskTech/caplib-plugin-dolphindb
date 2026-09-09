@@ -230,3 +230,13 @@ assert 1, isHandleJson(cmRisk, "CM_RISK")
 
 @testing:case="createCmRiskSettings rejects STRING flag", exception=1
 caplib::createCmRiskSettings("1", 1, 1, 1, "TF_CM_RISK_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCmRiskSettings rejects missing argument", syntaxError=1
+caplib::createCmRiskSettings(false, false, false, false)
+
+@testing:case="createCmRiskSettings rejects extra argument", syntaxError=1
+caplib::createCmRiskSettings(false, false, false, false, "X", false, 1)

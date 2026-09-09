@@ -123,6 +123,12 @@ caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCu
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createIrParRateCurve rejects missing argument", syntaxError=1
+caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02])
+
+@testing:case="createIrParRateCurve rejects extra argument", syntaxError=1
+caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false, 1)
+
 @testing:case="createIrParRateCurve rejects null asOfDate", exception=1
 caplib::createIrParRateCurve(date(), "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
 

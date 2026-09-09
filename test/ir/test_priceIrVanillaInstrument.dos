@@ -128,6 +128,12 @@ caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irCurve, irPricingSettings,
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="priceIrVanillaInstrument rejects missing argument", syntaxError=1
+caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceIrVanillaInstrument rejects extra argument", syntaxError=1
+caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="priceIrVanillaInstrument rejects null pricingDate", exception=1
 caplib::priceIrVanillaInstrument("X", date(), "X", "X", "X", "X", "X", false)
 

@@ -75,6 +75,12 @@ assert 1, isHandleJson(r, "TF_PM_CASH")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createPmCashTemplate rejects missing argument", syntaxError=1
+caplib::createPmCashTemplate("X", 1, "X", "X")
+
+@testing:case="createPmCashTemplate rejects extra argument", syntaxError=1
+caplib::createPmCashTemplate("X", 1, "X", "X", "X", false, 1)
+
 @testing:case="createPmCashTemplate rejects null startDelay", exception=1
 caplib::createPmCashTemplate("X", int(), "X", "X", "X", false)
 

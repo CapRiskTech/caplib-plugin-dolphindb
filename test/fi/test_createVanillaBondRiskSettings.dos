@@ -226,6 +226,12 @@ assert 1, isHandleJson(r, "TF_FI_VB_RISK")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createVanillaBondRiskSettings rejects missing argument", syntaxError=1
+caplib::createVanillaBondRiskSettings("X", "X", false, "X")
+
+@testing:case="createVanillaBondRiskSettings rejects extra argument", syntaxError=1
+caplib::createVanillaBondRiskSettings("X", "X", false, "X", "X", false, 1)
+
 @testing:case="createVanillaBondRiskSettings rejects null dv01", exception=1
 caplib::createVanillaBondRiskSettings(string(), "X", false, "X", "X", false)
 

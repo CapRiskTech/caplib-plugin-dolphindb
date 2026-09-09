@@ -70,3 +70,16 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 @testing:case="createPmParRateCurve -> [handle, json]"
 r = caplib::createPmParRateCurve(2022.03.09, "CNY", "AU_CURVE", table([2022.04.09, 2022.05.09] as pillarDates, [0.02, 0.025] as rates), "TF_PM_PAR", true);
 assert 1, isHandleJson(r, "TF_PM_PAR")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmParRateCurve rejects missing argument", syntaxError=1
+caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]))
+
+@testing:case="createPmParRateCurve rejects extra argument", syntaxError=1
+caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]), "X", false, 1)
+
+@testing:case="createPmParRateCurve rejects vector for scalar asOfDate", exception=1
+caplib::createPmParRateCurve([2024.01.01], "X", "X", matrix([0.2]), "X", false)

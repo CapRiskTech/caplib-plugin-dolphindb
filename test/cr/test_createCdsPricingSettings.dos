@@ -130,6 +130,12 @@ caplib::createCdsPricingSettings(1, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createCdsPricingSettings rejects missing argument", syntaxError=1
+caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "X")
+
+@testing:case="createCdsPricingSettings rejects extra argument", syntaxError=1
+caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createCdsPricingSettings rejects null pricingCurrency", exception=1
 caplib::createCdsPricingSettings(string(), false, false, false, "X", "X", "X", "X", "X", false)
 

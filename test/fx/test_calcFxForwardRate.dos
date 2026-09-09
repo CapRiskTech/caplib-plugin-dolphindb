@@ -293,6 +293,12 @@ assert 1, abs(jobResult5 - 1.178397818198062) < 1.0e-12 &&
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcFxForwardRate rejects missing argument", syntaxError=1
+caplib::calcFxForwardRate(2024.01.01, "X", "X", 2024.01.01, "X", "X")
+
+@testing:case="calcFxForwardRate rejects extra argument", syntaxError=1
+caplib::calcFxForwardRate(2024.01.01, "X", "X", 2024.01.01, "X", "X", "X", 1)
+
 @testing:case="calcFxForwardRate rejects null calculationDate", exception=1
 caplib::calcFxForwardRate(date(), "X", "X", 2024.01.01, "X", "X", "X")
 

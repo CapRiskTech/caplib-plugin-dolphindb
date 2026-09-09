@@ -126,6 +126,9 @@ caplib::createIborIndex("TF_IBOR_BAD", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360",
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createIborIndex rejects missing argument", syntaxError=1
+caplib::createIborIndex("SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"])
+
 @testing:case="createIborIndex rejects null startDelay", exception=1
 caplib::createIborIndex("SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"], int(), "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 

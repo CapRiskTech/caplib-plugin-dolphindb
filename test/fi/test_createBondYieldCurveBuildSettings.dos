@@ -236,6 +236,12 @@ for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createBondYieldCurveBuildSettings rejects missing argument", syntaxError=1
+caplib::createBondYieldCurveBuildSettings("X", "X", "X", "X")
+
+@testing:case="createBondYieldCurveBuildSettings rejects extra argument", syntaxError=1
+caplib::createBondYieldCurveBuildSettings("X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createBondYieldCurveBuildSettings rejects null curveName", exception=1
 caplib::createBondYieldCurveBuildSettings(string(), "X", "X", "X", "X", false)
 

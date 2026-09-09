@@ -80,3 +80,40 @@ caplib::createIrCapFloorQuoteMatrix(asOfDate, ["1Y"], [0.01], matrix(DOUBLE, 0, 
 
 @testing:case="createIrCapFloorQuoteMatrix rejects partially-null matrix", exception=1
 caplib::createIrCapFloorQuoteMatrix(asOfDate, ["1Y", "2Y"], [0.01], matrix([0.20, double()]), "CAP", 1.0, "TF_CAPQ_BAD", false)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrCapFloorQuoteMatrix rejects missing argument", syntaxError=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X"], [0.02], matrix([0.2]), "X", 0.02)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects extra argument", syntaxError=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X"], [0.02], matrix([0.2]), "X", 0.02, "X", false, 1)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects wrong type for asOfDate", exception=1
+caplib::createIrCapFloorQuoteMatrix("bad", ["X"], [0.02], matrix([0.2]), "X", 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects wrong type for instName", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X"], [0.02], matrix([0.2]), 1, 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects wrong type for factor", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X"], [0.02], matrix([0.2]), "X", "bad", "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects null asOfDate", exception=1
+caplib::createIrCapFloorQuoteMatrix(date(), ["X"], [0.02], matrix([0.2]), "X", 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects null instName", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X"], [0.02], matrix([0.2]), string(), 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects vector for scalar asOfDate", exception=1
+caplib::createIrCapFloorQuoteMatrix([2024.01.01], ["X"], [0.02], matrix([0.2]), "X", 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects scalar for vector terms", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X"], [0.02], matrix([0.2]), "X", 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects partially-null vector terms", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, ["X", string()], [0.02], matrix([0.2]), "X", 0.02, "X", false)
+
+@testing:case="createIrCapFloorQuoteMatrix rejects empty vector terms", exception=1
+caplib::createIrCapFloorQuoteMatrix(2024.01.01, take(string, 0), [0.02], matrix([0.2]), "X", 0.02, "X", false)

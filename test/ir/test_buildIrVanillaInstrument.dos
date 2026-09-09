@@ -126,6 +126,12 @@ caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irFix
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildIrVanillaInstrument rejects missing argument", syntaxError=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "")
+
+@testing:case="buildIrVanillaInstrument rejects extra argument", syntaxError=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false, 1)
+
 @testing:case="buildIrVanillaInstrument rejects null payReceive", exception=1
 caplib::buildIrVanillaInstrument(string(), 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false)
 

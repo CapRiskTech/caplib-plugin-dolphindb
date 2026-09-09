@@ -232,6 +232,12 @@ caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQu
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createBondParCurve rejects missing argument", syntaxError=1
+caplib::createBondParCurve(2024.01.01, "X", ["X"], [0.02], "X")
+
+@testing:case="createBondParCurve rejects extra argument", syntaxError=1
+caplib::createBondParCurve(2024.01.01, "X", ["X"], [0.02], "X", "X", false, 1)
+
 @testing:case="createBondParCurve rejects null referenceDate", exception=1
 caplib::createBondParCurve(date(), "X", ["X"], [0.02], "X", "X", false)
 

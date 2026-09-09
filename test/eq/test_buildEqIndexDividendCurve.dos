@@ -213,3 +213,34 @@ emptyFuturePrices = array(DOUBLE, 0);
 @testing:case="buildEqIndexDividendCurve -> [handle, json]"
 r = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, emptyFuturePrices, idxOptionPrices, underlyingPrice, irCurve, "TF_EQ_IDX_DIV", true);
 assert 1, isHandleJson(r, "TF_EQ_IDX_DIV")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildEqIndexDividendCurve rejects missing argument", syntaxError=1
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X")
+
+@testing:case="buildEqIndexDividendCurve rejects extra argument", syntaxError=1
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false, 1)
+
+@testing:case="buildEqIndexDividendCurve rejects null asOfDate", exception=1
+caplib::buildEqIndexDividendCurve(date(), [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false)
+
+@testing:case="buildEqIndexDividendCurve rejects null spot", exception=1
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), double(), "X", "X", false)
+
+@testing:case="buildEqIndexDividendCurve rejects vector for scalar asOfDate", exception=1
+caplib::buildEqIndexDividendCurve([2024.01.01], [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false)
+
+@testing:case="buildEqIndexDividendCurve rejects scalar for vector termDates", exception=1
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false)
+
+@testing:case="buildEqIndexDividendCurve rejects partially-null vector termDates", exception=1
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01, date()], [0.02], table([1], [2]), 0.02, "X", "X", false)
+
+@testing:case="buildEqIndexDividendCurve rejects empty vector termDates", exception=1
+caplib::buildEqIndexDividendCurve(2024.01.01, take(date, 0), [0.02], table([1], [2]), 0.02, "X", "X", false)
+
+@testing:case="buildEqIndexDividendCurve rejects nonexistent handle discountCurveHandle", exception=1
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", false)

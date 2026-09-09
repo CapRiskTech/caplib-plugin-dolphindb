@@ -130,6 +130,12 @@ caplib::buildCreditDefaultSwap(-1000000.0, currency, 2019.06.20, 2024.06.20, "PA
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildCreditDefaultSwap rejects missing argument", syntaxError=1
+caplib::buildCreditDefaultSwap(0.02, "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X")
+
+@testing:case="buildCreditDefaultSwap rejects extra argument", syntaxError=1
+caplib::buildCreditDefaultSwap(0.02, "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false, 1)
+
 @testing:case="buildCreditDefaultSwap rejects null nominal", exception=1
 caplib::buildCreditDefaultSwap(double(), "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false)
 

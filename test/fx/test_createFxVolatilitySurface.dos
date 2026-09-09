@@ -277,3 +277,34 @@ assert 1, r2 == "TF_FX_VOL_VV"
 @testing:case="createFxVolatilitySurface strikes matrix / vols matrix"
 r3 = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], matrix([1.00], [eurusdSpot], [1.35]), matrix([0.06], [0.06], [0.06]), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FX_VOL_MM", false);
 assert 1, r3 == "TF_FX_VOL_MM"
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxVolatilitySurface rejects missing argument", syntaxError=1
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X")
+
+@testing:case="createFxVolatilitySurface rejects extra argument", syntaxError=1
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false, 1)
+
+@testing:case="createFxVolatilitySurface rejects null referenceDate", exception=1
+caplib::createFxVolatilitySurface(date(), "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+
+@testing:case="createFxVolatilitySurface rejects null leftCcy", exception=1
+caplib::createFxVolatilitySurface(2024.01.01, string(), "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+
+@testing:case="createFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
+caplib::createFxVolatilitySurface([2024.01.01], "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+
+@testing:case="createFxVolatilitySurface rejects scalar for vector termDates", exception=1
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+
+@testing:case="createFxVolatilitySurface rejects partially-null vector termDates", exception=1
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01, date()], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+
+@testing:case="createFxVolatilitySurface rejects empty vector termDates", exception=1
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", take(date, 0), matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+
+@testing:case="createFxVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "TF_HANDLE_DOES_NOT_EXIST", "X", "X", false)

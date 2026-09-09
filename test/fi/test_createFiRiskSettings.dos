@@ -226,6 +226,12 @@ assert 1, isHandleJson(r, "TF_FI_RISK")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFiRiskSettings rejects missing argument", syntaxError=1
+caplib::createFiRiskSettings("X", "X", "X", "X")
+
+@testing:case="createFiRiskSettings rejects extra argument", syntaxError=1
+caplib::createFiRiskSettings("X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createFiRiskSettings rejects null irCurveSettings", exception=1
 caplib::createFiRiskSettings(string(), "X", "X", "X", "X", false)
 

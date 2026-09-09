@@ -60,6 +60,12 @@ assert 1, typestr(r) == "DOUBLE" && r > 0.0 && r < 2.0
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcConversionFactor rejects missing argument", syntaxError=1
+caplib::calcConversionFactor(0.02, "X", 0.02, 2024.01.01, 2024.01.01)
+
+@testing:case="calcConversionFactor rejects extra argument", syntaxError=1
+caplib::calcConversionFactor(0.02, "X", 0.02, 2024.01.01, 2024.01.01, 2024.01.01, 1)
+
 @testing:case="calcConversionFactor rejects null bondCouponRate", exception=1
 caplib::calcConversionFactor(double(), "X", 0.02, 2024.01.01, 2024.01.01, 2024.01.01)
 

@@ -165,6 +165,12 @@ assert 1, r == "TF_CL"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createCollarOption rejects missing argument", syntaxError=1
+caplib::createCollarOption("X", 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X")
+
+@testing:case="createCollarOption rejects extra argument", syntaxError=1
+caplib::createCollarOption("X", 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createCollarOption rejects null payoffType", exception=1
 caplib::createCollarOption(string(), 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
 

@@ -272,3 +272,31 @@ assert 1, isHandleJson(r, "TF_FX_OQ") && hasJsonField(r[1], "quote_smiles")
 
 @testing:case="createFxOptionQuoteMatrix rejects zero-row quotes matrix", exception=1
 caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix(DOUBLE, 0, 2), "TF_FX_OQ_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxOptionQuoteMatrix rejects missing argument", syntaxError=1
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]))
+
+@testing:case="createFxOptionQuoteMatrix rejects extra argument", syntaxError=1
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false, 1)
+
+@testing:case="createFxOptionQuoteMatrix rejects null leftCcy", exception=1
+caplib::createFxOptionQuoteMatrix(string(), "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects null rightCcy", exception=1
+caplib::createFxOptionQuoteMatrix("X", string(), 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects vector for scalar leftCcy", exception=1
+caplib::createFxOptionQuoteMatrix(["X"], "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects scalar for vector terms", exception=1
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects partially-null vector terms", exception=1
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X", string()], ["X"], matrix([0.2]), "X", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects empty vector terms", exception=1
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, take(string, 0), ["X"], matrix([0.2]), "X", false)

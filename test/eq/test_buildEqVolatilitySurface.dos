@@ -165,6 +165,12 @@ assert 1, isHandleJson(r, "TF_EQ_VOL")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildEqVolatilitySurface rejects missing argument", syntaxError=1
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X")
+
+@testing:case="buildEqVolatilitySurface rejects extra argument", syntaxError=1
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="buildEqVolatilitySurface rejects null referenceDate", exception=1
 caplib::buildEqVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false)
 

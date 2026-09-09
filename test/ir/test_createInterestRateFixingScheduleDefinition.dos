@@ -67,6 +67,12 @@ assert 1, isHandleJson(r, "TF_SCHED_FIX")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createInterestRateFixingScheduleDefinition rejects missing argument", syntaxError=1
+caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "X", 1, "X")
+
+@testing:case="createInterestRateFixingScheduleDefinition rejects extra argument", syntaxError=1
+caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "X", 1, "X", "X", false, 1)
+
 @testing:case="createInterestRateFixingScheduleDefinition rejects null frequencyRatio", exception=1
 caplib::createInterestRateFixingScheduleDefinition("X", "X", int(), "X", 1, "X", "X", false)
 

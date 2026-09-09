@@ -130,6 +130,12 @@ caplib::buildCreditCurve(asOfDate, creditParCurve[0], creditParCurve[0], "BOND_C
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildCreditCurve rejects missing argument", syntaxError=1
+caplib::buildCreditCurve(2024.01.01, "X", "X", "X", "X")
+
+@testing:case="buildCreditCurve rejects extra argument", syntaxError=1
+caplib::buildCreditCurve(2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="buildCreditCurve rejects null asOfDate", exception=1
 caplib::buildCreditCurve(date(), "X", "X", "X", "X", "X", false)
 

@@ -274,6 +274,12 @@ assert 1, isHandleJson(r, "TF_FX_FLAT_VOL") && hasJsonField(r[1], "volatility_su
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFlatFxVolatilitySurface rejects missing argument", syntaxError=1
+caplib::createFlatFxVolatilitySurface(2024.01.01, "X", 0.02)
+
+@testing:case="createFlatFxVolatilitySurface rejects extra argument", syntaxError=1
+caplib::createFlatFxVolatilitySurface(2024.01.01, "X", 0.02, "X", false, 1)
+
 @testing:case="createFlatFxVolatilitySurface rejects null referenceDate", exception=1
 caplib::createFlatFxVolatilitySurface(date(), "X", 0.02, "X", false)
 

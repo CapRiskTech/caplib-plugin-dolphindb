@@ -71,6 +71,12 @@ assert 1, isHandleJson(r, "TF_FI_LEG")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createBondLegDefinition rejects missing argument", syntaxError=1
+caplib::createBondLegDefinition("X", 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1)
+
+@testing:case="createBondLegDefinition rejects extra argument", syntaxError=1
+caplib::createBondLegDefinition("X", 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false, 1)
+
 @testing:case="createBondLegDefinition rejects null settlementDays", exception=1
 caplib::createBondLegDefinition("X", int(), "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
 

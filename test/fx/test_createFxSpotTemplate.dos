@@ -278,6 +278,12 @@ assert 1, isHandleJson(r2, "TF_FX_SPOT_TPL_SCALAR")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFxSpotTemplate rejects missing argument", syntaxError=1
+caplib::createFxSpotTemplate("X", "X", "X", "X")
+
+@testing:case="createFxSpotTemplate rejects extra argument", syntaxError=1
+caplib::createFxSpotTemplate("X", "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createFxSpotTemplate rejects null instName", exception=1
 caplib::createFxSpotTemplate(string(), "X", "X", "X", "X", "X", false)
 

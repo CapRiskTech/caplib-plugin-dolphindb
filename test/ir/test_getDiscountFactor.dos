@@ -75,6 +75,12 @@ caplib::getDiscountFactor("TF_HANDLE_DOES_NOT_EXIST", curveDates)
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="getDiscountFactor rejects missing argument", syntaxError=1
+caplib::getDiscountFactor(flatIrCurve)
+
+@testing:case="getDiscountFactor rejects extra argument", syntaxError=1
+caplib::getDiscountFactor(flatIrCurve, curveDates, 1)
+
 @testing:case="getDiscountFactor rejects partially-null vector dates", exception=1
 caplib::getDiscountFactor(flatIrCurve, [2024.01.01, date()])
 

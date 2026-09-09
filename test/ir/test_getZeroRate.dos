@@ -74,6 +74,12 @@ caplib::getZeroRate("TF_HANDLE_DOES_NOT_EXIST", curveDates)
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="getZeroRate rejects missing argument", syntaxError=1
+caplib::getZeroRate(flatIrCurve)
+
+@testing:case="getZeroRate rejects extra argument", syntaxError=1
+caplib::getZeroRate(flatIrCurve, curveDates, 1)
+
 @testing:case="getZeroRate rejects partially-null vector dates", exception=1
 caplib::getZeroRate(flatIrCurve, [2024.01.01, date()])
 

@@ -277,6 +277,12 @@ caplib::createFxMktConventions("EURUSD", "NOT_AN_ATM", "PIPS_SPOT_DELTA", "PIPS_
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFxMktConventions rejects missing argument", syntaxError=1
+caplib::createFxMktConventions("X", "X", "X", "X", "X", "X", "X")
+
+@testing:case="createFxMktConventions rejects extra argument", syntaxError=1
+caplib::createFxMktConventions("X", "X", "X", "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createFxMktConventions rejects null ccyPair", exception=1
 caplib::createFxMktConventions(string(), "X", "X", "X", "X", "X", "X", "X", false)
 

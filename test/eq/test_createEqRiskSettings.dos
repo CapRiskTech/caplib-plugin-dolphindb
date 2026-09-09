@@ -143,3 +143,13 @@ assert 1, isHandleJson(eqRisk, "EQ_RISK")
 
 @testing:case="createEqRiskSettings rejects STRING flag", exception=1
 caplib::createEqRiskSettings("1", 1, 1, 1, "TF_EQ_RISK_BAD", true)
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqRiskSettings rejects missing argument", syntaxError=1
+caplib::createEqRiskSettings(false, false, false, false)
+
+@testing:case="createEqRiskSettings rejects extra argument", syntaxError=1
+caplib::createEqRiskSettings(false, false, false, false, "X", false, 1)

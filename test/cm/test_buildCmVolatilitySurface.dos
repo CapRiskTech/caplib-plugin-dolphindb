@@ -233,6 +233,12 @@ assert 1, isHandleJson(r, "TF_CM_VOL") && hasJsonField(r[1], "vol_smiles")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildCmVolatilitySurface rejects missing argument", syntaxError=1
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X")
+
+@testing:case="buildCmVolatilitySurface rejects extra argument", syntaxError=1
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", false, 1)
+
 @testing:case="buildCmVolatilitySurface rejects null referenceDate", exception=1
 caplib::buildCmVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "X", false)
 

@@ -124,6 +124,12 @@ assert 1, isHandleJson(r2, "TF_IR_VIT_CF")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createIrVanillaInstrumentTemplate rejects missing argument", syntaxError=1
+caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, ["X"])
+
+@testing:case="createIrVanillaInstrumentTemplate rejects extra argument", syntaxError=1
+caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, ["X"], "X", false, 1)
+
 @testing:case="createIrVanillaInstrumentTemplate rejects null instType", exception=1
 caplib::createIrVanillaInstrumentTemplate(string(), "X", "X", 1, ["X"], "X", false)
 

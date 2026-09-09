@@ -297,6 +297,12 @@ assert 1, abs(jobResult1 - 1.1818054618389189) < 1.0e-12 &&
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcFxAtmStrike rejects missing argument", syntaxError=1
+caplib::calcFxAtmStrike("X", 2024.01.01, "X", "X", "X")
+
+@testing:case="calcFxAtmStrike rejects extra argument", syntaxError=1
+caplib::calcFxAtmStrike("X", 2024.01.01, "X", "X", "X", "X", 1)
+
 @testing:case="calcFxAtmStrike rejects null atmType", exception=1
 caplib::calcFxAtmStrike(string(), 2024.01.01, "X", "X", "X", "X")
 

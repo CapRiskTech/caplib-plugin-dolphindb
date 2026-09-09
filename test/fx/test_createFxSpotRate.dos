@@ -277,6 +277,12 @@ caplib::createFxSpotRate(-7.0, "USD", "CNY", asOfDate, 2021.04.01, "TF_FXSPOT_BA
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFxSpotRate rejects missing argument", syntaxError=1
+caplib::createFxSpotRate(0.02, "X", "X", 2024.01.01, 2024.01.01)
+
+@testing:case="createFxSpotRate rejects extra argument", syntaxError=1
+caplib::createFxSpotRate(0.02, "X", "X", 2024.01.01, 2024.01.01, "X", false, 1)
+
 @testing:case="createFxSpotRate rejects null value", exception=1
 caplib::createFxSpotRate(double(), "X", "X", 2024.01.01, 2024.01.01, "X", false)
 

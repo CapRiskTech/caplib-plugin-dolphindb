@@ -274,6 +274,12 @@ assert 1, isHandleJson(r, "TF_FX_NDF_TPL") && hasJsonField(r[1], "settlement_cur
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFxNdfTemplate rejects missing argument", syntaxError=1
+caplib::createFxNdfTemplate("X", "X", "X", "X", "X", "X")
+
+@testing:case="createFxNdfTemplate rejects extra argument", syntaxError=1
+caplib::createFxNdfTemplate("X", "X", "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createFxNdfTemplate rejects null instName", exception=1
 caplib::createFxNdfTemplate(string(), "X", "X", "X", "X", "X", "X", false)
 

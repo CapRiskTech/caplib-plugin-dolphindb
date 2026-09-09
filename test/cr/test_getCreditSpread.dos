@@ -74,6 +74,12 @@ caplib::getCreditSpread("TF_HANDLE_DOES_NOT_EXIST", curveDates)
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="getCreditSpread rejects missing argument", syntaxError=1
+caplib::getCreditSpread("X")
+
+@testing:case="getCreditSpread rejects extra argument", syntaxError=1
+caplib::getCreditSpread("X", [2024.01.01], 1)
+
 @testing:case="getCreditSpread rejects scalar for vector dates", exception=1
 caplib::getCreditSpread("X", [2024.01.01])
 

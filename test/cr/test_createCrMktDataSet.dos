@@ -127,6 +127,12 @@ assert 1, isHandleJson(r, "TF_CR_MKT")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createCrMktDataSet rejects missing argument", syntaxError=1
+caplib::createCrMktDataSet(2024.01.01, "X", "X", "X")
+
+@testing:case="createCrMktDataSet rejects extra argument", syntaxError=1
+caplib::createCrMktDataSet(2024.01.01, "X", "X", "X", "X", false, 1)
+
 @testing:case="createCrMktDataSet rejects null asOfDate", exception=1
 caplib::createCrMktDataSet(date(), "X", "X", "X", "X", false)
 

@@ -139,6 +139,12 @@ assert 1, true
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildPmVolatilitySurface rejects missing argument", syntaxError=1
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X")
+
+@testing:case="buildPmVolatilitySurface rejects extra argument", syntaxError=1
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="buildPmVolatilitySurface rejects null referenceDate", exception=1
 caplib::buildPmVolatilitySurface(date(), "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
 

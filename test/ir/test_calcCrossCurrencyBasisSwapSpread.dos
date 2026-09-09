@@ -135,6 +135,12 @@ caplib::calcCrossCurrencyBasisSwapSpread(2022.03.01, irSwapTemplate[0], "1Y", 6.
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcCrossCurrencyBasisSwapSpread rejects missing argument", syntaxError=1
+caplib::calcCrossCurrencyBasisSwapSpread(2024.01.01, "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X")
+
+@testing:case="calcCrossCurrencyBasisSwapSpread rejects extra argument", syntaxError=1
+caplib::calcCrossCurrencyBasisSwapSpread(2024.01.01, "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X", "X", 1)
+
 @testing:case="calcCrossCurrencyBasisSwapSpread rejects null calculationDate", exception=1
 caplib::calcCrossCurrencyBasisSwapSpread(date(), "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X", "X")
 

@@ -228,3 +228,31 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 @testing:case="createCmOptionQuoteMatrix -> [handle, json]"
 r = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, prices, underlying, "TF_CM_OQ", true);
 assert 1, isHandleJson(r, "TF_CM_OQ") && hasJsonField(r[1], "quote_smiles")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCmOptionQuoteMatrix rejects missing argument", syntaxError=1
+caplib::createCmOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X")
+
+@testing:case="createCmOptionQuoteMatrix rejects extra argument", syntaxError=1
+caplib::createCmOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false, 1)
+
+@testing:case="createCmOptionQuoteMatrix rejects null exerciseType", exception=1
+caplib::createCmOptionQuoteMatrix(string(), "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createCmOptionQuoteMatrix rejects null underlyingType", exception=1
+caplib::createCmOptionQuoteMatrix("X", string(), 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createCmOptionQuoteMatrix rejects vector for scalar exerciseType", exception=1
+caplib::createCmOptionQuoteMatrix(["X"], "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createCmOptionQuoteMatrix rejects scalar for vector termDates", exception=1
+caplib::createCmOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createCmOptionQuoteMatrix rejects partially-null vector termDates", exception=1
+caplib::createCmOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01, date()], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+
+@testing:case="createCmOptionQuoteMatrix rejects empty vector termDates", exception=1
+caplib::createCmOptionQuoteMatrix("X", "X", 2024.01.01, take(date, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)

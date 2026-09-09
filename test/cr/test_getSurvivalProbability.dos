@@ -75,6 +75,12 @@ caplib::getSurvivalProbability("TF_HANDLE_DOES_NOT_EXIST", curveDates)
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="getSurvivalProbability rejects missing argument", syntaxError=1
+caplib::getSurvivalProbability("X")
+
+@testing:case="getSurvivalProbability rejects extra argument", syntaxError=1
+caplib::getSurvivalProbability("X", [2024.01.01], 1)
+
 @testing:case="getSurvivalProbability rejects scalar for vector dates", exception=1
 caplib::getSurvivalProbability("X", [2024.01.01])
 

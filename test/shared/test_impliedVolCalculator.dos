@@ -97,6 +97,12 @@ assert 1, caplib::impliedVolCalculator(asOfDate, 100.0, flatIrCurve, flatDividen
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="impliedVolCalculator rejects missing argument", syntaxError=1
+caplib::impliedVolCalculator(asOfDate, 100.0, flatIrCurve, flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09)
+
+@testing:case="impliedVolCalculator rejects extra argument", syntaxError=1
+caplib::impliedVolCalculator(asOfDate, 100.0, flatIrCurve, flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0, 1)
+
 @testing:case="impliedVolCalculator rejects null calculationDate", exception=1
 caplib::impliedVolCalculator(date(), 100.0, flatIrCurve, flatDividendCurve, pricingSettings, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 

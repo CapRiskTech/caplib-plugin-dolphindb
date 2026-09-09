@@ -123,6 +123,12 @@ caplib::createFixedLegDefinition("CNY", 1, "QUARTERLY", "ACT_365_FIXED", "MODIFI
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFixedLegDefinition rejects missing argument", syntaxError=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE")
+
+@testing:case="createFixedLegDefinition rejects extra argument", syntaxError=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false, 1)
+
 @testing:case="createFixedLegDefinition rejects null payDayOffset", exception=1
 caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", int(), "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
 

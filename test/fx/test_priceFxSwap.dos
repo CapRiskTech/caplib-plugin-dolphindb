@@ -276,6 +276,12 @@ assert 2, abs(presentValue(r) - -327785.54562939936) < abs(-327785.54562939936) 
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="priceFxSwap rejects missing argument", syntaxError=1
+caplib::priceFxSwap("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceFxSwap rejects extra argument", syntaxError=1
+caplib::priceFxSwap("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="priceFxSwap rejects null pricingDate", exception=1
 caplib::priceFxSwap("X", date(), "X", "X", "X", "X", "X", false)
 

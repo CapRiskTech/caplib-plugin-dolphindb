@@ -126,6 +126,12 @@ caplib::createIrYieldCurveBuildSettings(irCurveName, false, ["CNY", "USD"], [irC
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createIrYieldCurveBuildSettings rejects missing argument", syntaxError=1
+caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X"], ["X"], ["X"])
+
+@testing:case="createIrYieldCurveBuildSettings rejects extra argument", syntaxError=1
+caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X"], ["X"], ["X"], "X", false, 1)
+
 @testing:case="createIrYieldCurveBuildSettings rejects partially-null vector discountCurrencyNames", exception=1
 caplib::createIrYieldCurveBuildSettings("X", false, ["X", string()], ["X"], ["X"], ["X"], "X", false)
 

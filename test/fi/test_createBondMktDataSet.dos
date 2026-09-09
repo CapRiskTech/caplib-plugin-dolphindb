@@ -226,6 +226,12 @@ assert 1, isHandleJson(r, "TF_FI_BOND_MKT")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createBondMktDataSet rejects missing argument", syntaxError=1
+caplib::createBondMktDataSet(2024.01.01, "X", "X", "X", "X")
+
+@testing:case="createBondMktDataSet rejects extra argument", syntaxError=1
+caplib::createBondMktDataSet(2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createBondMktDataSet rejects null asOfDate", exception=1
 caplib::createBondMktDataSet(date(), "X", "X", "X", "X", "X", false)
 

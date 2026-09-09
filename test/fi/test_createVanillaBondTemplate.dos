@@ -250,6 +250,12 @@ assert 1, isHandleJson(r2, "TF_FI_ZCB_TPL")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createVanillaBondTemplate rejects missing argument", syntaxError=1
+caplib::createVanillaBondTemplate("X", "X", 2024.01.01, 1, 2024.01.01, "X", 0.02, "X", 0.02)
+
+@testing:case="createVanillaBondTemplate rejects extra argument", syntaxError=1
+caplib::createVanillaBondTemplate("X", "X", 2024.01.01, 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false, 1)
+
 @testing:case="createVanillaBondTemplate rejects null instName", exception=1
 caplib::createVanillaBondTemplate(string(), "X", 2024.01.01, 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false)
 

@@ -74,6 +74,12 @@ caplib::getFwdRate("TF_HANDLE_DOES_NOT_EXIST", curveDates, 0.25)
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="getFwdRate rejects missing argument", syntaxError=1
+caplib::getFwdRate(flatIrCurve, curveDates)
+
+@testing:case="getFwdRate rejects extra argument", syntaxError=1
+caplib::getFwdRate(flatIrCurve, curveDates, 0.25, 1)
+
 @testing:case="getFwdRate rejects null tenor", exception=1
 caplib::getFwdRate(flatIrCurve, curveDates, double())
 

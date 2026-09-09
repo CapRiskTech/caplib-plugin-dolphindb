@@ -133,6 +133,12 @@ caplib::createCdsTemplate("TF_CDS_TPL2", "1d", "NOT_A_SETTLEMENT", 0.0, 1.0, "PA
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createCdsTemplate rejects missing argument", syntaxError=1
+caplib::createCdsTemplate("X", "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X")
+
+@testing:case="createCdsTemplate rejects extra argument", syntaxError=1
+caplib::createCdsTemplate("X", "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false, 1)
+
 @testing:case="createCdsTemplate rejects null instName", exception=1
 caplib::createCdsTemplate(string(), "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 

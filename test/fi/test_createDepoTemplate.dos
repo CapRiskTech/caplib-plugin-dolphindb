@@ -69,5 +69,11 @@ assert 1, true
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createDepoTemplate rejects missing argument", syntaxError=1
+caplib::createDepoTemplate("TF_DEPO", "CNY")
+
+@testing:case="createDepoTemplate rejects extra argument", syntaxError=1
+caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false, 1)
+
 @testing:case="createDepoTemplate rejects vector for scalar instName", exception=1
 caplib::createDepoTemplate(["X"], "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)

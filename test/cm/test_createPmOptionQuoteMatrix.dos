@@ -70,3 +70,31 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 @testing:case="createPmOptionQuoteMatrix -> [handle, json]"
 r = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true);
 assert 1, isHandleJson(r, "TF_PM_OQ")
+
+// ----------------------------------------------------------------------------
+// Negative / exception validation (auto-derived from the signature)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmOptionQuoteMatrix rejects missing argument", syntaxError=1
+caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]))
+
+@testing:case="createPmOptionQuoteMatrix rejects extra argument", syntaxError=1
+caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false, 1)
+
+@testing:case="createPmOptionQuoteMatrix rejects null underlying", exception=1
+caplib::createPmOptionQuoteMatrix(string(), 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false)
+
+@testing:case="createPmOptionQuoteMatrix rejects null asOfDate", exception=1
+caplib::createPmOptionQuoteMatrix("X", date(), ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false)
+
+@testing:case="createPmOptionQuoteMatrix rejects vector for scalar underlying", exception=1
+caplib::createPmOptionQuoteMatrix(["X"], 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false)
+
+@testing:case="createPmOptionQuoteMatrix rejects scalar for vector terms", exception=1
+caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false)
+
+@testing:case="createPmOptionQuoteMatrix rejects partially-null vector terms", exception=1
+caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X", string()], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false)
+
+@testing:case="createPmOptionQuoteMatrix rejects empty vector terms", exception=1
+caplib::createPmOptionQuoteMatrix("X", 2024.01.01, take(string, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", false)

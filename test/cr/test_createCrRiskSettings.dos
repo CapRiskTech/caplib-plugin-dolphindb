@@ -127,6 +127,12 @@ assert 1, isHandleJson(r, "TF_CR_RISKSET")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createCrRiskSettings rejects missing argument", syntaxError=1
+caplib::createCrRiskSettings("X", "X", "X", "X")
+
+@testing:case="createCrRiskSettings rejects extra argument", syntaxError=1
+caplib::createCrRiskSettings("X", "X", "X", "X", "X", false, 1)
+
 @testing:case="createCrRiskSettings rejects null irCurveSettings", exception=1
 caplib::createCrRiskSettings(string(), "X", "X", "X", "X", false)
 

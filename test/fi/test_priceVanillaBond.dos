@@ -229,6 +229,12 @@ caplib::priceVanillaBond(vanillaBond, asOfDate, cnyTreasCpnBond200014Template[0]
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="priceVanillaBond rejects missing argument", syntaxError=1
+caplib::priceVanillaBond("X", 2024.01.01, "X", "X", "X", "X")
+
+@testing:case="priceVanillaBond rejects extra argument", syntaxError=1
+caplib::priceVanillaBond("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
 @testing:case="priceVanillaBond rejects null pricingDate", exception=1
 caplib::priceVanillaBond("X", date(), "X", "X", "X", "X", "X", false)
 

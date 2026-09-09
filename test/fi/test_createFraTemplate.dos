@@ -120,6 +120,12 @@ assert 1, isHandleJson(r, "TF_FRA")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="createFraTemplate rejects missing argument", syntaxError=1
+caplib::createFraTemplate("X", "X", "X", "X", "X")
+
+@testing:case="createFraTemplate rejects extra argument", syntaxError=1
+caplib::createFraTemplate("X", "X", "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", 1, false, 1)
+
 @testing:case="createFraTemplate rejects null instName", exception=1
 caplib::createFraTemplate(string(), "X", "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", 1, false)
 

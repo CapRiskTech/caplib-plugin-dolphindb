@@ -133,6 +133,12 @@ assert 1, true
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcCrossCurrencySwapRate rejects missing argument", syntaxError=1
+caplib::calcCrossCurrencySwapRate(2024.01.01, "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X")
+
+@testing:case="calcCrossCurrencySwapRate rejects extra argument", syntaxError=1
+caplib::calcCrossCurrencySwapRate(2024.01.01, "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X", 1)
+
 @testing:case="calcCrossCurrencySwapRate rejects null calculationDate", exception=1
 caplib::calcCrossCurrencySwapRate(date(), "X", "X", 0.02, "X", "X", 2024.01.01, 2024.01.01, "X", "X", "X")
 

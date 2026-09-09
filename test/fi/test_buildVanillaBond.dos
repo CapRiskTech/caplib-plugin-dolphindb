@@ -229,6 +229,12 @@ caplib::buildVanillaBond(1000000.0, cnyTreasStdCfets[0], "", 2020.10.10, "TF_FI_
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="buildVanillaBond rejects missing argument", syntaxError=1
+caplib::buildVanillaBond(0.02, "X", "X", 2024.01.01)
+
+@testing:case="buildVanillaBond rejects extra argument", syntaxError=1
+caplib::buildVanillaBond(0.02, "X", "X", 2024.01.01, "X", false, 1)
+
 @testing:case="buildVanillaBond rejects null nominal", exception=1
 caplib::buildVanillaBond(double(), "X", "X", 2024.01.01, "X", false)
 

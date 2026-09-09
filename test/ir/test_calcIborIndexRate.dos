@@ -127,6 +127,12 @@ assert 1, true
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+@testing:case="calcIborIndexRate rejects missing argument", syntaxError=1
+caplib::calcIborIndexRate([2024.01.01], "X")
+
+@testing:case="calcIborIndexRate rejects extra argument", syntaxError=1
+caplib::calcIborIndexRate([2024.01.01], "X", "X", 1)
+
 @testing:case="calcIborIndexRate rejects scalar for vector fixingDates", exception=1
 caplib::calcIborIndexRate([2024.01.01], "X", "X")
 
