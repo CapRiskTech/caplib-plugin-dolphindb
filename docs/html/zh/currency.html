@@ -17,7 +17,7 @@
         <h1>外汇</h1>
         <p class="lede">外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。</p>
       </header>
-      <section id="user-guide" class="panel"><h2>用户指南</h2><p>外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。 本页包含 39 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p class="validity-guide"><strong>参数有效性：</strong> 每个参数均说明精确枚举标签、选择器代码、范围、正负性、形状和跨参数规则。“包装器检查”表示插件立即校验；“业务有效”规则可能由下游服务校验。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>外汇计算器、报价矩阵、波动率曲面、现金类产品和期权定价。 本页包含 35 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p class="validity-guide"><strong>参数有效性：</strong> 每个参数均说明精确枚举标签、选择器代码、范围、正负性、形状和跨参数规则。“包装器检查”表示插件立即校验；“业务有效”规则可能由下游服务校验。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 fxMkt = caplib::createFxMktDataSet(
     2025.01.02, &quot;USD_DISC&quot;, &quot;EUR_DISC&quot;, &quot;EURUSD_SPOT&quot;, &quot;EURUSD_VOL&quot;, &quot;FX_MKT&quot;, &quot;FX_MKT&quot;, true);
@@ -28,68 +28,8 @@ pricingHandle = pricingResult[0];
 pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
 <section class="api-group"><h2>外汇分析</h2>
 
-<article class="api-card" data-search="calcfxforwardrate calculationdate date leftccy string rightccy string deliverydate date fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
-  <div class="api-card-head">
-    <div>
-      <a id="calcfxforwardrate"></a>
-      <h3><code>calcFxForwardRate</code></h3>
-      <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::calcFxForwardRate(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
-      <h4 class="api-subheading">详情</h4>
-      <p class="api-description">根据缓存现货报价以及本币和外币贴现曲线计算交割日 FX 远期汇率。</p>
-    </div>
-    <span class="return-pill">DOUBLE</span>
-  </div>
-  <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
-  <details open>
-    <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>货币对的左侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>货币对的右侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>FxSpotRate 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>domestic IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>foreign IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxForwardRate(calculationDate, leftCcy, rightCcy, deliveryDate, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
-</article>
 
-<article class="api-card" data-search="calcfxswappoint calculationdate date leftccy string rightccy string deliverydate date fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
-  <div class="api-card-head">
-    <div>
-      <a id="calcfxswappoint"></a>
-      <h3><code>calcFxSwapPoint</code></h3>
-      <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::calcFxSwapPoint(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
-      <h4 class="api-subheading">详情</h4>
-      <p class="api-description">根据现货报价与两条贴现曲线隐含的远期相对现货调整计算交割日 FX 掉期点。</p>
-    </div>
-    <span class="return-pill">DOUBLE</span>
-  </div>
-  <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
-  <details open>
-    <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>货币对的左侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>货币对的右侧币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>该计算使用的日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>FxSpotRate 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>domestic IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>foreign IrYieldCurve 的 ObjectCache 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxSwapPoint(calculationDate, leftCcy, rightCcy, deliveryDate, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
-</article>
 
-<article class="api-card" data-search="calcfxprice convert a currency amount into a target-currency price using an fx rate. amount double, currency string, destccy string, fxrate double, baseccy string, targetccy string scalar">
-  <div class="api-card-head">
-    <div>
-      <a id="calcfxprice"></a>
-      <h3><code>calcFxPrice</code></h3>
-      <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::calcFxPrice(amount DOUBLE, currency STRING, destCcy STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING)</code></p>
-      <h4 class="api-subheading">详情</h4>
-      <p class="api-description">按给定基础/目标币种 FX 汇率将金额转换为 destCcy，并返回转换金额。</p>
-    </div>
-    <span class="return-pill">DOUBLE</span>
-  </div>
-  <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong> DOUBLE 数值。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
-  <details open>
-    <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>amount</code></td><td>DOUBLE</td><td>金额。<br><span class="validity-note"><strong>有效性:</strong> 必须为有限 DOUBLE；负值、零和正值均有效，可表示带符号的换算金额。</span></td></tr><tr><td><code>currency</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>destCcy</code></td><td>STRING</td><td>币种代码。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>外汇汇率输入值。<br><span class="validity-note"><strong>有效性:</strong> 必须严格为正且有限；包装器仅检查 DOUBLE 类型。</span></td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的基准币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>外汇或跨币种计算中的目标币种。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::calcFxPrice(amount, currency, destCcy, fxRate, baseCcy, targetCcy)</code></pre></div>
-</article>
 
 <article class="api-card" data-search="calcfxatmstrike atmtype string expirydate date volsurfacehandle string fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
   <div class="api-card-head">
@@ -280,26 +220,6 @@ pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" cl
 <div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxNonDeliverableForward(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
-<article class="api-card" data-search="pricefxtimeoption price an fx time option. fxcashpricing7(fxtimeoption) pricing_result returnjson bool">
-  <div class="api-card-head">
-    <div>
-      <a id="pricefxtimeoption"></a>
-      <h3><code>priceFxTimeOption</code></h3>
-      <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::priceFxTimeOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
-      <h4 class="api-subheading">详情</h4>
-      <p class="api-description">定价外汇时间期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 <code>PricingResults</code>。</p>
-    </div>
-    <span class="return-pill">PricingResults</span>
-  </div>
-  <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong> 成功时创建 <code>PricingResults</code> 对象。CAPLIB 返回其 ObjectCache 句柄；<code>returnJson=true</code> 时返回 <code>[handle, protobufJson]</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
-  <details open>
-    <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>被定价工具的 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>定价请求使用的估值日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>定价使用的市场数据集 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>定价设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>风险设置 内存对象 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>情景分析设置 内存对象 句柄；未使用时传空字符串。<br><span class="validity-note"><strong>有效性:</strong> 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>远程执行模式或服务端点；传空字符串使用默认模式。<br><span class="validity-note"><strong>有效性:</strong> 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量，仅可为 false 或 true。</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::priceFxTimeOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
-</article>
 
 <article class="api-card" data-search="pricefxeuropeanoption price an fx european option. fxoptionpricing7(europeanoption) pricing_result returnjson bool">
   <div class="api-card-head">
@@ -647,7 +567,7 @@ pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" cl
       <h4 class="api-subheading">语法</h4>
       <p class="full-signature"><code>caplib::createFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRING, refDate DATE, spotDate DATE, tag STRING[, returnJson BOOL])</code></p>
       <h4 class="api-subheading">详情</h4>
-      <p class="api-description">创建并缓存外汇即期汇率。 函数验证并转换字段，构造 <code>FxSpotRate</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
+      <p class="api-description">创建并缓存外汇即期汇率。 函数验证并转换字段，构造 <code>FxSpotRate</code> protobuf 并存入 ObjectCache，供后续分析使用。对象的静态数据键为 <code>FX_SPOT/&lt;targetCurrency&gt;&lt;baseCurrency&gt;</code>；buildIrCrossCurrencyCurve 等接口按该键解析静态数据，跨币种曲线构建前需用 createFxSpotTemplate 注册对应货币对的模板。注意 protobuf 的 base/target 字段序与 python 包装器相反：create_foreign_exchange_rate(value, left, right) 生成 base=right、target=left。创建并缓存外汇即期汇率。 函数验证并转换字段，构造 <code>FxSpotRate</code> protobuf 并存入 ObjectCache，供后续分析使用。</p>
     </div>
     <span class="return-pill">FxSpotRate</span>
   </div>

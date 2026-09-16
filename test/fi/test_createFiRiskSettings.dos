@@ -253,3 +253,12 @@ caplib::createFiRiskSettings(["X"], "X", "X", "TF_createFiRiskSettings_H", "TF_c
 
 @testing:case="createFiRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createFiRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="TF_createFiRiskSettings_H", tag="TF_createFiRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFiRiskSettings optional returnJson null uses default"
+result = caplib::createFiRiskSettings(irRisk, creditRisk, thetaRisk, "TF_FIRSK", "TF_FIRSK", bool())
+assert 1, typestr(result) != "VOID"

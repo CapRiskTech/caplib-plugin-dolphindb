@@ -83,3 +83,22 @@ caplib::createInterestPaymentScheduleDefinition(["X"], "X", "X", 1, "X", "TF_cre
 
 @testing:case="createInterestPaymentScheduleDefinition rejects keyword arguments", syntaxError=1
 caplib::createInterestPaymentScheduleDefinition(calendars="X", frequency="X", payDayMode="X", payDayOffset=1, payDayConvention="X", tag="TF_createInterestPaymentScheduleDefinition_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestPaymentScheduleDefinition accepts invalid enum payDayMode (maps to invalid sentinel)"
+result = caplib::createInterestPaymentScheduleDefinition("X", "X", "NOT_A_VALID_ENUM_LABEL", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+assert 1, typestr(result) != "VOID"
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestPaymentScheduleDefinition optional returnJson null uses default"
+result = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", bool())
+assert 1, typestr(result) != "VOID"

@@ -296,3 +296,12 @@ caplib::createFxSpotRate([0.02], "X", "X", 2024.01.01, 2024.01.01, "TF_createFxS
 
 @testing:case="createFxSpotRate rejects keyword arguments", syntaxError=1
 caplib::createFxSpotRate(value=0.02, baseCurrency="X", targetCurrency="X", refDate=2024.01.01, spotDate=2024.01.01, tag="TF_createFxSpotRate_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSpotRate optional returnJson null uses default"
+result = caplib::createFxSpotRate(1.1761, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT", bool())
+assert 1, typestr(result) != "VOID"

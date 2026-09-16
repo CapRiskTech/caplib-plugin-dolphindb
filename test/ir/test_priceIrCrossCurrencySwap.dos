@@ -112,22 +112,24 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
-@testing:case="priceIrCrossCurrencySwap positive call"
-// NOTE: blocked upstream: cross-currency instrument pricing fails on 0.0.11 (see issues.md).
-try {
-xtpl = caplib::createIrVanillaInstrumentTemplate("CROSS_CURRENCY_SWAP", "TF_XTPL", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_XTPL", true)
-    xinst = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, xtpl[0], 1000000.0, "", "TF_XINST", false)
-    r = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, "TF_HANDLE_DOES_NOT_EXIST", irPricingSettings, irXccyRisk[0], "", "", false)
-    assert 1, isPricingResultsJson(r, "TF_XINST_results")
-} catch(ex) {
-    // known 0.0.11 service-side limitation, documented not swallowed
-    print("documented service failure: " + ex[1]);
-    assert 1, true
-}
-assert 1, true
-
-@testing:case="priceIrCrossCurrencySwap rejects unknown instrument handle", exception=1
-caplib::priceIrCrossCurrencySwap("TF_HANDLE_DOES_NOT_EXIST", irAsOfDate, "TF_HANDLE_DOES_NOT_EXIST", irPricingSettings, irXccyRisk[0], "", "", true)
+@testing:case="priceIrCrossCurrencySwap -> [handle, PricingResults] (python parity)"
+// The cross-currency swap needs legs in two currencies; the market data set is
+// createIrCrossCcyMktDataSet with both currency curves and the USDCNY spot
+// (protobuf baseCurrency=CNY, targetCurrency=USD, see buildIrCrossCurrencyCurve).
+usdFixedLeg = caplib::createFixedLegDefinition("USD", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING",
+    "INVALID_NOTIONAL_EXCHANGE", "TF_USD_LEG", true);
+xtpl = caplib::createIrVanillaInstrumentTemplate("CROSS_CURRENCY_SWAP", "TF_XTPL", "SPOTSTART", 1,
+    [irFixedLeg[0], usdFixedLeg[0]], "TF_XTPL", true);
+xinst = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+    xtpl[0], 1000000.0, "", "TF_XINST", false);
+fxSpotP = caplib::createFxSpotRate(6.6916, "CNY", "USD", irAsOfDate, irAsOfDate, "TF_XCCY_FXSPOT_P", false);
+usdCurve = caplib::createIrYieldCurve(irAsOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "TF_USD_CURVE_P", false);
+xmkt = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpotP, "TF_IR_XMKT_P", true);
+r = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true);
+assert 1, isPricingResultsJson(r, "TF_XINST_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -155,7 +157,16 @@ caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", string(), 
 caplib::priceIrCrossCurrencySwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceIrCrossCurrencySwap rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceIrCrossCurrencySwap("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceIrCrossCurrencySwap("TF_NO_SUCH_HANDLE_priceIrCrossCurrencySwap", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceIrCrossCurrencySwap rejects keyword arguments", syntaxError=1
 caplib::priceIrCrossCurrencySwap(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceIrCrossCurrencySwap optional returnJson null uses default"
+result = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

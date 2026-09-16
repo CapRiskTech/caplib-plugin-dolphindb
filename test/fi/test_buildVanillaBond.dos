@@ -255,3 +255,12 @@ caplib::buildVanillaBond([0.02], "X", "X", 2024.01.01, "TF_buildVanillaBond_H", 
 
 @testing:case="buildVanillaBond rejects keyword arguments", syntaxError=1
 caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=2024.01.01, tag="TF_buildVanillaBond_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildVanillaBond optional returnJson null uses default"
+result = caplib::buildVanillaBond(1000000.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", bool())
+assert 1, typestr(result) != "VOID"

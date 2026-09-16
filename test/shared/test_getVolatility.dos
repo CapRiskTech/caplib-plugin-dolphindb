@@ -85,7 +85,24 @@ caplib::getVolatility("X", [2024.01.01, date()], [0.02])
 caplib::getVolatility("X", take(date, 0), [0.02])
 
 @testing:case="getVolatility rejects nonexistent handle volSurfaceHandle", exception=1
-caplib::getVolatility("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01], [0.02])
-
+caplib::getVolatility("TF_NO_SUCH_HANDLE_getVolatility", [2024.01.01], [0.02])
 @testing:case="getVolatility rejects keyword arguments", syntaxError=1
 caplib::getVolatility(volSurfaceHandle="X", termDates=[2024.01.01], strikes=[0.02])
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="getVolatility rejects all-null vector termDates", exception=1
+caplib::getVolatility(flatVolSurface, [date(), date(), date()], [100.0])
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="getVolatility -> exact flat-surface reference"
+vr = caplib::getVolatility(flatVolSurface, [2023.03.09], [100.0]);
+assert 1, abs(vr[0] - 0.20) < 1.0e-12

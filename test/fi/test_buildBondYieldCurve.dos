@@ -251,7 +251,16 @@ caplib::buildBondYieldCurve(2024.01.01, "X", string(), "X", "X", "X", "X", "X", 
 caplib::buildBondYieldCurve([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
 @testing:case="buildBondYieldCurve rejects nonexistent handle buildSettingsHandle", exception=1
-caplib::buildBondYieldCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+caplib::buildBondYieldCurve(2024.01.01, "TF_NO_SUCH_HANDLE_buildBondYieldCurve", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
 @testing:case="buildBondYieldCurve rejects keyword arguments", syntaxError=1
 caplib::buildBondYieldCurve(referenceDate=2024.01.01, buildSettingsHandle="X", curveName="X", parCurveHandle="X", dayCount="X", compoundingType="X", frequency="X", buildingMethod="X", calcJacobian=false, forwardCurveHandle="X", handle="TF_buildBondYieldCurve_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondYieldCurve optional returnJson null uses default"
+result = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", bool())
+assert 1, typestr(result) != "VOID"

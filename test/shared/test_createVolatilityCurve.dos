@@ -103,3 +103,21 @@ caplib::createVolatilityCurve(2024.01.01, take(date, 0), [0.02], "X", "X", "X", 
 
 @testing:case="createVolatilityCurve rejects keyword arguments", syntaxError=1
 caplib::createVolatilityCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], vols=[0.02], dcc="X", interp="X", extrap="X", underlying="X", handle="TF_createVolatilityCurve_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilityCurve rejects all-null vector pillarDates", exception=1
+caplib::createVolatilityCurve(asOfDate, [date(), date(), date()], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilityCurve optional returnJson null uses default"
+result = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", bool())
+assert 1, typestr(result) != "VOID"

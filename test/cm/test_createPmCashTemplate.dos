@@ -105,3 +105,12 @@ caplib::createPmCashTemplate(["X"], 1, "X", "X", "X", false)
 
 @testing:case="createPmCashTemplate rejects keyword arguments", syntaxError=1
 caplib::createPmCashTemplate(instName="X", startDelay=1, deliveryDayConvention="X", calendars="X", dayCount="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmCashTemplate optional returnJson null uses default"
+result = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_GBLO"], "ACT_360", bool())
+assert 1, typestr(result) != "VOID"

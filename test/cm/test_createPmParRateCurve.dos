@@ -115,3 +115,27 @@ caplib::createPmParRateCurve([2024.01.01], "X", "X", matrix([0.2]), "TF_createPm
 
 @testing:case="createPmParRateCurve rejects keyword arguments", syntaxError=1
 caplib::createPmParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", pillarsTable=matrix([0.2]), tag="TF_createPmParRateCurve_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmParRateCurve rejects zero-row matrix pillarsTable", exception=1
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix(DOUBLE, 0, 3), "TF_PM_PAR_OK", false)
+
+@testing:case="createPmParRateCurve rejects all-null matrix pillarsTable", exception=1
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix([double(), double()], [double(), double()]), "TF_PM_PAR_OK", false)
+
+@testing:case="createPmParRateCurve rejects partially-null matrix pillarsTable", exception=1
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix([0.2, double()], [double(), 0.2]), "TF_PM_PAR_OK", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmParRateCurve optional returnJson null uses default"
+result = caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", table( ["XAUUSD","XAUUSD","XAUUSD"] as instrument_name, ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type, ["1W","2W","1M"] as instrument_term, [0.025,0.025,0.0248] as instrument_rate), "TF_PM_PAR_OK", bool())
+assert 1, typestr(result) != "VOID"

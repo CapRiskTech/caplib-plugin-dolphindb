@@ -158,3 +158,22 @@ caplib::createIrParRateCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"]
 
 @testing:case="createIrParRateCurve rejects keyword arguments", syntaxError=1
 caplib::createIrParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", instNames=["X"], instTypes=["X"], instTerms=["X"], factors=[0.02], quotes=[0.02], handle="TF_createIrParRateCurve_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrParRateCurve accepts all-null vector instNames (lenient validation, does not raise)"
+result = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [string(), string(), string()], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", true)
+assert 1, typestr(result) != "VOID"
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrParRateCurve optional returnJson null uses default"
+result = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", bool())
+assert 1, typestr(result) != "VOID"

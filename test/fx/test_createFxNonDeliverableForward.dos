@@ -296,3 +296,12 @@ caplib::createFxNonDeliverableForward(["X"], 0.02, "X", 0.02, "X", 2024.01.01, 2
 
 @testing:case="createFxNonDeliverableForward rejects keyword arguments", syntaxError=1
 caplib::createFxNonDeliverableForward(buyCurrency="X", buyAmount=0.02, sellCurrency="X", sellAmount=0.02, settlementCurrency="X", deliveryDate=2024.01.01, expiryDate=2024.01.01, tag="TF_createFxNonDeliverableForward_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxNonDeliverableForward optional returnJson null uses default"
+result = caplib::createFxNonDeliverableForward("X", 0.02, "X", 0.02, "X", 2024.01.01, 2024.01.01, "TF_createFxNonDeliverableForward_H", bool())
+assert 1, typestr(result) != "VOID"

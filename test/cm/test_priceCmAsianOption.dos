@@ -257,7 +257,16 @@ caplib::priceCmAsianOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 caplib::priceCmAsianOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmAsianOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceCmAsianOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceCmAsianOption("TF_NO_SUCH_HANDLE_priceCmAsianOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmAsianOption rejects keyword arguments", syntaxError=1
 caplib::priceCmAsianOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmAsianOption optional returnJson null uses default"
+result = caplib::priceCmAsianOption(inst, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", bool())
+assert 1, typestr(result) != "VOID"

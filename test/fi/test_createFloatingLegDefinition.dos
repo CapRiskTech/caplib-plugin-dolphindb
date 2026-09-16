@@ -268,3 +268,34 @@ caplib::createFloatingLegDefinition(["X"], "X", "X", "X", "X", "X", "X", "X", "X
 
 @testing:case="createFloatingLegDefinition rejects keyword arguments", syntaxError=1
 caplib::createFloatingLegDefinition(currency="X", refIndex="X", calendar="X", fixingCalendars="X", freq="X", fixingFreq="X", dayCount="X", paymentDiscountMethod="X", rateCalcMethod="X", spread=false, interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, notionalExchange="X", tag="TF_createFloatingLegDefinition_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFloatingLegDefinition rejects invalid enum for paymentDiscountMethod", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NOT_A_VALID_ENUM_LABEL", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-2 additions (parameter relationships / boundaries)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFloatingLegDefinition accepts calendar scalar with longer fixingCalendars vector (lenient validation, does not raise)"
+result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS", "CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+assert 1, typestr(result) != "VOID"
+@testing:case="createFloatingLegDefinition accepts calendars and fixingCalendars of unequal length (lenient validation, does not raise)"
+result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], ["CAL_CFETS", "CAL_CFETS"], ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+assert 1, typestr(result) != "VOID"
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFloatingLegDefinition optional returnJson null uses default"
+result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", bool())
+assert 1, typestr(result) != "VOID"

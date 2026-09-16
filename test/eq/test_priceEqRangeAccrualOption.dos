@@ -190,7 +190,16 @@ caplib::priceEqRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X", string(),
 caplib::priceEqRangeAccrualOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqRangeAccrualOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceEqRangeAccrualOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceEqRangeAccrualOption("TF_NO_SUCH_HANDLE_priceEqRangeAccrualOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqRangeAccrualOption rejects keyword arguments", syntaxError=1
 caplib::priceEqRangeAccrualOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqRangeAccrualOption optional returnJson null uses default"
+result = caplib::priceEqRangeAccrualOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

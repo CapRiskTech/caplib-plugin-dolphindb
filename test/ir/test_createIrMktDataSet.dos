@@ -145,7 +145,25 @@ caplib::createIrMktDataSet(2024.01.01, "X", ["X", string()], ["X"], "TF_createIr
 caplib::createIrMktDataSet(2024.01.01, "X", take(string, 0), ["X"], "TF_createIrMktDataSet_H", false)
 
 @testing:case="createIrMktDataSet rejects nonexistent handle discountCurveHandle", exception=1
-caplib::createIrMktDataSet(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
+caplib::createIrMktDataSet(2024.01.01, "TF_NO_SUCH_HANDLE_createIrMktDataSet", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
 @testing:case="createIrMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createIrMktDataSet(irAsOfDate=2024.01.01, discountCurveHandle="X", underlyingInterestRates=["X"], forwardCurveHandles=["X"], handle="TF_createIrMktDataSet_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrMktDataSet rejects all-null vector underlyingInterestRates", exception=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, [string(), string(), string()], [irCurve], "TF_IRMKT", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrMktDataSet optional returnJson null uses default"
+result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", bool())
+assert 1, typestr(result) != "VOID"

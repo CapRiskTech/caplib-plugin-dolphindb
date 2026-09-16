@@ -252,3 +252,12 @@ caplib::createVanillaBondRiskSettings(["X"], "X", false, "TF_createVanillaBondRi
 
 @testing:case="createVanillaBondRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createVanillaBondRiskSettings(dv01="X", cs01="X", theta=false, name="TF_createVanillaBondRiskSettings_H", tag="TF_createVanillaBondRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVanillaBondRiskSettings optional returnJson null uses default"
+result = caplib::createVanillaBondRiskSettings("", "", 1, "TF_VBR", "TF_VBR", bool())
+assert 1, typestr(result) != "VOID"

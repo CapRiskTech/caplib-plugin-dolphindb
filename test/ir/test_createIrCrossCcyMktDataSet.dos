@@ -151,7 +151,25 @@ caplib::createIrCrossCcyMktDataSet(2024.01.01, "X", ["X", string()], ["X"], "X",
 caplib::createIrCrossCcyMktDataSet(2024.01.01, "X", take(string, 0), ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
 
 @testing:case="createIrCrossCcyMktDataSet rejects nonexistent handle baseDiscountCurveHandle", exception=1
-caplib::createIrCrossCcyMktDataSet(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+caplib::createIrCrossCcyMktDataSet(2024.01.01, "TF_NO_SUCH_HANDLE_createIrCrossCcyMktDataSet", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
 
 @testing:case="createIrCrossCcyMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createIrCrossCcyMktDataSet(asOfDate=2024.01.01, baseDiscountCurveHandle="X", underlyingInterestRates=["X"], forwardCurveHandles=["X"], crossCcyDiscountCurveHandle="X", fxSpotHandle="X", handle="TF_createIrCrossCcyMktDataSet_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrCrossCcyMktDataSet rejects all-null vector underlyingInterestRates", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [string(), string(), string()], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrCrossCcyMktDataSet optional returnJson null uses default"
+result = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", bool())
+assert 1, typestr(result) != "VOID"

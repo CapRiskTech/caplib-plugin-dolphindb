@@ -257,3 +257,21 @@ caplib::createFraTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", "X", 1, "X",
 
 @testing:case="createFraTemplate rejects keyword arguments", syntaxError=1
 caplib::createFraTemplate(instName="X", refIndex="X", currency="X", calendar="X", fixingCalendars="X", freq="X", dayCount="X", paymentDiscountMethod="X", interestDayConvention="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingDayOffset=1, returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFraTemplate rejects invalid enum for paymentDiscountMethod", exception=1
+caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NOT_A_VALID_ENUM_LABEL", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFraTemplate optional returnJson null uses default"
+result = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, bool())
+assert 1, typestr(result) != "VOID"

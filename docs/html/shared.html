@@ -15,9 +15,9 @@
       <header class="page-header">
         <p class="kicker">DolphinDB caplib plugin</p>
         <h1>Common</h1>
-        <p class="lede">Cross-asset utilities, static-data service helpers, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</p>
+        <p class="lede">Cross-asset utilities, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</p>
       </header>
-      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Cross-asset utilities, static-data service helpers, pricing settings, risk settings, scenario settings, and shared protobuf tooling. This page contains 29 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. If omitted or <code>false</code>, the function returns only the handle. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Cross-asset utilities, pricing settings, risk settings, scenario settings, and shared protobuf tooling. This page contains 28 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. If omitted or <code>false</code>, the function returns only the handle. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 settings = caplib::createPricingSettings(
     &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0,
@@ -69,26 +69,6 @@ json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code>
 <div class="api-example"><h4>Example</h4><p>The call below uses variables of the documented types; append optional arguments as needed.</p><pre><code>result = caplib::createCalendar(calName)</code></pre></div>
 </article>
 
-<article class="api-card" data-search="createstaticdata create a caplib static-data object from serialized protobuf bytes. staticdatatype string, staticdatabytes string scalar">
-  <div class="api-card-head">
-    <div>
-      <a id="createstaticdata"></a>
-      <h3><code>createStaticData</code></h3>
-      <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::createStaticData(staticDataType STRING, staticDataBytes STRING)</code></p>
-      <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Validates StaticDataType, sends the supplied serialized protobuf bytes to CAPLIB, and registers that concrete static-data object.</p>
-    </div>
-    <span class="return-pill">BOOL</span>
-  </div>
-  <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> Bool <code>true</code> after registration (failure throws; <code>false</code> is never returned). <strong>Status/error behavior:</strong> For service-backed calls, <code>success=true</code> means the documented result was produced, while <code>success=false</code> means no valid result was produced and the service <code>err_msg</code> is surfaced in a DolphinDB <code>RuntimeException</code>. Wrapper-only operations expose no status scalar. Validation, cache-class/handle, parsing, and serialization failures also throw, so every error is observed as an exception rather than a fallback scalar or partial object.</p>
-  <details open>
-    <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>staticDataType</code></td><td>STRING</td><td>Static data enum label such as <code>SDT_CALENDAR</code> or <code>SDT_IBOR_INDEX</code>.<br><span class="validity-note"><strong>Validity:</strong> Value must be one of these complete protobuf labels: <code>INVALID_STATIC_DATA_TYPE</code>, <code>SDT_CALENDAR</code>, <code>SDT_IBOR_INDEX</code>, <code>SDT_IR_YIELD_CURVE</code>, <code>SDT_FX_MKT_CONVENTIONS</code>, <code>SDT_FX_SPOT</code>, <code>SDT_FX_SWAP</code>, <code>SDT_FX_FORWARD</code>, <code>SDT_FX_NDF</code>, <code>SDT_IR_VANILLA_INSTRUMENT</code>, <code>SDT_IR_FUTURE</code>, <code>SDT_FX_TIME_OPTION</code>, <code>SDT_VANILLA_BOND</code>, <code>SDT_CREDIT_INSTRUMENT</code>, <code>SDT_PM_CASH</code>. These are canonical spellings; use them exactly for portability. Labels containing <code>INVALID</code> are parser-recognized sentinels and normally are not business-valid. Matching is case-insensitive; empty string and <code>NAN</code> map to the invalid sentinel.</span></td></tr><tr><td><code>staticDataBytes</code></td><td>STRING</td><td>Serialized protobuf bytes for the static-data payload to register in caplib.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty binary STRING that parses as the exact protobuf type named in the description.</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>Example</h4><p>The call below uses variables of the documented types; append optional arguments as needed.</p><pre><code>result = caplib::createStaticData(staticDataType, staticDataBytes)</code></pre></div>
-</article>
 
 <article class="api-card" data-search="getobjectcachejson read a cached protobuf object back as json. protobuftype string, handle string scalar">
   <div class="api-card-head">

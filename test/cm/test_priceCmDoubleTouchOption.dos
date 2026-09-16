@@ -257,7 +257,16 @@ caplib::priceCmDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X", string(), 
 caplib::priceCmDoubleTouchOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmDoubleTouchOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceCmDoubleTouchOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceCmDoubleTouchOption("TF_NO_SUCH_HANDLE_priceCmDoubleTouchOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmDoubleTouchOption rejects keyword arguments", syntaxError=1
 caplib::priceCmDoubleTouchOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmDoubleTouchOption optional returnJson null uses default"
+result = caplib::priceCmDoubleTouchOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", bool())
+assert 1, typestr(result) != "VOID"

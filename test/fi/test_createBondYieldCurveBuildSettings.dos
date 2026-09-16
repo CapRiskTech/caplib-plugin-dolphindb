@@ -252,3 +252,21 @@ caplib::createBondYieldCurveBuildSettings(["X"], "X", "X", "X", "TF_createBondYi
 
 @testing:case="createBondYieldCurveBuildSettings rejects keyword arguments", syntaxError=1
 caplib::createBondYieldCurveBuildSettings(curveName="X", curveType="X", interpMethod="X", extrapMethod="X", tag="TF_createBondYieldCurveBuildSettings_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondYieldCurveBuildSettings rejects invalid enum for curveType", exception=1
+caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "NOT_A_VALID_ENUM_LABEL", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondYieldCurveBuildSettings optional returnJson null uses default"
+result = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", bool())
+assert 1, typestr(result) != "VOID"

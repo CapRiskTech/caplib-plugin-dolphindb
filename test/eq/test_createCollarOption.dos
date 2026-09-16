@@ -191,3 +191,12 @@ caplib::createCollarOption(["X"], 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01
 
 @testing:case="createCollarOption rejects keyword arguments", syntaxError=1
 caplib::createCollarOption(payoffType="X", lowerGearing=0.02, upperGearing=0.02, lowerStrike=0.02, upperStrike=0.02, expiry=2024.01.01, delivery=2024.01.01, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createCollarOption_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCollarOption optional returnJson null uses default"
+result = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL", bool())
+assert 1, typestr(result) != "VOID"

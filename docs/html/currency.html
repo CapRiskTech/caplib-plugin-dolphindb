@@ -17,7 +17,7 @@
         <h1>Currency</h1>
         <p class="lede">FX calculators, quote matrices, volatility surfaces, cash products, and option pricing.</p>
       </header>
-      <section id="user-guide" class="panel"><h2>User Guide</h2><p>FX calculators, quote matrices, volatility surfaces, cash products, and option pricing. This page contains 39 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><h2>User Guide</h2><p>FX calculators, quote matrices, volatility surfaces, cash products, and option pricing. This page contains 35 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 fxMkt = caplib::createFxMktDataSet(
     2025.01.02, &quot;USD_DISC&quot;, &quot;EUR_DISC&quot;, &quot;EURUSD_SPOT&quot;, &quot;EURUSD_VOL&quot;, &quot;FX_MKT&quot;, &quot;FX_MKT&quot;, true);
@@ -28,68 +28,8 @@ pricingHandle = pricingResult[0];
 pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
 <section class="api-group"><h2>FX analytics</h2>
 
-<article class="api-card" data-search="calcfxforwardrate calculationdate date leftccy string rightccy string deliverydate date fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
-  <div class="api-card-head">
-    <div>
-      <a id="calcfxforwardrate"></a>
-      <h3><code>calcFxForwardRate</code></h3>
-      <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::calcFxForwardRate(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
-      <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Calculates the delivery-date FX forward rate from the cached spot quote and domestic and foreign discount curves.</p>
-    </div>
-    <span class="return-pill">DOUBLE</span>
-  </div>
-  <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> A double fx forward rate. <strong>Status/error behavior:</strong> For service-backed calls, <code>success=true</code> means the documented result was produced, while <code>success=false</code> means no valid result was produced and the service <code>err_msg</code> is surfaced in a DolphinDB <code>RuntimeException</code>. Wrapper-only operations expose no status scalar. Validation, cache-class/handle, parsing, and serialization failures also throw, so every error is observed as an exception rather than a fallback scalar or partial object.</p>
-  <details open>
-    <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date used by the calculation.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar. It must not be later than a related end, expiry, delivery, or settlement date; the wrapper does not enforce this relationship.</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>Left currency in the pair.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>Right currency in the pair.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>Date used by the calculation.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar. It must not precede the related trade, reference, or expiry date; the wrapper does not enforce this relationship.</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>ObjectCache handle for FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for domestic IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for foreign IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>Example</h4><p>The call below uses variables of the documented types; append optional arguments as needed.</p><pre><code>result = caplib::calcFxForwardRate(calculationDate, leftCcy, rightCcy, deliveryDate, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
-</article>
 
-<article class="api-card" data-search="calcfxswappoint calculationdate date leftccy string rightccy string deliverydate date fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
-  <div class="api-card-head">
-    <div>
-      <a id="calcfxswappoint"></a>
-      <h3><code>calcFxSwapPoint</code></h3>
-      <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::calcFxSwapPoint(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)</code></p>
-      <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Calculates delivery-date FX swap points as the forward-versus-spot adjustment implied by the spot quote and both discount curves.</p>
-    </div>
-    <span class="return-pill">DOUBLE</span>
-  </div>
-  <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> A double fx swap point. <strong>Status/error behavior:</strong> For service-backed calls, <code>success=true</code> means the documented result was produced, while <code>success=false</code> means no valid result was produced and the service <code>err_msg</code> is surfaced in a DolphinDB <code>RuntimeException</code>. Wrapper-only operations expose no status scalar. Validation, cache-class/handle, parsing, and serialization failures also throw, so every error is observed as an exception rather than a fallback scalar or partial object.</p>
-  <details open>
-    <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>calculationDate</code></td><td>DATE</td><td>Date used by the calculation.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar. It must not be later than a related end, expiry, delivery, or settlement date; the wrapper does not enforce this relationship.</span></td></tr><tr><td><code>leftCcy</code></td><td>STRING</td><td>Left currency in the pair.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr><tr><td><code>rightCcy</code></td><td>STRING</td><td>Right currency in the pair.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr><tr><td><code>deliveryDate</code></td><td>DATE</td><td>Date used by the calculation.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar. It must not precede the related trade, reference, or expiry date; the wrapper does not enforce this relationship.</span></td></tr><tr><td><code>fxSpotRateHandle</code></td><td>STRING</td><td>ObjectCache handle for FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>domesticDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for domestic IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>foreignDiscountCurveHandle</code></td><td>STRING</td><td>ObjectCache handle for foreign IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>Example</h4><p>The call below uses variables of the documented types; append optional arguments as needed.</p><pre><code>result = caplib::calcFxSwapPoint(calculationDate, leftCcy, rightCcy, deliveryDate, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)</code></pre></div>
-</article>
 
-<article class="api-card" data-search="calcfxprice convert a currency amount into a target-currency price using an fx rate. amount double, currency string, destccy string, fxrate double, baseccy string, targetccy string scalar">
-  <div class="api-card-head">
-    <div>
-      <a id="calcfxprice"></a>
-      <h3><code>calcFxPrice</code></h3>
-      <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::calcFxPrice(amount DOUBLE, currency STRING, destCcy STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING)</code></p>
-      <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Converts the supplied monetary amount to destCcy using the directed base/target FX rate and returns the converted amount.</p>
-    </div>
-    <span class="return-pill">DOUBLE</span>
-  </div>
-  <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> A double converted amount. <strong>Status/error behavior:</strong> For service-backed calls, <code>success=true</code> means the documented result was produced, while <code>success=false</code> means no valid result was produced and the service <code>err_msg</code> is surfaced in a DolphinDB <code>RuntimeException</code>. Wrapper-only operations expose no status scalar. Validation, cache-class/handle, parsing, and serialization failures also throw, so every error is observed as an exception rather than a fallback scalar or partial object.</p>
-  <details open>
-    <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>amount</code></td><td>DOUBLE</td><td>Amount to convert or value in the source currency.<br><span class="validity-note"><strong>Validity:</strong> Must be a finite DOUBLE; negative, zero, and positive values are valid and represent a signed conversion amount.</span></td></tr><tr><td><code>currency</code></td><td>STRING</td><td>Currency code for the instrument, curve, market data, or pricing output.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr><tr><td><code>destCcy</code></td><td>STRING</td><td>Destination currency for FX price conversion.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr><tr><td><code>fxRate</code></td><td>DOUBLE</td><td>Numeric input for fx rate.<br><span class="validity-note"><strong>Validity:</strong> Must be strictly positive and finite; the wrapper checks only the DOUBLE type.</span></td></tr><tr><td><code>baseCcy</code></td><td>STRING</td><td>Base currency in the FX or cross-currency calculation.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr><tr><td><code>targetCcy</code></td><td>STRING</td><td>Target currency in the FX or cross-currency calculation.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty currency identifier, normally a three-letter uppercase ISO code; the wrapper does not verify ISO membership.</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>Example</h4><p>The call below uses variables of the documented types; append optional arguments as needed.</p><pre><code>result = caplib::calcFxPrice(amount, currency, destCcy, fxRate, baseCcy, targetCcy)</code></pre></div>
-</article>
 
 <article class="api-card" data-search="calcfxatmstrike atmtype string expirydate date volsurfacehandle string fxspotratehandle string domesticdiscountcurvehandle string foreigndiscountcurvehandle string">
   <div class="api-card-head">
@@ -280,26 +220,6 @@ pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" cl
 <div class="api-example"><h4>Example</h4><p>The call below uses variables of the documented types; append optional arguments as needed.</p><pre><code>result = caplib::priceFxNonDeliverableForward(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
 </article>
 
-<article class="api-card" data-search="pricefxtimeoption price an fx time option. fxcashpricing7(fxtimeoption) pricing_result returnjson bool">
-  <div class="api-card-head">
-    <div>
-      <a id="pricefxtimeoption"></a>
-      <h3><code>priceFxTimeOption</code></h3>
-      <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::priceFxTimeOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])</code></p>
-      <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Price an FX time option. It assembles a request from the instrument and cached market, pricing, risk, and optional scenario inputs, calls the domain pricer, and caches the returned <code>PricingResults</code>.</p>
-    </div>
-    <span class="return-pill">PricingResults</span>
-  </div>
-  <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> Created <code>PricingResults</code> object on success. CAPLIB returns its ObjectCache handle; with <code>returnJson=true</code>, it returns <code>[handle, protobufJson]</code>. <strong>Status/error behavior:</strong> For service-backed calls, <code>success=true</code> means the documented result was produced, while <code>success=false</code> means no valid result was produced and the service <code>err_msg</code> is surfaced in a DolphinDB <code>RuntimeException</code>. Wrapper-only operations expose no status scalar. Validation, cache-class/handle, parsing, and serialization failures also throw, so every error is observed as an exception rather than a fallback scalar or partial object.</p>
-  <details open>
-    <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentHandle</code></td><td>STRING</td><td>ObjectCache handle for the instrument being priced.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>pricingDate</code></td><td>DATE</td><td>Valuation date used by the pricing request.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar. It must not be later than a related end, expiry, delivery, or settlement date; the wrapper does not enforce this relationship.</span></td></tr><tr><td><code>mktDataHandle</code></td><td>STRING</td><td>ObjectCache handle for the market-data set used in pricing.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>pricingSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for pricing settings.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>riskSettingsHandle</code></td><td>STRING</td><td>ObjectCache handle for risk settings.<br><span class="validity-note"><strong>Validity:</strong> Must be non-empty and name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>scnSettingsHandle</code></td><td>STRING</td><td>Optional ObjectCache handle for scenario-analysis settings; pass an empty string when unused.<br><span class="validity-note"><strong>Validity:</strong> May be empty to omit the object; otherwise must name an existing ObjectCache entry of the required protobuf type.</span></td></tr><tr><td><code>mode</code></td><td>STRING</td><td>Optional remote execution mode or endpoint; pass an empty string for default mode.<br><span class="validity-note"><strong>Validity:</strong> May be empty for the default mode; non-empty values are passed verbatim to the downstream service, and the plugin defines no local enum or character range.</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns [handle, protobufJson].<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar; false and true are the only logical values.</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>Example</h4><p>The call below uses variables of the documented types; append optional arguments as needed.</p><pre><code>result = caplib::priceFxTimeOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)</code></pre></div>
-</article>
 
 <article class="api-card" data-search="pricefxeuropeanoption price an fx european option. fxoptionpricing7(europeanoption) pricing_result returnjson bool">
   <div class="api-card-head">
@@ -647,7 +567,7 @@ pricingJson = pricingResult[1];</code></pre></section><div id="api-reference" cl
       <h4 class="api-subheading">Syntax</h4>
       <p class="full-signature"><code>caplib::createFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRING, refDate DATE, spotDate DATE, tag STRING[, returnJson BOOL])</code></p>
       <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Create and cache an FX spot-rate object. It validates and converts the fields into a <code>FxSpotRate</code> protobuf and stores it in ObjectCache for later analytics calls.</p>
+      <p class="api-description">Create and cache an FX spot-rate object. It validates and converts the fields into a <code>FxSpotRate</code> protobuf and stores it in ObjectCache for later analytics calls. The object is registered under the static-data key <code>FX_SPOT/&lt;targetCurrency&gt;&lt;baseCurrency&gt;</code>; buildIrCrossCurrencyCurve resolves that key, so register a matching template with createFxSpotTemplate before building a cross-currency curve. Note the protobuf field order is the reverse of the python wrapper: create_foreign_exchange_rate(value, left, right) yields base=right, target=left.Create and cache an FX spot-rate object. It validates and converts the fields into a <code>FxSpotRate</code> protobuf and stores it in ObjectCache for later analytics calls.</p>
     </div>
     <span class="return-pill">FxSpotRate</span>
   </div>

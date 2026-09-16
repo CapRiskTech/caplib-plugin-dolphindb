@@ -86,3 +86,16 @@ caplib::calcYearFraction([2024.01.01], 2024.01.01, "X")
 
 @testing:case="calcYearFraction rejects keyword arguments", syntaxError=1
 caplib::calcYearFraction(startDate=2024.01.01, endDate=2024.01.01, dayCountConvention="X")
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcYearFraction -> exact ACT/360 reference (364/360)"
+yf = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
+assert 1, abs(yf - 364.0/360.0) < 1.0e-12
+
+@testing:case="calcYearFraction -> exact ACT/365F reference (364/365)"
+yf2 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_365_FIXED");
+assert 1, abs(yf2 - 364.0/365.0) < 1.0e-12

@@ -146,3 +146,12 @@ caplib::createFlatIrYieldCurve([2024.01.01], "X", 0.02, "TF_createFlatIrYieldCur
 
 @testing:case="createFlatIrYieldCurve rejects keyword arguments", syntaxError=1
 caplib::createFlatIrYieldCurve(referenceDate=2024.01.01, currency="X", rate=0.02, handle="TF_createFlatIrYieldCurve_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFlatIrYieldCurve optional returnJson null uses default"
+result = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_FIR", bool())
+assert 1, typestr(result) != "VOID"

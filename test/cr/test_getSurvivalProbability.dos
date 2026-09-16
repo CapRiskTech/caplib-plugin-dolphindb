@@ -146,7 +146,25 @@ caplib::getSurvivalProbability("X", [2024.01.01, date()])
 caplib::getSurvivalProbability("X", take(date, 0))
 
 @testing:case="getSurvivalProbability rejects nonexistent handle creditCurveHandle", exception=1
-caplib::getSurvivalProbability("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01])
-
+caplib::getSurvivalProbability("TF_NO_SUCH_HANDLE_getSurvivalProbability", [2024.01.01])
 @testing:case="getSurvivalProbability rejects keyword arguments", syntaxError=1
 caplib::getSurvivalProbability(creditCurveHandle="X", dates=[2024.01.01])
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="getSurvivalProbability rejects all-null vector dates", exception=1
+caplib::getSurvivalProbability(flatCreditCurve, [date(), date(), date()])
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="getSurvivalProbability -> analytic flat-hazard reference"
+// SP(t) = exp(-h*t) on a flat credit curve; t = 1.0 (2020.02.21 + 365d, ACT/365F).
+spr = caplib::getSurvivalProbability(flatCreditCurve, [2021.02.20]);
+assert 1, abs(spr[0] - 0.9980019986673331) < 1.0e-12

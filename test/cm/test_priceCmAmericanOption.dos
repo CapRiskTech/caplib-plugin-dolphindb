@@ -257,7 +257,16 @@ caplib::priceCmAmericanOption("X", 2024.01.01, "X", "X", "X", "X", string(), fal
 caplib::priceCmAmericanOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmAmericanOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceCmAmericanOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceCmAmericanOption("TF_NO_SUCH_HANDLE_priceCmAmericanOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmAmericanOption rejects keyword arguments", syntaxError=1
 caplib::priceCmAmericanOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmAmericanOption optional returnJson null uses default"
+result = caplib::priceCmAmericanOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", bool())
+assert 1, typestr(result) != "VOID"

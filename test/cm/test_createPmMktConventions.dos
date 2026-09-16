@@ -102,3 +102,22 @@ caplib::createPmMktConventions(["X"], "X", "X", "X", "X", "X", "X", "TF_createPm
 
 @testing:case="createPmMktConventions rejects keyword arguments", syntaxError=1
 caplib::createPmMktConventions(atmType="X", shortDeltaType="X", longDeltaType="X", deltaCutoff="X", riskReversal="X", smileQuoteType="X", underlying="X", tag="TF_createPmMktConventions_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmMktConventions accepts invalid enum atmType (maps to invalid sentinel)"
+result = caplib::createPmMktConventions("NOT_A_VALID_ENUM_LABEL", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true)
+assert 1, typestr(result) != "VOID"
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmMktConventions optional returnJson null uses default"
+result = caplib::createPmMktConventions("ATM", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", bool())
+assert 1, typestr(result) != "VOID"

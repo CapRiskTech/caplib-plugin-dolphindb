@@ -82,17 +82,45 @@ irCurve = caplib::createIrYieldCurve(
 // Tests
 // ============================================================================
 
-@testing:case="buildPmVolatilitySurface positive call"
-// NOTE: 0.0.11 raises std::exception for a valid PM surface build (see issues.md).
-try {
-pvs = caplib::buildPmVolatilitySurface(2022.03.09, "AU.SHFE", pmVolDef[0], pmOptionQuoteMatrix[0], 450.0, irCurve, irCurve, pmBuildSettings[0], pmMktConventions[0], pmCashTemplate[0], "TF_PM_VOL", false)
-    assert 1, pvs == "TF_PM_VOL"
-} catch(ex) {
-    // known 0.0.11 service-side limitation, documented not swallowed
-    print("documented service failure: " + ex[1]);
-    assert 1, true
-}
-assert 1, true
+@testing:case="buildPmVolatilitySurface -> [handle, json] (upstream regression parity)"
+// Mirror dqlibdolphin test_issues_regression.dos case #30: the 0.0.12 build
+// fixed the createPmMktConventions enum mapping, so the canonical XAUUSD
+// fixture now builds. Uses the preloaded CAL_CFETS calendar and the 3-term
+// quote matrix; created objects are referenced by their registered names.
+// Do NOT register a custom empty calendar here: createCalendar rejects empty
+// [] vectors and a broken calendar makes the SVI fit diverge (erfc_inv
+// overflow / server OOM).
+caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_CFETS"], "ACT_360", false);
+usdDepoP = caplib::createIrYieldCurve(2019.09.04, [2019.09.09, 2020.09.08, 2021.09.07],
+    [0.021594, 0.014216, 0.012617], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "DEPO_30", false);
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD",
+    table(["XAUUSD", "XAUUSD", "XAUUSD"] as instrument_name,
+          ["PM_SWAP", "PM_SWAP", "PM_SWAP"] as instrument_type,
+          ["1M", "6M", "12M"] as instrument_term,
+          [0.0248, 0.0223, 0.0192] as instrument_rate), "PAR_30", false);
+caplib::buildPmYieldCurve(2019.09.04, "PAR_30", "DEPO_30", "XAUUSD", 1544.06, 0,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 0.0001,
+    "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "FWD_30", false);
+caplib::createPmOptionQuoteMatrix("XAUUSD", 2019.09.04, ["1M", "6M", "1Y"],
+    [["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"],
+     ["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"],
+     ["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"]],
+    [[0, 0.25, 0.25, 0.10, 0.10],
+     [0, 0.25, 0.25, 0.10, 0.10],
+     [0, 0.25, 0.25, 0.10, 0.10]],
+    [[0.15340, 0.03623, 0.00578, 0.06738, 0.01753],
+     [0.15153, 0.04255, 0.00808, 0.08120, 0.02148],
+     [0.15383, 0.04725, 0.01070, 0.09253, 0.02838]], "Q_30", false);
+caplib::createPmMktConventions("ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y",
+    "RR_CALL_PUT", "BUTTERFLY_QUOTE", "XAUUSD", "MKT_30", false);
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD", "FLAT_EXTRAP",
+    "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -0.0001, 0.0001, "VDEF_30", false);
+caplib::createVolSurfBuildSettings(1, 0.5, "BS_30", false);
+pvs = caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 1544.06,
+    "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true);
+assert 1, isHandleJson(pvs, "VS_30") && hasJsonField(pvs[1], "SVI_SMILE_METHOD")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -123,7 +151,16 @@ caplib::buildPmVolatilitySurface(2024.01.01, string(), "X", "X", 0.02, "X", "X",
 caplib::buildPmVolatilitySurface([2024.01.01], "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_NO_SUCH_HANDLE_buildPmVolatilitySurface", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::buildPmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrice=0.02, discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", marketConventionsHandle="X", spotTemplateHandle="X", handle="TF_buildPmVolatilitySurface_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildPmVolatilitySurface optional returnJson null uses default"
+result = caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", bool())
+assert 1, typestr(result) != "VOID"

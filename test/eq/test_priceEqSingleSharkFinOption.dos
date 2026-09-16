@@ -190,7 +190,16 @@ caplib::priceEqSingleSharkFinOption("X", 2024.01.01, "X", "X", "X", "X", string(
 caplib::priceEqSingleSharkFinOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqSingleSharkFinOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceEqSingleSharkFinOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceEqSingleSharkFinOption("TF_NO_SUCH_HANDLE_priceEqSingleSharkFinOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqSingleSharkFinOption rejects keyword arguments", syntaxError=1
 caplib::priceEqSingleSharkFinOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqSingleSharkFinOption optional returnJson null uses default"
+result = caplib::priceEqSingleSharkFinOption(xinst, asOfDate, mktData[0], bsmPdeSettings, eqNoRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

@@ -83,3 +83,12 @@ caplib::createVolRiskSettings(false, false, 0.02, 1, int(), 0.02, 1, "TF_createV
 
 @testing:case="createVolRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createVolRiskSettings(vega=false, volga=false, shift=0.02, method=1, granularity=1, scaling=0.02, threading=1, handle="TF_createVolRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolRiskSettings optional returnJson null uses default"
+result = caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "TF_createVolRiskSettings_H", bool())
+assert 1, typestr(result) != "VOID"

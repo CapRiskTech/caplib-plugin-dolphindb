@@ -200,3 +200,22 @@ caplib::createPingPongOption(2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", 
 
 @testing:case="createPingPongOption rejects keyword arguments", syntaxError=1
 caplib::createPingPongOption(expiry=2024.01.01, delivery=2024.01.01, lowerBarrierType="X", lowerBarrierValue=0.02, upperBarrierType="X", upperBarrierValue=0.02, barrierObsType="X", paymentType="X", cash=0.02, asset=0.02, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createPingPongOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPingPongOption accepts all-null vector fixingDates (lenient validation, does not raise)"
+result = caplib::createPingPongOption(2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PP", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPingPongOption optional returnJson null uses default"
+result = caplib::createPingPongOption(2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PP", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
+assert 1, typestr(result) != "VOID"

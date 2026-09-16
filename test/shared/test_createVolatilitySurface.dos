@@ -106,7 +106,25 @@ caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01, date()], "X
 caplib::createVolatilitySurface("X", 2024.01.01, ["X"], take(date, 0), "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::createVolatilitySurface("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
+caplib::createVolatilitySurface("TF_NO_SUCH_HANDLE_createVolatilitySurface", 2024.01.01, ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::createVolatilitySurface(definitionHandle="X", referenceDate=2024.01.01, volSmileHandles=["X"], termDates=[2024.01.01], underlying="X", handle="TF_createVolatilitySurface_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySurface rejects all-null vector volSmileHandles", exception=1
+caplib::createVolatilitySurface(vdef, asOfDate, [string(), string(), string()], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySurface optional returnJson null uses default"
+result = caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", bool())
+assert 1, typestr(result) != "VOID"

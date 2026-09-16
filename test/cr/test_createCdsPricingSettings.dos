@@ -153,3 +153,21 @@ caplib::createCdsPricingSettings(["X"], false, false, false, "X", "X", "X", "TF_
 
 @testing:case="createCdsPricingSettings rejects keyword arguments", syntaxError=1
 caplib::createCdsPricingSettings(pricingCurrency="X", includeCurrentFlow=false, cashFlows=false, includeSettlementFlow=false, numericalFix="X", accrualBias="X", fwdsInCpnPeriod="X", name="TF_createCdsPricingSettings_H", tag="TF_createCdsPricingSettings_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCdsPricingSettings rejects invalid enum for numericalFix", exception=1
+caplib::createCdsPricingSettings(currency, 0, 1, 0, "NOT_A_VALID_ENUM_LABEL", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCdsPricingSettings optional returnJson null uses default"
+result = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", bool())
+assert 1, typestr(result) != "VOID"

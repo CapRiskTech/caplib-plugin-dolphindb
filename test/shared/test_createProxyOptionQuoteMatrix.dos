@@ -97,7 +97,15 @@ caplib::createProxyOptionQuoteMatrix("X", "X", double(), 0.02, "TF_createProxyOp
 caplib::createProxyOptionQuoteMatrix(["X"], "X", 0.02, 0.02, "TF_createProxyOptionQuoteMatrix_H", false)
 
 @testing:case="createProxyOptionQuoteMatrix rejects nonexistent handle refVolSurfaceHandle", exception=1
-caplib::createProxyOptionQuoteMatrix("X", "TF_HANDLE_DOES_NOT_EXIST", 0.02, 0.02, "TF_createProxyOptionQuoteMatrix_H", false)
-
+caplib::createProxyOptionQuoteMatrix("X", "TF_NO_SUCH_HANDLE_createProxyOptionQuoteMatrix", 0.02, 0.02, "TF_createProxyOptionQuoteMatrix_H", false)
 @testing:case="createProxyOptionQuoteMatrix rejects keyword arguments", syntaxError=1
 caplib::createProxyOptionQuoteMatrix(underlyingName="X", refVolSurfaceHandle="X", refUnderlyingPrice=0.02, underlyingPrice=0.02, handle="TF_createProxyOptionQuoteMatrix_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createProxyOptionQuoteMatrix optional returnJson null uses default"
+result = caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, 100.0, 101.0, "TF_POQ", bool())
+assert 1, typestr(result) != "VOID"

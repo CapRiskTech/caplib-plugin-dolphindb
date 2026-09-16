@@ -296,3 +296,12 @@ caplib::createFxMktDataSet([2024.01.01], "X", "X", "X", "X", "TF_createFxMktData
 
 @testing:case="createFxMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createFxMktDataSet(asOfDate=2024.01.01, domDiscountCurve="X", forDiscountCurve="X", spot="X", volSurface="X", name="TF_createFxMktDataSet_H", tag="TF_createFxMktDataSet_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxMktDataSet optional returnJson null uses default"
+result = caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", bool())
+assert 1, typestr(result) != "VOID"

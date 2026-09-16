@@ -94,3 +94,12 @@ caplib::createFlatVolatilitySurface([2024.01.01], 0.02, "X", "TF_createFlatVolat
 
 @testing:case="createFlatVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::createFlatVolatilitySurface(referenceDate=2024.01.01, volatility=0.02, underlying="X", handle="TF_createFlatVolatilitySurface_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFlatVolatilitySurface optional returnJson null uses default"
+result = caplib::createFlatVolatilitySurface(2024.01.01, 0.02, "X", "TF_createFlatVolatilitySurface_H", bool())
+assert 1, typestr(result) != "VOID"

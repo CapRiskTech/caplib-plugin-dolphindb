@@ -136,7 +136,37 @@ caplib::getZeroRate("X", [2024.01.01, date()])
 caplib::getZeroRate("X", take(date, 0))
 
 @testing:case="getZeroRate rejects nonexistent handle irCurveHandle", exception=1
-caplib::getZeroRate("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01])
-
+caplib::getZeroRate("TF_NO_SUCH_HANDLE_getZeroRate", [2024.01.01])
 @testing:case="getZeroRate rejects keyword arguments", syntaxError=1
 caplib::getZeroRate(irCurveHandle="X", dates=[2024.01.01])
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="getZeroRate rejects all-null vector dates", exception=1
+caplib::getZeroRate(irCurve, [date(), date(), date()])
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="getZeroRate -> analytic flat-curve reference"
+// The zero rate of a flat curve equals the flat rate at any t.
+flatIrRef = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_REF_FIR", false);
+zrr = caplib::getZeroRate(flatIrRef, [2023.03.09]);
+assert 1, abs(zrr[0] - 0.02) < 1.0e-12
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="getZeroRate supports 1024-date query vectors"
+flatBig = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_BIG_FIR", false);
+datesBig = 2023.03.09 + 0..1023;
+zbig = caplib::getZeroRate(flatBig, datesBig);
+assert 1, size(zbig) == 1024 && abs(zbig[0] - 0.02) < 1.0e-12 && abs(zbig[1023] - 0.02) < 1.0e-12

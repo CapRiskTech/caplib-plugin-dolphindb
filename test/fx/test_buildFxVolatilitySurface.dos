@@ -295,7 +295,16 @@ caplib::buildFxVolatilitySurface(2024.01.01, string(), "X", "X", "X", 0.02, 2024
 caplib::buildFxVolatilitySurface([2024.01.01], "X", "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
 
 @testing:case="buildFxVolatilitySurface rejects nonexistent handle marketConventionsHandle", exception=1
-caplib::buildFxVolatilitySurface(2024.01.01, "X", "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
+caplib::buildFxVolatilitySurface(2024.01.01, "X", "X", "TF_NO_SUCH_HANDLE_buildFxVolatilitySurface", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
 
 @testing:case="buildFxVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::buildFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", marketConventionsHandle="X", quoteMatrixHandle="X", spotRate=0.02, spotRefDate=2024.01.01, spotDate=2024.01.01, domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X", definitionHandle="X", buildSettingsHandle="X", handle="TF_buildFxVolatilitySurface_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildFxVolatilitySurface optional returnJson null uses default"
+result = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", bool())
+assert 1, typestr(result) != "VOID"

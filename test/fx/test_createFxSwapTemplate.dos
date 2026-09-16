@@ -296,3 +296,21 @@ caplib::createFxSwapTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", false)
 
 @testing:case="createFxSwapTemplate rejects keyword arguments", syntaxError=1
 caplib::createFxSwapTemplate(instName="X", startConvention="X", currencyPair="X", calendars="X", startDayConvention="X", endDayConvention="X", fixingOffset="X", fixingDayConvention="X", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSwapTemplate rejects invalid enum for startConvention", exception=1
+caplib::createFxSwapTemplate("TF_SWPT", "NOT_A_VALID_ENUM_LABEL", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSwapTemplate optional returnJson null uses default"
+result = caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", bool())
+assert 1, typestr(result) != "VOID"

@@ -252,3 +252,12 @@ caplib::createBondMktDataSet([2024.01.01], "X", "X", "X", "TF_createBondMktDataS
 
 @testing:case="createBondMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createBondMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", forwardCurve="X", name="TF_createBondMktDataSet_H", tag="TF_createBondMktDataSet_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondMktDataSet optional returnJson null uses default"
+result = caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", bool())
+assert 1, typestr(result) != "VOID"

@@ -190,7 +190,16 @@ caplib::createEqMktDataSet(2024.01.01, string(), 0.02, "X", "X", "X", "X", "X", 
 caplib::createEqMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.02, "TF_createEqMktDataSet_H", false)
 
 @testing:case="createEqMktDataSet rejects nonexistent handle dcHandle", exception=1
-caplib::createEqMktDataSet(2024.01.01, "X", 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", 0.02, "TF_createEqMktDataSet_H", false)
+caplib::createEqMktDataSet(2024.01.01, "X", 0.02, "TF_NO_SUCH_HANDLE_createEqMktDataSet", "X", "X", "X", "X", 0.02, "TF_createEqMktDataSet_H", false)
 
 @testing:case="createEqMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createEqMktDataSet(asOfDate=2024.01.01, underlying="X", underlyingPrice=0.02, dcHandle="X", divHandle="X", volHandle="X", quantoDcHandle="X", quantoFxVolHandle="X", quantoCorrelation=0.02, handle="TF_createEqMktDataSet_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqMktDataSet optional returnJson null uses default"
+result = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "f_eqmkt", bool())
+assert 1, typestr(result) != "VOID"

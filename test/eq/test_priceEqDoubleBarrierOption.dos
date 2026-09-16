@@ -190,7 +190,16 @@ caplib::priceEqDoubleBarrierOption("X", 2024.01.01, "X", "X", "X", "X", string()
 caplib::priceEqDoubleBarrierOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqDoubleBarrierOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceEqDoubleBarrierOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceEqDoubleBarrierOption("TF_NO_SUCH_HANDLE_priceEqDoubleBarrierOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqDoubleBarrierOption rejects keyword arguments", syntaxError=1
 caplib::priceEqDoubleBarrierOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqDoubleBarrierOption optional returnJson null uses default"
+result = caplib::priceEqDoubleBarrierOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

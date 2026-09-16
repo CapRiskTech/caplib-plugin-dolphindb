@@ -295,7 +295,16 @@ caplib::priceFxOneTouchOption("X", 2024.01.01, "X", "X", "X", "X", string(), fal
 caplib::priceFxOneTouchOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxOneTouchOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceFxOneTouchOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceFxOneTouchOption("TF_NO_SUCH_HANDLE_priceFxOneTouchOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxOneTouchOption rejects keyword arguments", syntaxError=1
 caplib::priceFxOneTouchOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxOneTouchOption optional returnJson null uses default"
+result = caplib::priceFxOneTouchOption(tonetouchoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

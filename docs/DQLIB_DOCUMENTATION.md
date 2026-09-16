@@ -1199,7 +1199,7 @@ caplib::impliedVolCalculator(
 ##### 语法
 
 ```dolphindb
-caplib::buildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCount STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian BOOL, forwardCurveHandle STRING, handle STRING[, returnJson BOOL])
+caplib::buildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCount STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian INT, forwardCurveHandle STRING, handle STRING[, returnJson BOOL])
 ```
 
 ##### 详情
@@ -1218,7 +1218,7 @@ caplib::buildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curv
 | `compoundingType` | STRING | 复利类型。 **有效性:** 识别值：`SIMPLE`, `SIMPLE_COMPOUNDING`, `COMPOUNDED`, `DISCRETE`, `DISCRETE_COMPOUNDING`, `CONTINUOUS`, `CONTINUOUS_COMPOUNDING`。不区分大小写。 空值或其他字符串回退为 CONTINUOUS_COMPOUNDING。 |
 | `frequency` | STRING | 频率。 **有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。 任何其他字符串均回退到函数指定的默认频率。 |
 | `buildingMethod` | STRING | 曲线或曲面构建算法名称。 **有效性:** 识别值：`BOOTSTRAP`, `BOOTSTRAPPING`, `BOOTSTRAPPING_METHOD`, `GLOBAL_OPTIMIZATION`, `GLOBAL_OPTIMIZATION_METHOD`, `HYBRID`, `HYBRID_METHOD`。不区分大小写。 空值或其他字符串回退为 BOOTSTRAPPING_METHOD。 |
-| `calcJacobian` | BOOL | 是否计算并返回校准雅可比信息。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `calcJacobian` | INT | 是否计算并返回校准雅可比信息。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
 | `forwardCurveHandle` | STRING | 远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
 | `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
@@ -1617,7 +1617,7 @@ caplib::createBondLegDefinition(bondType STRING, settlementDays INT, currency ST
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `bondType` | STRING | 债券类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`FIXED_COUPON_BOND`, `FLOATING_COUPON_BOND`, `ZERO_COUPON_BOND`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `bondType` | STRING | 债券类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`FIXED_COUPON_BOND`, `FLOATING_COUPON_BOND`, `ZERO_COUPON_BOND`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 **行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。 |
 | `settlementDays` | INT | 交易或行权到结算的工作日天数。 **有效性:** 必须非负；包装器通常仅检查类型。 |
 | `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
 | `dayCount` | STRING | 日计数约定。 **有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。 任何其他字符串均回退到函数指定的默认日计数。 |
@@ -2586,7 +2586,7 @@ caplib::createInterestCalcScheduleDefinition(calendars STRING, frequency STRING,
 | `calendars` | STRING | 日期调整使用的业务日历名称。 **有效性:** 每个名称必须是已注册的非空日历标识。 |
 | `frequency` | STRING | 频率。 **有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。 任何其他字符串均回退到函数指定的默认频率。 |
 | `interestDayConvention` | STRING | 计息日调整约定。 **有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。 任何其他字符串均回退到函数指定的默认营业日约定。 |
-| `stubPolicy` | STRING | 短长首末期处理规则。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `stubPolicy` | STRING | 短长首末期处理规则。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 **行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。 |
 | `brokenPeriodType` | STRING | 不规则首末期处理类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `dateRollConvention` | STRING | 日期或日期数组。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_ROLL_CONVENTION`, `EOM`, `FRN`, `IMM`, `IMM_CAD`, `IMM_AUD`, `IMM_NZD`, `SFE`, `NONE`, `TBILL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `tag` | STRING | 用于后续获取创建对象的 内存对象 键或标签。 **有效性:** 必须是非空 ObjectCache 键。 |
@@ -2623,7 +2623,7 @@ caplib::createInterestPaymentScheduleDefinition(calendars STRING, frequency STRI
 | --- | --- | --- |
 | `calendars` | STRING | 日期调整使用的业务日历名称。 **有效性:** 每个名称必须是已注册的非空日历标识。 |
 | `frequency` | STRING | 频率。 **有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。 任何其他字符串均回退到函数指定的默认频率。 |
-| `payDayMode` | STRING | 付款日生成模式。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `payDayMode` | STRING | 付款日生成模式。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 **行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。 |
 | `payDayOffset` | INT | 付款日偏移天数。 **有效性:** 必须是 INT；除非另有说明，可为负、零或正。 |
 | `payDayConvention` | STRING | 付款日调整约定。 **有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。 任何其他字符串均回退到函数指定的默认营业日约定。 |
 | `tag` | STRING | 用于后续获取创建对象的 内存对象 键或标签。 **有效性:** 必须是非空 ObjectCache 键。 |
@@ -2661,7 +2661,7 @@ caplib::createInterestRateFixingScheduleDefinition(calendars STRING, frequency S
 | `calendars` | STRING | 日期调整使用的业务日历名称。 **有效性:** 每个名称必须是已注册的非空日历标识。 |
 | `frequency` | STRING | 频率。 **有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。 任何其他字符串均回退到函数指定的默认频率。 |
 | `frequencyRatio` | INT | 频率换算比例。 **有效性:** 必须严格为正；包装器通常仅检查类型。 |
-| `fixingDayMode` | STRING | 定盘日生成模式。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `fixingDayMode` | STRING | 定盘日生成模式。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 **行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。 |
 | `fixingDayOffset` | INT | 定盘日偏移天数。 **有效性:** 必须是 INT；除非另有说明，可为负、零或正。 |
 | `fixingDayConvention` | STRING | 定盘日调整约定。 **有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。 任何其他字符串均回退到函数指定的默认营业日约定。 |
 | `tag` | STRING | 用于后续获取创建对象的 内存对象 键或标签。 **有效性:** 必须是非空 ObjectCache 键。 |
@@ -3855,6 +3855,8 @@ caplib::createFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRIN
 
 创建并缓存外汇即期汇率。 函数验证并转换字段，构造 `FxSpotRate` protobuf 并存入 ObjectCache，供后续分析使用。
 
+对象的静态数据键为 `FX_SPOT/<targetCurrency><baseCurrency>`；buildIrCrossCurrencyCurve 等接口按该键解析静态数据，跨币种曲线构建前需用 createFxSpotTemplate 注册对应货币对的模板。注意 protobuf 的 base/target 字段序与 python 包装器相反：python `create_foreign_exchange_rate(value, left, right)` 生成 base=right、target=left。
+
 ##### 参数
 
 | 参数 | 类型 / 形状 | 说明 |
@@ -4465,7 +4467,7 @@ caplib::createEqMktDataSet(
 ##### 语法
 
 ```dolphindb
-caplib::createEqRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta BOOL, handle STRING[, returnJson BOOL])
+caplib::createEqRiskSettings(irDelta INT, priceDelta INT, volVega INT, theta INT, handle STRING[, returnJson BOOL])
 ```
 
 ##### 详情
@@ -4476,10 +4478,10 @@ caplib::createEqRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta 
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `irDelta` | BOOL | 是否计算利率 Delta 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `priceDelta` | BOOL | 是否计算标的价格 Delta 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `volVega` | BOOL | 是否计算波动率 Vega 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `theta` | BOOL | 是否计算 Theta 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `irDelta` | INT | 是否计算利率 Delta 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `priceDelta` | INT | 是否计算标的价格 Delta 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `volVega` | INT | 是否计算波动率 Vega 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `theta` | INT | 是否计算 Theta 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
 | `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
 | `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
 
@@ -5934,7 +5936,7 @@ caplib::buildCmVolatilitySurface(
 ##### 语法
 
 ```dolphindb
-caplib::buildPmYieldCurve(referenceDate DATE, parCurveHandle STRING, discountCurveHandle STRING, pmTemplateHandle STRING, spotPrice DOUBLE, calcJacobian BOOL, dayCount STRING, interpMethod STRING, extrapMethod STRING, curveType STRING, curveName STRING, shift DOUBLE, method STRING, mode STRING, handle STRING[, returnJson BOOL])
+caplib::buildPmYieldCurve(referenceDate DATE, parCurveHandle STRING, discountCurveHandle STRING, pmTemplateHandle STRING, spotPrice DOUBLE, calcJacobian INT, dayCount STRING, interpMethod STRING, extrapMethod STRING, curveType STRING, curveName STRING, shift DOUBLE, method STRING, mode STRING, handle STRING[, returnJson BOOL])
 ```
 
 ##### 详情
@@ -5950,7 +5952,7 @@ caplib::buildPmYieldCurve(referenceDate DATE, parCurveHandle STRING, discountCur
 | `discountCurveHandle` | STRING | 贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `pmTemplateHandle` | STRING | 贵金属模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `spotPrice` | DOUBLE | 标的或贵金属的即期价格。 **有效性:** 必须严格为正且有限；包装器通常仅检查类型。 |
-| `calcJacobian` | BOOL | 是否计算并返回校准雅可比信息。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `calcJacobian` | INT | 是否计算并返回校准雅可比信息。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
 | `dayCount` | STRING | 日计数约定。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `interpMethod` | STRING | 插值方法。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTERP_METHOD`, `LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `SABR_INTERP`, `SVI_INTERP`, `LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `SABR_NORMAL_INTERP`, `QUADRATIC_POLYNOMIAL_INTERP`, `CUBIC_POLYNOMIAL_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `extrapMethod` | STRING | 外推方法。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_EXTRAP_METHOD`, `FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
@@ -6061,7 +6063,7 @@ caplib::createCmMktDataSet(
 ##### 语法
 
 ```dolphindb
-caplib::createCmRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta BOOL, handle STRING[, returnJson BOOL])
+caplib::createCmRiskSettings(irDelta INT, priceDelta INT, volVega INT, theta INT, handle STRING[, returnJson BOOL])
 ```
 
 ##### 详情
@@ -6072,10 +6074,10 @@ caplib::createCmRiskSettings(irDelta BOOL, priceDelta BOOL, volVega BOOL, theta 
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `irDelta` | BOOL | 是否计算利率 Delta 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `priceDelta` | BOOL | 是否计算标的价格 Delta 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `volVega` | BOOL | 是否计算波动率 Vega 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `theta` | BOOL | 是否计算 Theta 风险。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `irDelta` | INT | 是否计算利率 Delta 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `priceDelta` | INT | 是否计算标的价格 Delta 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `volVega` | INT | 是否计算波动率 Vega 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `theta` | INT | 是否计算 Theta 风险。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
 | `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
 | `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
 
@@ -6747,7 +6749,7 @@ caplib::createPmMktConventions(atmType STRING, shortDeltaType STRING, longDeltaT
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `atmType` | STRING | ATM 报价类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_ATM_TYPE`, `ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `atmType` | STRING | ATM 报价类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_ATM_TYPE`, `ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 **行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。 |
 | `shortDeltaType` | STRING | 短期限 Delta 报价类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `longDeltaType` | STRING | 长期限 Delta 报价类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `deltaCutoff` | STRING | Delta 报价切换阈值。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
@@ -6936,7 +6938,7 @@ caplib::createCreditCurveRiskSettings(
 ##### 语法
 
 ```dolphindb
-caplib::buildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian BOOL, handle STRING[, returnJson BOOL])
+caplib::buildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian INT, handle STRING[, returnJson BOOL])
 ```
 
 ##### 详情
@@ -6953,7 +6955,7 @@ caplib::buildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurv
 | `discountCurveHandle` | STRING | 贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `forwardCurveHandle` | STRING | 远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `buildingMethod` | STRING | 曲线或曲面构建算法名称。 **有效性:** 识别值：`BOOTSTRAP`, `BOOTSTRAPPING`, `BOOTSTRAPPING_METHOD`, `GLOBAL_OPTIMIZATION`, `GLOBAL_OPTIMIZATION_METHOD`, `HYBRID`, `HYBRID_METHOD`。不区分大小写。 空值或其他字符串回退为 BOOTSTRAPPING_METHOD。 |
-| `calcJacobian` | BOOL | 是否计算并返回校准雅可比信息。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `calcJacobian` | INT | 是否计算并返回校准雅可比信息。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
 | `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
 | `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
 
@@ -7145,7 +7147,7 @@ caplib::createCdsTemplate(
 ##### 语法
 
 ```dolphindb
-caplib::buildCreditDefaultSwap(nominal DOUBLE, currency STRING, issueDate DATE, maturity DATE, protectionLegPayReceive STRING, protectionLegSettlementType STRING, protectionLegReferencePrice DOUBLE, protectionLegLeverage DOUBLE, creditProtectionType STRING, protectionLegRecoveryRate DOUBLE, couponRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING, upfrontRate DOUBLE, rebateAccrual BOOL, name STRING, tag STRING[, returnJson BOOL])
+caplib::buildCreditDefaultSwap(nominal DOUBLE, currency STRING, issueDate DATE, maturity DATE, protectionLegPayReceive STRING, protectionLegSettlementType STRING, protectionLegReferencePrice DOUBLE, protectionLegLeverage DOUBLE, creditProtectionType STRING, protectionLegRecoveryRate DOUBLE, couponRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING, upfrontRate DOUBLE, rebateAccrual INT, name STRING, tag STRING[, returnJson BOOL])
 ```
 
 ##### 详情
@@ -7173,7 +7175,7 @@ caplib::buildCreditDefaultSwap(nominal DOUBLE, currency STRING, issueDate DATE, 
 | `businessDayConvention` | STRING | 营业日调整约定。 **有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。 任何其他字符串均回退到函数指定的默认营业日约定。 |
 | `calendars` | STRING | 日期调整使用的业务日历名称。 **有效性:** 每个名称必须是已注册的非空日历标识。 |
 | `upfrontRate` | DOUBLE | 前端费用率。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `rebateAccrual` | BOOL | 是否返还应计利息。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `rebateAccrual` | INT | 是否返还应计利息。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
 | `name` | STRING | 写入创建对象的业务名称。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
 | `tag` | STRING | 用于后续获取创建对象的 内存对象 键或标签。 **有效性:** 必须是非空 ObjectCache 键。 |
 | `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
@@ -7200,7 +7202,7 @@ caplib::buildCreditDefaultSwap(
 ##### 语法
 
 ```dolphindb
-caplib::createCdsPricingSettings(pricingCurrency STRING, includeCurrentFlow BOOL, cashFlows BOOL, includeSettlementFlow BOOL, numericalFix STRING, accrualBias STRING, fwdsInCpnPeriod STRING, name STRING, tag STRING[, returnJson BOOL])
+caplib::createCdsPricingSettings(pricingCurrency STRING, includeCurrentFlow INT, cashFlows INT, includeSettlementFlow INT, numericalFix STRING, accrualBias STRING, fwdsInCpnPeriod STRING, name STRING, tag STRING[, returnJson BOOL])
 ```
 
 ##### 详情
@@ -7212,9 +7214,9 @@ caplib::createCdsPricingSettings(pricingCurrency STRING, includeCurrentFlow BOOL
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
 | `pricingCurrency` | STRING | 定价输出使用的币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `includeCurrentFlow` | BOOL | 估值输出中是否包含当前现金流。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `cashFlows` | BOOL | 定价结果中是否包含详细现金流输出。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `includeSettlementFlow` | BOOL | 估值输出中是否包含结算现金流。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `includeCurrentFlow` | INT | 估值输出中是否包含当前现金流。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `cashFlows` | INT | 定价结果中是否包含详细现金流输出。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
+| `includeSettlementFlow` | INT | 估值输出中是否包含结算现金流。 **有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。 |
 | `numericalFix` | STRING | 数值稳定性修正方法。 **有效性:** 值必须是以下完整 protobuf 标签之一：`NONE_FIX`, `TAYLOR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `accrualBias` | STRING | 应计利息偏差处理方式。 **有效性:** 值必须是以下完整 protobuf 标签之一：`HALFDAYBIAS`, `NOBIAS`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `fwdsInCpnPeriod` | STRING | 控制票息期间内远期利率处理方式的约定。 **有效性:** 值必须是以下完整 protobuf 标签之一：`FLAT`, `PIECEWISE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |

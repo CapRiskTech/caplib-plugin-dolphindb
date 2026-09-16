@@ -255,3 +255,21 @@ caplib::createFixedLegDefinition(["X"], "X", "X", "X", "X", "X", "X", 1, "X", "X
 
 @testing:case="createFixedLegDefinition rejects keyword arguments", syntaxError=1
 caplib::createFixedLegDefinition(currency="X", calendar="X", freq="X", dayCount="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", notionalExchange="X", tag="TF_createFixedLegDefinition_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFixedLegDefinition rejects invalid enum for stubPolicy", exception=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "NOT_A_VALID_ENUM_LABEL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFixedLegDefinition optional returnJson null uses default"
+result = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", bool())
+assert 1, typestr(result) != "VOID"

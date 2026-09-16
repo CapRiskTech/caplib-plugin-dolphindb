@@ -190,7 +190,16 @@ caplib::priceEqDigitalOption("X", 2024.01.01, "X", "X", "X", "X", string(), fals
 caplib::priceEqDigitalOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqDigitalOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceEqDigitalOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceEqDigitalOption("TF_NO_SUCH_HANDLE_priceEqDigitalOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceEqDigitalOption rejects keyword arguments", syntaxError=1
 caplib::priceEqDigitalOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqDigitalOption optional returnJson null uses default"
+result = caplib::priceEqDigitalOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

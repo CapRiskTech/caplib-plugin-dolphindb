@@ -86,3 +86,12 @@ caplib::createModelFreePricingSettings(["X"], 1, 1, "TF_createModelFreePricingSe
 
 @testing:case="createModelFreePricingSettings rejects keyword arguments", syntaxError=1
 caplib::createModelFreePricingSettings(currency="X", incCurrent=1, cashFlows=1, handle="TF_createModelFreePricingSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createModelFreePricingSettings optional returnJson null uses default"
+result = caplib::createModelFreePricingSettings("X", 1, 1, "TF_createModelFreePricingSettings_H", bool())
+assert 1, typestr(result) != "VOID"

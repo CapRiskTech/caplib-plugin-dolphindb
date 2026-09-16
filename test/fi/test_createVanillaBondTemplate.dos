@@ -276,3 +276,21 @@ caplib::createVanillaBondTemplate(["X"], "X", 2024.01.01, 1, 2024.01.01, "X", 0.
 
 @testing:case="createVanillaBondTemplate rejects keyword arguments", syntaxError=1
 caplib::createVanillaBondTemplate(instName="X", vanillaBondType="X", issueDate=2024.01.01, settlementDays=1, startDate=2024.01.01, maturity="X", rate=0.02, currency="X", issuePrice=0.02, dayCount="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, exCouponPeriod="X", exCouponCalendar="X", exCouponDayConvention="X", exCouponEndOfMonth=false, notionalType="X", recoveryRate=0.02, returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVanillaBondTemplate rejects invalid enum for vanillaBondType", exception=1
+caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "NOT_A_VALID_ENUM_LABEL", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVanillaBondTemplate optional returnJson null uses default"
+result = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, bool())
+assert 1, typestr(result) != "VOID"

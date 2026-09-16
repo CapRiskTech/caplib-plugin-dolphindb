@@ -296,3 +296,21 @@ caplib::createFxNdfTemplate(["X"], "X", "X", "X", "X", "X", "X", false)
 
 @testing:case="createFxNdfTemplate rejects keyword arguments", syntaxError=1
 caplib::createFxNdfTemplate(instName="X", fixingOffset="X", currencyPair="X", deliveryDayConvention="X", fixingDayConvention="X", calendars="X", settlementCurrency="X", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxNdfTemplate rejects invalid enum for deliveryDayConvention", exception=1
+caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "NOT_A_VALID_ENUM_LABEL", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxNdfTemplate optional returnJson null uses default"
+result = caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", bool())
+assert 1, typestr(result) != "VOID"

@@ -86,3 +86,22 @@ caplib::createInterestRateFixingScheduleDefinition(["X"], "X", 1, "X", 1, "X", "
 
 @testing:case="createInterestRateFixingScheduleDefinition rejects keyword arguments", syntaxError=1
 caplib::createInterestRateFixingScheduleDefinition(calendars="X", frequency="X", frequencyRatio=1, fixingDayMode="X", fixingDayOffset=1, fixingDayConvention="X", tag="TF_createInterestRateFixingScheduleDefinition_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestRateFixingScheduleDefinition accepts invalid enum fixingDayMode (maps to invalid sentinel)"
+result = caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "NOT_A_VALID_ENUM_LABEL", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", false)
+assert 1, typestr(result) != "VOID"
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestRateFixingScheduleDefinition optional returnJson null uses default"
+result = caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "X", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", bool())
+assert 1, typestr(result) != "VOID"

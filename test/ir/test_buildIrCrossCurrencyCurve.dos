@@ -118,19 +118,29 @@ fxSpot = caplib::createFxSpotRate(6.9, "USD", "CNY", irAsOfDate, 2022.03.16, "TF
 // Tests
 // ============================================================================
 
-@testing:case="buildIrCrossCurrencyCurve positive call"
-// NOTE: 0.0.11 cannot resolve FX_SPOT/<pair> static-data key (see issues.md).
-try {
-cbs = caplib::createIrYieldCurveBuildSettings(irCurveName, false, ["CNY"], [irCurveName], [iborIndex[0]], [irCurveName], "TF_XCBS", true)
-    bpc = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_XBPC", true)
-    xc = caplib::buildIrCrossCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], fxSpot[0], "BOOTSTRAPPING_METHOD", 0, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", false)
-    assert 1, xc == "TF_XCCY_OUT"
-} catch(ex) {
-    // known 0.0.11 service-side limitation, documented not swallowed
-    print("documented service failure: " + ex[1]);
-    assert 1, true
-}
-assert 1, true
+@testing:case="buildIrCrossCurrencyCurve -> [handle, json] (python parity)"
+// Mirror python test_iranalytics.test_ir_cross_ccy_curve_builder: the target
+// curve is an USD curve bootstrapped from FX_SWAP points (factor 10000), with
+// the CNY curve as the other curve. createFxSpotTemplate/createFxSwapTemplate
+// register the FX_SPOT/FX_SWAP static-data keys the build resolves; the spot
+// rate is created with (baseCurrency=CNY, targetCurrency=USD) so its protobuf
+// matches python create_foreign_exchange_rate(6.6916, "USD", "CNY").
+bpcFx = caplib::createIrParRateCurve(irAsOfDate, "USD", "USD_USDCNY_FX",
+    take("USDCNY", 11), take("FX_SWAP", 11),
+    ["ON", "TN", "1W", "1M", "2M", "3M", "6M", "9M", "12M", "2Y", "3Y"],
+    take(10000, 11), [2.01, 3.91, 5.93, 22.5, 44.25, 63.25, 130.75, 194.75, 268.25, 1017.0, 2075.0],
+    "TF_USD_FX_PAR", true);
+cbsFx = caplib::createIrYieldCurveBuildSettings("USD_USDCNY_FX", true,
+    ["USD", "CNY"], ["USD_USDCNY_FX", irCurveName], [], [], "TF_XCBS", true);
+fxSpotTplX = caplib::createFxSpotTemplate("USDCNY_SPOT_TPL", "USDCNY", "FOLLOWING", ["CAL_CFETS"], "2d", false);
+fxSwapTplX = caplib::createFxSwapTemplate("USDCNY_SWP_TPL", "SPOTSTART", "USDCNY", ["CAL_CFETS"],
+    "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false);
+fxSpotX = caplib::createFxSpotRate(6.6916, "CNY", "USD", irAsOfDate, irAsOfDate, "TF_XCCY_FXSPOT", false);
+xc = caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [bpcFx[0]],
+    "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX,
+    "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE",
+    ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true);
+assert 1, isHandleJson(xc, "TF_XCCY_OUT") && hasJsonField(xc[1], "target_curves")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -170,7 +180,28 @@ caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X", string()], ["X"], ["X"], "X"
 caplib::buildIrCrossCurrencyCurve(2024.01.01, take(string, 0), ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
 @testing:case="buildIrCrossCurrencyCurve rejects nonexistent handle buildSettingsHandles", exception=1
-caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], "TF_HANDLE_DOES_NOT_EXIST", ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], "TF_NO_SUCH_HANDLE_buildIrCrossCurrencyCurve", ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
 @testing:case="buildIrCrossCurrencyCurve rejects keyword arguments", syntaxError=1
 caplib::buildIrCrossCurrencyCurve(referenceDate=2024.01.01, targetCurveNames=["X"], buildSettingsHandles=["X"], parCurveHandles=["X"], dayCountConvention="X", compoundingType="X", frequency="X", otherCurveHandles=["X"], fxSpotHandle="X", buildingMethod="X", calcJacobian=false, shift=0.02, finiteDifferenceMethod="X", threadingMode="X", targetCurveHandles=["X"], outputHandle="X", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrCrossCurrencyCurve rejects all-null vector targetCurveNames", exception=1
+caplib::buildIrCrossCurrencyCurve(irAsOfDate, [string(), string(), string()], [cbsFx[0]], [bpcFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
+
+@testing:case="buildIrCrossCurrencyCurve rejects invalid enum for dayCountConvention", exception=1
+caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [bpcFx[0]], "NOT_A_VALID_ENUM_LABEL", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrCrossCurrencyCurve optional returnJson null uses default"
+result = caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [bpcFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", bool())
+assert 1, typestr(result) != "VOID"

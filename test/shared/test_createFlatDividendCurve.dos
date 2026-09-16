@@ -94,3 +94,12 @@ caplib::createFlatDividendCurve([2024.01.01], 0.02, "X", "TF_createFlatDividendC
 
 @testing:case="createFlatDividendCurve rejects keyword arguments", syntaxError=1
 caplib::createFlatDividendCurve(referenceDate=2024.01.01, dividend=0.02, curveName="X", handle="TF_createFlatDividendCurve_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFlatDividendCurve optional returnJson null uses default"
+result = caplib::createFlatDividendCurve(2024.01.01, 0.02, "X", "TF_createFlatDividendCurve_H", bool())
+assert 1, typestr(result) != "VOID"

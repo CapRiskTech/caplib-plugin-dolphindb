@@ -112,20 +112,22 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
-@testing:case="buildIrSingleCurrencyCurve -> [handle, json] (documented 0.0.11 limitation)"
-// NOTE: 0.0.11 cannot resolve DEPOSIT/<index> static-data keys without createStaticData payloads (see issues.md).
-try {
-    cbs = caplib::createIrYieldCurveBuildSettings(irCurveName, false, ["CNY"], [irCurveName], [iborIndex[0]], [irCurveName], "TF_IR_CBS", true);
-    bpc = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_BPC", true);
-    bsc = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", 0, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true);
-    assert 1, isHandleJson(bsc, "TF_IR_BUILT") && hasJsonField(bsc[1], "target_curves")
-} catch(ex) {
-    print("documented service failure: " + ex[1]);
-    assert 1, true
-}
-
-@testing:case="buildIrSingleCurrencyCurve rejects wrong par curve handle", exception=1
-caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], ["TF_HANDLE_DOES_NOT_EXIST"], ["TF_HANDLE_DOES_NOT_EXIST"], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", 0, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT_BAD", true)
+@testing:case="buildIrSingleCurrencyCurve -> [handle, json] (python parity)"
+// Mirror python test_iranalytics.test_ir_single_ccy_curve_builder: all pillars
+// IR_VANILLA_SWAP named after the swap template (registered as static data by
+// createIrVanillaSwapTemplate), quotes in percent with factor 100, and the
+// build-settings forward map keyed by the ibor index name.
+bpc = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName,
+    [irCurveName, irCurveName, irCurveName],
+    ["IR_VANILLA_SWAP", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"],
+    ["6M", "1Y", "3Y"], [100, 100, 100], [2.3, 2.4, 2.6], "TF_IR_BPC", true);
+cbs = caplib::createIrYieldCurveBuildSettings(irCurveName, false,
+    ["CNY"], [irCurveName], [irCurveName], [irCurveName], "TF_IR_CBS", true);
+bsc = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]],
+    "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [],
+    "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE",
+    ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true);
+assert 1, isHandleJson(bsc, "TF_IR_BUILT") && hasJsonField(bsc[1], "target_curves")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -165,7 +167,28 @@ caplib::buildIrSingleCurrencyCurve(2024.01.01, ["X", string()], ["X"], ["X"], "X
 caplib::buildIrSingleCurrencyCurve(2024.01.01, take(string, 0), ["X"], ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
 
 @testing:case="buildIrSingleCurrencyCurve rejects nonexistent handle buildSettingsHandles", exception=1
-caplib::buildIrSingleCurrencyCurve(2024.01.01, ["X"], "TF_HANDLE_DOES_NOT_EXIST", ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
+caplib::buildIrSingleCurrencyCurve(2024.01.01, ["X"], "TF_NO_SUCH_HANDLE_buildIrSingleCurrencyCurve", ["X"], "X", "X", "X", ["X"], "X", false, 0.02, "X", "X", ["X"], "X", false)
 
 @testing:case="buildIrSingleCurrencyCurve rejects keyword arguments", syntaxError=1
 caplib::buildIrSingleCurrencyCurve(referenceDate=2024.01.01, targetCurveNames=["X"], buildSettingsHandles=["X"], parCurveHandles=["X"], dayCountConvention="X", compoundingType="X", frequency="X", otherCurveHandles=["X"], buildingMethod="X", calcJacobian=false, shift=0.02, finiteDifferenceMethod="X", threadingMode="X", targetCurveHandles=["X"], outputHandle="X", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrSingleCurrencyCurve rejects all-null vector targetCurveNames", exception=1
+caplib::buildIrSingleCurrencyCurve(irAsOfDate, [string(), string(), string()], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+
+@testing:case="buildIrSingleCurrencyCurve rejects invalid enum for dayCountConvention", exception=1
+caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "NOT_A_VALID_ENUM_LABEL", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrSingleCurrencyCurve optional returnJson null uses default"
+result = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", bool())
+assert 1, typestr(result) != "VOID"

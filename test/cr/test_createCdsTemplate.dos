@@ -159,3 +159,12 @@ caplib::createCdsTemplate(["X"], "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X",
 
 @testing:case="createCdsTemplate rejects keyword arguments", syntaxError=1
 caplib::createCdsTemplate(instName="X", startDelay="X", settlementType="X", referencePrice=0.02, leverage=0.02, creditProtectionType="X", recoveryRate=0.02, creditPremiumType="X", dayCount="X", frequency="X", businessDayConvention="X", calendars="X", rebateAccrual=false, returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCdsTemplate optional returnJson null uses default"
+result = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, bool())
+assert 1, typestr(result) != "VOID"

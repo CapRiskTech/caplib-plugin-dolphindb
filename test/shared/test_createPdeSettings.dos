@@ -86,3 +86,12 @@ caplib::createPdeSettings([1], 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02
 
 @testing:case="createPdeSettings rejects keyword arguments", syntaxError=1
 caplib::createPdeSettings(tSize=1, xSize=1, xMin=0.02, xMax=0.02, xMinMaxType=1, ySize=1, yMin=0.02, yMax=0.02, yMinMaxType=1, zSize=1, zMin=0.02, zMax=0.02, zMinMaxType=1, xDensity=0.02, yDensity=0.02, zDensity=0.02, xGridType=1, yGridType=1, zGridType=1, xInterp=1, yInterp=1, zInterp=1, handle="TF_createPdeSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPdeSettings optional returnJson null uses default"
+result = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", bool())
+assert 1, typestr(result) != "VOID"

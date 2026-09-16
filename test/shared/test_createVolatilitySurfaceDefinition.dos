@@ -86,3 +86,24 @@ caplib::createVolatilitySurfaceDefinition(["X"], "X", "X", "X", "X", "X", "X", "
 
 @testing:case="createVolatilitySurfaceDefinition rejects keyword arguments", syntaxError=1
 caplib::createVolatilitySurfaceDefinition(volSmileType="X", smileMethod="X", smileExtrapMethod="X", timeInterpMethod="X", timeExtrapMethod="X", dayCountConvention="X", volType="X", wingStrikeType="X", lower=0.02, upper=0.02, handle="TF_createVolatilitySurfaceDefinition_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-2 additions (parameter relationships / boundaries)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySurfaceDefinition rejects lower >= upper (equal)", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.0001, 0.0001, "TF_VSDEF", false)
+
+@testing:case="createVolatilitySurfaceDefinition rejects lower >= upper (reversed)", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.001, -0.001, "TF_VSDEF", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySurfaceDefinition optional returnJson null uses default"
+result = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VSDEF", bool())
+assert 1, typestr(result) != "VOID"

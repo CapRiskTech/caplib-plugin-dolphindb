@@ -295,7 +295,16 @@ caplib::priceFxEuropeanOption("X", 2024.01.01, "X", "X", "X", "X", string(), fal
 caplib::priceFxEuropeanOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxEuropeanOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceFxEuropeanOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceFxEuropeanOption("TF_NO_SUCH_HANDLE_priceFxEuropeanOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxEuropeanOption rejects keyword arguments", syntaxError=1
 caplib::priceFxEuropeanOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxEuropeanOption optional returnJson null uses default"
+result = caplib::priceFxEuropeanOption(eoInst, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

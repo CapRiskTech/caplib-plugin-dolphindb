@@ -94,3 +94,12 @@ caplib::createFlatVolCurve([2024.01.01], 0.02, "X", "TF_createFlatVolCurve_H", f
 
 @testing:case="createFlatVolCurve rejects keyword arguments", syntaxError=1
 caplib::createFlatVolCurve(referenceDate=2024.01.01, volatility=0.02, underlying="X", handle="TF_createFlatVolCurve_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFlatVolCurve optional returnJson null uses default"
+result = caplib::createFlatVolCurve(2024.01.01, 0.02, "X", "TF_createFlatVolCurve_H", bool())
+assert 1, typestr(result) != "VOID"

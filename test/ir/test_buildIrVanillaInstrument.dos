@@ -146,3 +146,30 @@ caplib::buildIrVanillaInstrument(["X"], 0.02, 0.02, 2024.01.01, 2024.01.01, "X",
 
 @testing:case="buildIrVanillaInstrument rejects keyword arguments", syntaxError=1
 caplib::buildIrVanillaInstrument(payReceive="X", cpnRate=0.02, spread=0.02, startDate=2024.01.01, maturityDate=2024.01.01, instTemplate="X", nominal=0.02, legFixings="X", tag="TF_buildIrVanillaInstrument_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrVanillaInstrument rejects invalid enum for payReceive", exception=1
+caplib::buildIrVanillaInstrument("NOT_A_VALID_ENUM_LABEL", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-2 additions (parameter relationships / boundaries)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrVanillaInstrument rejects start date after maturity date", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2023.03.07, 2022.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildIrVanillaInstrument optional returnJson null uses default"
+result = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", bool())
+assert 1, typestr(result) != "VOID"

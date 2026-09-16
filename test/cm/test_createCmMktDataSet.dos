@@ -259,3 +259,12 @@ caplib::createCmMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.0
 
 @testing:case="createCmMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createCmMktDataSet(asOfDate=2024.01.01, underlying="X", underlyingPrice=0.02, discountCurve="X", dividendCurve="X", volSurface="X", quantoDiscountCurve="X", quantoFxVolCurve="X", quantoCorrelation=0.02, handle="TF_createCmMktDataSet_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCmMktDataSet optional returnJson null uses default"
+result = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_CM_MKT", bool())
+assert 1, typestr(result) != "VOID"

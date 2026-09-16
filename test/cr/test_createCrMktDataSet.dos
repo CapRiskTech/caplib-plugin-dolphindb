@@ -153,3 +153,12 @@ caplib::createCrMktDataSet([2024.01.01], "X", "X", "TF_createCrMktDataSet_H", "T
 
 @testing:case="createCrMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createCrMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", name="TF_createCrMktDataSet_H", tag="TF_createCrMktDataSet_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCrMktDataSet optional returnJson null uses default"
+result = caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve[0], "TF_CRMKT", "TF_CRMKT", bool())
+assert 1, typestr(result) != "VOID"

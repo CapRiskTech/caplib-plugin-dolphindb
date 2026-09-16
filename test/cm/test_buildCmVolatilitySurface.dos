@@ -264,7 +264,25 @@ caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_NO_SUCH_HANDLE_buildCmVolatilitySurface", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::buildCmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", handle="TF_buildCmVolatilitySurface_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCmVolatilitySurface rejects all-null vector underlyingPrices", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], [double(), double(), double()], irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCmVolatilitySurface optional returnJson null uses default"
+result = caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", bool())
+assert 1, typestr(result) != "VOID"

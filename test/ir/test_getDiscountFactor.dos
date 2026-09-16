@@ -136,7 +136,36 @@ caplib::getDiscountFactor("X", [2024.01.01, date()])
 caplib::getDiscountFactor("X", take(date, 0))
 
 @testing:case="getDiscountFactor rejects nonexistent handle irCurveHandle", exception=1
-caplib::getDiscountFactor("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01])
-
+caplib::getDiscountFactor("TF_NO_SUCH_HANDLE_getDiscountFactor", [2024.01.01])
 @testing:case="getDiscountFactor rejects keyword arguments", syntaxError=1
 caplib::getDiscountFactor(irCurveHandle="X", dates=[2024.01.01])
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="getDiscountFactor rejects all-null vector dates", exception=1
+caplib::getDiscountFactor(irCurve, [date(), date(), date()])
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="getDiscountFactor -> analytic flat-curve reference"
+// DF(t) = exp(-r*t) on a flat zero curve; t = 1.0 exactly (2022.03.09 + 365d, ACT/365F).
+flatIrRef = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_REF_FIR", false);
+dfr = caplib::getDiscountFactor(flatIrRef, [2023.03.09]);
+assert 1, abs(dfr[0] - 0.9801986733067553) < 1.0e-12
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="getDiscountFactor repeat calls return identical results"
+d1r = caplib::getDiscountFactor(irCurve, [2025.03.10]);
+d2r = caplib::getDiscountFactor(irCurve, [2025.03.10]);
+assert 1, d1r == d2r

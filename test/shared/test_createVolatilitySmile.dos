@@ -103,3 +103,24 @@ caplib::createVolatilitySmile("X", 2024.01.01, take(double, 0), [0.02], "X", "X"
 
 @testing:case="createVolatilitySmile rejects keyword arguments", syntaxError=1
 caplib::createVolatilitySmile(volSmileType="X", referenceDate=2024.01.01, strikes=[0.02], vols=[0.02], smileMethod="X", extrapMethod="X", term=0.02, modelParams=[0.02], auxiliaryParams=[0.02], lower=0.02, upper=0.02, handle="TF_createVolatilitySmile_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySmile accepts all-null vector strikes (lenient validation, does not raise)"
+result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [double(), double(), double()], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
+assert 1, typestr(result) != "VOID"
+@testing:case="createVolatilitySmile rejects invalid enum for extrapMethod", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "NOT_A_VALID_ENUM_LABEL", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySmile optional returnJson null uses default"
+result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", bool())
+assert 1, typestr(result) != "VOID"

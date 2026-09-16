@@ -103,3 +103,21 @@ caplib::createDividendCurve(2024.01.01, take(date, 0), [0.02], 2024.01.01, "X", 
 
 @testing:case="createDividendCurve rejects keyword arguments", syntaxError=1
 caplib::createDividendCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], pillarValues=[0.02], yieldStartDate=2024.01.01, dividendType="X", dcc="X", interp="X", extrap="X", compounding="X", name="TF_createDividendCurve_H", handle="TF_createDividendCurve_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createDividendCurve rejects all-null vector pillarDates", exception=1
+caplib::createDividendCurve(asOfDate, [date(), date(), date()], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createDividendCurve optional returnJson null uses default"
+result = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", bool())
+assert 1, typestr(result) != "VOID"

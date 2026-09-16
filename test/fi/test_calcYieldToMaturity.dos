@@ -255,7 +255,7 @@ caplib::calcYieldToMaturity(2024.01.01, string(), "X", "X", 0.02, "X", "X")
 caplib::calcYieldToMaturity([2024.01.01], "X", "X", "X", 0.02, "X", "X")
 
 @testing:case="calcYieldToMaturity rejects nonexistent handle bondHandle", exception=1
-caplib::calcYieldToMaturity(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X")
+caplib::calcYieldToMaturity(2024.01.01, "X", "TF_NO_SUCH_HANDLE_calcYieldToMaturity", "X", 0.02, "X", "X")
 
 @testing:case="calcYieldToMaturity rejects keyword arguments", syntaxError=1
 caplib::calcYieldToMaturity(calculationDate=2024.01.01, compoundingType="X", bondHandle="X", forwardCurveHandle="X", price=0.02, priceType="X", frequency="X")

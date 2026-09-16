@@ -80,3 +80,12 @@ caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, int(), 0.02, 1,
 
 @testing:case="createPriceRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createPriceRiskSettings(delta=false, gamma=false, curvature=false, shift=0.02, curvatureShift=0.02, method=1, scaling=0.02, threading=1, handle="TF_createPriceRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPriceRiskSettings optional returnJson null uses default"
+result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", bool())
+assert 1, typestr(result) != "VOID"

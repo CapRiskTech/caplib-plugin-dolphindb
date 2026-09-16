@@ -256,7 +256,7 @@ caplib::calcFixedCpnBondParRate(2024.01.01, string(), "X", "X")
 caplib::calcFixedCpnBondParRate([2024.01.01], "X", "X", "X")
 
 @testing:case="calcFixedCpnBondParRate rejects nonexistent handle bondHandle", exception=1
-caplib::calcFixedCpnBondParRate(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X")
+caplib::calcFixedCpnBondParRate(2024.01.01, "TF_NO_SUCH_HANDLE_calcFixedCpnBondParRate", "X", "X")
 
 @testing:case="calcFixedCpnBondParRate rejects keyword arguments", syntaxError=1
 caplib::calcFixedCpnBondParRate(calculationDate=2024.01.01, bondHandle="X", discountCurveHandle="X", spreadCurveHandle="X")

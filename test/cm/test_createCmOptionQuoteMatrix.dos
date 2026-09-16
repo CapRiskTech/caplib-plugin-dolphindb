@@ -268,3 +268,42 @@ caplib::createCmOptionQuoteMatrix("X", "X", 2024.01.01, take(date, 0), matrix([0
 
 @testing:case="createCmOptionQuoteMatrix rejects keyword arguments", syntaxError=1
 caplib::createCmOptionQuoteMatrix(exerciseType="X", underlyingType="X", asOfDate=2024.01.01, termDates=[2024.01.01], payoffTypes=matrix([0.2]), strikes=matrix([0.2]), prices=matrix([0.2]), underlying="X", handle="TF_createCmOptionQuoteMatrix_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCmOptionQuoteMatrix rejects all-null vector termDates", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, [date(), date(), date()], payoffTypes, strikes, prices, underlying, "TF_CM_OQ", true)
+
+@testing:case="createCmOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, matrix(STRING, 0, 3), strikes, prices, underlying, "TF_CM_OQ", true)
+
+@testing:case="createCmOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, matrix([string(), string()], [string(), string()]), strikes, prices, underlying, "TF_CM_OQ", true)
+
+@testing:case="createCmOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, matrix(["A", string()], [string(), "A"]), strikes, prices, underlying, "TF_CM_OQ", true)
+
+@testing:case="createCmOptionQuoteMatrix rejects invalid enum for exerciseType", exception=1
+caplib::createCmOptionQuoteMatrix("NOT_A_VALID_ENUM_LABEL", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, prices, underlying, "TF_CM_OQ", true)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-2b additions (terms/matrix row relationship)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCmOptionQuoteMatrix rejects terms size mismatch with quote matrix rows", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, [2020.03.12, 2020.04.13, 2020.05.12, 2020.06.12, 2020.07.10, 2020.08.12], payoffTypes, strikes, prices, underlying, "TF_CM_OQ", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCmOptionQuoteMatrix optional returnJson null uses default"
+result = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, prices, underlying, "TF_CM_OQ", bool())
+assert 1, typestr(result) != "VOID"

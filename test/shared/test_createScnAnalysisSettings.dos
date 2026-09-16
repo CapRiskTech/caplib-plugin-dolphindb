@@ -94,7 +94,16 @@ caplib::createScnAnalysisSettings("X", "X", "X", int(), "TF_createScnAnalysisSet
 caplib::createScnAnalysisSettings(["X"], "X", "X", 1, "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects nonexistent handle priceHandle", exception=1
-caplib::createScnAnalysisSettings("X", "TF_HANDLE_DOES_NOT_EXIST", "X", 1, "TF_createScnAnalysisSettings_H", false)
+caplib::createScnAnalysisSettings("X", "TF_NO_SUCH_HANDLE_createScnAnalysisSettings", "X", 1, "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects keyword arguments", syntaxError=1
 caplib::createScnAnalysisSettings(scnType="X", priceHandle="X", volHandle="X", threading=1, handle="TF_createScnAnalysisSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createScnAnalysisSettings optional returnJson null uses default"
+result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 1, "TF_SCNA", bool())
+assert 1, typestr(result) != "VOID"

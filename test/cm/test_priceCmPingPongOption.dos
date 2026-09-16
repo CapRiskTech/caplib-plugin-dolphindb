@@ -257,7 +257,16 @@ caplib::priceCmPingPongOption("X", 2024.01.01, "X", "X", "X", "X", string(), fal
 caplib::priceCmPingPongOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmPingPongOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceCmPingPongOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceCmPingPongOption("TF_NO_SUCH_HANDLE_priceCmPingPongOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmPingPongOption rejects keyword arguments", syntaxError=1
 caplib::priceCmPingPongOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmPingPongOption optional returnJson null uses default"
+result = caplib::priceCmPingPongOption(inst, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", bool())
+assert 1, typestr(result) != "VOID"

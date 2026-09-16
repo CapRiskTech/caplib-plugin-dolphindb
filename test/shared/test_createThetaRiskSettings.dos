@@ -80,3 +80,12 @@ caplib::createThetaRiskSettings(false, [1], 0.02, "TF_createThetaRiskSettings_H"
 
 @testing:case="createThetaRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createThetaRiskSettings(theta=false, shift=1, scaling=0.02, handle="TF_createThetaRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createThetaRiskSettings optional returnJson null uses default"
+result = caplib::createThetaRiskSettings(false, 1, 0.02, "TF_createThetaRiskSettings_H", bool())
+assert 1, typestr(result) != "VOID"

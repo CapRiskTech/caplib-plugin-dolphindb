@@ -292,7 +292,41 @@ caplib::calcFxAtmStrike("X", date(), "X", "X", "X", "X")
 caplib::calcFxAtmStrike(["X"], 2024.01.01, "X", "X", "X", "X")
 
 @testing:case="calcFxAtmStrike rejects nonexistent handle volSurfaceHandle", exception=1
-caplib::calcFxAtmStrike("X", 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")
+caplib::calcFxAtmStrike("X", 2024.01.01, "TF_NO_SUCH_HANDLE_calcFxAtmStrike", "X", "X", "X")
 
 @testing:case="calcFxAtmStrike rejects keyword arguments", syntaxError=1
 caplib::calcFxAtmStrike(atmType="X", expiryDate=2024.01.01, volSurfaceHandle="X", fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxAtmStrike rejects invalid enum for atmType", exception=1
+caplib::calcFxAtmStrike("NOT_A_VALID_ENUM_LABEL", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxAtmStrike -> analytic flat-fixture reference"
+// Garman-Kohlhagen with S=1.1761, rd=2%, rf=1%, sigma=10%, T=1.0 (365d):
+// F = S*exp((rd-rf)*T) = 1.1879200015076898; ATM DNS strike = F*exp(sigma^2*T/2).
+domCurveRef = caplib::createFlatIrYieldCurve(2021.03.30, "USD", 0.02, "TF_REF_DOM", false);
+forCurveRef = caplib::createFlatIrYieldCurve(2021.03.30, "EUR", 0.01, "TF_REF_FOR", false);
+spotRef = caplib::createFxSpotRate(1.1761, "EUR", "USD", 2021.03.30, 2021.03.30, "TF_REF_SPOT", false);
+fvolRef = caplib::createFlatFxVolatilitySurface(2021.03.30, "EURUSD", 0.10, "TF_REF_FVOL", false);
+atmr = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2022.03.30, fvolRef, spotRef, domCurveRef, forCurveRef);
+assert 1, abs(atmr - 1.193874475744343) < 1.0e-8
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxAtmStrike repeat calls return identical results"
+a1 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+a2 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+assert 1, a1 == a2

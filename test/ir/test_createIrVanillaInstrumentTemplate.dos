@@ -159,3 +159,24 @@ caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, take(string, 0), "TF
 
 @testing:case="createIrVanillaInstrumentTemplate rejects keyword arguments", syntaxError=1
 caplib::createIrVanillaInstrumentTemplate(instType="X", instName="X", startConvention="X", startDelay=1, legDefinitions=["X"], tag="TF_createIrVanillaInstrumentTemplate_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrVanillaInstrumentTemplate rejects all-null vector legDefinitions", exception=1
+caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [string(), string(), string()], "TF_IR_VIT", true)
+
+@testing:case="createIrVanillaInstrumentTemplate rejects invalid enum for instType", exception=1
+caplib::createIrVanillaInstrumentTemplate("NOT_A_VALID_ENUM_LABEL", "TF_IR_VIT", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrVanillaInstrumentTemplate optional returnJson null uses default"
+result = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", bool())
+assert 1, typestr(result) != "VOID"

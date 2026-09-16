@@ -142,7 +142,52 @@ caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", string(), 
 caplib::priceIrVanillaInstrument("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceIrVanillaInstrument rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceIrVanillaInstrument("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceIrVanillaInstrument("TF_NO_SUCH_HANDLE_priceIrVanillaInstrument", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceIrVanillaInstrument rejects keyword arguments", syntaxError=1
 caplib::priceIrVanillaInstrument(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceIrVanillaInstrument -> par swap on flat curve prices to zero"
+// A vanilla swap whose fixed coupon equals the flat curve rate must price to
+// (near) zero; residual is date-convention noise, bounded at 5e-4 of notional.
+flatRef = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.03, "TF_REF_FIR3", false);
+parMkt = caplib::createIrMktDataSet(irAsOfDate, flatRef, [iborIndex[0]], [flatRef], "TF_REF_MKT", true);
+parSwap = caplib::buildIrVanillaInstrument("PAY", 0.03, 0.0, 2022.03.16, 2023.03.16, irSwapTemplate[0], 1000000.0, "", "TF_PAR_SWAP", false);
+parRes = caplib::priceIrVanillaInstrument(parSwap, irAsOfDate, parMkt[0], irPricingSettings, irRisk[0], "", "", true);
+assert 1, abs(presentValue(parRes)) / 1000000.0 < 5.0e-4
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceIrVanillaInstrument optional returnJson null uses default"
+result = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"
+
+@testing:case="priceIrVanillaInstrument concurrent submitJob results identical"
+// Review P18: the same pricing call submitted as concurrent jobs must return
+// results identical to the sequential call. Builds its own flat-curve fixture;
+// the object cache is server-global so jobs reference the same handles.
+ccFlat = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.03, "TF_CC_FIR", false);
+ccMkt = caplib::createIrMktDataSet(irAsOfDate, ccFlat, [iborIndex[0]], [ccFlat], "TF_CC_MKT", true);
+ccSwap = caplib::buildIrVanillaInstrument("PAY", 0.03, 0.0, 2022.03.16, 2023.03.16, irSwapTemplate[0], 1000000.0, "", "TF_CC_INST", false);
+seq = caplib::priceIrVanillaInstrument(ccSwap, irAsOfDate, ccMkt[0], irPricingSettings, irRisk[0], "", "", true);
+nJobs = 8;
+okAll = true;
+jbase = "TF_CCJOB_" + string(long(now()));
+for (i in 0..(nJobs-1)) {
+    submitJob(jbase + "_" + string(i), "cc pricing",
+        caplib::priceIrVanillaInstrument, ccSwap, irAsOfDate, ccMkt[0], irPricingSettings, irRisk[0], "", "", true);
+}
+sleep(1000);
+for (i in 0..(nJobs-1)) {
+    jr = getJobReturn(jbase + "_" + string(i));
+    if (typestr(jr) == "VOID" || jr[1] != seq[1]) { okAll = false; }
+}
+assert 1, okAll

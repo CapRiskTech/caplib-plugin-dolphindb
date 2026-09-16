@@ -296,3 +296,12 @@ caplib::createFxSpotTemplate(["X"], "X", "X", "X", "X", "TF_createFxSpotTemplate
 
 @testing:case="createFxSpotTemplate rejects keyword arguments", syntaxError=1
 caplib::createFxSpotTemplate(instName="X", currencyPair="X", spotDayConvention="X", calendars="X", spotDelay="X", handle="TF_createFxSpotTemplate_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSpotTemplate optional returnJson null uses default"
+result = caplib::createFxSpotTemplate("TF_SPOTTPL", "EURUSD", "FOLLOWING", ["CAL_EUTA","CAL_GBLO"], "2d", bool())
+assert 1, typestr(result) != "VOID"

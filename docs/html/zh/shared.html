@@ -15,9 +15,9 @@
       <header class="page-header">
         <p class="kicker">DolphinDB caplib 插件</p>
         <h1>通用</h1>
-        <p class="lede">跨资产工具、静态数据服务辅助函数、定价设置、风险设置、情景设置以及共享 protobuf 工具。</p>
+        <p class="lede">跨资产工具、定价设置、风险设置、情景设置以及共享 protobuf 工具。</p>
       </header>
-      <section id="user-guide" class="panel"><h2>用户指南</h2><p>跨资产工具、静态数据服务辅助函数、定价设置、风险设置、情景设置以及共享 protobuf 工具。 本页包含 29 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p>所有会向 内存对象 写入对象的函数都支持可选的最后一个参数 <code>returnJson BOOL</code>。省略或传入 <code>false</code> 时仅返回句柄；传入 <code>true</code> 时返回 <code>[handle, protobufJson]</code>。</p><p class="validity-guide"><strong>参数有效性：</strong> 每个参数均说明精确枚举标签、选择器代码、范围、正负性、形状和跨参数规则。“包装器检查”表示插件立即校验；“业务有效”规则可能由下游服务校验。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>跨资产工具、定价设置、风险设置、情景设置以及共享 protobuf 工具。 本页包含 28 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p>所有会向 内存对象 写入对象的函数都支持可选的最后一个参数 <code>returnJson BOOL</code>。省略或传入 <code>false</code> 时仅返回句柄；传入 <code>true</code> 时返回 <code>[handle, protobufJson]</code>。</p><p class="validity-guide"><strong>参数有效性：</strong> 每个参数均说明精确枚举标签、选择器代码、范围、正负性、形状和跨参数规则。“包装器检查”表示插件立即校验；“业务有效”规则可能由下游服务校验。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 settings = caplib::createPricingSettings(
     &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0,
@@ -69,26 +69,6 @@ json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code>
 <div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createCalendar(calName)</code></pre></div>
 </article>
 
-<article class="api-card" data-search="createstaticdata create a caplib static-data object from serialized protobuf bytes. staticdatatype string, staticdatabytes string scalar">
-  <div class="api-card-head">
-    <div>
-      <a id="createstaticdata"></a>
-      <h3><code>createStaticData</code></h3>
-      <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::createStaticData(staticDataType STRING, staticDataBytes STRING)</code></p>
-      <h4 class="api-subheading">详情</h4>
-      <p class="api-description">验证 StaticDataType，将输入 protobuf 序列化字节发送到 CAPLIB，并注册对应的具体静态数据对象。</p>
-    </div>
-    <span class="return-pill">BOOL</span>
-  </div>
-  <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong> BOOL <code>true</code>；失败时抛出异常，不返回 <code>false</code>。 <strong>状态/错误行为：</strong> 对于服务调用，<code>success=true</code> 表示已生成上述结果；<code>success=false</code> 表示没有有效结果，服务 <code>err_msg</code> 会写入 DolphinDB <code>RuntimeException</code>。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。</p>
-  <details open>
-    <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>staticDataType</code></td><td>STRING</td><td>静态数据类型标签。<br><span class="validity-note"><strong>有效性:</strong> 值必须是以下完整 protobuf 标签之一：<code>INVALID_STATIC_DATA_TYPE</code>, <code>SDT_CALENDAR</code>, <code>SDT_IBOR_INDEX</code>, <code>SDT_IR_YIELD_CURVE</code>, <code>SDT_FX_MKT_CONVENTIONS</code>, <code>SDT_FX_SPOT</code>, <code>SDT_FX_SWAP</code>, <code>SDT_FX_FORWARD</code>, <code>SDT_FX_NDF</code>, <code>SDT_IR_VANILLA_INSTRUMENT</code>, <code>SDT_IR_FUTURE</code>, <code>SDT_FX_TIME_OPTION</code>, <code>SDT_VANILLA_BOND</code>, <code>SDT_CREDIT_INSTRUMENT</code>, <code>SDT_PM_CASH</code>。这些是规范拼写；为保证兼容性请按所示使用。包含 <code>INVALID</code> 的标签是解析器可识别的哨兵，通常不是有效业务输入。 比较不区分大小写；空字符串和 <code>NAN</code> 映射为无效哨兵。</span></td></tr><tr><td><code>staticDataBytes</code></td><td>STRING</td><td>静态数据 protobuf 字节。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空二进制 STRING，并能解析为说明中的精确 protobuf 类型。</span></td></tr></tbody></table>
-  </details>
-<div class="api-example"><h4>示例</h4><p>以下调用使用上文所述类型的变量；可选参数按需追加。</p><pre><code>result = caplib::createStaticData(staticDataType, staticDataBytes)</code></pre></div>
-</article>
 
 <article class="api-card" data-search="getobjectcachejson read a cached protobuf object back as json. protobuftype string, handle string scalar">
   <div class="api-card-head">

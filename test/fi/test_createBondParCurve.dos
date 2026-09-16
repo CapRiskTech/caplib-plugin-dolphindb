@@ -267,3 +267,21 @@ caplib::createBondParCurve(2024.01.01, "X", take(string, 0), [0.02], "X", "X", f
 
 @testing:case="createBondParCurve rejects keyword arguments", syntaxError=1
 caplib::createBondParCurve(referenceDate=2024.01.01, currency="X", instrumentNames=["X"], quotes=[0.02], quoteType="X", curveName="X", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondParCurve rejects all-null vector instrumentNames", exception=1
+caplib::createBondParCurve(asOfDate, currency, [string(), string(), string()], cnyTreasBondQuotes, "YIELD_TO_MATURITY", "TF_FI_PAR", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondParCurve optional returnJson null uses default"
+result = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "YIELD_TO_MATURITY", "TF_FI_PAR", bool())
+assert 1, typestr(result) != "VOID"

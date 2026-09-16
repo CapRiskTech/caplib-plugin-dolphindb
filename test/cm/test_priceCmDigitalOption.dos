@@ -257,7 +257,16 @@ caplib::priceCmDigitalOption("X", 2024.01.01, "X", "X", "X", "X", string(), fals
 caplib::priceCmDigitalOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmDigitalOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceCmDigitalOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceCmDigitalOption("TF_NO_SUCH_HANDLE_priceCmDigitalOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceCmDigitalOption rejects keyword arguments", syntaxError=1
 caplib::priceCmDigitalOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceCmDigitalOption optional returnJson null uses default"
+result = caplib::priceCmDigitalOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", bool())
+assert 1, typestr(result) != "VOID"

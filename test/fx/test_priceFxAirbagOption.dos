@@ -295,7 +295,16 @@ caplib::priceFxAirbagOption("X", 2024.01.01, "X", "X", "X", "X", string(), false
 caplib::priceFxAirbagOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxAirbagOption rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceFxAirbagOption("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceFxAirbagOption("TF_NO_SUCH_HANDLE_priceFxAirbagOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxAirbagOption rejects keyword arguments", syntaxError=1
 caplib::priceFxAirbagOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxAirbagOption optional returnJson null uses default"
+result = caplib::priceFxAirbagOption(tairbagoption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

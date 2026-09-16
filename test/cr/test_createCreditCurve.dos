@@ -162,3 +162,21 @@ caplib::createCreditCurve(2024.01.01, take(date, 0), [0.02], "X", "X", "X", "TF_
 
 @testing:case="createCreditCurve rejects keyword arguments", syntaxError=1
 caplib::createCreditCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], spreads=[0.02], dcc="X", interp="X", extrap="X", name="TF_createCreditCurve_H", handle="TF_createCreditCurve_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCreditCurve rejects all-null vector pillarDates", exception=1
+caplib::createCreditCurve(asOfDate, [date(), date(), date()], take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC", "TF_CC", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCreditCurve optional returnJson null uses default"
+result = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC", "TF_CC", bool())
+assert 1, typestr(result) != "VOID"

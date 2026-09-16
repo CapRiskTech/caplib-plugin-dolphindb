@@ -296,3 +296,12 @@ caplib::createFxRiskSettings(["X"], "X", "X", "X", "X", "TF_createFxRiskSettings
 
 @testing:case="createFxRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createFxRiskSettings(irCurveSettings="X", priceSettings="X", volSettings="X", priceVolSettings="X", thetaSettings="X", name="TF_createFxRiskSettings_H", tag="TF_createFxRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxRiskSettings optional returnJson null uses default"
+result = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", bool())
+assert 1, typestr(result) != "VOID"

@@ -295,7 +295,34 @@ caplib::calcFxDeltaToStrike("X", double(), 2024.01.01, "X", "X", "X", "X")
 caplib::calcFxDeltaToStrike(["X"], 0.02, 2024.01.01, "X", "X", "X", "X")
 
 @testing:case="calcFxDeltaToStrike rejects nonexistent handle volSurfaceHandle", exception=1
-caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")
+caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "TF_NO_SUCH_HANDLE_calcFxDeltaToStrike", "X", "X", "X")
 
 @testing:case="calcFxDeltaToStrike rejects keyword arguments", syntaxError=1
 caplib::calcFxDeltaToStrike(deltaType="X", delta=0.02, expiryDate=2024.01.01, volSurfaceHandle="X", fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxDeltaToStrike rejects invalid enum for deltaType", exception=1
+caplib::calcFxDeltaToStrike("NOT_A_VALID_ENUM_LABEL", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxDeltaToStrike -> analytic flat-fixture references"
+// Same flat fixture as calcFxAtmStrike. Call delta +0.25:
+// K = F*exp(-invN(delta*exp(rf*T))*sigma*sqrt(T) + sigma^2*T/2) = 1.276171122614913.
+// Put delta -0.25: invN applied to 1 + delta*exp(rf*T) -> 1.11688490479329.
+domCurveRef = caplib::createFlatIrYieldCurve(2021.03.30, "USD", 0.02, "TF_REF_DOM", false);
+forCurveRef = caplib::createFlatIrYieldCurve(2021.03.30, "EUR", 0.01, "TF_REF_FOR", false);
+spotRef = caplib::createFxSpotRate(1.1761, "EUR", "USD", 2021.03.30, 2021.03.30, "TF_REF_SPOT", false);
+fvolRef = caplib::createFlatFxVolatilitySurface(2021.03.30, "EURUSD", 0.10, "TF_REF_FVOL", false);
+kr = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2022.03.30, fvolRef, spotRef, domCurveRef, forCurveRef);
+assert 1, abs(kr - 1.276171122614913) < 1.0e-8
+krp = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -0.25, 2022.03.30, fvolRef, spotRef, domCurveRef, forCurveRef);
+assert 1, abs(krp - 1.11688490479329) < 1.0e-8

@@ -90,7 +90,16 @@ caplib::createPricingSettings("X", string(), false, false, "X", "X", "X", "TF_cr
 caplib::createPricingSettings(["X"], "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects nonexistent handle modelHandle", exception=1
-caplib::createPricingSettings("X", "X", false, false, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "TF_createPricingSettings_H", false)
+caplib::createPricingSettings("X", "X", false, false, "TF_NO_SUCH_HANDLE_createPricingSettings", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects keyword arguments", syntaxError=1
 caplib::createPricingSettings(currency="X", pricingMethod="X", incCurrent=false, cashFlows=false, modelHandle="X", pdeHandle="X", mcHandle="X", handle="TF_createPricingSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPricingSettings optional returnJson null uses default"
+result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "", "", "", "TF_PRICING", bool())
+assert 1, typestr(result) != "VOID"

@@ -127,7 +127,16 @@ caplib::createXccyIrRiskSettings("X", "X", "X")
 caplib::createXccyIrRiskSettings("X", "X", "X", "TF_createXccyIrRiskSettings_H", false, 1)
 
 @testing:case="createXccyIrRiskSettings rejects nonexistent handle irCurveRiskSettingsHandle", exception=1
-caplib::createXccyIrRiskSettings("TF_HANDLE_DOES_NOT_EXIST", "X", "X", "TF_createXccyIrRiskSettings_H", false)
+caplib::createXccyIrRiskSettings("TF_NO_SUCH_HANDLE_createXccyIrRiskSettings", "X", "X", "TF_createXccyIrRiskSettings_H", false)
 
 @testing:case="createXccyIrRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createXccyIrRiskSettings(irCurveRiskSettingsHandle="X", fxRiskSettingsHandle="X", thetaRiskSettingsHandle="X", handle="TF_createXccyIrRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createXccyIrRiskSettings optional returnJson null uses default"
+result = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_XCCY", bool())
+assert 1, typestr(result) != "VOID"

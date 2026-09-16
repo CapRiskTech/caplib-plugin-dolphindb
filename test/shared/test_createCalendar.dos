@@ -70,3 +70,12 @@ caplib::createCalendar(["X"], [2024.01.01], [2024.01.01])
 
 @testing:case="createCalendar rejects keyword arguments", syntaxError=1
 caplib::createCalendar(calName="X", holidays=[2024.01.01], specialBusinessDays=[2024.01.01])
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCalendar rejects all-null vector holidays", exception=1
+caplib::createCalendar("X", [date(), date(), date()], [2024.01.01])

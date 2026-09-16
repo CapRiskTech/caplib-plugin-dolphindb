@@ -295,7 +295,16 @@ caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X", string
 caplib::priceFxNonDeliverableForward("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxNonDeliverableForward rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceFxNonDeliverableForward("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceFxNonDeliverableForward("TF_NO_SUCH_HANDLE_priceFxNonDeliverableForward", 2024.01.01, "X", "X", "X", "X", "X", false)
 
 @testing:case="priceFxNonDeliverableForward rejects keyword arguments", syntaxError=1
 caplib::priceFxNonDeliverableForward(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxNonDeliverableForward optional returnJson null uses default"
+result = caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", bool())
+assert 1, typestr(result) != "VOID"

@@ -263,3 +263,21 @@ caplib::createAssetYieldCurve(2024.01.01, take(date, 0), [0.02], "X", "X", "X", 
 
 @testing:case="createAssetYieldCurve rejects keyword arguments", syntaxError=1
 caplib::createAssetYieldCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], pillarValues=[0.02], interp="X", extrap="X", dcc="X", compounding="X", pillarNames=["X"], curveName="X", handle="TF_createAssetYieldCurve_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createAssetYieldCurve rejects all-null vector pillarDates", exception=1
+caplib::createAssetYieldCurve(asOfDate, [date(), date(), date()], curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createAssetYieldCurve optional returnJson null uses default"
+result = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC", bool())
+assert 1, typestr(result) != "VOID"

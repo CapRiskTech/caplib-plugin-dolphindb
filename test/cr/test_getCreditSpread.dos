@@ -146,7 +146,25 @@ caplib::getCreditSpread("X", [2024.01.01, date()])
 caplib::getCreditSpread("X", take(date, 0))
 
 @testing:case="getCreditSpread rejects nonexistent handle creditCurveHandle", exception=1
-caplib::getCreditSpread("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01])
-
+caplib::getCreditSpread("TF_NO_SUCH_HANDLE_getCreditSpread", [2024.01.01])
 @testing:case="getCreditSpread rejects keyword arguments", syntaxError=1
 caplib::getCreditSpread(creditCurveHandle="X", dates=[2024.01.01])
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="getCreditSpread rejects all-null vector dates", exception=1
+caplib::getCreditSpread(flatCreditCurve, [date(), date(), date()])
+
+
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="getCreditSpread -> analytic flat-hazard reference"
+// The credit spread of a flat hazard curve equals the hazard rate.
+csr = caplib::getCreditSpread(flatCreditCurve, [2021.02.20]);
+assert 1, abs(csr[0] - 0.002) < 1.0e-9

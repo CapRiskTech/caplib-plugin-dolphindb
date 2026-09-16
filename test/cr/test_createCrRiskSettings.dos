@@ -153,3 +153,12 @@ caplib::createCrRiskSettings(["X"], "X", "X", "TF_createCrRiskSettings_H", "TF_c
 
 @testing:case="createCrRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createCrRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="TF_createCrRiskSettings_H", tag="TF_createCrRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCrRiskSettings optional returnJson null uses default"
+result = caplib::createCrRiskSettings(irRisk, creditRisk, thetaRisk, "TF_CRRISK", "TF_CRRISK", bool())
+assert 1, typestr(result) != "VOID"

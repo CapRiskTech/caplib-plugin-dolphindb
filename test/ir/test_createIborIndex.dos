@@ -152,3 +152,21 @@ caplib::createIborIndex(["X"], "X", "X", "X", 1, "X", "X", "X", "X", false)
 
 @testing:case="createIborIndex rejects keyword arguments", syntaxError=1
 caplib::createIborIndex(indexName="X", indexTenor="X", indexCcy="X", calendarList="X", startDelay=1, dayCount="X", interestDayConvention="X", dateRollConvention="X", iborType="X", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIborIndex rejects invalid enum for dateRollConvention", exception=1
+caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "NOT_A_VALID_ENUM_LABEL", "STANDARD_IBOR_INDEX", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIborIndex optional returnJson null uses default"
+result = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", bool())
+assert 1, typestr(result) != "VOID"

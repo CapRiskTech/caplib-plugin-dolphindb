@@ -146,3 +146,21 @@ caplib::createIrVanillaSwapTemplate(["X"], 1, "X", "X", "X", false)
 
 @testing:case="createIrVanillaSwapTemplate rejects keyword arguments", syntaxError=1
 caplib::createIrVanillaSwapTemplate(instName="X", startDelay=1, leg1Definition="X", leg2Definition="X", startConvention="X", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrVanillaSwapTemplate rejects invalid enum for startConvention", exception=1
+caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], irFloatingLeg[0], "NOT_A_VALID_ENUM_LABEL", false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrVanillaSwapTemplate optional returnJson null uses default"
+result = caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", bool())
+assert 1, typestr(result) != "VOID"

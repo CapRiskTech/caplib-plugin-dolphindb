@@ -173,3 +173,12 @@ caplib::createEqRiskSettings(false, false, false, false, "TF_createEqRiskSetting
 
 @testing:case="createEqRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createEqRiskSettings(irDelta=false, priceDelta=false, volVega=false, theta=false, handle="TF_createEqRiskSettings_H", returnJson=false)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqRiskSettings optional returnJson null uses default"
+result = caplib::createEqRiskSettings(1, 1, 1, 1, "f_eqrisk", bool())
+assert 1, typestr(result) != "VOID"

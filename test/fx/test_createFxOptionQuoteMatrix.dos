@@ -308,3 +308,30 @@ caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, take(string, 0), ["X"], 
 
 @testing:case="createFxOptionQuoteMatrix rejects keyword arguments", syntaxError=1
 caplib::createFxOptionQuoteMatrix(leftCcy="X", rightCcy="X", asOfDate=2024.01.01, terms=["X"], quoteNames=["X"], quotes=matrix([0.2]), handle="TF_createFxOptionQuoteMatrix_H", returnJson=false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-1 additions (wiki test-case review)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxOptionQuoteMatrix rejects all-null vector terms", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, [string(), string(), string()], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ", true)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-2 additions (parameter relationships / boundaries)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxOptionQuoteMatrix rejects terms size mismatch with quote matrix rows", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M"], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxOptionQuoteMatrix optional returnJson null uses default"
+result = caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ", bool())
+assert 1, typestr(result) != "VOID"
