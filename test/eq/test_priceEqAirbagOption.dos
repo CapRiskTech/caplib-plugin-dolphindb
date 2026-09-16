@@ -221,4 +221,3 @@ caplib::priceEqAirbagOption(xinst, asOfDate, xinst, bsmPdeSettings, eqNoRisk[0],
 
 @testing:case="priceEqAirbagOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceEqAirbagOption(xinst, asOfDate, xinst, bsmPdeSettings, eqNoRisk[0], "", "", true)
-

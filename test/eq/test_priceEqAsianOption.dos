@@ -221,4 +221,3 @@ caplib::priceEqAsianOption(xinst, asOfDate, xinst, bsmMcSettings, eqNoRisk[0], "
 
 @testing:case="priceEqAsianOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceEqAsianOption(xinst, asOfDate, xinst, bsmMcSettings, eqNoRisk[0], "", "", true)
-

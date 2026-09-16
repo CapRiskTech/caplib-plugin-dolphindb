@@ -326,4 +326,3 @@ caplib::priceFxDigitalOption(tdg, asOfDate, tdg, bsmAnalyticalSettings, fxOption
 
 @testing:case="priceFxDigitalOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxDigitalOption(tdg, asOfDate, tdg, bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
-

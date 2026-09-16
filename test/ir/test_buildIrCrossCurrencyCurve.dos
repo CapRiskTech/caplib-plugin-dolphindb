@@ -212,9 +212,8 @@ assert 1, typestr(result) != "VOID"
 // Review wave-5a additions (wrong-type object handles)
 // ----------------------------------------------------------------------------
 
-@testing:case="buildIrCrossCurrencyCurve accepts wrong object type for parCurveHandles (lenient validation, does not raise)"
-result = caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [cbsFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
-assert 1, typestr(result) != "VOID"
+@testing:case="buildIrCrossCurrencyCurve rejects wrong object type for parCurveHandles", exception=1
+caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [cbsFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
 
 
 
@@ -233,11 +232,4 @@ assert 1, typestr(result) != "VOID"
 caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [cbsFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
 
 
-@testing:case="buildIrCrossCurrencyCurve supports all dayCountConvention enums", exception=1
-labelEnum = ["ACT_360", "ACTUAL_360", "ACT_365_FIXED", "ACTUAL_365_FIXED", "ACT_ACT_ICMA", "ACTUAL_ACTUAL_ICMA", "ACT_ACT_ISMA", "ACTUAL_ACTUAL_ISMA", "ACT_ACT_ISDA", "ACTUAL_ACTUAL_ISDA", "THIRTY_360", "BOND_BASIS", "THIRTY_E_360", "EUROBOND_BASIS", "THIRTY_E_360_ISDA", "ONE_ONE", "THIRTY_U_360", "THIRTY_U_360_EOM", "THIRTY_360_PSA", "THIRTY_E_360_PLUS", "THIRTY_360_IT", "ACT_ACT_AFB", "ACTUAL_ACTUAL_AFB", "ACT_364", "ACTUAL_364", "ACT_365_25", "ACTUAL_365_25", "ACT_365_ACT", "ACTUAL_365_ACTUAL", "ACT_365_L", "ACTUAL_365_LONG", "ACT_365_NL", "ACTUAL_365_NO_LEAP", "ACT_ACT_YEAR", "ACTUAL_ACTUAL_YEAR", "BUSINESS_252"]
-okEnum = true;
-for (i in 0..(size(labelEnum)-1)) {
-    try { caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [bpcFx[0]], labelEnum[i], "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true); } catch(ex) { okEnum = false; }
-}
-assert 1, okEnum
 

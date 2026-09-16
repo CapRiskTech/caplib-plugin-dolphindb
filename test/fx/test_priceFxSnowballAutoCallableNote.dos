@@ -326,4 +326,3 @@ caplib::priceFxSnowballAutoCallableNote(tsnowballautocallablenote, asOfDate, tsn
 
 @testing:case="priceFxSnowballAutoCallableNote rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxSnowballAutoCallableNote(tsnowballautocallablenote, asOfDate, tsnowballautocallablenote, bsmMcSettings, fxOptionRisk[0], "", "", true)
-

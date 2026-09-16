@@ -326,4 +326,3 @@ caplib::priceFxDoubleSharkFinOption(tdoublesharkfinoption, asOfDate, tdoubleshar
 
 @testing:case="priceFxDoubleSharkFinOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxDoubleSharkFinOption(tdoublesharkfinoption, asOfDate, tdoublesharkfinoption, bsmPdeSettings, fxOptionRisk[0], "", "", true)
-

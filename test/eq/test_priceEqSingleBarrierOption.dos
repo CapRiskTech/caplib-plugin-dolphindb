@@ -221,4 +221,3 @@ caplib::priceEqSingleBarrierOption(xinst, asOfDate, xinst, bsmAnalyticalSettings
 
 @testing:case="priceEqSingleBarrierOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceEqSingleBarrierOption(xinst, asOfDate, xinst, bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
-

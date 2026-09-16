@@ -326,4 +326,3 @@ caplib::priceFxSingleBarrierOption(tsinglebarrieroption, asOfDate, tsinglebarrie
 
 @testing:case="priceFxSingleBarrierOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxSingleBarrierOption(tsinglebarrieroption, asOfDate, tsinglebarrieroption, bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
-

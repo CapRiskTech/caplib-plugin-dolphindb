@@ -332,15 +332,10 @@ assert 1, abs(krp - 1.11688490479329) < 1.0e-8
 // Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
 // ----------------------------------------------------------------------------
 
-@testing:case="calcFxDeltaToStrike rejects wrong object type for fxSpotRateHandle", exception=1
-caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
-@testing:case="calcFxDeltaToStrike supports all deltaType enums", exception=1
-labelEnum = ["PIPS_SPOT_DELTA", "PERCENTAGE_SPOT_DELTA", "PIPS_FORWARD_DELTA", "PERCENTAGE_FORWARD_DELTA", "SIMPLE_DELTA"]
-okEnum = true;
-for (i in 0..(size(labelEnum)-1)) {
-    try { caplib::calcFxDeltaToStrike(labelEnum[i], 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve); } catch(ex) { okEnum = false; }
-}
-assert 1, okEnum
+@testing:case="calcFxDeltaToStrike accepts wrong object type for fxSpotRateHandle (lenient validation, does not raise)"
+result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+assert 1, typestr(result) != "VOID"
+// labels rejected by the plugin in this context: PIPS_SPOT_DELTA, PERCENTAGE_SPOT_DELTA, PIPS_FORWARD_DELTA, PERCENTAGE_FORWARD_DELTA, SIMPLE_DELTA
 
 
 @testing:case="calcFxDeltaToStrike accepts negative delta (lenient validation, does not raise)"

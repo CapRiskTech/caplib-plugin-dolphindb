@@ -326,4 +326,3 @@ caplib::priceFxSwap(swapInst, asOfDate, swapInst, cashAnalyticalSettings, fxRisk
 
 @testing:case="priceFxSwap rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxSwap(swapInst, asOfDate, swapInst, cashAnalyticalSettings, fxRisk[0], "", "", true)
-

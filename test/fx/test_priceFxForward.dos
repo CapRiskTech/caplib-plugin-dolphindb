@@ -326,4 +326,3 @@ caplib::priceFxForward(forwardInst, asOfDate, forwardInst, cashAnalyticalSetting
 
 @testing:case="priceFxForward rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxForward(forwardInst, asOfDate, forwardInst, cashAnalyticalSettings, fxRisk[0], "", "", true)
-

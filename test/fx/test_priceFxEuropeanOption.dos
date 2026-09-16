@@ -326,4 +326,3 @@ caplib::priceFxEuropeanOption(eoInst, asOfDate, eoInst, bsmAnalyticalSettings, f
 
 @testing:case="priceFxEuropeanOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxEuropeanOption(eoInst, asOfDate, eoInst, bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
-

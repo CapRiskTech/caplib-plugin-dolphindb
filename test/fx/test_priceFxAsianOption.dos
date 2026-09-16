@@ -326,4 +326,3 @@ caplib::priceFxAsianOption(tasianoption, asOfDate, tasianoption, bsmAnalyticalSe
 
 @testing:case="priceFxAsianOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxAsianOption(tasianoption, asOfDate, tasianoption, bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
-

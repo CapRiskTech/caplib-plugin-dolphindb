@@ -221,4 +221,3 @@ caplib::priceEqAmericanOption(xinst, asOfDate, xinst, bsmAnalyticalSettings, eqN
 
 @testing:case="priceEqAmericanOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceEqAmericanOption(xinst, asOfDate, xinst, bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
-
