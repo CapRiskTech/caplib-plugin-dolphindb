@@ -49,19 +49,12 @@ def isMatrix(value) {
 }
 
 // ============================================================================
-// Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
-
-calendarCreated = caplib::createCalendar("CAL_CFETS");
-assert 1, calendarCreated;
-
-// ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createInterestPaymentScheduleDefinition -> [handle, json]"
-r = caplib::createInterestPaymentScheduleDefinition("CAL_CFETS", "QUARTERLY", "IN_ADVANCE", 0, "MODIFIED_FOLLOWING", "TF_SCHED_PAY", true);
-assert 1, isHandleJson(r, "TF_SCHED_PAY")
+@testing:case="createInterestPaymentScheduleDefinition valid call"
+result = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+assert 1, result == "TF_createInterestPaymentScheduleDefinition_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -71,13 +64,22 @@ assert 1, isHandleJson(r, "TF_SCHED_PAY")
 caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X")
 
 @testing:case="createInterestPaymentScheduleDefinition rejects extra argument", syntaxError=1
-caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X", "X", false, 1)
+caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false, 1)
+
+@testing:case="createInterestPaymentScheduleDefinition rejects wrong type for calendars", exception=1
+caplib::createInterestPaymentScheduleDefinition(1, "X", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+
+@testing:case="createInterestPaymentScheduleDefinition rejects wrong type for frequency", exception=1
+caplib::createInterestPaymentScheduleDefinition("X", 1, "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+
+@testing:case="createInterestPaymentScheduleDefinition rejects wrong type for payDayMode", exception=1
+caplib::createInterestPaymentScheduleDefinition("X", "X", 1, 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
 
 @testing:case="createInterestPaymentScheduleDefinition rejects null payDayOffset", exception=1
-caplib::createInterestPaymentScheduleDefinition("X", "X", "X", int(), "X", "X", false)
+caplib::createInterestPaymentScheduleDefinition("X", "X", "X", int(), "X", "TF_createInterestPaymentScheduleDefinition_H", false)
 
 @testing:case="createInterestPaymentScheduleDefinition rejects vector for scalar calendars", exception=1
-caplib::createInterestPaymentScheduleDefinition(["X"], "X", "X", 1, "X", "X", false)
+caplib::createInterestPaymentScheduleDefinition(["X"], "X", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
 
 @testing:case="createInterestPaymentScheduleDefinition rejects keyword arguments", syntaxError=1
-caplib::createInterestPaymentScheduleDefinition(calendars="X", frequency="X", payDayMode="X", payDayOffset=1, payDayConvention="X", tag="X", returnJson=false)
+caplib::createInterestPaymentScheduleDefinition(calendars="X", frequency="X", payDayMode="X", payDayOffset=1, payDayConvention="X", tag="TF_createInterestPaymentScheduleDefinition_H", returnJson=false)

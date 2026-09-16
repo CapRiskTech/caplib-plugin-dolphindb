@@ -227,19 +227,28 @@ assert 1, isHandleJson(r, "TF_FI_MKT")
 // ----------------------------------------------------------------------------
 
 @testing:case="createFiMktDataSet rejects missing argument", syntaxError=1
-caplib::createFiMktDataSet(2024.01.01, "X", "X", "X", "X", "X", "X")
+caplib::createFiMktDataSet(2024.01.01, "X", "X", "X", "X", "X", "TF_createFiMktDataSet_H")
 
 @testing:case="createFiMktDataSet rejects extra argument", syntaxError=1
-caplib::createFiMktDataSet(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, 1)
+caplib::createFiMktDataSet(2024.01.01, "X", "X", "X", "X", "X", "TF_createFiMktDataSet_H", "TF_createFiMktDataSet_H", false, 1)
+
+@testing:case="createFiMktDataSet rejects wrong type for asOfDate", exception=1
+caplib::createFiMktDataSet("bad", "X", "X", "X", "X", "X", "TF_createFiMktDataSet_H", "TF_createFiMktDataSet_H", false)
+
+@testing:case="createFiMktDataSet rejects wrong type for discountCurve", exception=1
+caplib::createFiMktDataSet(2024.01.01, 1, "X", "X", "X", "X", "TF_createFiMktDataSet_H", "TF_createFiMktDataSet_H", false)
+
+@testing:case="createFiMktDataSet rejects wrong type for creditCurve", exception=1
+caplib::createFiMktDataSet(2024.01.01, "X", 1, "X", "X", "X", "TF_createFiMktDataSet_H", "TF_createFiMktDataSet_H", false)
 
 @testing:case="createFiMktDataSet rejects null asOfDate", exception=1
-caplib::createFiMktDataSet(date(), "X", "X", "X", "X", "X", "X", "X", false)
+caplib::createFiMktDataSet(date(), "X", "X", "X", "X", "X", "TF_createFiMktDataSet_H", "TF_createFiMktDataSet_H", false)
 
 @testing:case="createFiMktDataSet rejects null discountCurve", exception=1
-caplib::createFiMktDataSet(2024.01.01, string(), "X", "X", "X", "X", "X", "X", false)
+caplib::createFiMktDataSet(2024.01.01, string(), "X", "X", "X", "X", "TF_createFiMktDataSet_H", "TF_createFiMktDataSet_H", false)
 
 @testing:case="createFiMktDataSet rejects vector for scalar asOfDate", exception=1
-caplib::createFiMktDataSet([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false)
+caplib::createFiMktDataSet([2024.01.01], "X", "X", "X", "X", "X", "TF_createFiMktDataSet_H", "TF_createFiMktDataSet_H", false)
 
 @testing:case="createFiMktDataSet rejects keyword arguments", syntaxError=1
-caplib::createFiMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", underlyingDiscountCurve="X", underlyingIncomeCurve="X", underlyingForwardCurve="X", name="X", tag="X", returnJson=false)
+caplib::createFiMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", underlyingDiscountCurve="X", underlyingIncomeCurve="X", underlyingForwardCurve="X", name="TF_createFiMktDataSet_H", tag="TF_createFiMktDataSet_H", returnJson=false)

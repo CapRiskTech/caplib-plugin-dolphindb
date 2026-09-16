@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,17 +262,9 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxVolatilitySurface -> [handle, json]"
-r = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30, 2021.09.30, 2021.12.30], matrix(take(1.00, 3), take(eurusdSpot, 3), take(1.35, 3)), matrix(take(0.06, 3), take(0.06, 3), take(0.06, 3)), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FX_VOL", true);
-assert 1, isHandleJson(r, "TF_FX_VOL")
-
-@testing:case="createFxVolatilitySurface strikes vector / vols vector"
-r2 = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], [1.00, eurusdSpot, 1.35], [0.06, 0.06, 0.06], linearVolSurfDefinition[0], fxMktConventions[0], "TF_FX_VOL_VV", false);
-assert 1, r2 == "TF_FX_VOL_VV"
-
-@testing:case="createFxVolatilitySurface strikes matrix / vols matrix"
-r3 = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], matrix([1.00], [eurusdSpot], [1.35]), matrix([0.06], [0.06], [0.06]), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FX_VOL_MM", false);
-assert 1, r3 == "TF_FX_VOL_MM"
+@testing:case="createFxVolatilitySurface -> handle"
+result = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
+assert 1, result == "TF_FXVS"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -286,28 +274,37 @@ assert 1, r3 == "TF_FX_VOL_MM"
 caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X")
 
 @testing:case="createFxVolatilitySurface rejects extra argument", syntaxError=1
-caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false, 1)
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false, 1)
+
+@testing:case="createFxVolatilitySurface rejects wrong type for referenceDate", exception=1
+caplib::createFxVolatilitySurface("bad", "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
+
+@testing:case="createFxVolatilitySurface rejects wrong type for leftCcy", exception=1
+caplib::createFxVolatilitySurface(2024.01.01, 1, "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
+
+@testing:case="createFxVolatilitySurface rejects wrong type for rightCcy", exception=1
+caplib::createFxVolatilitySurface(2024.01.01, "X", 1, [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects null referenceDate", exception=1
-caplib::createFxVolatilitySurface(date(), "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+caplib::createFxVolatilitySurface(date(), "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects null leftCcy", exception=1
-caplib::createFxVolatilitySurface(2024.01.01, string(), "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+caplib::createFxVolatilitySurface(2024.01.01, string(), "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
-caplib::createFxVolatilitySurface([2024.01.01], "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+caplib::createFxVolatilitySurface([2024.01.01], "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects scalar for vector termDates", exception=1
-caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects partially-null vector termDates", exception=1
-caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01, date()], matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01, date()], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects empty vector termDates", exception=1
-caplib::createFxVolatilitySurface(2024.01.01, "X", "X", take(date, 0), matrix([0.2]), matrix([0.2]), "X", "X", "X", false)
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", take(date, 0), matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "TF_HANDLE_DOES_NOT_EXIST", "X", "X", false)
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "TF_HANDLE_DOES_NOT_EXIST", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::createFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", termDates=[2024.01.01], strikes=matrix([0.2]), volatilities=matrix([0.2]), definitionHandle="X", marketConventionsHandle="X", handle="X", returnJson=false)
+caplib::createFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", termDates=[2024.01.01], strikes=matrix([0.2]), volatilities=matrix([0.2]), definitionHandle="X", marketConventionsHandle="X", handle="TF_createFxVolatilitySurface_H", returnJson=false)

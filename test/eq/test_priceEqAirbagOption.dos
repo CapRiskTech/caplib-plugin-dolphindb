@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h12", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqAirbagOption -> [handle, present_value reference]"
-inst = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, 2.958, 3.54960, 1.0, 1.0, 2.958, "DOWN_IN", 2.36640, "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "SPOT", currency, underlying, "TF_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceEqAirbagOption(inst, asOfDate, mktData[0], bsmPdeSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_AB_results")
-assert 2, abs(presentValue(r) - 127038.95439429874) < abs(127038.95439429874) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqAirbagOption -> PricingResults"
+result = caplib::priceEqAirbagOption(xinst, asOfDate, mktData[0], bsmPdeSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h12_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

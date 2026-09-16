@@ -127,25 +127,34 @@ caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCu
 caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02])
 
 @testing:case="createIrParRateCurve rejects extra argument", syntaxError=1
-caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false, 1)
+caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false, 1)
+
+@testing:case="createIrParRateCurve rejects wrong type for asOfDate", exception=1
+caplib::createIrParRateCurve("bad", "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
+
+@testing:case="createIrParRateCurve rejects wrong type for currency", exception=1
+caplib::createIrParRateCurve(2024.01.01, 1, "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
+
+@testing:case="createIrParRateCurve rejects wrong type for curveName", exception=1
+caplib::createIrParRateCurve(2024.01.01, "X", 1, ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
 @testing:case="createIrParRateCurve rejects null asOfDate", exception=1
-caplib::createIrParRateCurve(date(), "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+caplib::createIrParRateCurve(date(), "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
 @testing:case="createIrParRateCurve rejects null currency", exception=1
-caplib::createIrParRateCurve(2024.01.01, string(), "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+caplib::createIrParRateCurve(2024.01.01, string(), "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
 @testing:case="createIrParRateCurve rejects vector for scalar asOfDate", exception=1
-caplib::createIrParRateCurve([2024.01.01], "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+caplib::createIrParRateCurve([2024.01.01], "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
 @testing:case="createIrParRateCurve rejects scalar for vector instNames", exception=1
-caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "X", false)
+caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
 @testing:case="createIrParRateCurve rejects partially-null vector instNames", exception=1
-caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X", string()], ["X"], ["X"], [0.02], [0.02], "X", false)
+caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X", string()], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
 @testing:case="createIrParRateCurve rejects empty vector instNames", exception=1
-caplib::createIrParRateCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"], [0.02], [0.02], "X", false)
+caplib::createIrParRateCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
 @testing:case="createIrParRateCurve rejects keyword arguments", syntaxError=1
-caplib::createIrParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", instNames=["X"], instTypes=["X"], instTerms=["X"], factors=[0.02], quotes=[0.02], handle="X", returnJson=false)
+caplib::createIrParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", instNames=["X"], instTypes=["X"], instTerms=["X"], factors=[0.02], quotes=[0.02], handle="TF_createIrParRateCurve_H", returnJson=false)

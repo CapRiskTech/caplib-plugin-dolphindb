@@ -58,14 +58,17 @@ assert 1, calendarCreated;
 
 pmCashTemplate = caplib::createPmCashTemplate("AU_CASH", 0, "FOLLOWING", "CAL_CFETS", "ACT_365_FIXED", true);
 pmMktConventions = caplib::createPmMktConventions("ATM", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true);
-pmParRateCurve = caplib::createPmParRateCurve(2022.03.09, "CNY", "AU_CURVE", table([2022.04.09, 2022.05.09] as pillarDates, [0.02, 0.025] as rates), "TF_PM_PAR", true);
+pmParRateCurve = caplib::createPmParRateCurve(
+    2019.09.04, "USD", "XAU_XAUUSD",
+    table(
+        ["XAUUSD","XAUUSD","XAUUSD"] as instrument_name,
+        ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
+        ["1W","2W","1M"] as instrument_term,
+        [0.025,0.025,0.0248] as instrument_rate),
+    "TF_PM_PAR", false);
 pmOptionQuoteMatrix = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true);
 pmVolDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "TF_PM_VOLDEF", true);
 pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
-
-// Precondition: register the CNY calendar used by indices, legs and schedules
-calendarCreated = caplib::createCalendar("CAL_CFETS");
-assert 1, calendarCreated;
 
 irAsOfDate = 2022.03.09;
 irCurrency = "CNY";
@@ -74,50 +77,6 @@ irCurve = caplib::createIrYieldCurve(
     irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", irCurrency, irCurveName, "TF_IR_CHAIN_CURVE", false);
-
-iborIndex = caplib::createIborIndex(
-    irCurveName, "3M", irCurrency, ["CAL_CFETS"], 1,
-    "ACT_360", "MODIFIED_FOLLOWING",
-    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
-
-irFixedLeg = caplib::createFixedLegDefinition(
-    irCurrency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true);
-
-irFloatingLeg = caplib::createFloatingLegDefinition(
-    irCurrency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
-    "QUARTERLY", "QUARTERLY", "ACT_360",
-    "NO_DISCOUNT", "STANDARD", false,
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
-    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
-
-irSwapTemplate = caplib::createIrVanillaSwapTemplate(
-    irCurveName, 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", true);
-
-irSwap = caplib::buildIrVanillaInstrument(
-    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
-    irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false);
-
-irPricingModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_IR_MODEL", false);
-irPricingSettings = caplib::createPricingSettings(
-    irCurrency, "ANALYTICAL", 1, 1, irPricingModel, "", "", "TF_IR_PRICING", false);
-
-irCurveRisk = caplib::createIrCurveRiskSettings(
-    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false);
-irPriceRisk = caplib::createPriceRiskSettings(
-    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "TF_IR_PRICE_RISK", false);
-irThetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_IR_THETA_RISK", false);
-irRisk = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
-irXccyRisk = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
-
-irMktData = caplib::createIrMktDataSet(
-    irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
-
-irSwapPricingResult = caplib::priceIrVanillaInstrument(
-    irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
 
 // ============================================================================
 // Tests
@@ -143,19 +102,28 @@ assert 1, true
 caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X")
 
 @testing:case="buildPmVolatilitySurface rejects extra argument", syntaxError=1
-caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false, 1)
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false, 1)
+
+@testing:case="buildPmVolatilitySurface rejects wrong type for referenceDate", exception=1
+caplib::buildPmVolatilitySurface("bad", "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
+
+@testing:case="buildPmVolatilitySurface rejects wrong type for underlying", exception=1
+caplib::buildPmVolatilitySurface(2024.01.01, 1, "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
+
+@testing:case="buildPmVolatilitySurface rejects wrong type for underlyingPrice", exception=1
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", "bad", "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects null referenceDate", exception=1
-caplib::buildPmVolatilitySurface(date(), "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
+caplib::buildPmVolatilitySurface(date(), "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects null underlying", exception=1
-caplib::buildPmVolatilitySurface(2024.01.01, string(), "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
+caplib::buildPmVolatilitySurface(2024.01.01, string(), "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects vector for scalar referenceDate", exception=1
-caplib::buildPmVolatilitySurface([2024.01.01], "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
+caplib::buildPmVolatilitySurface([2024.01.01], "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", "X", "X", "X", "X", false)
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::buildPmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrice=0.02, discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", marketConventionsHandle="X", spotTemplateHandle="X", handle="X", returnJson=false)
+caplib::buildPmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrice=0.02, discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", marketConventionsHandle="X", spotTemplateHandle="X", handle="TF_buildPmVolatilitySurface_H", returnJson=false)

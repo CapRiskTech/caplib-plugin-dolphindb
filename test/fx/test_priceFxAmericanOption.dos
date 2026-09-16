@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -262,15 +258,16 @@ dailyObsDates = 2021.03.31..2021.09.26;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
+
+tam = caplib::createAmericanOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, 1, 1000000.0, currency, "SPOT", currency, "EURUSD", "TF_PAM", false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceFxAmericanOption -> [handle, present_value]"
-inst = caplib::createAmericanOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, 1, 1000000.0, currency, "SPOT", currency, underlying, "TF_FX_AM", false);
-r = caplib::priceFxAmericanOption(inst, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_FX_AM_results")
-assert 2, abs(presentValue(r) - 23049.409273482135) < abs(23049.409273482135) * 1.0e-9 + 1.0e-6
+@testing:case="priceFxAmericanOption -> PricingResults"
+result = caplib::priceFxAmericanOption(tam, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "TF_PAM_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

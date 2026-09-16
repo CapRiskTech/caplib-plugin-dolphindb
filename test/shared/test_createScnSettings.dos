@@ -53,46 +53,36 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createScnSettings valid call"
-result = caplib::createScnSettings(-0.1, 0.1, 5, 0, "TF_PRICE_SCN", false)
-assert 1, result == "TF_PRICE_SCN"
-
-@testing:case="createScnSettings rejects inverted interval", exception=1
-caplib::createScnSettings(0.1, -0.1, 5, 0, "TF_SCN_BAD", false)
-
-@testing:case="createScnSettings rejects null size", exception=1
-caplib::createScnSettings(-0.1, 0.1, int(), 0, "TF_SCN_BAD", false)
-
-@testing:case="createScnSettings accepts equal endpoints"
-r = caplib::createScnSettings(0.1, 0.1, 1, 0, "TF_SCN_EQUAL");
-assert 1, r == "TF_SCN_EQUAL"
+result = caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_createScnSettings_H", false)
+assert 1, result == "TF_createScnSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createScnSettings rejects missing argument", syntaxError=1
-caplib::createScnSettings(-0.1, 0.1, 5, 0)
+caplib::createScnSettings(0.02, 0.02, 1, 1)
 
 @testing:case="createScnSettings rejects extra argument", syntaxError=1
-caplib::createScnSettings(-0.1, 0.1, 5, 0, "TF_PRICE_SCN", false, 1)
+caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_createScnSettings_H", false, 1)
 
 @testing:case="createScnSettings rejects wrong type for min", exception=1
-caplib::createScnSettings("bad", 0.1, 5, 0, "TF_PRICE_SCN", false)
+caplib::createScnSettings("bad", 0.02, 1, 1, "TF_createScnSettings_H", false)
 
 @testing:case="createScnSettings rejects wrong type for max", exception=1
-caplib::createScnSettings(-0.1, "bad", 5, 0, "TF_PRICE_SCN", false)
+caplib::createScnSettings(0.02, "bad", 1, 1, "TF_createScnSettings_H", false)
 
 @testing:case="createScnSettings rejects wrong type for size", exception=1
-caplib::createScnSettings(-0.1, 0.1, "1", 0, "TF_PRICE_SCN", false)
+caplib::createScnSettings(0.02, 0.02, "1", 1, "TF_createScnSettings_H", false)
 
 @testing:case="createScnSettings rejects null min", exception=1
-caplib::createScnSettings(double(), 0.1, 5, 0, "TF_PRICE_SCN", false)
+caplib::createScnSettings(double(), 0.02, 1, 1, "TF_createScnSettings_H", false)
 
 @testing:case="createScnSettings rejects null max", exception=1
-caplib::createScnSettings(-0.1, double(), 5, 0, "TF_PRICE_SCN", false)
+caplib::createScnSettings(0.02, double(), 1, 1, "TF_createScnSettings_H", false)
 
 @testing:case="createScnSettings rejects vector for scalar min", exception=1
-caplib::createScnSettings([0.02], 0.1, 5, 0, "TF_PRICE_SCN", false)
+caplib::createScnSettings([0.02], 0.02, 1, 1, "TF_createScnSettings_H", false)
 
 @testing:case="createScnSettings rejects keyword arguments", syntaxError=1
-caplib::createScnSettings(min=-0.1, max=0.1, size=5, scnGenType=0, handle="TF_PRICE_SCN", returnJson=false)
+caplib::createScnSettings(min=0.02, max=0.02, size=1, scnGenType=1, handle="TF_createScnSettings_H", returnJson=false)

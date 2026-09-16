@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h15", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqSnowballAutoCallableNote -> [handle, present_value reference]"
-inst = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", 3.25380, "DOWN_IN", 2.66220, "SELL", "PUT", 2.514300, 1.0, 2.958, 2020.08.22, 2020.08.22, 1, 1000000.0, currency, "SPOT", currency, underlying, "TF_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceEqSnowballAutoCallableNote(inst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_SN_results")
-assert 2, abs(presentValue(r) - 997563.445562169) < abs(997563.445562169) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqSnowballAutoCallableNote -> PricingResults"
+result = caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h15_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

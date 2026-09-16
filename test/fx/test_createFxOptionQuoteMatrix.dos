@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -281,25 +277,34 @@ caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", 
 caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]))
 
 @testing:case="createFxOptionQuoteMatrix rejects extra argument", syntaxError=1
-caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false, 1)
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false, 1)
+
+@testing:case="createFxOptionQuoteMatrix rejects wrong type for leftCcy", exception=1
+caplib::createFxOptionQuoteMatrix(1, "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects wrong type for rightCcy", exception=1
+caplib::createFxOptionQuoteMatrix("X", 1, 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
+
+@testing:case="createFxOptionQuoteMatrix rejects wrong type for asOfDate", exception=1
+caplib::createFxOptionQuoteMatrix("X", "X", "bad", ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
 @testing:case="createFxOptionQuoteMatrix rejects null leftCcy", exception=1
-caplib::createFxOptionQuoteMatrix(string(), "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+caplib::createFxOptionQuoteMatrix(string(), "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
 @testing:case="createFxOptionQuoteMatrix rejects null rightCcy", exception=1
-caplib::createFxOptionQuoteMatrix("X", string(), 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+caplib::createFxOptionQuoteMatrix("X", string(), 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
 @testing:case="createFxOptionQuoteMatrix rejects vector for scalar leftCcy", exception=1
-caplib::createFxOptionQuoteMatrix(["X"], "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+caplib::createFxOptionQuoteMatrix(["X"], "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
 @testing:case="createFxOptionQuoteMatrix rejects scalar for vector terms", exception=1
-caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "X", false)
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
 @testing:case="createFxOptionQuoteMatrix rejects partially-null vector terms", exception=1
-caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X", string()], ["X"], matrix([0.2]), "X", false)
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X", string()], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
 @testing:case="createFxOptionQuoteMatrix rejects empty vector terms", exception=1
-caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, take(string, 0), ["X"], matrix([0.2]), "X", false)
+caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, take(string, 0), ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
 @testing:case="createFxOptionQuoteMatrix rejects keyword arguments", syntaxError=1
-caplib::createFxOptionQuoteMatrix(leftCcy="X", rightCcy="X", asOfDate=2024.01.01, terms=["X"], quoteNames=["X"], quotes=matrix([0.2]), handle="X", returnJson=false)
+caplib::createFxOptionQuoteMatrix(leftCcy="X", rightCcy="X", asOfDate=2024.01.01, terms=["X"], quoteNames=["X"], quotes=matrix([0.2]), handle="TF_createFxOptionQuoteMatrix_H", returnJson=false)

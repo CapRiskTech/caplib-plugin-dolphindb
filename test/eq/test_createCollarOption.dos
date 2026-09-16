@@ -158,8 +158,8 @@ mktData = caplib::createEqMktDataSet(
 // ============================================================================
 
 @testing:case="createCollarOption -> handle"
-r = caplib::createCollarOption("CALL", 0.9, 1.1, 2.66, 3.25, 2020.08.19, 2020.08.20, 1000000.0, currency, "SPOT", currency, underlying, "TF_CL", false);
-assert 1, r == "TF_CL"
+result = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL", false)
+assert 1, result == "f_CL"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -169,16 +169,25 @@ assert 1, r == "TF_CL"
 caplib::createCollarOption("X", 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X")
 
 @testing:case="createCollarOption rejects extra argument", syntaxError=1
-caplib::createCollarOption("X", 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false, 1)
+caplib::createCollarOption("X", 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "TF_createCollarOption_H", false, 1)
+
+@testing:case="createCollarOption rejects wrong type for payoffType", exception=1
+caplib::createCollarOption(1, 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "TF_createCollarOption_H", false)
+
+@testing:case="createCollarOption rejects wrong type for lowerGearing", exception=1
+caplib::createCollarOption("X", "bad", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "TF_createCollarOption_H", false)
+
+@testing:case="createCollarOption rejects wrong type for upperGearing", exception=1
+caplib::createCollarOption("X", 0.02, "bad", 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "TF_createCollarOption_H", false)
 
 @testing:case="createCollarOption rejects null payoffType", exception=1
-caplib::createCollarOption(string(), 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createCollarOption(string(), 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "TF_createCollarOption_H", false)
 
 @testing:case="createCollarOption rejects null lowerGearing", exception=1
-caplib::createCollarOption("X", double(), 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createCollarOption("X", double(), 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "TF_createCollarOption_H", false)
 
 @testing:case="createCollarOption rejects vector for scalar payoffType", exception=1
-caplib::createCollarOption(["X"], 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createCollarOption(["X"], 0.02, 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", "X", "X", "TF_createCollarOption_H", false)
 
 @testing:case="createCollarOption rejects keyword arguments", syntaxError=1
-caplib::createCollarOption(payoffType="X", lowerGearing=0.02, upperGearing=0.02, lowerStrike=0.02, upperStrike=0.02, expiry=2024.01.01, delivery=2024.01.01, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", returnJson=false)
+caplib::createCollarOption(payoffType="X", lowerGearing=0.02, upperGearing=0.02, lowerStrike=0.02, upperStrike=0.02, expiry=2024.01.01, delivery=2024.01.01, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createCollarOption_H", returnJson=false)

@@ -153,66 +153,15 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
-bldCallPrices = [
-    [45.800, 40.800, 35.800, 30.800, 25.800, 20.800, 15.860, 10.810, 6.090, 2.320, 0.530, 0.120, 0.050, 0.010, 0.010, 0.010],
-    [45.990, 41.320, 36.410, 31.650, 26.230, 22.310, 17.660, 13.650, 10.190, 7.190, 4.980, 2.160, 1.100, 0.660, 0.460, 0.300],
-    [49.900, 45.500, 40.930, 36.660, 32.610, 28.660, 25.260, 21.460, 18.540, 15.780, 13.250, 9.350, 6.590, 4.700, 3.300, 2.420],
-    [53.280, 49.320, 45.240, 41.260, 37.360, 33.900, 30.450, 27.420, 24.330, 21.570, 19.300, 14.830, 12.980, 8.970, 7.020]
-];
-bldPutPrices = [
-    [0.020, 0.020, 0.020, 0.020, 0.040, 0.080, 0.150, 0.230, 0.650, 1.840, 5.000, 14.720, 24.510, 34.300, 44.370, 54.370],
-    [0.270, 0.330, 0.400, 0.540, 0.810, 1.130, 1.720, 2.700, 4.000, 6.080, 8.750, 16.000, 24.960, 34.310, 44.370, 54.370],
-    [2.010, 2.300, 2.810, 3.450, 4.330, 5.410, 6.680, 8.180, 10.040, 12.290, 14.710, 20.760, 27.730, 35.690, 44.570, 54.370],
-    [3.650, 4.340, 5.160, 6.120, 7.240, 8.620, 10.150, 11.840, 13.810, 15.950, 18.410, 23.940, 30.380, 37.590, 45.670]
-];
-bldStrikes = [
-    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50],
-    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50],
-    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50],
-    [2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.10, 3.20, 3.30, 3.40]
-];
-bldQuotePrices = [
-    bldCallPrices[0] join bldPutPrices[0],
-    bldCallPrices[1] join bldPutPrices[1],
-    bldCallPrices[2] join bldPutPrices[2],
-    bldCallPrices[3] join bldPutPrices[3]
-];
-bldQuoteStrikes = [
-    bldStrikes[0] join bldStrikes[0],
-    bldStrikes[1] join bldStrikes[1],
-    bldStrikes[2] join bldStrikes[2],
-    bldStrikes[3] join bldStrikes[3]
-];
-bldQuotePayoffTypes = [
-    take("CALL", size(bldCallPrices[0])) join take("PUT", size(bldPutPrices[0])),
-    take("CALL", size(bldCallPrices[1])) join take("PUT", size(bldPutPrices[1])),
-    take("CALL", size(bldCallPrices[2])) join take("PUT", size(bldPutPrices[2])),
-    take("CALL", size(bldCallPrices[3])) join take("PUT", size(bldPutPrices[3]))
-];
-bldQuoteExpiriesVec =
-    take(quoteTermDates[0], size(bldQuotePrices[0])) join
-    take(quoteTermDates[1], size(bldQuotePrices[1])) join
-    take(quoteTermDates[2], size(bldQuotePrices[2])) join
-    take(quoteTermDates[3], size(bldQuotePrices[3]));
-bldQuoteStrikesVec = bldQuoteStrikes[0] join bldQuoteStrikes[1] join
-    bldQuoteStrikes[2] join bldQuoteStrikes[3];
-bldQuotePayoffTypesVec = bldQuotePayoffTypes[0] join bldQuotePayoffTypes[1] join
-    bldQuotePayoffTypes[2] join bldQuotePayoffTypes[3];
-bldQuotePricesVec = bldQuotePrices[0] join bldQuotePrices[1] join
-    bldQuotePrices[2] join bldQuotePrices[3];
-idxOptionPrices = table(bldQuoteExpiriesVec as expiry,
-    bldQuoteStrikesVec as strike,
-    bldQuotePayoffTypesVec as optionType,
-    bldQuotePricesVec as price);
-emptyFuturePrices = array(DOUBLE, 0);
 
-// ============================================================================
-// Tests
-// ============================================================================
-
-@testing:case="buildEqIndexDividendCurve -> [handle, json]"
-r = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, emptyFuturePrices, idxOptionPrices, underlyingPrice, irCurve, "TF_EQ_IDX_DIV", true);
-assert 1, isHandleJson(r, "TF_EQ_IDX_DIV")
+idxOptionPrices = table(
+    [quoteTermDates[0], quoteTermDates[0], quoteTermDates[1], quoteTermDates[1]] as expiry,
+    [2.9, 2.9, 2.9, 2.9] as strike,
+    ["CALL","PUT","CALL","PUT"] as optionType,
+    [0.02, 0.02, 0.03, 0.03] as price);
+@testing:case="buildEqIndexDividendCurve -> handle"
+result = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE,0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv", false)
+assert 1, result == "f_idxdiv"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -222,28 +171,34 @@ assert 1, isHandleJson(r, "TF_EQ_IDX_DIV")
 caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X")
 
 @testing:case="buildEqIndexDividendCurve rejects extra argument", syntaxError=1
-caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false, 1)
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "TF_buildEqIndexDividendCurve_H", false, 1)
+
+@testing:case="buildEqIndexDividendCurve rejects wrong type for asOfDate", exception=1
+caplib::buildEqIndexDividendCurve("bad", [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "TF_buildEqIndexDividendCurve_H", false)
+
+@testing:case="buildEqIndexDividendCurve rejects wrong type for spot", exception=1
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), "bad", "X", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects null asOfDate", exception=1
-caplib::buildEqIndexDividendCurve(date(), [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false)
+caplib::buildEqIndexDividendCurve(date(), [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects null spot", exception=1
-caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), double(), "X", "X", false)
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), double(), "X", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects vector for scalar asOfDate", exception=1
-caplib::buildEqIndexDividendCurve([2024.01.01], [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false)
+caplib::buildEqIndexDividendCurve([2024.01.01], [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects scalar for vector termDates", exception=1
-caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "X", false)
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "X", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects partially-null vector termDates", exception=1
-caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01, date()], [0.02], table([1], [2]), 0.02, "X", "X", false)
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01, date()], [0.02], table([1], [2]), 0.02, "X", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects empty vector termDates", exception=1
-caplib::buildEqIndexDividendCurve(2024.01.01, take(date, 0), [0.02], table([1], [2]), 0.02, "X", "X", false)
+caplib::buildEqIndexDividendCurve(2024.01.01, take(date, 0), [0.02], table([1], [2]), 0.02, "X", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects nonexistent handle discountCurveHandle", exception=1
-caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", false)
+caplib::buildEqIndexDividendCurve(2024.01.01, [2024.01.01], [0.02], table([1], [2]), 0.02, "TF_HANDLE_DOES_NOT_EXIST", "TF_buildEqIndexDividendCurve_H", false)
 
 @testing:case="buildEqIndexDividendCurve rejects keyword arguments", syntaxError=1
-caplib::buildEqIndexDividendCurve(asOfDate=2024.01.01, termDates=[2024.01.01], futurePrices=[0.02], optionPrices=table([1], [2]), spot=0.02, discountCurveHandle="X", handle="X", returnJson=false)
+caplib::buildEqIndexDividendCurve(asOfDate=2024.01.01, termDates=[2024.01.01], futurePrices=[0.02], optionPrices=table([1], [2]), spot=0.02, discountCurveHandle="X", handle="TF_buildEqIndexDividendCurve_H", returnJson=false)

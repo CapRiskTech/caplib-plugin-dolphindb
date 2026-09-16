@@ -112,22 +112,22 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
-@testing:case="createXccyIrRiskSettings -> handle + json"
-r = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
-assert 1, isHandleJson(r, "TF_IR_XCCY_RISK") && hasJsonField(r[1], "fx_settings")
+@testing:case="createXccyIrRiskSettings -> handle"
+result = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_XCCY", false)
+assert 1, result == "TF_XCCY"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createXccyIrRiskSettings rejects missing argument", syntaxError=1
-caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk)
+caplib::createXccyIrRiskSettings("X", "X", "X")
 
 @testing:case="createXccyIrRiskSettings rejects extra argument", syntaxError=1
-caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", false, 1)
+caplib::createXccyIrRiskSettings("X", "X", "X", "TF_createXccyIrRiskSettings_H", false, 1)
 
 @testing:case="createXccyIrRiskSettings rejects nonexistent handle irCurveRiskSettingsHandle", exception=1
-caplib::createXccyIrRiskSettings("TF_HANDLE_DOES_NOT_EXIST", irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", false)
+caplib::createXccyIrRiskSettings("TF_HANDLE_DOES_NOT_EXIST", "X", "X", "TF_createXccyIrRiskSettings_H", false)
 
 @testing:case="createXccyIrRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createXccyIrRiskSettings(irCurveRiskSettingsHandle=irCurveRisk, fxRiskSettingsHandle=irPriceRisk, thetaRiskSettingsHandle=irThetaRisk, handle="TF_IR_XCCY_RISK", returnJson=false)
+caplib::createXccyIrRiskSettings(irCurveRiskSettingsHandle="X", fxRiskSettingsHandle="X", thetaRiskSettingsHandle="X", handle="TF_createXccyIrRiskSettings_H", returnJson=false)

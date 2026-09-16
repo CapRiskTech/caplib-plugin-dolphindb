@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,9 +262,9 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxForwardTemplate -> [handle, json]"
-r = caplib::createFxForwardTemplate("TF_FX_FWD_TPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", ["CAL_EUTA", "CAL_GBLO"], true);
-assert 1, isHandleJson(r, "TF_FX_FWD_TPL") && hasJsonField(r[1], "fixing_offset")
+@testing:case="createFxForwardTemplate -> handle"
+result = caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", ["CAL_EUTA","CAL_GBLO"], false)
+assert 1, result == "TF_FWDTPL"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -279,6 +275,15 @@ caplib::createFxForwardTemplate("X", "X", "X", "X", "X")
 
 @testing:case="createFxForwardTemplate rejects extra argument", syntaxError=1
 caplib::createFxForwardTemplate("X", "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="createFxForwardTemplate rejects wrong type for instName", exception=1
+caplib::createFxForwardTemplate(1, "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxForwardTemplate rejects wrong type for fixingOffset", exception=1
+caplib::createFxForwardTemplate("X", 1, "X", "X", "X", "X", false)
+
+@testing:case="createFxForwardTemplate rejects wrong type for currencyPair", exception=1
+caplib::createFxForwardTemplate("X", "X", 1, "X", "X", "X", false)
 
 @testing:case="createFxForwardTemplate rejects null instName", exception=1
 caplib::createFxForwardTemplate(string(), "X", "X", "X", "X", "X", false)

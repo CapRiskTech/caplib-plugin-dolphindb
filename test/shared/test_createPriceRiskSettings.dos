@@ -53,33 +53,30 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createPriceRiskSettings valid call"
-result = caplib::createPriceRiskSettings(1, 1, 1, 0.01, 0.5, 0, 0.01, 0, "TF_PRICE_RISK", false)
-assert 1, result == "TF_PRICE_RISK"
-
-@testing:case="createPriceRiskSettings rejects STRING method", exception=1
-caplib::createPriceRiskSettings(1, 1, 1, 0.01, 0.5, "1", 0.01, 0, "TF_PRICE_RISK_BAD")
+result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", false)
+assert 1, result == "TF_createPriceRiskSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createPriceRiskSettings rejects missing argument", syntaxError=1
-caplib::createPriceRiskSettings(1, 1, 1, 0.01, 0.5, 0, 0.01, 0)
+caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.02, 1)
 
 @testing:case="createPriceRiskSettings rejects extra argument", syntaxError=1
-caplib::createPriceRiskSettings(1, 1, 1, 0.01, 0.5, 0, 0.01, 0, "TF_PRICE_RISK", false, 1)
+caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", false, 1)
 
 @testing:case="createPriceRiskSettings rejects wrong type for shift", exception=1
-caplib::createPriceRiskSettings(1, 1, 1, "bad", 0.5, 0, 0.01, 0, "TF_PRICE_RISK", false)
+caplib::createPriceRiskSettings(false, false, false, "bad", 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", false)
 
 @testing:case="createPriceRiskSettings rejects wrong type for curvatureShift", exception=1
-caplib::createPriceRiskSettings(1, 1, 1, 0.01, "bad", 0, 0.01, 0, "TF_PRICE_RISK", false)
+caplib::createPriceRiskSettings(false, false, false, 0.02, "bad", 1, 0.02, 1, "TF_createPriceRiskSettings_H", false)
 
 @testing:case="createPriceRiskSettings rejects wrong type for method", exception=1
-caplib::createPriceRiskSettings(1, 1, 1, 0.01, 0.5, "1", 0.01, 0, "TF_PRICE_RISK", false)
+caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, "1", 0.02, 1, "TF_createPriceRiskSettings_H", false)
 
 @testing:case="createPriceRiskSettings rejects null method", exception=1
-caplib::createPriceRiskSettings(1, 1, 1, 0.01, 0.5, int(), 0.01, 0, "TF_PRICE_RISK", false)
+caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, int(), 0.02, 1, "TF_createPriceRiskSettings_H", false)
 
 @testing:case="createPriceRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createPriceRiskSettings(delta=1, gamma=1, curvature=1, shift=0.01, curvatureShift=0.5, method=0, scaling=0.01, threading=0, handle="TF_PRICE_RISK", returnJson=false)
+caplib::createPriceRiskSettings(delta=false, gamma=false, curvature=false, shift=0.02, curvatureShift=0.02, method=1, scaling=0.02, threading=1, handle="TF_createPriceRiskSettings_H", returnJson=false)

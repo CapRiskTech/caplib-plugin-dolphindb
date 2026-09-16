@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h11", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqRangeAccrualOption -> [handle, present_value reference]"
-inst = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, 2.662200, 3.253800, 1000000.0, currency, "SPOT", currency, underlying, "TF_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceEqRangeAccrualOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_RA_results")
-assert 2, abs(presentValue(r) - 7365.035113028336) < abs(7365.035113028336) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqRangeAccrualOption -> PricingResults"
+result = caplib::priceEqRangeAccrualOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h11_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

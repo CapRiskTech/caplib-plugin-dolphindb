@@ -108,12 +108,6 @@ irMktData = caplib::createIrMktDataSet(
 irSwapPricingResult = caplib::priceIrVanillaInstrument(
     irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
 
-usdCurve = caplib::createIrYieldCurve(
-    irAsOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "TF_USD_CURVE", false);
-fxSpot = caplib::createFxSpotRate(6.9, "USD", "CNY", irAsOfDate, 2022.03.16, "TF_FXSPOT", true);
-
 // ============================================================================
 // Tests
 // ============================================================================

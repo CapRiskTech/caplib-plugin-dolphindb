@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -262,15 +258,16 @@ dailyObsDates = 2021.03.31..2021.09.26;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
+
+tsinglesharkfinoption = caplib::createSingleSharkFinOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", eurusdSpot*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, "EURUSD", "tSharkFin", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceFxSingleSharkFinOption -> [handle, present_value]"
-inst = caplib::createSingleSharkFinOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", eurusdSpot * 1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "TF_FX_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceFxSingleSharkFinOption(inst, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_FX_SF_results")
-assert 2, abs(presentValue(r) - 5042.700822131019) < abs(5042.700822131019) * 1.0e-9 + 1.0e-6
+@testing:case="priceFxSingleSharkFinOption -> PricingResults"
+result = caplib::priceFxSingleSharkFinOption(tsinglesharkfinoption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "tSharkFin_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

@@ -239,7 +239,7 @@ caplib::createCmRiskSettings("1", 1, 1, 1, "TF_CM_RISK_BAD", true)
 caplib::createCmRiskSettings(false, false, false, false)
 
 @testing:case="createCmRiskSettings rejects extra argument", syntaxError=1
-caplib::createCmRiskSettings(false, false, false, false, "X", false, 1)
+caplib::createCmRiskSettings(false, false, false, false, "TF_createCmRiskSettings_H", false, 1)
 
 @testing:case="createCmRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createCmRiskSettings(irDelta=false, priceDelta=false, volVega=false, theta=false, handle="X", returnJson=false)
+caplib::createCmRiskSettings(irDelta=false, priceDelta=false, volVega=false, theta=false, handle="TF_createCmRiskSettings_H", returnJson=false)

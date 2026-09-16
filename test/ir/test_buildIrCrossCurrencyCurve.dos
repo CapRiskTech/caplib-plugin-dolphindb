@@ -142,6 +142,15 @@ caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", "X", "X"
 @testing:case="buildIrCrossCurrencyCurve rejects extra argument", syntaxError=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false, 1)
 
+@testing:case="buildIrCrossCurrencyCurve rejects wrong type for referenceDate", exception=1
+caplib::buildIrCrossCurrencyCurve("bad", ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects wrong type for dayCountConvention", exception=1
+caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], 1, "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
+@testing:case="buildIrCrossCurrencyCurve rejects wrong type for compoundingType", exception=1
+caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", 1, "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
+
 @testing:case="buildIrCrossCurrencyCurve rejects null referenceDate", exception=1
 caplib::buildIrCrossCurrencyCurve(date(), ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 

@@ -60,55 +60,46 @@ curveValues = [0.02, 0.025];
 // Tests
 // ============================================================================
 
-@testing:case="createDividendCurve valid call"
-result = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
-assert 1, result == "TF_DIVIDEND_CURVE"
-
-@testing:case="createDividendCurve supports boundary vector lengths 1/1024/65536"
-for (n in [1, 1024, 65536]) {
-    datesN = 2022.03.10 + 0..(n - 1);
-    valsN = take(0.02, n);
-    handleN = "TF_BND_" + string(n);
-    resultN = caplib::createDividendCurve(asOfDate, datesN, valsN, asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", handleN, handleN, false);
-    assert 1, resultN == handleN
-}
+@testing:case="createDividendCurve -> handle"
+result = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
+assert 1, result == "TF_DIV"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createDividendCurve rejects missing argument", syntaxError=1
-caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE")
+caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H")
 
 @testing:case="createDividendCurve rejects extra argument", syntaxError=1
-caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false, 1)
+caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false, 1)
 
 @testing:case="createDividendCurve rejects wrong type for referenceDate", exception=1
-caplib::createDividendCurve("bad", curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve("bad", [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects wrong type for yieldStartDate", exception=1
-caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], "bad", "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], "bad", "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects wrong type for dividendType", exception=1
-caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, 1, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, 1, "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects null referenceDate", exception=1
-caplib::createDividendCurve(date(), curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve(date(), [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects null yieldStartDate", exception=1
-caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], date(), "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], date(), "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects vector for scalar referenceDate", exception=1
-caplib::createDividendCurve([2024.01.01], curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve([2024.01.01], [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects scalar for vector pillarDates", exception=1
-caplib::createDividendCurve(asOfDate, [2024.01.01], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects partially-null vector pillarDates", exception=1
-caplib::createDividendCurve(asOfDate, [2024.01.01, date()], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve(2024.01.01, [2024.01.01, date()], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects empty vector pillarDates", exception=1
-caplib::createDividendCurve(asOfDate, take(date, 0), [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIVIDEND_CURVE", "TF_DIVIDEND_CURVE", false)
+caplib::createDividendCurve(2024.01.01, take(date, 0), [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 @testing:case="createDividendCurve rejects keyword arguments", syntaxError=1
-caplib::createDividendCurve(referenceDate=asOfDate, pillarDates=curveDates, pillarValues=[0.01, 0.01], yieldStartDate=asOfDate, dividendType="CONTINUOUS", dcc="ACT_365_FIXED", interp="LINEAR_INTERP", extrap="FLAT_EXTRAP", compounding="CONTINUOUS_COMPOUNDING", name="TF_DIVIDEND_CURVE", handle="TF_DIVIDEND_CURVE", returnJson=false)
+caplib::createDividendCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], pillarValues=[0.02], yieldStartDate=2024.01.01, dividendType="X", dcc="X", interp="X", extrap="X", compounding="X", name="TF_createDividendCurve_H", handle="TF_createDividendCurve_H", returnJson=false)

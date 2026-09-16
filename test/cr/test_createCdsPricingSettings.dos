@@ -119,31 +119,37 @@ cds = caplib::buildCreditDefaultSwap(
 // Tests
 // ============================================================================
 
-@testing:case="createCdsPricingSettings -> [handle, json]"
-r = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDS_PRC_NAME", "TF_CDS_PRC", true);
-assert 1, isHandleJson(r, "TF_CDS_PRC")
-
-@testing:case="createCdsPricingSettings rejects INT currency", exception=1
-caplib::createCdsPricingSettings(1, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDS_PRC_NAME", "TF_CDS_PRC_BAD", true)
+@testing:case="createCdsPricingSettings -> handle"
+result = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
+assert 1, result == "TF_CDSPS"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createCdsPricingSettings rejects missing argument", syntaxError=1
-caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "X")
+caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H")
 
 @testing:case="createCdsPricingSettings rejects extra argument", syntaxError=1
-caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "X", "X", false, 1)
+caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false, 1)
+
+@testing:case="createCdsPricingSettings rejects wrong type for pricingCurrency", exception=1
+caplib::createCdsPricingSettings(1, false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
+
+@testing:case="createCdsPricingSettings rejects wrong type for numericalFix", exception=1
+caplib::createCdsPricingSettings("X", false, false, false, 1, "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
+
+@testing:case="createCdsPricingSettings rejects wrong type for accrualBias", exception=1
+caplib::createCdsPricingSettings("X", false, false, false, "X", 1, "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
 @testing:case="createCdsPricingSettings rejects null pricingCurrency", exception=1
-caplib::createCdsPricingSettings(string(), false, false, false, "X", "X", "X", "X", "X", false)
+caplib::createCdsPricingSettings(string(), false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
 @testing:case="createCdsPricingSettings rejects null numericalFix", exception=1
-caplib::createCdsPricingSettings("X", false, false, false, string(), "X", "X", "X", "X", false)
+caplib::createCdsPricingSettings("X", false, false, false, string(), "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
 @testing:case="createCdsPricingSettings rejects vector for scalar pricingCurrency", exception=1
-caplib::createCdsPricingSettings(["X"], false, false, false, "X", "X", "X", "X", "X", false)
+caplib::createCdsPricingSettings(["X"], false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
 @testing:case="createCdsPricingSettings rejects keyword arguments", syntaxError=1
-caplib::createCdsPricingSettings(pricingCurrency="X", includeCurrentFlow=false, cashFlows=false, includeSettlementFlow=false, numericalFix="X", accrualBias="X", fwdsInCpnPeriod="X", name="X", tag="X", returnJson=false)
+caplib::createCdsPricingSettings(pricingCurrency="X", includeCurrentFlow=false, cashFlows=false, includeSettlementFlow=false, numericalFix="X", accrualBias="X", fwdsInCpnPeriod="X", name="TF_createCdsPricingSettings_H", tag="TF_createCdsPricingSettings_H", returnJson=false)

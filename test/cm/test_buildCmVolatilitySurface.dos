@@ -237,28 +237,34 @@ assert 1, isHandleJson(r, "TF_CM_VOL") && hasJsonField(r[1], "vol_smiles")
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X")
 
 @testing:case="buildCmVolatilitySurface rejects extra argument", syntaxError=1
-caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", false, 1)
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false, 1)
+
+@testing:case="buildCmVolatilitySurface rejects wrong type for referenceDate", exception=1
+caplib::buildCmVolatilitySurface("bad", "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
+
+@testing:case="buildCmVolatilitySurface rejects wrong type for underlying", exception=1
+caplib::buildCmVolatilitySurface(2024.01.01, 1, "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects null referenceDate", exception=1
-caplib::buildCmVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "X", false)
+caplib::buildCmVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects null underlying", exception=1
-caplib::buildCmVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "X", false)
+caplib::buildCmVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects vector for scalar referenceDate", exception=1
-caplib::buildCmVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "X", false)
+caplib::buildCmVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects scalar for vector underlyingPrices", exception=1
-caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", false)
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects partially-null vector underlyingPrices", exception=1
-caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X", "X", "X", "X", false)
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects empty vector underlyingPrices", exception=1
-caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "X", false)
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "X", false)
+caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 @testing:case="buildCmVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::buildCmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", handle="X", returnJson=false)
+caplib::buildCmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", handle="TF_buildCmVolatilitySurface_H", returnJson=false)

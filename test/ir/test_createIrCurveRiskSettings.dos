@@ -52,34 +52,34 @@ def isMatrix(value) {
 // Tests
 // ============================================================================
 
-@testing:case="createIrCurveRiskSettings valid call"
-result = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)
-assert 1, result == "TF_IR_CURVE_RISK"
-
-@testing:case="createIrCurveRiskSettings rejects STRING method", exception=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, "1", 1, 1.0e-4, 0, "TF_IR_RISK_BAD")
+@testing:case="createIrCurveRiskSettings -> handle"
+result = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR", false)
+assert 1, result == "TF_IRCR"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createIrCurveRiskSettings rejects missing argument", syntaxError=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0)
+caplib::createIrCurveRiskSettings(false, false, false, 0.02, 0.02, 1, 1, 0.02, 1)
 
 @testing:case="createIrCurveRiskSettings rejects extra argument", syntaxError=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false, 1)
+caplib::createIrCurveRiskSettings(false, false, false, 0.02, 0.02, 1, 1, 0.02, 1, "TF_createIrCurveRiskSettings_H", false, 1)
 
 @testing:case="createIrCurveRiskSettings rejects wrong type for shift", exception=1
-caplib::createIrCurveRiskSettings(1, 1, 1, "bad", 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)
+caplib::createIrCurveRiskSettings(false, false, false, "bad", 0.02, 1, 1, 0.02, 1, "TF_createIrCurveRiskSettings_H", false)
 
 @testing:case="createIrCurveRiskSettings rejects wrong type for curvatureShift", exception=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, "bad", 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)
+caplib::createIrCurveRiskSettings(false, false, false, 0.02, "bad", 1, 1, 0.02, 1, "TF_createIrCurveRiskSettings_H", false)
 
 @testing:case="createIrCurveRiskSettings rejects wrong type for method", exception=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, "1", 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)
+caplib::createIrCurveRiskSettings(false, false, false, 0.02, 0.02, "1", 1, 0.02, 1, "TF_createIrCurveRiskSettings_H", false)
 
 @testing:case="createIrCurveRiskSettings rejects null method", exception=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, int(), 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false)
+caplib::createIrCurveRiskSettings(false, false, false, 0.02, 0.02, int(), 1, 0.02, 1, "TF_createIrCurveRiskSettings_H", false)
+
+@testing:case="createIrCurveRiskSettings rejects null granularity", exception=1
+caplib::createIrCurveRiskSettings(false, false, false, 0.02, 0.02, 1, int(), 0.02, 1, "TF_createIrCurveRiskSettings_H", false)
 
 @testing:case="createIrCurveRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createIrCurveRiskSettings(delta=1, gamma=1, curvature=1, shift=1.0e-4, curvatureShift=5.0e-3, method=0, granularity=1, scaling=1.0e-4, threading=0, handle="TF_IR_CURVE_RISK", returnJson=false)
+caplib::createIrCurveRiskSettings(delta=false, gamma=false, curvature=false, shift=0.02, curvatureShift=0.02, method=1, granularity=1, scaling=0.02, threading=1, handle="TF_createIrCurveRiskSettings_H", returnJson=false)

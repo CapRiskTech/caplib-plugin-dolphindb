@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h5", false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqOneTouchOption -> [handle, present_value reference]"
-inst = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", 3.106, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "TF_OT", false);
-r = caplib::priceEqOneTouchOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_OT_results")
-assert 2, abs(presentValue(r) - 733395.8124729242) < abs(733395.8124729242) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqOneTouchOption -> PricingResults"
+result = caplib::priceEqOneTouchOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h5_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

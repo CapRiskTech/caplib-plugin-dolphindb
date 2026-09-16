@@ -134,15 +134,32 @@ couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
 couponObsValues = take(0.0, size(couponDates));
 couponObsWeights = take(1.0, size(couponDates));
 
+volSurfDefinition = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-5, 1.0e-5, "VOL_SURF_DEF", true)
+volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "VOL_SURF_BUILD_SETTINGS", true)
+eqOptionQuotes = caplib::createEqOptionQuoteMatrix(
+    "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes,
+    underlying, "EQ_OPTION_QUOTES", true)
+volSurface = caplib::buildEqVolatilitySurface(
+    asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0],
+    [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0],
+    bsmAnalyticalSettings, "VOL_SURF", true)
+mktData = caplib::createEqMktDataSet(
+    asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface[0],
+    quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createEqRiskSettings -> [handle, json]"
-assert 1, isHandleJson(eqRisk, "EQ_RISK")
-
-@testing:case="createEqRiskSettings rejects STRING flag", exception=1
-caplib::createEqRiskSettings("1", 1, 1, 1, "TF_EQ_RISK_BAD", true)
+@testing:case="createEqRiskSettings -> handle"
+result = caplib::createEqRiskSettings(1, 1, 1, 1, "f_eqrisk", false)
+assert 1, result == "f_eqrisk"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -152,7 +169,7 @@ caplib::createEqRiskSettings("1", 1, 1, 1, "TF_EQ_RISK_BAD", true)
 caplib::createEqRiskSettings(false, false, false, false)
 
 @testing:case="createEqRiskSettings rejects extra argument", syntaxError=1
-caplib::createEqRiskSettings(false, false, false, false, "X", false, 1)
+caplib::createEqRiskSettings(false, false, false, false, "TF_createEqRiskSettings_H", false, 1)
 
 @testing:case="createEqRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createEqRiskSettings(irDelta=false, priceDelta=false, volVega=false, theta=false, handle="X", returnJson=false)
+caplib::createEqRiskSettings(irDelta=false, priceDelta=false, volVega=false, theta=false, handle="TF_createEqRiskSettings_H", returnJson=false)

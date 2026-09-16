@@ -134,16 +134,32 @@ couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
 couponObsValues = take(0.0, size(couponDates));
 couponObsWeights = take(1.0, size(couponDates));
 
+volSurfDefinition = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-5, 1.0e-5, "VOL_SURF_DEF", true)
+volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "VOL_SURF_BUILD_SETTINGS", true)
+eqOptionQuotes = caplib::createEqOptionQuoteMatrix(
+    "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes,
+    underlying, "EQ_OPTION_QUOTES", true)
+volSurface = caplib::buildEqVolatilitySurface(
+    asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0],
+    [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0],
+    bsmAnalyticalSettings, "VOL_SURF", true)
+mktData = caplib::createEqMktDataSet(
+    asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface[0],
+    quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createEqOptionQuoteMatrix -> [handle, json]"
-r = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "TF_EQ_OQ", true);
-assert 1, isHandleJson(r, "TF_EQ_OQ")
-
-@testing:case="createEqOptionQuoteMatrix rejects zero-column strikes matrix", exception=1
-caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, matrix(DOUBLE, 4, 0), underlying, "TF_EQ_OQ_BAD", true)
+@testing:case="createEqOptionQuoteMatrix -> handle"
+result = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+assert 1, result == "f_eqoq"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -153,25 +169,34 @@ caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, 
 caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X")
 
 @testing:case="createEqOptionQuoteMatrix rejects extra argument", syntaxError=1
-caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false, 1)
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false, 1)
+
+@testing:case="createEqOptionQuoteMatrix rejects wrong type for exerciseType", exception=1
+caplib::createEqOptionQuoteMatrix(1, "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects wrong type for underlyingType", exception=1
+caplib::createEqOptionQuoteMatrix("X", 1, 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
+
+@testing:case="createEqOptionQuoteMatrix rejects wrong type for asOfDate", exception=1
+caplib::createEqOptionQuoteMatrix("X", "X", "bad", [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
 @testing:case="createEqOptionQuoteMatrix rejects null exerciseType", exception=1
-caplib::createEqOptionQuoteMatrix(string(), "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+caplib::createEqOptionQuoteMatrix(string(), "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
 @testing:case="createEqOptionQuoteMatrix rejects null underlyingType", exception=1
-caplib::createEqOptionQuoteMatrix("X", string(), 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+caplib::createEqOptionQuoteMatrix("X", string(), 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
 @testing:case="createEqOptionQuoteMatrix rejects vector for scalar exerciseType", exception=1
-caplib::createEqOptionQuoteMatrix(["X"], "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+caplib::createEqOptionQuoteMatrix(["X"], "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
 @testing:case="createEqOptionQuoteMatrix rejects scalar for vector termDates", exception=1
-caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
 @testing:case="createEqOptionQuoteMatrix rejects partially-null vector termDates", exception=1
-caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01, date()], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01, date()], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
 @testing:case="createEqOptionQuoteMatrix rejects empty vector termDates", exception=1
-caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, take(date, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "X", false)
+caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, take(date, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
 @testing:case="createEqOptionQuoteMatrix rejects keyword arguments", syntaxError=1
-caplib::createEqOptionQuoteMatrix(exerciseType="X", underlyingType="X", asOfDate=2024.01.01, termDates=[2024.01.01], payoffTypes=matrix([0.2]), optionPrices=matrix([0.2]), optionStrikes=matrix([0.2]), underlying="X", handle="X", returnJson=false)
+caplib::createEqOptionQuoteMatrix(exerciseType="X", underlyingType="X", asOfDate=2024.01.01, termDates=[2024.01.01], payoffTypes=matrix([0.2]), optionPrices=matrix([0.2]), optionStrikes=matrix([0.2]), underlying="X", handle="TF_createEqOptionQuoteMatrix_H", returnJson=false)

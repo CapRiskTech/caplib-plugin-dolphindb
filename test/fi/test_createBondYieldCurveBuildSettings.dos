@@ -218,19 +218,9 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 // Tests
 // ============================================================================
 
-@testing:case="createBondYieldCurveBuildSettings -> [handle, json]"
-r = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", true);
-assert 1, isHandleJson(r, "TF_FI_BBS")
-
-@testing:case="createBondYieldCurveBuildSettings rejects invalid curveType", exception=1
-caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "NOT_A_CURVE_TYPE", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_BAD", true)
-
-@testing:case="createBondYieldCurveBuildSettings preserves all valid curveTypes"
-for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
-    handle = "TF_FI_BBS_" + curveType;
-    result = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", curveType, "LINEAR_INTERP", "FLAT_EXTRAP", handle, true);
-    assert 1, result[0] == handle && strpos(result[1], curveType) >= 0
-}
+@testing:case="createBondYieldCurveBuildSettings -> handle"
+result = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", false)
+assert 1, result == "TF_FI_BBS"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -240,16 +230,25 @@ for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
 caplib::createBondYieldCurveBuildSettings("X", "X", "X", "X")
 
 @testing:case="createBondYieldCurveBuildSettings rejects extra argument", syntaxError=1
-caplib::createBondYieldCurveBuildSettings("X", "X", "X", "X", "X", false, 1)
+caplib::createBondYieldCurveBuildSettings("X", "X", "X", "X", "TF_createBondYieldCurveBuildSettings_H", false, 1)
+
+@testing:case="createBondYieldCurveBuildSettings rejects wrong type for curveName", exception=1
+caplib::createBondYieldCurveBuildSettings(1, "X", "X", "X", "TF_createBondYieldCurveBuildSettings_H", false)
+
+@testing:case="createBondYieldCurveBuildSettings rejects wrong type for curveType", exception=1
+caplib::createBondYieldCurveBuildSettings("X", 1, "X", "X", "TF_createBondYieldCurveBuildSettings_H", false)
+
+@testing:case="createBondYieldCurveBuildSettings rejects wrong type for interpMethod", exception=1
+caplib::createBondYieldCurveBuildSettings("X", "X", 1, "X", "TF_createBondYieldCurveBuildSettings_H", false)
 
 @testing:case="createBondYieldCurveBuildSettings rejects null curveName", exception=1
-caplib::createBondYieldCurveBuildSettings(string(), "X", "X", "X", "X", false)
+caplib::createBondYieldCurveBuildSettings(string(), "X", "X", "X", "TF_createBondYieldCurveBuildSettings_H", false)
 
 @testing:case="createBondYieldCurveBuildSettings rejects null curveType", exception=1
-caplib::createBondYieldCurveBuildSettings("X", string(), "X", "X", "X", false)
+caplib::createBondYieldCurveBuildSettings("X", string(), "X", "X", "TF_createBondYieldCurveBuildSettings_H", false)
 
 @testing:case="createBondYieldCurveBuildSettings rejects vector for scalar curveName", exception=1
-caplib::createBondYieldCurveBuildSettings(["X"], "X", "X", "X", "X", false)
+caplib::createBondYieldCurveBuildSettings(["X"], "X", "X", "X", "TF_createBondYieldCurveBuildSettings_H", false)
 
 @testing:case="createBondYieldCurveBuildSettings rejects keyword arguments", syntaxError=1
-caplib::createBondYieldCurveBuildSettings(curveName="X", curveType="X", interpMethod="X", extrapMethod="X", tag="X", returnJson=false)
+caplib::createBondYieldCurveBuildSettings(curveName="X", curveType="X", interpMethod="X", extrapMethod="X", tag="TF_createBondYieldCurveBuildSettings_H", returnJson=false)

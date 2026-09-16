@@ -119,28 +119,37 @@ cds = caplib::buildCreditDefaultSwap(
 // Tests
 // ============================================================================
 
-@testing:case="createCrRiskSettings -> [handle, json]"
-r = caplib::createCrRiskSettings(irRisk, creditRisk, thetaRisk, "TF_CR_RISKSET_NAME", "TF_CR_RISKSET", true);
-assert 1, isHandleJson(r, "TF_CR_RISKSET")
+@testing:case="createCrRiskSettings -> handle"
+result = caplib::createCrRiskSettings(irRisk, creditRisk, thetaRisk, "TF_CRRISK", "TF_CRRISK", false)
+assert 1, result == "TF_CRRISK"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createCrRiskSettings rejects missing argument", syntaxError=1
-caplib::createCrRiskSettings("X", "X", "X", "X")
+caplib::createCrRiskSettings("X", "X", "X", "TF_createCrRiskSettings_H")
 
 @testing:case="createCrRiskSettings rejects extra argument", syntaxError=1
-caplib::createCrRiskSettings("X", "X", "X", "X", "X", false, 1)
+caplib::createCrRiskSettings("X", "X", "X", "TF_createCrRiskSettings_H", "TF_createCrRiskSettings_H", false, 1)
+
+@testing:case="createCrRiskSettings rejects wrong type for irCurveSettings", exception=1
+caplib::createCrRiskSettings(1, "X", "X", "TF_createCrRiskSettings_H", "TF_createCrRiskSettings_H", false)
+
+@testing:case="createCrRiskSettings rejects wrong type for csCurveSettings", exception=1
+caplib::createCrRiskSettings("X", 1, "X", "TF_createCrRiskSettings_H", "TF_createCrRiskSettings_H", false)
+
+@testing:case="createCrRiskSettings rejects wrong type for thetaSettings", exception=1
+caplib::createCrRiskSettings("X", "X", 1, "TF_createCrRiskSettings_H", "TF_createCrRiskSettings_H", false)
 
 @testing:case="createCrRiskSettings rejects null irCurveSettings", exception=1
-caplib::createCrRiskSettings(string(), "X", "X", "X", "X", false)
+caplib::createCrRiskSettings(string(), "X", "X", "TF_createCrRiskSettings_H", "TF_createCrRiskSettings_H", false)
 
 @testing:case="createCrRiskSettings rejects null csCurveSettings", exception=1
-caplib::createCrRiskSettings("X", string(), "X", "X", "X", false)
+caplib::createCrRiskSettings("X", string(), "X", "TF_createCrRiskSettings_H", "TF_createCrRiskSettings_H", false)
 
 @testing:case="createCrRiskSettings rejects vector for scalar irCurveSettings", exception=1
-caplib::createCrRiskSettings(["X"], "X", "X", "X", "X", false)
+caplib::createCrRiskSettings(["X"], "X", "X", "TF_createCrRiskSettings_H", "TF_createCrRiskSettings_H", false)
 
 @testing:case="createCrRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createCrRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="X", tag="X", returnJson=false)
+caplib::createCrRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="TF_createCrRiskSettings_H", tag="TF_createCrRiskSettings_H", returnJson=false)

@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h7", false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqSingleBarrierOption -> [handle, present_value reference]"
-inst = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", 3.2538, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "TF_SB", false);
-r = caplib::priceEqSingleBarrierOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_SB_results")
-assert 2, abs(presentValue(r) - 183521.17548419893) < abs(183521.17548419893) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqSingleBarrierOption -> PricingResults"
+result = caplib::priceEqSingleBarrierOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h7_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

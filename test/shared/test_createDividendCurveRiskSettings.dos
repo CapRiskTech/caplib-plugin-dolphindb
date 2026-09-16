@@ -53,33 +53,33 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createDividendCurveRiskSettings valid call"
-result = caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, 0, 0, 2.0e-4, 0, "TF_DIV_RISK", false)
-assert 1, result == "TF_DIV_RISK"
-
-@testing:case="createDividendCurveRiskSettings rejects STRING method", exception=1
-caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, "1", 0, 2.0e-4, 0, "TF_DIV_RISK_BAD")
+result = caplib::createDividendCurveRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "TF_createDividendCurveRiskSettings_H", false)
+assert 1, result == "TF_createDividendCurveRiskSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createDividendCurveRiskSettings rejects missing argument", syntaxError=1
-caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, 0, 0, 2.0e-4, 0)
+caplib::createDividendCurveRiskSettings(false, false, 0.02, 1, 1, 0.02, 1)
 
 @testing:case="createDividendCurveRiskSettings rejects extra argument", syntaxError=1
-caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, 0, 0, 2.0e-4, 0, "TF_DIV_RISK", false, 1)
+caplib::createDividendCurveRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "TF_createDividendCurveRiskSettings_H", false, 1)
 
 @testing:case="createDividendCurveRiskSettings rejects wrong type for shift", exception=1
-caplib::createDividendCurveRiskSettings(1, 1, "bad", 0, 0, 2.0e-4, 0, "TF_DIV_RISK", false)
+caplib::createDividendCurveRiskSettings(false, false, "bad", 1, 1, 0.02, 1, "TF_createDividendCurveRiskSettings_H", false)
 
 @testing:case="createDividendCurveRiskSettings rejects wrong type for method", exception=1
-caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, "1", 0, 2.0e-4, 0, "TF_DIV_RISK", false)
+caplib::createDividendCurveRiskSettings(false, false, 0.02, "1", 1, 0.02, 1, "TF_createDividendCurveRiskSettings_H", false)
 
-@testing:case="createDividendCurveRiskSettings rejects wrong type for scaling", exception=1
-caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, 0, 0, "bad", 0, "TF_DIV_RISK", false)
+@testing:case="createDividendCurveRiskSettings rejects wrong type for granularity", exception=1
+caplib::createDividendCurveRiskSettings(false, false, 0.02, 1, "1", 0.02, 1, "TF_createDividendCurveRiskSettings_H", false)
 
 @testing:case="createDividendCurveRiskSettings rejects null method", exception=1
-caplib::createDividendCurveRiskSettings(1, 1, 2.0e-4, int(), 0, 2.0e-4, 0, "TF_DIV_RISK", false)
+caplib::createDividendCurveRiskSettings(false, false, 0.02, int(), 1, 0.02, 1, "TF_createDividendCurveRiskSettings_H", false)
+
+@testing:case="createDividendCurveRiskSettings rejects null granularity", exception=1
+caplib::createDividendCurveRiskSettings(false, false, 0.02, 1, int(), 0.02, 1, "TF_createDividendCurveRiskSettings_H", false)
 
 @testing:case="createDividendCurveRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createDividendCurveRiskSettings(delta=1, gamma=1, shift=2.0e-4, method=0, granularity=0, scaling=2.0e-4, threading=0, handle="TF_DIV_RISK", returnJson=false)
+caplib::createDividendCurveRiskSettings(delta=false, gamma=false, shift=0.02, method=1, granularity=1, scaling=0.02, threading=1, handle="TF_createDividendCurveRiskSettings_H", returnJson=false)

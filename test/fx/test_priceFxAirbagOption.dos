@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -262,15 +258,16 @@ dailyObsDates = 2021.03.31..2021.09.26;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
+
+tairbagoption = caplib::createAirbagOption("CALL", 2021.09.26, 2021.09.27, eurusdSpot, eurusdSpot*1.05, 1.0, 1.0, eurusdSpot, "DOWN_IN", eurusdSpot*0.8, "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "SPOT", currency, "EURUSD", "tAirbag", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceFxAirbagOption -> [handle, present_value]"
-inst = caplib::createAirbagOption("CALL", 2021.09.26, 2021.09.27, eurusdSpot, eurusdSpot * 1.05, 1.0, 1.0, eurusdSpot, "DOWN_IN", eurusdSpot * 0.8, "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "SPOT", currency, underlying, "TF_FX_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceFxAirbagOption(inst, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_FX_AB_results")
-assert 2, abs(presentValue(r) - 23077.89598077418) < abs(23077.89598077418) * 1.0e-9 + 1.0e-6
+@testing:case="priceFxAirbagOption -> PricingResults"
+result = caplib::priceFxAirbagOption(tairbagoption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "tAirbag_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

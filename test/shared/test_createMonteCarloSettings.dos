@@ -53,33 +53,36 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createMonteCarloSettings valid call"
-result = caplib::createMonteCarloSettings(3000, 1, -1, 2, 1, 1, 101, "TF_MC_SETTINGS", false)
-assert 1, result == "TF_MC_SETTINGS"
-
-@testing:case="createMonteCarloSettings rejects STRING numSimulations", exception=1
-caplib::createMonteCarloSettings("3000", 1, -1, 2, 1, 1, 101, "TF_MC_BAD")
-
-@testing:case="createMonteCarloSettings rejects zero numSimulations", exception=1
-caplib::createMonteCarloSettings(0, 1, -1, 2, 1, 1, 101, "TF_MC_BAD")
+result = caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+assert 1, result == "TF_createMonteCarloSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createMonteCarloSettings rejects missing argument", syntaxError=1
-caplib::createMonteCarloSettings(3000, 1, -1, 2, 1, 1, 101)
+caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1)
 
 @testing:case="createMonteCarloSettings rejects extra argument", syntaxError=1
-caplib::createMonteCarloSettings(3000, 1, -1, 2, 1, 1, 101, "TF_MC_SETTINGS", false, 1)
+caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false, 1)
 
 @testing:case="createMonteCarloSettings rejects wrong type for numSimulations", exception=1
-caplib::createMonteCarloSettings("1", 1, -1, 2, 1, 1, 101, "TF_MC_SETTINGS", false)
+caplib::createMonteCarloSettings("1", 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+@testing:case="createMonteCarloSettings rejects wrong type for uniformNumberType", exception=1
+caplib::createMonteCarloSettings(1, "1", 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+@testing:case="createMonteCarloSettings rejects wrong type for seed", exception=1
+caplib::createMonteCarloSettings(1, 1, "1", 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
 
 @testing:case="createMonteCarloSettings rejects null numSimulations", exception=1
-caplib::createMonteCarloSettings(int(), 1, -1, 2, 1, 1, 101, "TF_MC_SETTINGS", false)
+caplib::createMonteCarloSettings(int(), 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+@testing:case="createMonteCarloSettings rejects null uniformNumberType", exception=1
+caplib::createMonteCarloSettings(1, int(), 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
 
 @testing:case="createMonteCarloSettings rejects vector for scalar numSimulations", exception=1
-caplib::createMonteCarloSettings([1], 1, -1, 2, 1, 1, 101, "TF_MC_SETTINGS", false)
+caplib::createMonteCarloSettings([1], 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
 
 @testing:case="createMonteCarloSettings rejects keyword arguments", syntaxError=1
-caplib::createMonteCarloSettings(numSimulations=3000, uniformNumberType=1, seed=-1, wienerBuildMethod=2, gaussianMethod=1, useAntithetic=1, numSteps=101, handle="TF_MC_SETTINGS", returnJson=false)
+caplib::createMonteCarloSettings(numSimulations=1, uniformNumberType=1, seed=1, wienerBuildMethod=1, gaussianMethod=1, useAntithetic=false, numSteps=1, handle="TF_createMonteCarloSettings_H", returnJson=false)

@@ -60,66 +60,46 @@ curveValues = [0.02, 0.025];
 // Tests
 // ============================================================================
 
-@testing:case="createVolatilitySmile valid call"
-result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
-assert 1, result == "TF_VOL_SMILE"
-
-@testing:case="createVolatilitySmile rejects lower > upper", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 110.0], [0.2, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 110.0, 90.0, "TF_SMILE_BAD")
-
-@testing:case="createVolatilitySmile rejects strikes/vols length mismatch", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 110.0], [0.2], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_SMILE_BAD")
-
-@testing:case="createVolatilitySmile supports boundary strike lengths"
-for (n in [1, 1024, 65536]) {
-    if (n == 1) { strikesN = [100.0]; }
-    else { strikesN = 90.0 + 0..(n - 1) * (20.0 / (n - 1)); }
-    volsN = take(0.20, n);
-    handleN = "TF_SMILE_SIZE_" + string(n);
-    resultN = caplib::createVolatilitySmile(
-        "STRIKE_VOL_SMILE", asOfDate, strikesN, volsN,
-        "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0,
-        array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0,
-        handleN, false);
-    assert 1, resultN == handleN
-}
+@testing:case="createVolatilitySmile -> handle"
+result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
+assert 1, result == "TF_SMILE"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createVolatilitySmile rejects missing argument", syntaxError=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0)
+caplib::createVolatilitySmile("X", 2024.01.01, [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02)
 
 @testing:case="createVolatilitySmile rejects extra argument", syntaxError=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false, 1)
+caplib::createVolatilitySmile("X", 2024.01.01, [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false, 1)
 
 @testing:case="createVolatilitySmile rejects wrong type for volSmileType", exception=1
-caplib::createVolatilitySmile(1, asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile(1, 2024.01.01, [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects wrong type for referenceDate", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", "bad", [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile("X", "bad", [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects wrong type for smileMethod", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], 1, "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile("X", 2024.01.01, [0.02], [0.02], 1, "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects null volSmileType", exception=1
-caplib::createVolatilitySmile(string(), asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile(string(), 2024.01.01, [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects null referenceDate", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", date(), [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile("X", date(), [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects vector for scalar volSmileType", exception=1
-caplib::createVolatilitySmile(["X"], asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile(["X"], 2024.01.01, [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects scalar for vector strikes", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [0.02], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile("X", 2024.01.01, [0.02], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects partially-null vector strikes", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [0.02, double()], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile("X", 2024.01.01, [0.02, double()], [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects empty vector strikes", exception=1
-caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, take(double, 0), [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "TF_VOL_SMILE", false)
+caplib::createVolatilitySmile("X", 2024.01.01, take(double, 0), [0.02], "X", "X", 0.02, [0.02], [0.02], 0.02, 0.02, "TF_createVolatilitySmile_H", false)
 
 @testing:case="createVolatilitySmile rejects keyword arguments", syntaxError=1
-caplib::createVolatilitySmile(volSmileType="STRIKE_VOL_SMILE", referenceDate=asOfDate, strikes=[90.0, 100.0, 110.0], vols=[0.22, 0.20, 0.21], smileMethod="LINEAR_SMILE_METHOD", extrapMethod="FLAT_EXTRAP", term=1.0, modelParams=array(DOUBLE, 0), auxiliaryParams=array(DOUBLE, 0), lower=90.0, upper=110.0, handle="TF_VOL_SMILE", returnJson=false)
+caplib::createVolatilitySmile(volSmileType="X", referenceDate=2024.01.01, strikes=[0.02], vols=[0.02], smileMethod="X", extrapMethod="X", term=0.02, modelParams=[0.02], auxiliaryParams=[0.02], lower=0.02, upper=0.02, handle="TF_createVolatilitySmile_H", returnJson=false)

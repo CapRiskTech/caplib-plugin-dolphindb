@@ -236,6 +236,15 @@ caplib::calcYieldToMaturity(2024.01.01, "X", "X", "X", 0.02, "X")
 @testing:case="calcYieldToMaturity rejects extra argument", syntaxError=1
 caplib::calcYieldToMaturity(2024.01.01, "X", "X", "X", 0.02, "X", "X", 1)
 
+@testing:case="calcYieldToMaturity rejects wrong type for calculationDate", exception=1
+caplib::calcYieldToMaturity("bad", "X", "X", "X", 0.02, "X", "X")
+
+@testing:case="calcYieldToMaturity rejects wrong type for compoundingType", exception=1
+caplib::calcYieldToMaturity(2024.01.01, 1, "X", "X", 0.02, "X", "X")
+
+@testing:case="calcYieldToMaturity rejects wrong type for price", exception=1
+caplib::calcYieldToMaturity(2024.01.01, "X", "X", "X", "bad", "X", "X")
+
 @testing:case="calcYieldToMaturity rejects null calculationDate", exception=1
 caplib::calcYieldToMaturity(date(), "X", "X", "X", 0.02, "X", "X")
 

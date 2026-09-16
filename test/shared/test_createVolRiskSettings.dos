@@ -53,33 +53,33 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createVolRiskSettings valid call"
-result = caplib::createVolRiskSettings(1, 1, 0.01, 0, 0, 0.01, 0, "TF_VOL_RISK", false)
-assert 1, result == "TF_VOL_RISK"
-
-@testing:case="createVolRiskSettings rejects STRING method", exception=1
-caplib::createVolRiskSettings(1, 1, 0.01, "1", 0, 0.01, 0, "TF_VOL_RISK_BAD")
+result = caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "TF_createVolRiskSettings_H", false)
+assert 1, result == "TF_createVolRiskSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createVolRiskSettings rejects missing argument", syntaxError=1
-caplib::createVolRiskSettings(1, 1, 0.01, 0, 0, 0.01, 0)
+caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.02, 1)
 
 @testing:case="createVolRiskSettings rejects extra argument", syntaxError=1
-caplib::createVolRiskSettings(1, 1, 0.01, 0, 0, 0.01, 0, "TF_VOL_RISK", false, 1)
+caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "TF_createVolRiskSettings_H", false, 1)
 
 @testing:case="createVolRiskSettings rejects wrong type for shift", exception=1
-caplib::createVolRiskSettings(1, 1, "bad", 0, 0, 0.01, 0, "TF_VOL_RISK", false)
+caplib::createVolRiskSettings(false, false, "bad", 1, 1, 0.02, 1, "TF_createVolRiskSettings_H", false)
 
 @testing:case="createVolRiskSettings rejects wrong type for method", exception=1
-caplib::createVolRiskSettings(1, 1, 0.01, "1", 0, 0.01, 0, "TF_VOL_RISK", false)
+caplib::createVolRiskSettings(false, false, 0.02, "1", 1, 0.02, 1, "TF_createVolRiskSettings_H", false)
 
-@testing:case="createVolRiskSettings rejects wrong type for scaling", exception=1
-caplib::createVolRiskSettings(1, 1, 0.01, 0, 0, "bad", 0, "TF_VOL_RISK", false)
+@testing:case="createVolRiskSettings rejects wrong type for granularity", exception=1
+caplib::createVolRiskSettings(false, false, 0.02, 1, "1", 0.02, 1, "TF_createVolRiskSettings_H", false)
 
 @testing:case="createVolRiskSettings rejects null method", exception=1
-caplib::createVolRiskSettings(1, 1, 0.01, int(), 0, 0.01, 0, "TF_VOL_RISK", false)
+caplib::createVolRiskSettings(false, false, 0.02, int(), 1, 0.02, 1, "TF_createVolRiskSettings_H", false)
+
+@testing:case="createVolRiskSettings rejects null granularity", exception=1
+caplib::createVolRiskSettings(false, false, 0.02, 1, int(), 0.02, 1, "TF_createVolRiskSettings_H", false)
 
 @testing:case="createVolRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createVolRiskSettings(vega=1, volga=1, shift=0.01, method=0, granularity=0, scaling=0.01, threading=0, handle="TF_VOL_RISK", returnJson=false)
+caplib::createVolRiskSettings(vega=false, volga=false, shift=0.02, method=1, granularity=1, scaling=0.02, threading=1, handle="TF_createVolRiskSettings_H", returnJson=false)

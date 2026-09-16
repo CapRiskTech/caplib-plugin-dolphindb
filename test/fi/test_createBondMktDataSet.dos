@@ -227,19 +227,28 @@ assert 1, isHandleJson(r, "TF_FI_BOND_MKT")
 // ----------------------------------------------------------------------------
 
 @testing:case="createBondMktDataSet rejects missing argument", syntaxError=1
-caplib::createBondMktDataSet(2024.01.01, "X", "X", "X", "X")
+caplib::createBondMktDataSet(2024.01.01, "X", "X", "X", "TF_createBondMktDataSet_H")
 
 @testing:case="createBondMktDataSet rejects extra argument", syntaxError=1
-caplib::createBondMktDataSet(2024.01.01, "X", "X", "X", "X", "X", false, 1)
+caplib::createBondMktDataSet(2024.01.01, "X", "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false, 1)
+
+@testing:case="createBondMktDataSet rejects wrong type for asOfDate", exception=1
+caplib::createBondMktDataSet("bad", "X", "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+
+@testing:case="createBondMktDataSet rejects wrong type for discountCurve", exception=1
+caplib::createBondMktDataSet(2024.01.01, 1, "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+
+@testing:case="createBondMktDataSet rejects wrong type for creditCurve", exception=1
+caplib::createBondMktDataSet(2024.01.01, "X", 1, "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
 
 @testing:case="createBondMktDataSet rejects null asOfDate", exception=1
-caplib::createBondMktDataSet(date(), "X", "X", "X", "X", "X", false)
+caplib::createBondMktDataSet(date(), "X", "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
 
 @testing:case="createBondMktDataSet rejects null discountCurve", exception=1
-caplib::createBondMktDataSet(2024.01.01, string(), "X", "X", "X", "X", false)
+caplib::createBondMktDataSet(2024.01.01, string(), "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
 
 @testing:case="createBondMktDataSet rejects vector for scalar asOfDate", exception=1
-caplib::createBondMktDataSet([2024.01.01], "X", "X", "X", "X", "X", false)
+caplib::createBondMktDataSet([2024.01.01], "X", "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
 
 @testing:case="createBondMktDataSet rejects keyword arguments", syntaxError=1
-caplib::createBondMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", forwardCurve="X", name="X", tag="X", returnJson=false)
+caplib::createBondMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", forwardCurve="X", name="TF_createBondMktDataSet_H", tag="TF_createBondMktDataSet_H", returnJson=false)

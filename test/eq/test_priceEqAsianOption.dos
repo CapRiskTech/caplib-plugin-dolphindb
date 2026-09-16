@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h3", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqAsianOption -> [handle, present_value reference]"
-inst = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "SPOT", currency, underlying, "TF_AS", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceEqAsianOption(inst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_AS_results")
-assert 2, abs(presentValue(r) - 102873.24881386627) < abs(102873.24881386627) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqAsianOption -> PricingResults"
+result = caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h3_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

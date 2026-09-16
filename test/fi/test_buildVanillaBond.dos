@@ -233,16 +233,25 @@ caplib::buildVanillaBond(1000000.0, cnyTreasStdCfets[0], "", 2020.10.10, "TF_FI_
 caplib::buildVanillaBond(0.02, "X", "X", 2024.01.01)
 
 @testing:case="buildVanillaBond rejects extra argument", syntaxError=1
-caplib::buildVanillaBond(0.02, "X", "X", 2024.01.01, "X", false, 1)
+caplib::buildVanillaBond(0.02, "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false, 1)
+
+@testing:case="buildVanillaBond rejects wrong type for nominal", exception=1
+caplib::buildVanillaBond("bad", "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false)
+
+@testing:case="buildVanillaBond rejects wrong type for instTemplate", exception=1
+caplib::buildVanillaBond(0.02, 1, "X", 2024.01.01, "TF_buildVanillaBond_H", false)
+
+@testing:case="buildVanillaBond rejects wrong type for fixings", exception=1
+caplib::buildVanillaBond(0.02, "X", 1, 2024.01.01, "TF_buildVanillaBond_H", false)
 
 @testing:case="buildVanillaBond rejects null nominal", exception=1
-caplib::buildVanillaBond(double(), "X", "X", 2024.01.01, "X", false)
+caplib::buildVanillaBond(double(), "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
 @testing:case="buildVanillaBond rejects null instTemplate", exception=1
-caplib::buildVanillaBond(0.02, string(), "X", 2024.01.01, "X", false)
+caplib::buildVanillaBond(0.02, string(), "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
 @testing:case="buildVanillaBond rejects vector for scalar nominal", exception=1
-caplib::buildVanillaBond([0.02], "X", "X", 2024.01.01, "X", false)
+caplib::buildVanillaBond([0.02], "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
 @testing:case="buildVanillaBond rejects keyword arguments", syntaxError=1
-caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=2024.01.01, tag="X", returnJson=false)
+caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=2024.01.01, tag="TF_buildVanillaBond_H", returnJson=false)

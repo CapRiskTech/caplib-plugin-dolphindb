@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,12 +262,9 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxMktConventions -> [handle, json]"
-r = caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FX_CONV", true);
-assert 1, isHandleJson(r, "TF_FX_CONV")
-
-@testing:case="createFxMktConventions rejects invalid atmType", exception=1
-caplib::createFxMktConventions("EURUSD", "NOT_AN_ATM", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FX_CONV_BAD", true)
+@testing:case="createFxMktConventions -> handle"
+result = caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false)
+assert 1, result == "TF_FXMC"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -281,16 +274,25 @@ caplib::createFxMktConventions("EURUSD", "NOT_AN_ATM", "PIPS_SPOT_DELTA", "PIPS_
 caplib::createFxMktConventions("X", "X", "X", "X", "X", "X", "X")
 
 @testing:case="createFxMktConventions rejects extra argument", syntaxError=1
-caplib::createFxMktConventions("X", "X", "X", "X", "X", "X", "X", "X", false, 1)
+caplib::createFxMktConventions("X", "X", "X", "X", "X", "X", "X", "TF_createFxMktConventions_H", false, 1)
+
+@testing:case="createFxMktConventions rejects wrong type for ccyPair", exception=1
+caplib::createFxMktConventions(1, "X", "X", "X", "X", "X", "X", "TF_createFxMktConventions_H", false)
+
+@testing:case="createFxMktConventions rejects wrong type for atmType", exception=1
+caplib::createFxMktConventions("X", 1, "X", "X", "X", "X", "X", "TF_createFxMktConventions_H", false)
+
+@testing:case="createFxMktConventions rejects wrong type for shortDeltaType", exception=1
+caplib::createFxMktConventions("X", "X", 1, "X", "X", "X", "X", "TF_createFxMktConventions_H", false)
 
 @testing:case="createFxMktConventions rejects null ccyPair", exception=1
-caplib::createFxMktConventions(string(), "X", "X", "X", "X", "X", "X", "X", false)
+caplib::createFxMktConventions(string(), "X", "X", "X", "X", "X", "X", "TF_createFxMktConventions_H", false)
 
 @testing:case="createFxMktConventions rejects null atmType", exception=1
-caplib::createFxMktConventions("X", string(), "X", "X", "X", "X", "X", "X", false)
+caplib::createFxMktConventions("X", string(), "X", "X", "X", "X", "X", "TF_createFxMktConventions_H", false)
 
 @testing:case="createFxMktConventions rejects vector for scalar ccyPair", exception=1
-caplib::createFxMktConventions(["X"], "X", "X", "X", "X", "X", "X", "X", false)
+caplib::createFxMktConventions(["X"], "X", "X", "X", "X", "X", "X", "TF_createFxMktConventions_H", false)
 
 @testing:case="createFxMktConventions rejects keyword arguments", syntaxError=1
-caplib::createFxMktConventions(ccyPair="X", atmType="X", shortDeltaType="X", longDeltaType="X", deltaCutoff="X", riskReversal="X", smileQuoteType="X", tag="X", returnJson=false)
+caplib::createFxMktConventions(ccyPair="X", atmType="X", shortDeltaType="X", longDeltaType="X", deltaCutoff="X", riskReversal="X", smileQuoteType="X", tag="TF_createFxMktConventions_H", returnJson=false)

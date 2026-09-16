@@ -119,28 +119,37 @@ cds = caplib::buildCreditDefaultSwap(
 // Tests
 // ============================================================================
 
-@testing:case="createCrMktDataSet -> [handle, json]"
-r = caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve[0], "TF_CR_MKT_NAME", "TF_CR_MKT", true);
-assert 1, isHandleJson(r, "TF_CR_MKT")
+@testing:case="createCrMktDataSet -> handle"
+result = caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve[0], "TF_CRMKT", "TF_CRMKT", false)
+assert 1, result == "TF_CRMKT"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createCrMktDataSet rejects missing argument", syntaxError=1
-caplib::createCrMktDataSet(2024.01.01, "X", "X", "X")
+caplib::createCrMktDataSet(2024.01.01, "X", "X", "TF_createCrMktDataSet_H")
 
 @testing:case="createCrMktDataSet rejects extra argument", syntaxError=1
-caplib::createCrMktDataSet(2024.01.01, "X", "X", "X", "X", false, 1)
+caplib::createCrMktDataSet(2024.01.01, "X", "X", "TF_createCrMktDataSet_H", "TF_createCrMktDataSet_H", false, 1)
+
+@testing:case="createCrMktDataSet rejects wrong type for asOfDate", exception=1
+caplib::createCrMktDataSet("bad", "X", "X", "TF_createCrMktDataSet_H", "TF_createCrMktDataSet_H", false)
+
+@testing:case="createCrMktDataSet rejects wrong type for discountCurve", exception=1
+caplib::createCrMktDataSet(2024.01.01, 1, "X", "TF_createCrMktDataSet_H", "TF_createCrMktDataSet_H", false)
+
+@testing:case="createCrMktDataSet rejects wrong type for creditCurve", exception=1
+caplib::createCrMktDataSet(2024.01.01, "X", 1, "TF_createCrMktDataSet_H", "TF_createCrMktDataSet_H", false)
 
 @testing:case="createCrMktDataSet rejects null asOfDate", exception=1
-caplib::createCrMktDataSet(date(), "X", "X", "X", "X", false)
+caplib::createCrMktDataSet(date(), "X", "X", "TF_createCrMktDataSet_H", "TF_createCrMktDataSet_H", false)
 
 @testing:case="createCrMktDataSet rejects null discountCurve", exception=1
-caplib::createCrMktDataSet(2024.01.01, string(), "X", "X", "X", false)
+caplib::createCrMktDataSet(2024.01.01, string(), "X", "TF_createCrMktDataSet_H", "TF_createCrMktDataSet_H", false)
 
 @testing:case="createCrMktDataSet rejects vector for scalar asOfDate", exception=1
-caplib::createCrMktDataSet([2024.01.01], "X", "X", "X", "X", false)
+caplib::createCrMktDataSet([2024.01.01], "X", "X", "TF_createCrMktDataSet_H", "TF_createCrMktDataSet_H", false)
 
 @testing:case="createCrMktDataSet rejects keyword arguments", syntaxError=1
-caplib::createCrMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", name="X", tag="X", returnJson=false)
+caplib::createCrMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve="X", name="TF_createCrMktDataSet_H", tag="TF_createCrMktDataSet_H", returnJson=false)

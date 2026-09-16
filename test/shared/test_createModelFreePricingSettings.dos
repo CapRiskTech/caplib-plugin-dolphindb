@@ -53,36 +53,36 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createModelFreePricingSettings valid call"
-result = caplib::createModelFreePricingSettings("CNY", 1, 0, "TF_MODEL_FREE_PRICING", false)
-assert 1, result == "TF_MODEL_FREE_PRICING"
+result = caplib::createModelFreePricingSettings("X", 1, 1, "TF_createModelFreePricingSettings_H", false)
+assert 1, result == "TF_createModelFreePricingSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createModelFreePricingSettings rejects missing argument", syntaxError=1
-caplib::createModelFreePricingSettings("CNY", 1, 0)
+caplib::createModelFreePricingSettings("X", 1, 1)
 
 @testing:case="createModelFreePricingSettings rejects extra argument", syntaxError=1
-caplib::createModelFreePricingSettings("CNY", 1, 0, "TF_MODEL_FREE_PRICING", false, 1)
+caplib::createModelFreePricingSettings("X", 1, 1, "TF_createModelFreePricingSettings_H", false, 1)
 
 @testing:case="createModelFreePricingSettings rejects wrong type for currency", exception=1
-caplib::createModelFreePricingSettings(1, 1, 0, "TF_MODEL_FREE_PRICING", false)
+caplib::createModelFreePricingSettings(1, 1, 1, "TF_createModelFreePricingSettings_H", false)
 
 @testing:case="createModelFreePricingSettings rejects wrong type for incCurrent", exception=1
-caplib::createModelFreePricingSettings("CNY", "1", 0, "TF_MODEL_FREE_PRICING", false)
+caplib::createModelFreePricingSettings("X", "1", 1, "TF_createModelFreePricingSettings_H", false)
 
 @testing:case="createModelFreePricingSettings rejects wrong type for cashFlows", exception=1
-caplib::createModelFreePricingSettings("CNY", 1, "1", "TF_MODEL_FREE_PRICING", false)
+caplib::createModelFreePricingSettings("X", 1, "1", "TF_createModelFreePricingSettings_H", false)
 
 @testing:case="createModelFreePricingSettings rejects null incCurrent", exception=1
-caplib::createModelFreePricingSettings("CNY", int(), 0, "TF_MODEL_FREE_PRICING", false)
+caplib::createModelFreePricingSettings("X", int(), 1, "TF_createModelFreePricingSettings_H", false)
 
 @testing:case="createModelFreePricingSettings rejects null cashFlows", exception=1
-caplib::createModelFreePricingSettings("CNY", 1, int(), "TF_MODEL_FREE_PRICING", false)
+caplib::createModelFreePricingSettings("X", 1, int(), "TF_createModelFreePricingSettings_H", false)
 
 @testing:case="createModelFreePricingSettings rejects vector for scalar currency", exception=1
-caplib::createModelFreePricingSettings(["X"], 1, 0, "TF_MODEL_FREE_PRICING", false)
+caplib::createModelFreePricingSettings(["X"], 1, 1, "TF_createModelFreePricingSettings_H", false)
 
 @testing:case="createModelFreePricingSettings rejects keyword arguments", syntaxError=1
-caplib::createModelFreePricingSettings(currency="CNY", incCurrent=1, cashFlows=0, handle="TF_MODEL_FREE_PRICING", returnJson=false)
+caplib::createModelFreePricingSettings(currency="X", incCurrent=1, cashFlows=1, handle="TF_createModelFreePricingSettings_H", returnJson=false)

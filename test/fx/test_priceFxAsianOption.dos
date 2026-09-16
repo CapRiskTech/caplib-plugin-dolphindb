@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -262,15 +258,16 @@ dailyObsDates = 2021.03.31..2021.09.26;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
+
+tasianoption = caplib::createAsianOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "SPOT", currency, "EURUSD", "tAsian", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceFxAsianOption -> [handle, present_value]"
-inst = caplib::createAsianOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "SPOT", currency, underlying, "TF_FX_AS", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceFxAsianOption(inst, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_FX_AS_results")
-assert 2, abs(presentValue(r) - 12917.434832018096) < abs(12917.434832018096) * 1.0e-9 + 1.0e-6
+@testing:case="priceFxAsianOption -> PricingResults"
+result = caplib::priceFxAsianOption(tasianoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "tAsian_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

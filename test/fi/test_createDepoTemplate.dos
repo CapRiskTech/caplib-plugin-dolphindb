@@ -48,35 +48,44 @@ def isMatrix(value) {
     return strpos(typestr(value), "MATRIX") >= 0;
 }
 
-// ============================================================================
-// Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
-calendarCreated = caplib::createCalendar("CAL_CFETS");
-assert 1, calendarCreated;
+caplib::createCalendar("CAL_CFETS");
 
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createDepoTemplate -> [handle, json]"
-r = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", true);
-assert 1, isHandleJson(r, "TF_DEPO")
-
-assert 1, true
+@testing:case="createDepoTemplate -> handle"
+result = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, result == "TF_DEPO"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createDepoTemplate rejects missing argument", syntaxError=1
-caplib::createDepoTemplate("TF_DEPO", "CNY")
+caplib::createDepoTemplate("X", "X")
 
 @testing:case="createDepoTemplate rejects extra argument", syntaxError=1
-caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false, 1)
+caplib::createDepoTemplate("X", "X", "X", 1, "X", "X", 1, "X", "X", false, 1)
+
+@testing:case="createDepoTemplate rejects wrong type for instName", exception=1
+caplib::createDepoTemplate(1, "X", "X", 1, "X", "X", 1, "X", "X", false)
+
+@testing:case="createDepoTemplate rejects wrong type for currency", exception=1
+caplib::createDepoTemplate("X", 1, "X", 1, "X", "X", 1, "X", "X", false)
+
+@testing:case="createDepoTemplate rejects wrong type for calendar", exception=1
+caplib::createDepoTemplate("X", "X", 1, 1, "X", "X", 1, "X", "X", false)
+
+@testing:case="createDepoTemplate rejects null instName", exception=1
+caplib::createDepoTemplate(string(), "X", "X", 1, "X", "X", 1, "X", "X", false)
+
+@testing:case="createDepoTemplate rejects null currency", exception=1
+caplib::createDepoTemplate("X", string(), "X", 1, "X", "X", 1, "X", "X", false)
 
 @testing:case="createDepoTemplate rejects vector for scalar instName", exception=1
-caplib::createDepoTemplate(["X"], "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+caplib::createDepoTemplate(["X"], "X", "X", 1, "X", "X", 1, "X", "X", false)
 
 @testing:case="createDepoTemplate rejects keyword arguments", syntaxError=1
-caplib::createDepoTemplate(instName="TF_DEPO", currency="CNY", calendar="CAL_CFETS", startDelay=0, dayCount="ACT_360", interestDayConvention="MODIFIED_FOLLOWING", payDayOffset=0, payDayConvention="FOLLOWING", startConvention="SPOTSTART", returnJson=false)
+caplib::createDepoTemplate(instName="X", currency="X", calendar="X", startDelay=1, dayCount="X", interestDayConvention="X", payDayOffset=1, payDayConvention="X", startConvention="X", returnJson=false)

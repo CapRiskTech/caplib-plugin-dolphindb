@@ -230,19 +230,28 @@ assert 1, isHandleJson(r, "TF_FI_YC")
 caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, "X")
 
 @testing:case="buildBondYieldCurve rejects extra argument", syntaxError=1
-caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, "X", "X", false, 1)
+caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false, 1)
+
+@testing:case="buildBondYieldCurve rejects wrong type for referenceDate", exception=1
+caplib::buildBondYieldCurve("bad", "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+
+@testing:case="buildBondYieldCurve rejects wrong type for curveName", exception=1
+caplib::buildBondYieldCurve(2024.01.01, "X", 1, "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+
+@testing:case="buildBondYieldCurve rejects wrong type for dayCount", exception=1
+caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", 1, "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
 @testing:case="buildBondYieldCurve rejects null referenceDate", exception=1
-caplib::buildBondYieldCurve(date(), "X", "X", "X", "X", "X", "X", "X", false, "X", "X", false)
+caplib::buildBondYieldCurve(date(), "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
 @testing:case="buildBondYieldCurve rejects null curveName", exception=1
-caplib::buildBondYieldCurve(2024.01.01, "X", string(), "X", "X", "X", "X", "X", false, "X", "X", false)
+caplib::buildBondYieldCurve(2024.01.01, "X", string(), "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
 @testing:case="buildBondYieldCurve rejects vector for scalar referenceDate", exception=1
-caplib::buildBondYieldCurve([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false, "X", "X", false)
+caplib::buildBondYieldCurve([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
 @testing:case="buildBondYieldCurve rejects nonexistent handle buildSettingsHandle", exception=1
-caplib::buildBondYieldCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", "X", "X", false, "X", "X", false)
+caplib::buildBondYieldCurve(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
 @testing:case="buildBondYieldCurve rejects keyword arguments", syntaxError=1
-caplib::buildBondYieldCurve(referenceDate=2024.01.01, buildSettingsHandle="X", curveName="X", parCurveHandle="X", dayCount="X", compoundingType="X", frequency="X", buildingMethod="X", calcJacobian=false, forwardCurveHandle="X", handle="X", returnJson=false)
+caplib::buildBondYieldCurve(referenceDate=2024.01.01, buildSettingsHandle="X", curveName="X", parCurveHandle="X", dayCount="X", compoundingType="X", frequency="X", buildingMethod="X", calcJacobian=false, forwardCurveHandle="X", handle="TF_buildBondYieldCurve_H", returnJson=false)

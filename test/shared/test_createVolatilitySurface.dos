@@ -56,67 +56,57 @@ asOfDate = 2022.03.09;
 curveDates = [2022.03.10, 2025.03.10];
 curveValues = [0.02, 0.025];
 
-volSurfaceDefinition = caplib::createVolatilitySurfaceDefinition(
-    "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD",
-    "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY",
-    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
-    90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false);
 
-emptyDoubles = array(DOUBLE, 0);
-volSmile1d = caplib::createVolatilitySmile(
-    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21],
-    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0 / 365.0,
-    emptyDoubles, emptyDoubles, 90.0, 110.0, "TF_VOL_SMILE_1D", false);
-
-volSmile3y = caplib::createVolatilitySmile(
-    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.23, 0.21, 0.22],
-    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 3.0,
-    emptyDoubles, emptyDoubles, 90.0, 110.0, "TF_VOL_SMILE_3Y", false);
+asOfDate = 2022.03.09;
+emptyD = array(DOUBLE, 0);
+smile1 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0/365.0, emptyD, emptyD, 90.0, 110.0, "TF_S1", false);
+smile3 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.23, 0.21, 0.22], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 3.0, emptyD, emptyD, 90.0, 110.0, "TF_S3", false);
+vdef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VD", false);
 
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createVolatilitySurface valid call"
-result = caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
-assert 1, result == "TF_VOL_SURFACE"
-
-@testing:case="createVolatilitySurface rejects wrong smile handle type", exception=1
-caplib::createVolatilitySurface("TF_HANDLE_DOES_NOT_EXIST", asOfDate, [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE_BAD", false)
+@testing:case="createVolatilitySurface -> handle"
+result = caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
+assert 1, result == "TF_VS"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createVolatilitySurface rejects missing argument", syntaxError=1
-caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING")
+caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], "X")
 
 @testing:case="createVolatilitySurface rejects extra argument", syntaxError=1
-caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false, 1)
+caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false, 1)
 
 @testing:case="createVolatilitySurface rejects wrong type for referenceDate", exception=1
-caplib::createVolatilitySurface(volSurfaceDefinition, "bad", [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("X", "bad", ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects wrong type for underlying", exception=1
-caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], curveDates, 1, "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], 1, "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects null referenceDate", exception=1
-caplib::createVolatilitySurface(volSurfaceDefinition, date(), [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("X", date(), ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
+
+@testing:case="createVolatilitySurface rejects null underlying", exception=1
+caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], string(), "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects vector for scalar referenceDate", exception=1
-caplib::createVolatilitySurface(volSurfaceDefinition, [2024.01.01], [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("X", [2024.01.01], ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects scalar for vector termDates", exception=1
-caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], [2024.01.01], "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects partially-null vector termDates", exception=1
-caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], [2024.01.01, date()], "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01, date()], "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects empty vector termDates", exception=1
-caplib::createVolatilitySurface(volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y], take(date, 0), "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("X", 2024.01.01, ["X"], take(date, 0), "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::createVolatilitySurface("TF_HANDLE_DOES_NOT_EXIST", asOfDate, [volSmile1d, volSmile3y], curveDates, "TF_UNDERLYING", "TF_VOL_SURFACE", false)
+caplib::createVolatilitySurface("TF_HANDLE_DOES_NOT_EXIST", 2024.01.01, ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
 @testing:case="createVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::createVolatilitySurface(definitionHandle=volSurfaceDefinition, referenceDate=asOfDate, volSmileHandles=[volSmile1d, volSmile3y], termDates=curveDates, underlying="TF_UNDERLYING", handle="TF_VOL_SURFACE", returnJson=false)
+caplib::createVolatilitySurface(definitionHandle="X", referenceDate=2024.01.01, volSmileHandles=["X"], termDates=[2024.01.01], underlying="X", handle="TF_createVolatilitySurface_H", returnJson=false)

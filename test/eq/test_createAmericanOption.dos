@@ -52,12 +52,10 @@ def isMatrix(value) {
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
-// ============================================================================
-
 currency = "CNY";
-underlying = "CU.SHFE";
+underlying = "50ETF.SSE";
 asOfDate = 2020.02.21;
-underlyingPrice = 66380.00;
+underlyingPrice = 2.958;
 
 irDates = [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24,
            2020.08.24, 2020.11.24, 2021.02.24, 2022.02.24, 2023.02.24,
@@ -70,108 +68,63 @@ irRates = [0.0135486283791684, 0.0197762034605164, 0.0197686053073393,
 irCurve = caplib::createIrYieldCurve(
     asOfDate, irDates, irRates,
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false);
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "IR_CURVE", false);
 
-fwdDates = [2020.02.22, 2030.02.24];
-fwdValues = [0.0, 0.0];
-fwdCurve = caplib::createDividendCurve(
-    asOfDate, fwdDates, fwdValues, asOfDate,
+divDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23];
+divValues = [0.05361055758784821, 0.01338941242891319,
+             -0.001765240983827533, -0.002594662370949712];
+divCurve = caplib::createDividendCurve(
+    asOfDate, divDates, divValues, asOfDate,
     "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false);
+    "CONTINUOUS_COMPOUNDING", "DIVIDEND_CURVE_50ETF", "DIV_CURVE", false);
+
+quoteTermDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23];
+quoteStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]
+];
+quotePrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]
+];
+quotePayoffTypes = [
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"],
+    ["PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "PUT", "CALL", "CALL", "CALL", "CALL", "CALL"]
+];
 
 modelParams = [0.0];
 bsmModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false);
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MODEL", false);
 bsmAnalyticalSettings = caplib::createPricingSettings(
-    currency, "ANALYTICAL", 0, 0, bsmModel, "", "", "CM_BSM_ANALYTICAL", false);
-
-pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
-    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "CM_PDE_SETTINGS", false);
+    "CNY", "ANALYTICAL", 0, 0, bsmModel, "", "", "BSM_ANALYTICAL", false);
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "PDE_SETTINGS", false);
 bsmPdeModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_PDE_MODEL", false);
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_PDE_MODEL", false);
 bsmPdeSettings = caplib::createPricingSettings(
-    currency, "PDE", 0, 0, bsmPdeModel, pdeSettings, "", "CM_BSM_PDE", false);
-
-mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false);
+    "CNY", "PDE", 0, 0, bsmPdeModel, pdeSettings, "", "BSM_PDE", false);
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "MC_SETTINGS", false);
 bsmMcModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false);
+    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MC_MODEL", false);
 bsmMcSettings = caplib::createPricingSettings(
-    currency, "MONTE_CARLO", 0, 0, bsmMcModel, "", mcSettings, "CM_BSM_MC", false);
+    "CNY", "MONTE_CARLO", 0, 0, bsmMcModel, "", mcSettings, "BSM_MC", false);
 
-cmRisk = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", true);
-cmNoRisk = caplib::createCmRiskSettings(0, 0, 0, 0, "CM_NO_RISK", true);
+eqRisk = caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true);
+eqNoRisk = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_NO_RISK", true);
 
-priceScn = caplib::createScnSettings(-0.20, 0.20, 11, 1, "CM_PRICE_SCN", false);
-volScn = caplib::createScnSettings(-0.05, 0.05, 12, 0, "CM_VOL_SCN", false);
-scnAnalysis = caplib::createScnAnalysisSettings(
-    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 0, "CM_SCN_ANALYSIS", false);
-
-termDates = [2020.03.12, 2020.04.13, 2020.05.12, 2020.06.12,
-             2020.07.10, 2020.08.12, 2020.09.11];
-
-// The Python helper iterates over prices and ignores any extra payoff/strike
-// entries. Keep row lengths equal here because the native plugin validates
-// quote, strike, and payoff matrix shapes.
-payoffTypes = [
-    take("PUT", 13) join take("CALL", 14),
-    take("PUT", 13) join take("CALL", 14),
-    take("PUT", 13) join take("CALL", 14),
-    take("PUT", 11) join take("CALL", 15),
-    take("PUT", 10) join take("CALL", 11),
-    take("PUT", 11) join take("CALL", 14),
-    take("PUT", 10) join take("CALL", 10)
-];
-strikes = [
-    [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000,
-     63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000,
-     72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
-    [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000,
-     63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000,
-     72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
-    [54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000,
-     63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000,
-     72000, 73000, 74000, 75000, 76000, 77000, 78000, 79000, 80000],
-    [56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000,
-     65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000,
-     74000, 75000, 76000, 77000, 78000, 79000, 80000, 82000],
-    [57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000,
-     66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000,
-     75000, 76000, 77000],
-    [56000, 57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000,
-     65000, 66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000,
-     74000, 75000, 76000, 77000, 78000, 79000, 80000],
-    [57000, 58000, 59000, 60000, 61000, 62000, 63000, 64000, 65000,
-     66000, 67000, 68000, 69000, 70000, 71000, 72000, 73000, 74000,
-     75000, 76000]
-];
-prices = [
-    [14.00, 16.00, 20.00, 26.00, 38.00, 64.00, 86.00, 130.00, 198.00,
-     282.00, 400.00, 600.00, 878.00, 1070.00, 660.00, 394.00, 236.00,
-     142.00, 90.00, 52.00, 32.00, 22.00, 18.00, 14.00, 10.00, 6.00, 6.00],
-    [126.00, 126.00, 160.00, 200.00, 250.00, 312.00, 396.00, 478.00,
-     600.00, 776.00, 974.00, 1230.00, 1602.00, 1736.00, 1276.00, 910.00,
-     642.00, 460.00, 312.00, 212.00, 150.00, 110.00, 80.00, 58.00,
-     40.00, 28.00, 38.00],
-    [172.00, 192.00, 236.00, 292.00, 426.00, 478.00, 574.00, 702.00,
-     892.00, 1206.00, 1368.00, 1632.00, 2140.00, 2218.00, 1762.00,
-     1350.00, 1026.00, 762.00, 562.00, 404.00, 294.00, 210.00, 128.00,
-     102.00, 58.00, 56.00, 106.00],
-    [414.00, 486.00, 584.00, 700.00, 958.00, 1186.00, 1308.00, 1634.00,
-     2008.00, 2436.00, 2914.00, 2814.00, 2396.00, 2026.00, 1698.00,
-     1412.00, 758.00, 964.00, 446.00, 346.00, 256.00, 188.00, 138.00,
-     102.00, 82.00, 44.00],
-    [676.00, 798.00, 936.00, 1064.00, 1354.00, 1780.00, 2138.00,
-     2538.00, 2978.00, 3474.00, 3324.00, 2902.00, 2516.00, 1544.00,
-     1256.00, 984.00, 806.00, 622.00, 488.00, 382.00, 282.00],
-    [678.00, 802.00, 906.00, 1058.00, 1246.00, 1456.00, 2066.00,
-     2446.00, 2862.00, 3314.00, 3814.00, 3590.00, 3168.00, 2784.00,
-     2446.00, 2136.00, 1852.00, 1612.00, 1390.00, 630.00, 1026.00,
-     448.00, 338.00, 278.00, 196.00],
-    [1006.00, 1146.00, 1312.00, 1558.00, 1790.00, 2118.00, 2688.00,
-     3118.00, 3578.00, 4078.00, 3828.00, 3408.00, 3024.00, 2680.00,
-     2358.00, 2078.00, 1822.00, 1586.00, 1388.00, 666.00]
-];
-underlyingPrices = [66810.00, 66750.00, 66620.00, 66620.00, 66490.00, 66460.00, 66380.00];
+quantoIr = caplib::createIrYieldCurve(
+    asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
+quantoFxVol = caplib::createVolatilityCurve(
+    asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    underlying, "QUANTO_FX_VOL", false);
 
 dailyObsDates = 2020.02.22..2020.08.19;
 dailyObsValues = take(0.0, size(dailyObsDates));
@@ -181,53 +134,32 @@ couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
 couponObsValues = take(0.0, size(couponDates));
 couponObsWeights = take(1.0, size(couponDates));
 
-// Explicit zero-rate quanto curves are supplied even with zero correlation.
-quantoDates = [2020.02.22, 2030.02.24];
-quantoValues = [0.0, 0.0];
-quantoIr = caplib::createIrYieldCurve(
-    asOfDate, quantoDates, quantoValues,
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
-quantoFxVol = caplib::createVolatilityCurve(
-    asOfDate, quantoDates, quantoValues,
-    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    underlying, "QUANTO_FX_VOL", false);
-
 volSurfDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
     "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
-    -1.0e-5, 1.0e-5, "CM_VOL_SURF_DEF", true)
-assert 1, isHandleJson(volSurfDefinition, "CM_VOL_SURF_DEF")
-
-volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD_SETTINGS", true)
-assert 1, isHandleJson(volSurfBuildSettings, "CM_VOL_BUILD_SETTINGS")
-
-cmOptionQuotes = caplib::createCmOptionQuoteMatrix(
-    "AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
-    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", true)
-assert 1, isHandleJson(cmOptionQuotes, "CM_OPTION_QUOTES") &&
-    hasJsonField(cmOptionQuotes[1], "quote_smiles")
-
-volSurface = caplib::buildCmVolatilitySurface(
-    asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0],
-    underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "CM_VOL_SURF", true)
-assert 1, isHandleJson(volSurface, "CM_VOL_SURF") &&
-    hasJsonField(volSurface[1], "vol_smiles")
-
-mktData = caplib::createCmMktDataSet(
+    -1.0e-5, 1.0e-5, "VOL_SURF_DEF", true)
+volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "VOL_SURF_BUILD_SETTINGS", true)
+eqOptionQuotes = caplib::createEqOptionQuoteMatrix(
+    "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes,
+    underlying, "EQ_OPTION_QUOTES", true)
+volSurface = caplib::buildEqVolatilitySurface(
+    asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0],
+    [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0],
+    bsmAnalyticalSettings, "VOL_SURF", true)
+mktData = caplib::createEqMktDataSet(
     asOfDate, underlying, underlyingPrice,
-    irCurve, fwdCurve, volSurface[0],
-    quantoIr, quantoFxVol, 0.0, "CM_MKT", true)
-assert 1, isHandleJson(mktData, "CM_MKT")
+    irCurve, divCurve, volSurface[0],
+    quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createAmericanOption (CM) -> handle"
-inst = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_AM", false);
-assert 1, inst == "TF_CM_AM"
+@testing:case="createAmericanOption -> handle"
+result = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM", false)
+assert 1, result == "f_AM"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -237,25 +169,25 @@ assert 1, inst == "TF_CM_AM"
 caplib::createAmericanOption("X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X")
 
 @testing:case="createAmericanOption rejects extra argument", syntaxError=1
-caplib::createAmericanOption("X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false, 1)
+caplib::createAmericanOption("X", 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createAmericanOption_H", false, 1)
 
 @testing:case="createAmericanOption rejects wrong type for payoffType", exception=1
-caplib::createAmericanOption(1, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createAmericanOption(1, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createAmericanOption_H", false)
 
 @testing:case="createAmericanOption rejects wrong type for strike", exception=1
-caplib::createAmericanOption("X", "bad", 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createAmericanOption("X", "bad", 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createAmericanOption_H", false)
 
 @testing:case="createAmericanOption rejects wrong type for expiry", exception=1
-caplib::createAmericanOption("X", 0.02, "bad", 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createAmericanOption("X", 0.02, "bad", 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createAmericanOption_H", false)
 
 @testing:case="createAmericanOption rejects null payoffType", exception=1
-caplib::createAmericanOption(string(), 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createAmericanOption(string(), 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createAmericanOption_H", false)
 
 @testing:case="createAmericanOption rejects null strike", exception=1
-caplib::createAmericanOption("X", double(), 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createAmericanOption("X", double(), 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createAmericanOption_H", false)
 
 @testing:case="createAmericanOption rejects vector for scalar payoffType", exception=1
-caplib::createAmericanOption(["X"], 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", false)
+caplib::createAmericanOption(["X"], 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createAmericanOption_H", false)
 
 @testing:case="createAmericanOption rejects keyword arguments", syntaxError=1
-caplib::createAmericanOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="X", returnJson=false)
+caplib::createAmericanOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createAmericanOption_H", returnJson=false)

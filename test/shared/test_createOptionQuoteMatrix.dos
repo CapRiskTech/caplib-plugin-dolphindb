@@ -56,55 +56,57 @@ asOfDate = 2022.03.09;
 curveDates = [2022.03.10, 2025.03.10];
 curveValues = [0.02, 0.025];
 
+
+asOfDate = 2022.03.09;
+quoteTermDates = [2022.06.09, 2022.09.09];
+quotePayoffTypes = matrix(["CALL", "PUT"], ["CALL", "PUT"]);
+quoteValues = matrix([10.5, 8.5], [11.0, 9.0]);
+quoteStrikes = matrix([95.0, 95.0], [105.0, 105.0]);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createOptionQuoteMatrix valid call"
-result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false)
-assert 1, result == "TF_OPTION_QUOTES"
-
-@testing:case="createOptionQuoteMatrix accepts flat vector form"
-flat = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], ["CALL", "PUT"], [10.5, 8.5], [95.0, 105.0], "TF_UNDERLYING", "TF_OQ_FLAT", false);
-assert 1, flat == "TF_OQ_FLAT"
-
-@testing:case="createOptionQuoteMatrix accepts nested vector form"
-nested = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], (["CALL"], ["PUT"]), ([10.5], [11.0]), ([95.0], [105.0]), "TF_UNDERLYING", "TF_OQ_NESTED", false);
-assert 1, nested == "TF_OQ_NESTED"
-
-@testing:case="createOptionQuoteMatrix rejects partially-null values matrix", exception=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, double()], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OQ_BAD", true)
-
-@testing:case="createOptionQuoteMatrix rejects zero-row values matrix", exception=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix(DOUBLE, 0, 2), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OQ_BAD", true)
+@testing:case="createOptionQuoteMatrix -> handle"
+result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+assert 1, result == "TF_OQ"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createOptionQuoteMatrix rejects missing argument", syntaxError=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING")
+caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X")
 
 @testing:case="createOptionQuoteMatrix rejects extra argument", syntaxError=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false, 1)
+caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false, 1)
 
 @testing:case="createOptionQuoteMatrix rejects wrong type for quoteValueType", exception=1
-caplib::createOptionQuoteMatrix(1, "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false)
+caplib::createOptionQuoteMatrix(1, "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
 @testing:case="createOptionQuoteMatrix rejects wrong type for quoteTermType", exception=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", 1, "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false)
+caplib::createOptionQuoteMatrix("X", 1, "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
 @testing:case="createOptionQuoteMatrix rejects wrong type for quoteStrikeType", exception=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", 1, "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false)
+caplib::createOptionQuoteMatrix("X", "X", 1, "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
 @testing:case="createOptionQuoteMatrix rejects null quoteValueType", exception=1
-caplib::createOptionQuoteMatrix(string(), "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false)
+caplib::createOptionQuoteMatrix(string(), "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
 @testing:case="createOptionQuoteMatrix rejects null quoteTermType", exception=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", string(), "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false)
+caplib::createOptionQuoteMatrix("X", string(), "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
 @testing:case="createOptionQuoteMatrix rejects vector for scalar quoteValueType", exception=1
-caplib::createOptionQuoteMatrix(["X"], "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09], matrix(["CALL", "PUT"], ["CALL", "PUT"]), matrix([10.5, 8.5], [11.0, 9.0]), matrix([95.0, 95.0], [105.0, 105.0]), "TF_UNDERLYING", "TF_OPTION_QUOTES", false)
+caplib::createOptionQuoteMatrix(["X"], "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
+
+@testing:case="createOptionQuoteMatrix rejects scalar for vector terms", exception=1
+caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
+
+@testing:case="createOptionQuoteMatrix rejects partially-null vector terms", exception=1
+caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X", string()], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
+
+@testing:case="createOptionQuoteMatrix rejects empty vector terms", exception=1
+caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, take(string, 0), [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
 @testing:case="createOptionQuoteMatrix rejects keyword arguments", syntaxError=1
-caplib::createOptionQuoteMatrix(quoteValueType="OQVT_PRICE", quoteTermType="OQTT_ABOSULTE_TERM", quoteStrikeType="OQST_ABOSULTE_STRIKE", exerciseType="EUROPEAN", optionUnderlyingType="SPOT_UNDERLYING_TYPE", asOfDate=asOfDate, terms=[], termDates=[2022.06.09, 2022.09.09], payoffTypes=matrix(["CALL", "PUT"], ["CALL", "PUT"]), values=matrix([10.5, 8.5], [11.0, 9.0]), strikes=matrix([95.0, 95.0], [105.0, 105.0]), assetName="TF_UNDERLYING", handle="TF_OPTION_QUOTES", returnJson=false)
+caplib::createOptionQuoteMatrix(quoteValueType="X", quoteTermType="X", quoteStrikeType="X", exerciseType="X", optionUnderlyingType="X", asOfDate=2024.01.01, terms=["X"], termDates=[2024.01.01], payoffTypes=matrix([0.2]), values=matrix([0.2]), strikes=matrix([0.2]), assetName="X", handle="TF_createOptionQuoteMatrix_H", returnJson=false)

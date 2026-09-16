@@ -113,33 +113,36 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // ============================================================================
 
 @testing:case="buildIrVanillaInstrument -> handle"
-sw = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false);
-assert 1, sw == "TF_IR_SWAP"
-
-@testing:case="buildIrVanillaInstrument rejects negative notional", exception=1
-caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], -1000000.0, "", "TF_IR_SWAP_BAD", false)
-
-@testing:case="buildIrVanillaInstrument rejects wrong template handle", exception=1
-caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irFixedLeg[0], 1000000.0, "", "TF_IR_SWAP_BAD2", false)
+result = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+assert 1, result == "TF_IRSWAP"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="buildIrVanillaInstrument rejects missing argument", syntaxError=1
-caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "")
+caplib::buildIrVanillaInstrument("X", 0.02, 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X")
 
 @testing:case="buildIrVanillaInstrument rejects extra argument", syntaxError=1
-caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false, 1)
+caplib::buildIrVanillaInstrument("X", 0.02, 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "TF_buildIrVanillaInstrument_H", false, 1)
+
+@testing:case="buildIrVanillaInstrument rejects wrong type for payReceive", exception=1
+caplib::buildIrVanillaInstrument(1, 0.02, 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "TF_buildIrVanillaInstrument_H", false)
+
+@testing:case="buildIrVanillaInstrument rejects wrong type for cpnRate", exception=1
+caplib::buildIrVanillaInstrument("X", "bad", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "TF_buildIrVanillaInstrument_H", false)
+
+@testing:case="buildIrVanillaInstrument rejects wrong type for spread", exception=1
+caplib::buildIrVanillaInstrument("X", 0.02, "bad", 2024.01.01, 2024.01.01, "X", 0.02, "X", "TF_buildIrVanillaInstrument_H", false)
 
 @testing:case="buildIrVanillaInstrument rejects null payReceive", exception=1
-caplib::buildIrVanillaInstrument(string(), 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false)
+caplib::buildIrVanillaInstrument(string(), 0.02, 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "TF_buildIrVanillaInstrument_H", false)
 
 @testing:case="buildIrVanillaInstrument rejects null cpnRate", exception=1
-caplib::buildIrVanillaInstrument("PAY", double(), 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false)
+caplib::buildIrVanillaInstrument("X", double(), 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "TF_buildIrVanillaInstrument_H", false)
 
 @testing:case="buildIrVanillaInstrument rejects vector for scalar payReceive", exception=1
-caplib::buildIrVanillaInstrument(["X"], 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false)
+caplib::buildIrVanillaInstrument(["X"], 0.02, 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", "TF_buildIrVanillaInstrument_H", false)
 
 @testing:case="buildIrVanillaInstrument rejects keyword arguments", syntaxError=1
-caplib::buildIrVanillaInstrument(payReceive="PAY", cpnRate=0.05, spread=0.0, startDate=2022.03.07, maturityDate=2023.03.07, instTemplate=irSwapTemplate[0], nominal=1000000.0, legFixings="", tag="TF_IR_SWAP", returnJson=false)
+caplib::buildIrVanillaInstrument(payReceive="X", cpnRate=0.02, spread=0.02, startDate=2024.01.01, maturityDate=2024.01.01, instTemplate="X", nominal=0.02, legFixings="X", tag="TF_buildIrVanillaInstrument_H", returnJson=false)

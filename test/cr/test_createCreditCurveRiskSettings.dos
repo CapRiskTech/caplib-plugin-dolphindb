@@ -52,34 +52,34 @@ def isMatrix(value) {
 // Tests
 // ============================================================================
 
-@testing:case="createCreditCurveRiskSettings valid call"
-result = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CR_RISK", false)
-assert 1, result == "TF_CR_RISK"
-
-@testing:case="createCreditCurveRiskSettings rejects STRING method", exception=1
-caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, "1", 1, 1.0e-4, 0, "TF_CR_RISK_BAD")
+@testing:case="createCreditCurveRiskSettings -> handle"
+result = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", false)
+assert 1, result == "TF_CCR"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createCreditCurveRiskSettings rejects missing argument", syntaxError=1
-caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0)
+caplib::createCreditCurveRiskSettings(false, false, 0.02, 1, 1, 0.02, 1)
 
 @testing:case="createCreditCurveRiskSettings rejects extra argument", syntaxError=1
-caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CR_RISK", false, 1)
+caplib::createCreditCurveRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "TF_createCreditCurveRiskSettings_H", false, 1)
 
 @testing:case="createCreditCurveRiskSettings rejects wrong type for shift", exception=1
-caplib::createCreditCurveRiskSettings(1, 1, "bad", 0, 1, 1.0e-4, 0, "TF_CR_RISK", false)
+caplib::createCreditCurveRiskSettings(false, false, "bad", 1, 1, 0.02, 1, "TF_createCreditCurveRiskSettings_H", false)
 
 @testing:case="createCreditCurveRiskSettings rejects wrong type for method", exception=1
-caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, "1", 1, 1.0e-4, 0, "TF_CR_RISK", false)
+caplib::createCreditCurveRiskSettings(false, false, 0.02, "1", 1, 0.02, 1, "TF_createCreditCurveRiskSettings_H", false)
 
-@testing:case="createCreditCurveRiskSettings rejects wrong type for scaling", exception=1
-caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, "bad", 0, "TF_CR_RISK", false)
+@testing:case="createCreditCurveRiskSettings rejects wrong type for granularity", exception=1
+caplib::createCreditCurveRiskSettings(false, false, 0.02, 1, "1", 0.02, 1, "TF_createCreditCurveRiskSettings_H", false)
 
 @testing:case="createCreditCurveRiskSettings rejects null method", exception=1
-caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, int(), 1, 1.0e-4, 0, "TF_CR_RISK", false)
+caplib::createCreditCurveRiskSettings(false, false, 0.02, int(), 1, 0.02, 1, "TF_createCreditCurveRiskSettings_H", false)
+
+@testing:case="createCreditCurveRiskSettings rejects null granularity", exception=1
+caplib::createCreditCurveRiskSettings(false, false, 0.02, 1, int(), 0.02, 1, "TF_createCreditCurveRiskSettings_H", false)
 
 @testing:case="createCreditCurveRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createCreditCurveRiskSettings(delta=1, gamma=1, shift=1.0e-4, method=0, granularity=1, scaling=1.0e-4, threading=0, handle="TF_CR_RISK", returnJson=false)
+caplib::createCreditCurveRiskSettings(delta=false, gamma=false, shift=0.02, method=1, granularity=1, scaling=0.02, threading=1, handle="TF_createCreditCurveRiskSettings_H", returnJson=false)

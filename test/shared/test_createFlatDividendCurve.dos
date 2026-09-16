@@ -61,36 +61,36 @@ curveValues = [0.02, 0.025];
 // ============================================================================
 
 @testing:case="createFlatDividendCurve valid call"
-result = caplib::createFlatDividendCurve(asOfDate, 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
-assert 1, result == "TF_FLAT_DIVIDEND_CURVE"
+result = caplib::createFlatDividendCurve(2024.01.01, 0.02, "X", "TF_createFlatDividendCurve_H", false)
+assert 1, result == "TF_createFlatDividendCurve_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createFlatDividendCurve rejects missing argument", syntaxError=1
-caplib::createFlatDividendCurve(asOfDate, 0.01, "TF_FLAT_DIVIDEND_CURVE")
+caplib::createFlatDividendCurve(2024.01.01, 0.02, "X")
 
 @testing:case="createFlatDividendCurve rejects extra argument", syntaxError=1
-caplib::createFlatDividendCurve(asOfDate, 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false, 1)
+caplib::createFlatDividendCurve(2024.01.01, 0.02, "X", "TF_createFlatDividendCurve_H", false, 1)
 
 @testing:case="createFlatDividendCurve rejects wrong type for referenceDate", exception=1
-caplib::createFlatDividendCurve("bad", 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+caplib::createFlatDividendCurve("bad", 0.02, "X", "TF_createFlatDividendCurve_H", false)
 
 @testing:case="createFlatDividendCurve rejects wrong type for dividend", exception=1
-caplib::createFlatDividendCurve(asOfDate, "bad", "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+caplib::createFlatDividendCurve(2024.01.01, "bad", "X", "TF_createFlatDividendCurve_H", false)
 
 @testing:case="createFlatDividendCurve rejects wrong type for curveName", exception=1
-caplib::createFlatDividendCurve(asOfDate, 0.01, 1, "TF_FLAT_DIVIDEND_CURVE", false)
+caplib::createFlatDividendCurve(2024.01.01, 0.02, 1, "TF_createFlatDividendCurve_H", false)
 
 @testing:case="createFlatDividendCurve rejects null referenceDate", exception=1
-caplib::createFlatDividendCurve(date(), 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+caplib::createFlatDividendCurve(date(), 0.02, "X", "TF_createFlatDividendCurve_H", false)
 
 @testing:case="createFlatDividendCurve rejects null dividend", exception=1
-caplib::createFlatDividendCurve(asOfDate, double(), "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+caplib::createFlatDividendCurve(2024.01.01, double(), "X", "TF_createFlatDividendCurve_H", false)
 
 @testing:case="createFlatDividendCurve rejects vector for scalar referenceDate", exception=1
-caplib::createFlatDividendCurve([2024.01.01], 0.01, "TF_FLAT_DIVIDEND_CURVE", "TF_FLAT_DIVIDEND_CURVE", false)
+caplib::createFlatDividendCurve([2024.01.01], 0.02, "X", "TF_createFlatDividendCurve_H", false)
 
 @testing:case="createFlatDividendCurve rejects keyword arguments", syntaxError=1
-caplib::createFlatDividendCurve(referenceDate=asOfDate, dividend=0.01, curveName="TF_FLAT_DIVIDEND_CURVE", handle="TF_FLAT_DIVIDEND_CURVE", returnJson=false)
+caplib::createFlatDividendCurve(referenceDate=2024.01.01, dividend=0.02, curveName="X", handle="TF_createFlatDividendCurve_H", returnJson=false)

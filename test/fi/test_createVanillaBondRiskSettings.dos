@@ -218,28 +218,37 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 // Tests
 // ============================================================================
 
-@testing:case="createVanillaBondRiskSettings -> [handle, json]"
-r = caplib::createVanillaBondRiskSettings("", "", 1, "TF_FI_VB_RISK_NAME", "TF_FI_VB_RISK", true);
-assert 1, isHandleJson(r, "TF_FI_VB_RISK")
+@testing:case="createVanillaBondRiskSettings -> handle"
+result = caplib::createVanillaBondRiskSettings("", "", 1, "TF_VBR", "TF_VBR", false)
+assert 1, result == "TF_VBR"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createVanillaBondRiskSettings rejects missing argument", syntaxError=1
-caplib::createVanillaBondRiskSettings("X", "X", false, "X")
+caplib::createVanillaBondRiskSettings("X", "X", false, "TF_createVanillaBondRiskSettings_H")
 
 @testing:case="createVanillaBondRiskSettings rejects extra argument", syntaxError=1
-caplib::createVanillaBondRiskSettings("X", "X", false, "X", "X", false, 1)
+caplib::createVanillaBondRiskSettings("X", "X", false, "TF_createVanillaBondRiskSettings_H", "TF_createVanillaBondRiskSettings_H", false, 1)
+
+@testing:case="createVanillaBondRiskSettings rejects wrong type for dv01", exception=1
+caplib::createVanillaBondRiskSettings(1, "X", false, "TF_createVanillaBondRiskSettings_H", "TF_createVanillaBondRiskSettings_H", false)
+
+@testing:case="createVanillaBondRiskSettings rejects wrong type for cs01", exception=1
+caplib::createVanillaBondRiskSettings("X", 1, false, "TF_createVanillaBondRiskSettings_H", "TF_createVanillaBondRiskSettings_H", false)
+
+@testing:case="createVanillaBondRiskSettings rejects wrong type for name", exception=1
+caplib::createVanillaBondRiskSettings("X", "X", false, 1, "TF_createVanillaBondRiskSettings_H", false)
 
 @testing:case="createVanillaBondRiskSettings rejects null dv01", exception=1
-caplib::createVanillaBondRiskSettings(string(), "X", false, "X", "X", false)
+caplib::createVanillaBondRiskSettings(string(), "X", false, "TF_createVanillaBondRiskSettings_H", "TF_createVanillaBondRiskSettings_H", false)
 
 @testing:case="createVanillaBondRiskSettings rejects null cs01", exception=1
-caplib::createVanillaBondRiskSettings("X", string(), false, "X", "X", false)
+caplib::createVanillaBondRiskSettings("X", string(), false, "TF_createVanillaBondRiskSettings_H", "TF_createVanillaBondRiskSettings_H", false)
 
 @testing:case="createVanillaBondRiskSettings rejects vector for scalar dv01", exception=1
-caplib::createVanillaBondRiskSettings(["X"], "X", false, "X", "X", false)
+caplib::createVanillaBondRiskSettings(["X"], "X", false, "TF_createVanillaBondRiskSettings_H", "TF_createVanillaBondRiskSettings_H", false)
 
 @testing:case="createVanillaBondRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createVanillaBondRiskSettings(dv01="X", cs01="X", theta=false, name="X", tag="X", returnJson=false)
+caplib::createVanillaBondRiskSettings(dv01="X", cs01="X", theta=false, name="TF_createVanillaBondRiskSettings_H", tag="TF_createVanillaBondRiskSettings_H", returnJson=false)

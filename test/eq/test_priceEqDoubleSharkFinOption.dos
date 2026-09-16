@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h10", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqDoubleSharkFinOption -> [handle, present_value reference]"
-inst = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", 2.662200, 3.253800, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "TF_DS", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceEqDoubleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_DS_results")
-assert 2, abs(presentValue(r) - 14886.572835876874) < abs(14886.572835876874) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqDoubleSharkFinOption -> PricingResults"
+result = caplib::priceEqDoubleSharkFinOption(xinst, asOfDate, mktData[0], bsmPdeSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h10_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

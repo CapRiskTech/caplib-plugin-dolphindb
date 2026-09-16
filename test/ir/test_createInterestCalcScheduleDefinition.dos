@@ -49,32 +49,34 @@ def isMatrix(value) {
 }
 
 // ============================================================================
-// Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
-
-calendarCreated = caplib::createCalendar("CAL_CFETS");
-assert 1, calendarCreated;
-
-// ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createInterestCalcScheduleDefinition -> [handle, json]"
-r = caplib::createInterestCalcScheduleDefinition("CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "INVALID_DATE_ROLL_CONVENTION", "TF_SCHED_CALC", true);
-assert 1, isHandleJson(r, "TF_SCHED_CALC")
+@testing:case="createInterestCalcScheduleDefinition valid call"
+result = caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+assert 1, result == "TF_createInterestCalcScheduleDefinition_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createInterestCalcScheduleDefinition rejects missing argument", syntaxError=1
-caplib::createInterestCalcScheduleDefinition("CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "INVALID_DATE_ROLL_CONVENTION")
+caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", "X")
 
 @testing:case="createInterestCalcScheduleDefinition rejects extra argument", syntaxError=1
-caplib::createInterestCalcScheduleDefinition("CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "INVALID_DATE_ROLL_CONVENTION", "TF_SCHED_CALC", false, 1)
+caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false, 1)
+
+@testing:case="createInterestCalcScheduleDefinition rejects wrong type for calendars", exception=1
+caplib::createInterestCalcScheduleDefinition(1, "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+
+@testing:case="createInterestCalcScheduleDefinition rejects wrong type for frequency", exception=1
+caplib::createInterestCalcScheduleDefinition("X", 1, "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+
+@testing:case="createInterestCalcScheduleDefinition rejects wrong type for interestDayConvention", exception=1
+caplib::createInterestCalcScheduleDefinition("X", "X", 1, "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
 
 @testing:case="createInterestCalcScheduleDefinition rejects vector for scalar calendars", exception=1
-caplib::createInterestCalcScheduleDefinition(["X"], "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", "INVALID_DATE_ROLL_CONVENTION", "TF_SCHED_CALC", false)
+caplib::createInterestCalcScheduleDefinition(["X"], "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
 
 @testing:case="createInterestCalcScheduleDefinition rejects keyword arguments", syntaxError=1
-caplib::createInterestCalcScheduleDefinition(calendars="CAL_CFETS", frequency="QUARTERLY", interestDayConvention="MODIFIED_FOLLOWING", stubPolicy="INITIAL", brokenPeriodType="LONG", dateRollConvention="INVALID_DATE_ROLL_CONVENTION", tag="TF_SCHED_CALC", returnJson=false)
+caplib::createInterestCalcScheduleDefinition(calendars="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", dateRollConvention="X", tag="TF_createInterestCalcScheduleDefinition_H", returnJson=false)

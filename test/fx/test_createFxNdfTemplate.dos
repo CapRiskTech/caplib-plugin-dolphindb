@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,9 +262,9 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxNdfTemplate -> [handle, json]"
-r = caplib::createFxNdfTemplate("TF_FX_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK", "CAL_GBLO"], "USD", true);
-assert 1, isHandleJson(r, "TF_FX_NDF_TPL") && hasJsonField(r[1], "settlement_currency")
+@testing:case="createFxNdfTemplate -> handle"
+result = caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", false)
+assert 1, result == "TF_NDFTPL"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -279,6 +275,15 @@ caplib::createFxNdfTemplate("X", "X", "X", "X", "X", "X")
 
 @testing:case="createFxNdfTemplate rejects extra argument", syntaxError=1
 caplib::createFxNdfTemplate("X", "X", "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="createFxNdfTemplate rejects wrong type for instName", exception=1
+caplib::createFxNdfTemplate(1, "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxNdfTemplate rejects wrong type for fixingOffset", exception=1
+caplib::createFxNdfTemplate("X", 1, "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxNdfTemplate rejects wrong type for currencyPair", exception=1
+caplib::createFxNdfTemplate("X", "X", 1, "X", "X", "X", "X", false)
 
 @testing:case="createFxNdfTemplate rejects null instName", exception=1
 caplib::createFxNdfTemplate(string(), "X", "X", "X", "X", "X", "X", false)

@@ -32,8 +32,8 @@ CAPLIB_PLUGIN_TAG="${CAPLIB_PLUGIN_TAG:-0.0.11}"
 CAPLIB_PLUGIN_REPO="CapRiskTech/caplib-plugin-dolphindb"
 CAPLIB_PLUGIN_ASSET="caplib-plugin-dolphindb-${CAPLIB_PLUGIN_TAG}.tar.gz"
 LICENSE_ASSET="dqlibc.lic"
-# Keep in sync with CAPLIB_PLUGIN_TAG (the 0.0.11 descriptor exports 202).
-EXPECTED_PLUGIN_FUNCTIONS=202
+# Keep in sync with CAPLIB_PLUGIN_TAG (the 0.0.11 descriptor exports 180).
+EXPECTED_PLUGIN_FUNCTIONS=180
 REQUIRED_PLUGIN_FUNCTIONS=(
     "createPricingModelSettings"
     "createVolatilityCurve"

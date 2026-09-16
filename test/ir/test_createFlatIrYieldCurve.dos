@@ -52,51 +52,97 @@ def isMatrix(value) {
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
-asOfDate = 2022.03.09;
-curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
+// Precondition: register the CNY calendar used by indices, legs and schedules
+calendarCreated = caplib::createCalendar("CAL_CFETS");
+assert 1, calendarCreated;
+
+irAsOfDate = 2022.03.09;
+irCurrency = "CNY";
+irCurveName = "CNY_SHIBOR_3M";
+irCurve = caplib::createIrYieldCurve(
+    irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", irCurrency, irCurveName, "TF_IR_CHAIN_CURVE", false);
+
+iborIndex = caplib::createIborIndex(
+    irCurveName, "3M", irCurrency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
+
+irFixedLeg = caplib::createFixedLegDefinition(
+    irCurrency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true);
+
+irFloatingLeg = caplib::createFloatingLegDefinition(
+    irCurrency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
+
+irSwapTemplate = caplib::createIrVanillaSwapTemplate(
+    irCurveName, 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", true);
+
+irSwap = caplib::buildIrVanillaInstrument(
+    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+    irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false);
+
+irPricingModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_IR_MODEL", false);
+irPricingSettings = caplib::createPricingSettings(
+    irCurrency, "ANALYTICAL", 1, 1, irPricingModel, "", "", "TF_IR_PRICING", false);
+
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false);
+irPriceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "TF_IR_PRICE_RISK", false);
+irThetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_IR_THETA_RISK", false);
+irRisk = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
+irXccyRisk = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
+
+irMktData = caplib::createIrMktDataSet(
+    irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
+
+irSwapPricingResult = caplib::priceIrVanillaInstrument(
+    irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
 
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createFlatIrYieldCurve valid call"
-result = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "TF_FLAT_IR_CURVE", false)
-assert 1, result == "TF_FLAT_IR_CURVE"
-
-@testing:case="createFlatIrYieldCurve omitted returnJson uses default"
-assert 1, caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "TF_FLAT_IR_OMIT") == "TF_FLAT_IR_OMIT"
-
-@testing:case="createFlatIrYieldCurve null returnJson uses default"
-assert 1, caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "TF_FLAT_IR_NULL", bool()) == "TF_FLAT_IR_NULL"
+@testing:case="createFlatIrYieldCurve -> handle"
+result = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_FIR", false)
+assert 1, result == "TF_FIR"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createFlatIrYieldCurve rejects missing argument", syntaxError=1
-caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02)
+caplib::createFlatIrYieldCurve(2024.01.01, "X", 0.02)
 
 @testing:case="createFlatIrYieldCurve rejects extra argument", syntaxError=1
-caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "TF_FLAT_IR_CURVE", false, 1)
+caplib::createFlatIrYieldCurve(2024.01.01, "X", 0.02, "TF_createFlatIrYieldCurve_H", false, 1)
 
 @testing:case="createFlatIrYieldCurve rejects wrong type for referenceDate", exception=1
-caplib::createFlatIrYieldCurve("bad", "CNY", 0.02, "TF_FLAT_IR_CURVE", false)
+caplib::createFlatIrYieldCurve("bad", "X", 0.02, "TF_createFlatIrYieldCurve_H", false)
 
 @testing:case="createFlatIrYieldCurve rejects wrong type for currency", exception=1
-caplib::createFlatIrYieldCurve(asOfDate, 1, 0.02, "TF_FLAT_IR_CURVE", false)
+caplib::createFlatIrYieldCurve(2024.01.01, 1, 0.02, "TF_createFlatIrYieldCurve_H", false)
 
 @testing:case="createFlatIrYieldCurve rejects wrong type for rate", exception=1
-caplib::createFlatIrYieldCurve(asOfDate, "CNY", "bad", "TF_FLAT_IR_CURVE", false)
+caplib::createFlatIrYieldCurve(2024.01.01, "X", "bad", "TF_createFlatIrYieldCurve_H", false)
 
 @testing:case="createFlatIrYieldCurve rejects null referenceDate", exception=1
-caplib::createFlatIrYieldCurve(date(), "CNY", 0.02, "TF_FLAT_IR_CURVE", false)
+caplib::createFlatIrYieldCurve(date(), "X", 0.02, "TF_createFlatIrYieldCurve_H", false)
 
 @testing:case="createFlatIrYieldCurve rejects null rate", exception=1
-caplib::createFlatIrYieldCurve(asOfDate, "CNY", double(), "TF_FLAT_IR_CURVE", false)
+caplib::createFlatIrYieldCurve(2024.01.01, "X", double(), "TF_createFlatIrYieldCurve_H", false)
 
 @testing:case="createFlatIrYieldCurve rejects vector for scalar referenceDate", exception=1
-caplib::createFlatIrYieldCurve([2024.01.01], "CNY", 0.02, "TF_FLAT_IR_CURVE", false)
+caplib::createFlatIrYieldCurve([2024.01.01], "X", 0.02, "TF_createFlatIrYieldCurve_H", false)
 
 @testing:case="createFlatIrYieldCurve rejects keyword arguments", syntaxError=1
-caplib::createFlatIrYieldCurve(referenceDate=asOfDate, currency="CNY", rate=0.02, handle="TF_FLAT_IR_CURVE", returnJson=false)
+caplib::createFlatIrYieldCurve(referenceDate=2024.01.01, currency="X", rate=0.02, handle="TF_createFlatIrYieldCurve_H", returnJson=false)

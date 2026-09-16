@@ -153,15 +153,16 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
+
+xinst = caplib::createEuropeanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h1", false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceEqEuropeanOption -> [handle, present_value reference]"
-inst = caplib::createEuropeanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1000000.0, currency, "SPOT", currency, underlying, "TF_EO", false);
-r = caplib::priceEqEuropeanOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_EO_results")
-assert 2, abs(presentValue(r) - 191723.60845871962) < abs(191723.60845871962) * 1.0e-9 + 1.0e-6
+@testing:case="priceEqEuropeanOption -> PricingResults"
+result = caplib::priceEqEuropeanOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "h1_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

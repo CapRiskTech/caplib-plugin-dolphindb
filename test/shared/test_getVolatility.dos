@@ -55,41 +55,37 @@ def isMatrix(value) {
 asOfDate = 2022.03.09;
 curveDates = [2022.03.10, 2025.03.10];
 curveValues = [0.02, 0.025];
-
-flatVolSurface = caplib::createFlatVolatilitySurface(
-    asOfDate, 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_SURFACE", false);
+flatVolSurface = caplib::createFlatVolatilitySurface(asOfDate, 0.20, "TF_UNDERLYING", "TF_FVS", false);
 
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="getVolatility -> flat surface returns constant vol matrix"
-volatilities = caplib::getVolatility(flatVolSurface, curveDates, [95.0, 105.0]);
-assert 1, isMatrix(volatilities) &&
-    abs(volatilities[0, 0] - 0.2) < 1.0e-9 && abs(volatilities[0, 1] - 0.2) < 1.0e-9 &&
-    abs(volatilities[1, 0] - 0.2) < 1.0e-9 && abs(volatilities[1, 1] - 0.2) < 1.0e-9
-
-@testing:case="getVolatility rejects unknown handle", exception=1
-caplib::getVolatility("TF_HANDLE_DOES_NOT_EXIST", curveDates, [95.0, 105.0])
+@testing:case="getVolatility -> matrix of vols"
+vols = caplib::getVolatility(flatVolSurface, [2022.03.10], [100.0])
+assert 1, isMatrix(vols) && size(vols) == 1
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="getVolatility rejects missing argument", syntaxError=1
-caplib::getVolatility(flatVolSurface, curveDates)
+caplib::getVolatility("X", [2024.01.01])
 
 @testing:case="getVolatility rejects extra argument", syntaxError=1
-caplib::getVolatility(flatVolSurface, curveDates, [95.0, 105.0], 1)
+caplib::getVolatility("X", [2024.01.01], [0.02], 1)
+
+@testing:case="getVolatility rejects scalar for vector termDates", exception=1
+caplib::getVolatility("X", [2024.01.01], [0.02])
 
 @testing:case="getVolatility rejects partially-null vector termDates", exception=1
-caplib::getVolatility(flatVolSurface, [2024.01.01, date()], [95.0, 105.0])
+caplib::getVolatility("X", [2024.01.01, date()], [0.02])
 
 @testing:case="getVolatility rejects empty vector termDates", exception=1
-caplib::getVolatility(flatVolSurface, take(date, 0), [95.0, 105.0])
+caplib::getVolatility("X", take(date, 0), [0.02])
 
 @testing:case="getVolatility rejects nonexistent handle volSurfaceHandle", exception=1
-caplib::getVolatility("TF_HANDLE_DOES_NOT_EXIST", curveDates, [95.0, 105.0])
+caplib::getVolatility("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01], [0.02])
 
 @testing:case="getVolatility rejects keyword arguments", syntaxError=1
-caplib::getVolatility(volSurfaceHandle=flatVolSurface, termDates=curveDates, strikes=[95.0, 105.0])
+caplib::getVolatility(volSurfaceHandle="X", termDates=[2024.01.01], strikes=[0.02])

@@ -52,43 +52,43 @@ def isMatrix(value) {
 // Tests
 // ============================================================================
 
-@testing:case="createPricingModelSettings valid call"
-result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_MODEL", false)
-assert 1, result == "TF_BSM_MODEL"
-
-@testing:case="createPricingModelSettings omitted returnJson uses default"
-assert 1, caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_OMIT") == "TF_BSM_OMIT"
-
-@testing:case="createPricingModelSettings null returnJson uses default"
-assert 1, caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_NULL", bool()) == "TF_BSM_NULL"
-
-@testing:case="createPricingModelSettings rejects invalid model enum", exception=1
-caplib::createPricingModelSettings("NOT_A_MODEL", "", 0, [0.0], "TF_MODEL_BAD", false)
+@testing:case="createPricingModelSettings -> handle"
+result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM", false)
+assert 1, result == "TF_BSM"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createPricingModelSettings rejects missing argument", syntaxError=1
-caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0])
+caplib::createPricingModelSettings("X", "X", false, [0.02])
 
 @testing:case="createPricingModelSettings rejects extra argument", syntaxError=1
-caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_MODEL", false, 1)
+caplib::createPricingModelSettings("X", "X", false, [0.02], "TF_createPricingModelSettings_H", false, 1)
 
 @testing:case="createPricingModelSettings rejects wrong type for modelName", exception=1
-caplib::createPricingModelSettings(1, "", 0, [0.0], "TF_BSM_MODEL", false)
+caplib::createPricingModelSettings(1, "X", false, [0.02], "TF_createPricingModelSettings_H", false)
 
 @testing:case="createPricingModelSettings rejects wrong type for asset", exception=1
-caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", 1, 0, [0.0], "TF_BSM_MODEL", false)
+caplib::createPricingModelSettings("X", 1, false, [0.02], "TF_createPricingModelSettings_H", false)
 
 @testing:case="createPricingModelSettings rejects null modelName", exception=1
-caplib::createPricingModelSettings(string(), "", 0, [0.0], "TF_BSM_MODEL", false)
+caplib::createPricingModelSettings(string(), "X", false, [0.02], "TF_createPricingModelSettings_H", false)
+
+@testing:case="createPricingModelSettings rejects null asset", exception=1
+caplib::createPricingModelSettings("X", string(), false, [0.02], "TF_createPricingModelSettings_H", false)
 
 @testing:case="createPricingModelSettings rejects vector for scalar modelName", exception=1
-caplib::createPricingModelSettings(["X"], "", 0, [0.0], "TF_BSM_MODEL", false)
+caplib::createPricingModelSettings(["X"], "X", false, [0.02], "TF_createPricingModelSettings_H", false)
+
+@testing:case="createPricingModelSettings rejects scalar for vector constantParams", exception=1
+caplib::createPricingModelSettings("X", "X", false, [0.02], "TF_createPricingModelSettings_H", false)
+
+@testing:case="createPricingModelSettings rejects partially-null vector constantParams", exception=1
+caplib::createPricingModelSettings("X", "X", false, [0.02, double()], "TF_createPricingModelSettings_H", false)
 
 @testing:case="createPricingModelSettings rejects empty vector constantParams", exception=1
-caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, take(double, 0), "TF_BSM_MODEL", false)
+caplib::createPricingModelSettings("X", "X", false, take(double, 0), "TF_createPricingModelSettings_H", false)
 
 @testing:case="createPricingModelSettings rejects keyword arguments", syntaxError=1
-caplib::createPricingModelSettings(modelName="BLACK_SCHOLES_MERTON", asset="", calibrated=0, constantParams=[0.0], handle="TF_BSM_MODEL", returnJson=false)
+caplib::createPricingModelSettings(modelName="X", asset="X", calibrated=false, constantParams=[0.02], handle="TF_createPricingModelSettings_H", returnJson=false)

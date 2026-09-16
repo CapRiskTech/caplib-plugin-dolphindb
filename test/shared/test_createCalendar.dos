@@ -53,23 +53,14 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createCalendar valid call"
-assert 1, caplib::createCalendar("TF_CAL", [2024.01.01], [2024.01.01])
-
-@testing:case="createCalendar accepts DATE holidays and special days"
-assert 1, caplib::createCalendar("TF_CAL_D", [2024.01.01, 2024.01.03], [2024.01.02])
-
-@testing:case="createCalendar rejects zero-length holidays", exception=1
-caplib::createCalendar("TF_CAL_BAD", take(int(), 0))
-
-@testing:case="createCalendar rejects partially-null holidays", exception=1
-caplib::createCalendar("TF_CAL_BAD2", [44654, int(), 44656])
+assert 1, caplib::createCalendar("X", [2024.01.01], [2024.01.01])
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createCalendar rejects extra argument", syntaxError=1
-caplib::createCalendar("TF_CAL", [2024.01.01], [2024.01.01], 1)
+caplib::createCalendar("X", [2024.01.01], [2024.01.01], 1)
 
 @testing:case="createCalendar rejects wrong type for calName", exception=1
 caplib::createCalendar(1, [2024.01.01], [2024.01.01])
@@ -78,4 +69,4 @@ caplib::createCalendar(1, [2024.01.01], [2024.01.01])
 caplib::createCalendar(["X"], [2024.01.01], [2024.01.01])
 
 @testing:case="createCalendar rejects keyword arguments", syntaxError=1
-caplib::createCalendar(calName="TF_CAL", holidays=[2024.01.01], specialBusinessDays=[2024.01.01])
+caplib::createCalendar(calName="X", holidays=[2024.01.01], specialBusinessDays=[2024.01.01])

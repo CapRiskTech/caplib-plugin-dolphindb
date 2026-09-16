@@ -3,7 +3,8 @@
 Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件。插件通过 CapRiskTech 提供的 `dqlibc` 计算库，覆盖固定收益（Fixed Income，FI）、利率（Interest Rate，IR）、外汇（Foreign Exchange，FX）、权益（Equity，EQ）、商品（Commodity，CM）和信用（Credit，CR）等资产类别，可用于曲线构建、市场数据组装、金融工具创建、定价和风险分析。
 
 当前版本 `0.0.11`，基于 `dqlibdolphin` 的 `release-caplib`
-提交 `c0cb21d` 构建，仍提供 202 个对外接口。插件及 C++ 依赖使用 GCC 8.4 / ABI0，
+提交 `c0cb21d` 构建，提供 179 个对外接口（0.0.12 删除 23 个：CapFloor/Swaption/
+cross-currency 曲线、部分 calc* 计算器、静态数据 bytes 类接口）。插件及 C++ 依赖使用 GCC 8.4 / ABI0，
 可使用官方 DolphinDB v3.00.5 镜像自带的 C++ 运行库，无需替换 `libstdc++.so.6`。
 下载 [0.0.11 发行包](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11)，详见 [发行说明](releases/0.0.11.md)。
 完整文档入口：
@@ -144,10 +145,12 @@ loadPlugin("caplib")
 
 | 分类 | 接口数 | 中文 | English |
 | --- | ---: | --- | --- |
-| 通用函数与共享设置 | 29 | [查看](docs/html/zh/shared.html#api-reference) | [View](docs/html/shared.html#api-reference) |
-| 固定收益、利率与信用 | 73 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
-| 外汇 | 39 | [查看](docs/html/zh/currency.html#api-reference) | [View](docs/html/currency.html#api-reference) |
-| 商品 | 25 | [查看](docs/html/zh/commodity.html#api-reference) | [View](docs/html/commodity.html#api-reference) |
+| 通用函数与共享设置 | 28 | [查看](docs/html/zh/shared.html#api-reference) | [View](docs/html/shared.html#api-reference) |
+| 固定收益 | 17 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
+| 利率 | 24 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
+| 信用 | 14 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
+| 外汇 | 35 | [查看](docs/html/zh/currency.html#api-reference) | [View](docs/html/currency.html#api-reference) |
+| 商品（含贵金属） | 25 | [查看](docs/html/zh/commodity.html#api-reference) | [View](docs/html/commodity.html#api-reference) |
 | 权益 | 36 | [查看](docs/html/zh/equity.html#api-reference) | [View](docs/html/equity.html#api-reference) |
 
 ### 接口格式示例：`calcYearFraction`

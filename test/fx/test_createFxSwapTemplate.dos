@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,11 +262,9 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxSwapTemplate -> [handle, json]"
-r = caplib::createFxSwapTemplate("TF_FX_SWP_TPL", "SPOTSTART", "EURUSD", ["CAL_EUTA", "CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", true);
-assert 1, isHandleJson(r, "TF_FX_SWP_TPL") && hasJsonField(r[1], "start_convention")
-
-assert 1, true
+@testing:case="createFxSwapTemplate -> handle"
+result = caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false)
+assert 1, result == "TF_SWPT"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -281,6 +275,15 @@ caplib::createFxSwapTemplate("X", "X", "X", "X", "X")
 
 @testing:case="createFxSwapTemplate rejects extra argument", syntaxError=1
 caplib::createFxSwapTemplate("X", "X", "X", "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="createFxSwapTemplate rejects wrong type for instName", exception=1
+caplib::createFxSwapTemplate(1, "X", "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxSwapTemplate rejects wrong type for startConvention", exception=1
+caplib::createFxSwapTemplate("X", 1, "X", "X", "X", "X", "X", "X", false)
+
+@testing:case="createFxSwapTemplate rejects wrong type for currencyPair", exception=1
+caplib::createFxSwapTemplate("X", "X", 1, "X", "X", "X", "X", "X", false)
 
 @testing:case="createFxSwapTemplate rejects null instName", exception=1
 caplib::createFxSwapTemplate(string(), "X", "X", "X", "X", "X", "X", "X", false)

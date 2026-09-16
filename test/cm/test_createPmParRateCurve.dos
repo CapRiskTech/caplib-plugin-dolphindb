@@ -58,7 +58,14 @@ assert 1, calendarCreated;
 
 pmCashTemplate = caplib::createPmCashTemplate("AU_CASH", 0, "FOLLOWING", "CAL_CFETS", "ACT_365_FIXED", true);
 pmMktConventions = caplib::createPmMktConventions("ATM", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true);
-pmParRateCurve = caplib::createPmParRateCurve(2022.03.09, "CNY", "AU_CURVE", table([2022.04.09, 2022.05.09] as pillarDates, [0.02, 0.025] as rates), "TF_PM_PAR", true);
+pmParRateCurve = caplib::createPmParRateCurve(
+    2019.09.04, "USD", "XAU_XAUUSD",
+    table(
+        ["XAUUSD","XAUUSD","XAUUSD"] as instrument_name,
+        ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
+        ["1W","2W","1M"] as instrument_term,
+        [0.025,0.025,0.0248] as instrument_rate),
+    "TF_PM_PAR", true);
 pmOptionQuoteMatrix = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true);
 pmVolDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "TF_PM_VOLDEF", true);
 pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
@@ -67,9 +74,16 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 // Tests
 // ============================================================================
 
-@testing:case="createPmParRateCurve -> [handle, json]"
-r = caplib::createPmParRateCurve(2022.03.09, "CNY", "AU_CURVE", table([2022.04.09, 2022.05.09] as pillarDates, [0.02, 0.025] as rates), "TF_PM_PAR", true);
-assert 1, isHandleJson(r, "TF_PM_PAR")
+@testing:case="createPmParRateCurve 4-column pillars table -> handle"
+result = caplib::createPmParRateCurve(
+    2019.09.04, "USD", "XAU_XAUUSD",
+    table(
+        ["XAUUSD","XAUUSD","XAUUSD"] as instrument_name,
+        ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
+        ["1W","2W","1M"] as instrument_term,
+        [0.025,0.025,0.0248] as instrument_rate),
+    "TF_PM_PAR_OK", false)
+assert 1, result == "TF_PM_PAR_OK"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -79,13 +93,25 @@ assert 1, isHandleJson(r, "TF_PM_PAR")
 caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]))
 
 @testing:case="createPmParRateCurve rejects extra argument", syntaxError=1
-caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]), "X", false, 1)
+caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false, 1)
+
+@testing:case="createPmParRateCurve rejects wrong type for asOfDate", exception=1
+caplib::createPmParRateCurve("bad", "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
+
+@testing:case="createPmParRateCurve rejects wrong type for currency", exception=1
+caplib::createPmParRateCurve(2024.01.01, 1, "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
+
+@testing:case="createPmParRateCurve rejects wrong type for curveName", exception=1
+caplib::createPmParRateCurve(2024.01.01, "X", 1, matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
 @testing:case="createPmParRateCurve rejects null asOfDate", exception=1
-caplib::createPmParRateCurve(date(), "X", "X", matrix([0.2]), "X", false)
+caplib::createPmParRateCurve(date(), "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
+
+@testing:case="createPmParRateCurve rejects null currency", exception=1
+caplib::createPmParRateCurve(2024.01.01, string(), "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
 @testing:case="createPmParRateCurve rejects vector for scalar asOfDate", exception=1
-caplib::createPmParRateCurve([2024.01.01], "X", "X", matrix([0.2]), "X", false)
+caplib::createPmParRateCurve([2024.01.01], "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
 @testing:case="createPmParRateCurve rejects keyword arguments", syntaxError=1
-caplib::createPmParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", pillarsTable=matrix([0.2]), tag="X", returnJson=false)
+caplib::createPmParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", pillarsTable=matrix([0.2]), tag="TF_createPmParRateCurve_H", returnJson=false)

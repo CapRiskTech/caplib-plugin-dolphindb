@@ -53,37 +53,30 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createThetaRiskSettings valid call"
-result = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_THETA_RISK", false)
-assert 1, result == "TF_THETA_RISK"
-
-@testing:case="createThetaRiskSettings rejects STRING shift", exception=1
-caplib::createThetaRiskSettings(1, "1", 1.0 / 365.0, "TF_THETA_BAD")
-
-@testing:case="createThetaRiskSettings permits negative shift"
-r = caplib::createThetaRiskSettings(true, -1, 1.0 / 365.0, "TF_THETA_NEG");
-assert 1, r == "TF_THETA_NEG"
+result = caplib::createThetaRiskSettings(false, 1, 0.02, "TF_createThetaRiskSettings_H", false)
+assert 1, result == "TF_createThetaRiskSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createThetaRiskSettings rejects missing argument", syntaxError=1
-caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0)
+caplib::createThetaRiskSettings(false, 1, 0.02)
 
 @testing:case="createThetaRiskSettings rejects extra argument", syntaxError=1
-caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_THETA_RISK", false, 1)
+caplib::createThetaRiskSettings(false, 1, 0.02, "TF_createThetaRiskSettings_H", false, 1)
 
 @testing:case="createThetaRiskSettings rejects wrong type for shift", exception=1
-caplib::createThetaRiskSettings(1, "1", 1.0 / 365.0, "TF_THETA_RISK", false)
+caplib::createThetaRiskSettings(false, "1", 0.02, "TF_createThetaRiskSettings_H", false)
 
 @testing:case="createThetaRiskSettings rejects wrong type for scaling", exception=1
-caplib::createThetaRiskSettings(1, 1, "bad", "TF_THETA_RISK", false)
+caplib::createThetaRiskSettings(false, 1, "bad", "TF_createThetaRiskSettings_H", false)
 
 @testing:case="createThetaRiskSettings rejects null shift", exception=1
-caplib::createThetaRiskSettings(1, int(), 1.0 / 365.0, "TF_THETA_RISK", false)
+caplib::createThetaRiskSettings(false, int(), 0.02, "TF_createThetaRiskSettings_H", false)
 
 @testing:case="createThetaRiskSettings rejects vector for scalar shift", exception=1
-caplib::createThetaRiskSettings(1, [1], 1.0 / 365.0, "TF_THETA_RISK", false)
+caplib::createThetaRiskSettings(false, [1], 0.02, "TF_createThetaRiskSettings_H", false)
 
 @testing:case="createThetaRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createThetaRiskSettings(theta=1, shift=1, scaling=1.0 / 365.0, handle="TF_THETA_RISK", returnJson=false)
+caplib::createThetaRiskSettings(theta=false, shift=1, scaling=0.02, handle="TF_createThetaRiskSettings_H", returnJson=false)

@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createIrMktDataSet.dos
 // Per-function test suite for caplib::createIrMktDataSet (ir).
-// Signature: caplib::createIrMktDataSet(asOfDate DATE, discountCurveHandle STRING, underlyingInterestRates STRING[], forwardCurveHandles STRING[], handle STRING[, returnJson BOOL])
+// Signature: caplib::createIrMktDataSet(irAsOfDate DATE, discountCurveHandle STRING, underlyingInterestRates STRING[], forwardCurveHandles STRING[], handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_createIrMktDataSet.dos   // single file
@@ -112,34 +112,40 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
-@testing:case="createIrMktDataSet -> handle + json"
-imd = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
-assert 1, isHandleJson(imd, "TF_IR_MKT")
-
-@testing:case="createIrMktDataSet rejects wrong discount curve handle", exception=1
-caplib::createIrMktDataSet(irAsOfDate, iborIndex[0], [iborIndex[0]], [irCurve], "TF_IR_MKT_BAD", true)
+@testing:case="createIrMktDataSet -> handle"
+result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", false)
+assert 1, result == "TF_IRMKT"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createIrMktDataSet rejects missing argument", syntaxError=1
-caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve])
+caplib::createIrMktDataSet(2024.01.01, "X", ["X"], ["X"])
 
 @testing:case="createIrMktDataSet rejects extra argument", syntaxError=1
-caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", false, 1)
+caplib::createIrMktDataSet(2024.01.01, "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false, 1)
 
-@testing:case="createIrMktDataSet rejects null asOfDate", exception=1
-caplib::createIrMktDataSet(date(), irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", false)
+@testing:case="createIrMktDataSet rejects wrong type for irAsOfDate", exception=1
+caplib::createIrMktDataSet("bad", "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
+
+@testing:case="createIrMktDataSet rejects null irAsOfDate", exception=1
+caplib::createIrMktDataSet(date(), "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
+
+@testing:case="createIrMktDataSet rejects vector for scalar irAsOfDate", exception=1
+caplib::createIrMktDataSet([2024.01.01], "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
+
+@testing:case="createIrMktDataSet rejects scalar for vector underlyingInterestRates", exception=1
+caplib::createIrMktDataSet(2024.01.01, "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
 @testing:case="createIrMktDataSet rejects partially-null vector underlyingInterestRates", exception=1
-caplib::createIrMktDataSet(irAsOfDate, irCurve, ["X", string()], [irCurve], "TF_IR_MKT", false)
+caplib::createIrMktDataSet(2024.01.01, "X", ["X", string()], ["X"], "TF_createIrMktDataSet_H", false)
 
 @testing:case="createIrMktDataSet rejects empty vector underlyingInterestRates", exception=1
-caplib::createIrMktDataSet(irAsOfDate, irCurve, take(string, 0), [irCurve], "TF_IR_MKT", false)
+caplib::createIrMktDataSet(2024.01.01, "X", take(string, 0), ["X"], "TF_createIrMktDataSet_H", false)
 
 @testing:case="createIrMktDataSet rejects nonexistent handle discountCurveHandle", exception=1
-caplib::createIrMktDataSet(irAsOfDate, "TF_HANDLE_DOES_NOT_EXIST", [iborIndex[0]], [irCurve], "TF_IR_MKT", false)
+caplib::createIrMktDataSet(2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
 @testing:case="createIrMktDataSet rejects keyword arguments", syntaxError=1
-caplib::createIrMktDataSet(asOfDate=irAsOfDate, discountCurveHandle=irCurve, underlyingInterestRates=[iborIndex[0]], forwardCurveHandles=[irCurve], handle="TF_IR_MKT", returnJson=false)
+caplib::createIrMktDataSet(irAsOfDate=2024.01.01, discountCurveHandle="X", underlyingInterestRates=["X"], forwardCurveHandles=["X"], handle="TF_createIrMktDataSet_H", returnJson=false)

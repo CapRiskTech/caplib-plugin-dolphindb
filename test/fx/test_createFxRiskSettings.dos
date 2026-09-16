@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,32 +262,37 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxRiskSettings -> [handle, json]"
-r = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FX_RISK", true);
-assert 1, isHandleJson(r, "TF_FX_RISK")
-
-@testing:case="createFxRiskSettings option subset"
-r2 = caplib::createFxRiskSettings(irCurveRisk, priceRisk, "", "", "", "", "TF_FX_RISK_OPT", true);
-assert 1, isHandleJson(r2, "TF_FX_RISK_OPT")
+@testing:case="createFxRiskSettings -> handle"
+result = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", false)
+assert 1, result == "TF_FXR"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createFxRiskSettings rejects missing argument", syntaxError=1
-caplib::createFxRiskSettings("X", "X", "X", "X", "X", "X")
+caplib::createFxRiskSettings("X", "X", "X", "X", "X", "TF_createFxRiskSettings_H")
 
 @testing:case="createFxRiskSettings rejects extra argument", syntaxError=1
-caplib::createFxRiskSettings("X", "X", "X", "X", "X", "X", "X", false, 1)
+caplib::createFxRiskSettings("X", "X", "X", "X", "X", "TF_createFxRiskSettings_H", "TF_createFxRiskSettings_H", false, 1)
+
+@testing:case="createFxRiskSettings rejects wrong type for irCurveSettings", exception=1
+caplib::createFxRiskSettings(1, "X", "X", "X", "X", "TF_createFxRiskSettings_H", "TF_createFxRiskSettings_H", false)
+
+@testing:case="createFxRiskSettings rejects wrong type for priceSettings", exception=1
+caplib::createFxRiskSettings("X", 1, "X", "X", "X", "TF_createFxRiskSettings_H", "TF_createFxRiskSettings_H", false)
+
+@testing:case="createFxRiskSettings rejects wrong type for volSettings", exception=1
+caplib::createFxRiskSettings("X", "X", 1, "X", "X", "TF_createFxRiskSettings_H", "TF_createFxRiskSettings_H", false)
 
 @testing:case="createFxRiskSettings rejects null irCurveSettings", exception=1
-caplib::createFxRiskSettings(string(), "X", "X", "X", "X", "X", "X", false)
+caplib::createFxRiskSettings(string(), "X", "X", "X", "X", "TF_createFxRiskSettings_H", "TF_createFxRiskSettings_H", false)
 
 @testing:case="createFxRiskSettings rejects null priceSettings", exception=1
-caplib::createFxRiskSettings("X", string(), "X", "X", "X", "X", "X", false)
+caplib::createFxRiskSettings("X", string(), "X", "X", "X", "TF_createFxRiskSettings_H", "TF_createFxRiskSettings_H", false)
 
 @testing:case="createFxRiskSettings rejects vector for scalar irCurveSettings", exception=1
-caplib::createFxRiskSettings(["X"], "X", "X", "X", "X", "X", "X", false)
+caplib::createFxRiskSettings(["X"], "X", "X", "X", "X", "TF_createFxRiskSettings_H", "TF_createFxRiskSettings_H", false)
 
 @testing:case="createFxRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createFxRiskSettings(irCurveSettings="X", priceSettings="X", volSettings="X", priceVolSettings="X", thetaSettings="X", name="X", tag="X", returnJson=false)
+caplib::createFxRiskSettings(irCurveSettings="X", priceSettings="X", volSettings="X", priceVolSettings="X", thetaSettings="X", name="TF_createFxRiskSettings_H", tag="TF_createFxRiskSettings_H", returnJson=false)

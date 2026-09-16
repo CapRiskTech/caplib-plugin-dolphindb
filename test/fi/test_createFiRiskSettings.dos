@@ -218,28 +218,38 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 // Tests
 // ============================================================================
 
-@testing:case="createFiRiskSettings -> [handle, json]"
-r = caplib::createFiRiskSettings(irRisk, creditRisk, thetaRisk, "TF_FI_RISK_NAME", "TF_FI_RISK", true);
-assert 1, isHandleJson(r, "TF_FI_RISK")
+@testing:case="createFiRiskSettings -> handle"
+// needs irCurveRisk/creditCurveRisk/thetaRisk from fixture
+result = caplib::createFiRiskSettings(irRisk, creditRisk, thetaRisk, "TF_FIRSK", "TF_FIRSK", false)
+assert 1, result == "TF_FIRSK"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createFiRiskSettings rejects missing argument", syntaxError=1
-caplib::createFiRiskSettings("X", "X", "X", "X")
+caplib::createFiRiskSettings("X", "X", "X", "TF_createFiRiskSettings_H")
 
 @testing:case="createFiRiskSettings rejects extra argument", syntaxError=1
-caplib::createFiRiskSettings("X", "X", "X", "X", "X", false, 1)
+caplib::createFiRiskSettings("X", "X", "X", "TF_createFiRiskSettings_H", "TF_createFiRiskSettings_H", false, 1)
+
+@testing:case="createFiRiskSettings rejects wrong type for irCurveSettings", exception=1
+caplib::createFiRiskSettings(1, "X", "X", "TF_createFiRiskSettings_H", "TF_createFiRiskSettings_H", false)
+
+@testing:case="createFiRiskSettings rejects wrong type for csCurveSettings", exception=1
+caplib::createFiRiskSettings("X", 1, "X", "TF_createFiRiskSettings_H", "TF_createFiRiskSettings_H", false)
+
+@testing:case="createFiRiskSettings rejects wrong type for thetaSettings", exception=1
+caplib::createFiRiskSettings("X", "X", 1, "TF_createFiRiskSettings_H", "TF_createFiRiskSettings_H", false)
 
 @testing:case="createFiRiskSettings rejects null irCurveSettings", exception=1
-caplib::createFiRiskSettings(string(), "X", "X", "X", "X", false)
+caplib::createFiRiskSettings(string(), "X", "X", "TF_createFiRiskSettings_H", "TF_createFiRiskSettings_H", false)
 
 @testing:case="createFiRiskSettings rejects null csCurveSettings", exception=1
-caplib::createFiRiskSettings("X", string(), "X", "X", "X", false)
+caplib::createFiRiskSettings("X", string(), "X", "TF_createFiRiskSettings_H", "TF_createFiRiskSettings_H", false)
 
 @testing:case="createFiRiskSettings rejects vector for scalar irCurveSettings", exception=1
-caplib::createFiRiskSettings(["X"], "X", "X", "X", "X", false)
+caplib::createFiRiskSettings(["X"], "X", "X", "TF_createFiRiskSettings_H", "TF_createFiRiskSettings_H", false)
 
 @testing:case="createFiRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createFiRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="X", tag="X", returnJson=false)
+caplib::createFiRiskSettings(irCurveSettings="X", csCurveSettings="X", thetaSettings="X", name="TF_createFiRiskSettings_H", tag="TF_createFiRiskSettings_H", returnJson=false)

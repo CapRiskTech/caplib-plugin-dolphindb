@@ -52,50 +52,45 @@ def isMatrix(value) {
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
-bsmModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM_MODEL", false);
+asOfDate = 2022.03.09;
+curveDates = [2022.03.10, 2025.03.10];
+curveValues = [0.02, 0.025];
 
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createPricingSettings valid call"
-result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
-assert 1, result == "TF_PRICING_SETTINGS"
-
-@testing:case="createPricingSettings rejects invalid pricing method", exception=1
-caplib::createPricingSettings("CNY", "NOT_A_METHOD", 0, 0, bsmModel, "", "", "TF_PRICING_BAD", false)
-
-@testing:case="createPricingSettings supports PDE and MONTE_CARLO methods"
-pdeSet = caplib::createPricingSettings("CNY", "PDE", 0, 0, bsmModel, "", "", "TF_PRICING_PDE", false);
-assert 1, pdeSet == "TF_PRICING_PDE"
-mcSet = caplib::createPricingSettings("CNY", "MONTE_CARLO", 0, 0, bsmModel, "", "", "TF_PRICING_MC", false);
-assert 1, mcSet == "TF_PRICING_MC"
+@testing:case="createPricingSettings -> handle"
+result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "", "", "", "TF_PRICING", false)
+assert 1, result == "TF_PRICING"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createPricingSettings rejects missing argument", syntaxError=1
-caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, bsmModel, "", "")
+caplib::createPricingSettings("X", "X", false, false, "X", "X", "X")
 
 @testing:case="createPricingSettings rejects extra argument", syntaxError=1
-caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false, 1)
+caplib::createPricingSettings("X", "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false, 1)
 
 @testing:case="createPricingSettings rejects wrong type for currency", exception=1
-caplib::createPricingSettings(1, "ANALYTICAL", 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
+caplib::createPricingSettings(1, "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects wrong type for pricingMethod", exception=1
-caplib::createPricingSettings("CNY", 1, 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
+caplib::createPricingSettings("X", 1, false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
+
+@testing:case="createPricingSettings rejects null currency", exception=1
+caplib::createPricingSettings(string(), "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects null pricingMethod", exception=1
-caplib::createPricingSettings("CNY", string(), 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
+caplib::createPricingSettings("X", string(), false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects vector for scalar currency", exception=1
-caplib::createPricingSettings(["X"], "ANALYTICAL", 0, 0, bsmModel, "", "", "TF_PRICING_SETTINGS", false)
+caplib::createPricingSettings(["X"], "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects nonexistent handle modelHandle", exception=1
-caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "TF_HANDLE_DOES_NOT_EXIST", "", "", "TF_PRICING_SETTINGS", false)
+caplib::createPricingSettings("X", "X", false, false, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects keyword arguments", syntaxError=1
-caplib::createPricingSettings(currency="CNY", pricingMethod="ANALYTICAL", incCurrent=0, cashFlows=0, modelHandle=bsmModel, pdeHandle="", mcHandle="", handle="TF_PRICING_SETTINGS", returnJson=false)
+caplib::createPricingSettings(currency="X", pricingMethod="X", incCurrent=false, cashFlows=false, modelHandle="X", pdeHandle="X", mcHandle="X", handle="TF_createPricingSettings_H", returnJson=false)

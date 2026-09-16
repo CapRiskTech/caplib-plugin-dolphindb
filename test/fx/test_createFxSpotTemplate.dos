@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,13 +262,9 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxSpotTemplate -> [handle, json]"
-r = caplib::createFxSpotTemplate("TF_FX_SPOT_TPL", "EURUSD", "FOLLOWING", ["CAL_EUTA", "CAL_GBLO"], "2d", true);
-assert 1, isHandleJson(r, "TF_FX_SPOT_TPL") && hasJsonField(r[1], "spot_delay")
-
-@testing:case="createFxSpotTemplate accepts scalar calendar"
-r2 = caplib::createFxSpotTemplate("TF_FX_SPOT_TPL_SCALAR", "EURUSD", "FOLLOWING", "CAL_CFETS", "2d", true);
-assert 1, isHandleJson(r2, "TF_FX_SPOT_TPL_SCALAR")
+@testing:case="createFxSpotTemplate -> handle"
+result = caplib::createFxSpotTemplate("TF_SPOTTPL", "EURUSD", "FOLLOWING", ["CAL_EUTA","CAL_GBLO"], "2d", false)
+assert 1, result == "TF_SPOTTPL"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -282,16 +274,25 @@ assert 1, isHandleJson(r2, "TF_FX_SPOT_TPL_SCALAR")
 caplib::createFxSpotTemplate("X", "X", "X", "X")
 
 @testing:case="createFxSpotTemplate rejects extra argument", syntaxError=1
-caplib::createFxSpotTemplate("X", "X", "X", "X", "X", "X", false, 1)
+caplib::createFxSpotTemplate("X", "X", "X", "X", "X", "TF_createFxSpotTemplate_H", false, 1)
+
+@testing:case="createFxSpotTemplate rejects wrong type for instName", exception=1
+caplib::createFxSpotTemplate(1, "X", "X", "X", "X", "TF_createFxSpotTemplate_H", false)
+
+@testing:case="createFxSpotTemplate rejects wrong type for currencyPair", exception=1
+caplib::createFxSpotTemplate("X", 1, "X", "X", "X", "TF_createFxSpotTemplate_H", false)
+
+@testing:case="createFxSpotTemplate rejects wrong type for spotDayConvention", exception=1
+caplib::createFxSpotTemplate("X", "X", 1, "X", "X", "TF_createFxSpotTemplate_H", false)
 
 @testing:case="createFxSpotTemplate rejects null instName", exception=1
-caplib::createFxSpotTemplate(string(), "X", "X", "X", "X", "X", false)
+caplib::createFxSpotTemplate(string(), "X", "X", "X", "X", "TF_createFxSpotTemplate_H", false)
 
 @testing:case="createFxSpotTemplate rejects null currencyPair", exception=1
-caplib::createFxSpotTemplate("X", string(), "X", "X", "X", "X", false)
+caplib::createFxSpotTemplate("X", string(), "X", "X", "X", "TF_createFxSpotTemplate_H", false)
 
 @testing:case="createFxSpotTemplate rejects vector for scalar instName", exception=1
-caplib::createFxSpotTemplate(["X"], "X", "X", "X", "X", "X", false)
+caplib::createFxSpotTemplate(["X"], "X", "X", "X", "X", "TF_createFxSpotTemplate_H", false)
 
 @testing:case="createFxSpotTemplate rejects keyword arguments", syntaxError=1
-caplib::createFxSpotTemplate(instName="X", currencyPair="X", spotDayConvention="X", calendars="X", spotDelay="X", handle="X", returnJson=false)
+caplib::createFxSpotTemplate(instName="X", currencyPair="X", spotDayConvention="X", calendars="X", spotDelay="X", handle="TF_createFxSpotTemplate_H", returnJson=false)

@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,9 +262,9 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFlatFxVolatilitySurface -> [handle, json]"
-r = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.0, "TF_FX_FLAT_VOL", true);
-assert 1, isHandleJson(r, "TF_FX_FLAT_VOL") && hasJsonField(r[1], "volatility_surface")
+@testing:case="createFlatFxVolatilitySurface -> handle"
+result = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.06, "TF_FLATFV", false)
+assert 1, result == "TF_FLATFV"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -278,16 +274,25 @@ assert 1, isHandleJson(r, "TF_FX_FLAT_VOL") && hasJsonField(r[1], "volatility_su
 caplib::createFlatFxVolatilitySurface(2024.01.01, "X", 0.02)
 
 @testing:case="createFlatFxVolatilitySurface rejects extra argument", syntaxError=1
-caplib::createFlatFxVolatilitySurface(2024.01.01, "X", 0.02, "X", false, 1)
+caplib::createFlatFxVolatilitySurface(2024.01.01, "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false, 1)
+
+@testing:case="createFlatFxVolatilitySurface rejects wrong type for referenceDate", exception=1
+caplib::createFlatFxVolatilitySurface("bad", "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false)
+
+@testing:case="createFlatFxVolatilitySurface rejects wrong type for currencyPair", exception=1
+caplib::createFlatFxVolatilitySurface(2024.01.01, 1, 0.02, "TF_createFlatFxVolatilitySurface_H", false)
+
+@testing:case="createFlatFxVolatilitySurface rejects wrong type for vol", exception=1
+caplib::createFlatFxVolatilitySurface(2024.01.01, "X", "bad", "TF_createFlatFxVolatilitySurface_H", false)
 
 @testing:case="createFlatFxVolatilitySurface rejects null referenceDate", exception=1
-caplib::createFlatFxVolatilitySurface(date(), "X", 0.02, "X", false)
+caplib::createFlatFxVolatilitySurface(date(), "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false)
 
 @testing:case="createFlatFxVolatilitySurface rejects null vol", exception=1
-caplib::createFlatFxVolatilitySurface(2024.01.01, "X", double(), "X", false)
+caplib::createFlatFxVolatilitySurface(2024.01.01, "X", double(), "TF_createFlatFxVolatilitySurface_H", false)
 
 @testing:case="createFlatFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
-caplib::createFlatFxVolatilitySurface([2024.01.01], "X", 0.02, "X", false)
+caplib::createFlatFxVolatilitySurface([2024.01.01], "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false)
 
 @testing:case="createFlatFxVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::createFlatFxVolatilitySurface(referenceDate=2024.01.01, currencyPair="X", vol=0.02, tag="X", returnJson=false)
+caplib::createFlatFxVolatilitySurface(referenceDate=2024.01.01, currencyPair="X", vol=0.02, tag="TF_createFlatFxVolatilitySurface_H", returnJson=false)

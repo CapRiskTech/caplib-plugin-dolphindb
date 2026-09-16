@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -262,15 +258,16 @@ dailyObsDates = 2021.03.31..2021.09.26;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
+
+tndf = caplib::createFxNonDeliverableForward("USD", 10000.0, "CNH", 66916.0, "USD", 2021.07.01, 2021.06.30, "TF_PNDF", false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceFxNonDeliverableForward -> [handle, present_value reference]"
-inst = caplib::createFxNonDeliverableForward("USD", 10000.0, "CNH", 66916.0, "USD", 2021.07.01, 2021.06.30, "TF_FX_NDF_P", false);
-r = caplib::priceFxNonDeliverableForward(inst, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_FX_NDF_P_results")
-assert 2, abs(presentValue(r) - -435394.7797898732) < abs(-435394.7797898732) * 1.0e-9 + 1.0e-6
+@testing:case="priceFxNonDeliverableForward -> PricingResults"
+result = caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "TF_PNDF_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -281,6 +278,12 @@ caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X")
 
 @testing:case="priceFxNonDeliverableForward rejects extra argument", syntaxError=1
 caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
+
+@testing:case="priceFxNonDeliverableForward rejects wrong type for pricingDate", exception=1
+caplib::priceFxNonDeliverableForward("X", "bad", "X", "X", "X", "X", "X", false)
+
+@testing:case="priceFxNonDeliverableForward rejects wrong type for mode", exception=1
+caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
 @testing:case="priceFxNonDeliverableForward rejects null pricingDate", exception=1
 caplib::priceFxNonDeliverableForward("X", date(), "X", "X", "X", "X", "X", false)

@@ -237,16 +237,25 @@ assert 1, isHandleJson(r, "TF_CM_MKT")
 caplib::createCmMktDataSet(2024.01.01, "X", 0.02, "X", "X", "X", "X", "X", 0.02)
 
 @testing:case="createCmMktDataSet rejects extra argument", syntaxError=1
-caplib::createCmMktDataSet(2024.01.01, "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false, 1)
+caplib::createCmMktDataSet(2024.01.01, "X", 0.02, "X", "X", "X", "X", "X", 0.02, "TF_createCmMktDataSet_H", false, 1)
+
+@testing:case="createCmMktDataSet rejects wrong type for asOfDate", exception=1
+caplib::createCmMktDataSet("bad", "X", 0.02, "X", "X", "X", "X", "X", 0.02, "TF_createCmMktDataSet_H", false)
+
+@testing:case="createCmMktDataSet rejects wrong type for underlying", exception=1
+caplib::createCmMktDataSet(2024.01.01, 1, 0.02, "X", "X", "X", "X", "X", 0.02, "TF_createCmMktDataSet_H", false)
+
+@testing:case="createCmMktDataSet rejects wrong type for underlyingPrice", exception=1
+caplib::createCmMktDataSet(2024.01.01, "X", "bad", "X", "X", "X", "X", "X", 0.02, "TF_createCmMktDataSet_H", false)
 
 @testing:case="createCmMktDataSet rejects null asOfDate", exception=1
-caplib::createCmMktDataSet(date(), "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+caplib::createCmMktDataSet(date(), "X", 0.02, "X", "X", "X", "X", "X", 0.02, "TF_createCmMktDataSet_H", false)
 
 @testing:case="createCmMktDataSet rejects null underlying", exception=1
-caplib::createCmMktDataSet(2024.01.01, string(), 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+caplib::createCmMktDataSet(2024.01.01, string(), 0.02, "X", "X", "X", "X", "X", 0.02, "TF_createCmMktDataSet_H", false)
 
 @testing:case="createCmMktDataSet rejects vector for scalar asOfDate", exception=1
-caplib::createCmMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.02, "X", false)
+caplib::createCmMktDataSet([2024.01.01], "X", 0.02, "X", "X", "X", "X", "X", 0.02, "TF_createCmMktDataSet_H", false)
 
 @testing:case="createCmMktDataSet rejects keyword arguments", syntaxError=1
-caplib::createCmMktDataSet(asOfDate=2024.01.01, underlying="X", underlyingPrice=0.02, discountCurve="X", dividendCurve="X", volSurface="X", quantoDiscountCurve="X", quantoFxVolCurve="X", quantoCorrelation=0.02, handle="X", returnJson=false)
+caplib::createCmMktDataSet(asOfDate=2024.01.01, underlying="X", underlyingPrice=0.02, discountCurve="X", dividendCurve="X", volSurface="X", quantoDiscountCurve="X", quantoFxVolCurve="X", quantoCorrelation=0.02, handle="TF_createCmMktDataSet_H", returnJson=false)

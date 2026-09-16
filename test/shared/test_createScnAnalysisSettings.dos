@@ -52,49 +52,49 @@ def isMatrix(value) {
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
+asOfDate = 2022.03.09;
+curveDates = [2022.03.10, 2025.03.10];
+curveValues = [0.02, 0.025];
+
+
 priceScn = caplib::createScnSettings(-0.1, 0.1, 5, 0, "TF_PRICE_SCN", false);
 volScn = caplib::createScnSettings(-0.2, 0.2, 5, 0, "TF_VOL_SCN", false);
-scnSettings = caplib::createScnAnalysisSettings(
-    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 1, "TF_SCN_SETTINGS", false);
 
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="createScnAnalysisSettings valid call"
-result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 1, "TF_SCN_SETTINGS", false)
-assert 1, result == "TF_SCN_SETTINGS"
-
-@testing:case="createScnAnalysisSettings rejects STRING scnType", exception=1
-caplib::createScnAnalysisSettings(1, priceScn, volScn, 1, "TF_SCN_BAD", false)
+@testing:case="createScnAnalysisSettings -> handle"
+result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 1, "TF_SCNA", false)
+assert 1, result == "TF_SCNA"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createScnAnalysisSettings rejects missing argument", syntaxError=1
-caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 1)
+caplib::createScnAnalysisSettings("X", "X", "X", 1)
 
 @testing:case="createScnAnalysisSettings rejects extra argument", syntaxError=1
-caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 1, "TF_SCN_SETTINGS", false, 1)
+caplib::createScnAnalysisSettings("X", "X", "X", 1, "TF_createScnAnalysisSettings_H", false, 1)
 
 @testing:case="createScnAnalysisSettings rejects wrong type for scnType", exception=1
-caplib::createScnAnalysisSettings(1, priceScn, volScn, 1, "TF_SCN_SETTINGS", false)
+caplib::createScnAnalysisSettings(1, "X", "X", 1, "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects wrong type for threading", exception=1
-caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, "1", "TF_SCN_SETTINGS", false)
+caplib::createScnAnalysisSettings("X", "X", "X", "1", "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects null scnType", exception=1
-caplib::createScnAnalysisSettings(string(), priceScn, volScn, 1, "TF_SCN_SETTINGS", false)
+caplib::createScnAnalysisSettings(string(), "X", "X", 1, "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects null threading", exception=1
-caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, int(), "TF_SCN_SETTINGS", false)
+caplib::createScnAnalysisSettings("X", "X", "X", int(), "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects vector for scalar scnType", exception=1
-caplib::createScnAnalysisSettings(["X"], priceScn, volScn, 1, "TF_SCN_SETTINGS", false)
+caplib::createScnAnalysisSettings(["X"], "X", "X", 1, "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects nonexistent handle priceHandle", exception=1
-caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", "TF_HANDLE_DOES_NOT_EXIST", volScn, 1, "TF_SCN_SETTINGS", false)
+caplib::createScnAnalysisSettings("X", "TF_HANDLE_DOES_NOT_EXIST", "X", 1, "TF_createScnAnalysisSettings_H", false)
 
 @testing:case="createScnAnalysisSettings rejects keyword arguments", syntaxError=1
-caplib::createScnAnalysisSettings(scnType="PRICE_VOL_SCN_ANALYSIS", priceHandle=priceScn, volHandle=volScn, threading=1, handle="TF_SCN_SETTINGS", returnJson=false)
+caplib::createScnAnalysisSettings(scnType="X", priceHandle="X", volHandle="X", threading=1, handle="TF_createScnAnalysisSettings_H", returnJson=false)

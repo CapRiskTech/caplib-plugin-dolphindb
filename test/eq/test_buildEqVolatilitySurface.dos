@@ -157,9 +157,9 @@ mktData = caplib::createEqMktDataSet(
 // Tests
 // ============================================================================
 
-@testing:case="buildEqVolatilitySurface -> [handle, json]"
-r = caplib::buildEqVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0], [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0], bsmAnalyticalSettings, "TF_EQ_VOL", true);
-assert 1, isHandleJson(r, "TF_EQ_VOL")
+@testing:case="buildEqVolatilitySurface -> handle"
+result = caplib::buildEqVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0], [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0], bsmAnalyticalSettings, "f_vol", false)
+assert 1, result == "f_vol"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
@@ -169,28 +169,34 @@ assert 1, isHandleJson(r, "TF_EQ_VOL")
 caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X")
 
 @testing:case="buildEqVolatilitySurface rejects extra argument", syntaxError=1
-caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false, 1)
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false, 1)
+
+@testing:case="buildEqVolatilitySurface rejects wrong type for referenceDate", exception=1
+caplib::buildEqVolatilitySurface("bad", "X", "X", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
+
+@testing:case="buildEqVolatilitySurface rejects wrong type for underlying", exception=1
+caplib::buildEqVolatilitySurface(2024.01.01, 1, "X", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects null referenceDate", exception=1
-caplib::buildEqVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+caplib::buildEqVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects null underlying", exception=1
-caplib::buildEqVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+caplib::buildEqVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects vector for scalar referenceDate", exception=1
-caplib::buildEqVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+caplib::buildEqVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects scalar for vector underlyingPrices", exception=1
-caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", "X", false)
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects partially-null vector underlyingPrices", exception=1
-caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X", "X", "X", "X", "X", false)
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects empty vector underlyingPrices", exception=1
-caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "X", "X", false)
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::buildEqVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "X", "X", false)
+caplib::buildEqVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", [0.02], "X", "X", "X", "X", "TF_buildEqVolatilitySurface_H", false)
 
 @testing:case="buildEqVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::buildEqVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", dividendCurveHandle="X", buildSettingsHandle="X", pricingSettingsHandle="X", handle="X", returnJson=false)
+caplib::buildEqVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", dividendCurveHandle="X", buildSettingsHandle="X", pricingSettingsHandle="X", handle="TF_buildEqVolatilitySurface_H", returnJson=false)

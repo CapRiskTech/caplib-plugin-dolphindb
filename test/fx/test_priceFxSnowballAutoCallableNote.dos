@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -262,15 +258,16 @@ dailyObsDates = 2021.03.31..2021.09.26;
 dailyObsValues = take(0.0, size(dailyObsDates));
 dailyObsWeights = take(1.0, size(dailyObsDates));
 
+
+tsnowballautocallablenote = caplib::createSnowballAutoCallableNote(0.12, 2021.03.31, [2021.06.30, 2021.09.26], "ACT_365_FIXED", "UP_OUT", eurusdSpot*1.05, "DOWN_IN", eurusdSpot*0.8, "SELL", "PUT", eurusdSpot, 1.0, eurusdSpot, 2021.09.26, 2021.09.27, 1, 1000000.0, currency, "SPOT", currency, "EURUSD", "tSnw", [2021.06.30, 2021.09.26], dailyObsValues, dailyObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-@testing:case="priceFxSnowballAutoCallableNote -> [handle, present_value]"
-inst = caplib::createSnowballAutoCallableNote(0.12, 2021.03.31, [2021.06.30, 2021.09.26], "ACT_365_FIXED", "UP_OUT", eurusdSpot * 1.05, "DOWN_IN", eurusdSpot * 0.8, "SELL", "PUT", eurusdSpot, 1.0, eurusdSpot, 2021.09.27, 2021.09.27, 1, 1000000.0, currency, "SPOT", currency, underlying, "TF_FX_SN", [2021.06.30, 2021.09.26], dailyObsValues, dailyObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-r = caplib::priceFxSnowballAutoCallableNote(inst, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true);
-assert 1, isPricingResultsJson(r, "TF_FX_SN_results")
-assert 2, presentValue(r) == presentValue(r)  // no legacy reference; finite check
+@testing:case="priceFxSnowballAutoCallableNote -> PricingResults"
+result = caplib::priceFxSnowballAutoCallableNote(tsnowballautocallablenote, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true)
+assert 1, isPricingResultsJson(result, "tSnw_results")
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)

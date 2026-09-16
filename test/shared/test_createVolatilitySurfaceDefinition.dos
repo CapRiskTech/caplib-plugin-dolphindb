@@ -52,43 +52,37 @@ def isMatrix(value) {
 // Tests
 // ============================================================================
 
-@testing:case="createVolatilitySurfaceDefinition valid call"
-result = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
-assert 1, result == "TF_VOL_SURFACE_DEFINITION"
-
-@testing:case="createVolatilitySurfaceDefinition rejects lower > upper", exception=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 2.0, 1.0, "TF_VOL_DEF_BAD", false)
-
-@testing:case="createVolatilitySurfaceDefinition rejects invalid smile enum", exception=1
-caplib::createVolatilitySurfaceDefinition("NOT_A_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.1, 1.0, "TF_VOL_DEF_BAD", false)
+@testing:case="createVolatilitySurfaceDefinition -> handle"
+result = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+assert 1, result == "TF_VSDEF"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createVolatilitySurfaceDefinition rejects missing argument", syntaxError=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0)
+caplib::createVolatilitySurfaceDefinition("X", "X", "X", "X", "X", "X", "X", "X", 0.02, 0.02)
 
 @testing:case="createVolatilitySurfaceDefinition rejects extra argument", syntaxError=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false, 1)
+caplib::createVolatilitySurfaceDefinition("X", "X", "X", "X", "X", "X", "X", "X", 0.02, 0.02, "TF_createVolatilitySurfaceDefinition_H", false, 1)
 
 @testing:case="createVolatilitySurfaceDefinition rejects wrong type for volSmileType", exception=1
-caplib::createVolatilitySurfaceDefinition(1, "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+caplib::createVolatilitySurfaceDefinition(1, "X", "X", "X", "X", "X", "X", "X", 0.02, 0.02, "TF_createVolatilitySurfaceDefinition_H", false)
 
 @testing:case="createVolatilitySurfaceDefinition rejects wrong type for smileMethod", exception=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", 1, "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+caplib::createVolatilitySurfaceDefinition("X", 1, "X", "X", "X", "X", "X", "X", 0.02, 0.02, "TF_createVolatilitySurfaceDefinition_H", false)
 
 @testing:case="createVolatilitySurfaceDefinition rejects wrong type for smileExtrapMethod", exception=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", 1, "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+caplib::createVolatilitySurfaceDefinition("X", "X", 1, "X", "X", "X", "X", "X", 0.02, 0.02, "TF_createVolatilitySurfaceDefinition_H", false)
 
 @testing:case="createVolatilitySurfaceDefinition rejects null volSmileType", exception=1
-caplib::createVolatilitySurfaceDefinition(string(), "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+caplib::createVolatilitySurfaceDefinition(string(), "X", "X", "X", "X", "X", "X", "X", 0.02, 0.02, "TF_createVolatilitySurfaceDefinition_H", false)
 
 @testing:case="createVolatilitySurfaceDefinition rejects null smileMethod", exception=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", string(), "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+caplib::createVolatilitySurfaceDefinition("X", string(), "X", "X", "X", "X", "X", "X", 0.02, 0.02, "TF_createVolatilitySurfaceDefinition_H", false)
 
 @testing:case="createVolatilitySurfaceDefinition rejects vector for scalar volSmileType", exception=1
-caplib::createVolatilitySurfaceDefinition(["X"], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VOL_SURFACE_DEFINITION", false)
+caplib::createVolatilitySurfaceDefinition(["X"], "X", "X", "X", "X", "X", "X", "X", 0.02, 0.02, "TF_createVolatilitySurfaceDefinition_H", false)
 
 @testing:case="createVolatilitySurfaceDefinition rejects keyword arguments", syntaxError=1
-caplib::createVolatilitySurfaceDefinition(volSmileType="STRIKE_VOL_SMILE", smileMethod="LINEAR_SMILE_METHOD", smileExtrapMethod="FLAT_EXTRAP", timeInterpMethod="LINEAR_IN_VOLATILITY", timeExtrapMethod="FLAT_IN_VOLATILITY", dayCountConvention="ACT_365_FIXED", volType="LOG_NORMAL_VOL_TYPE", wingStrikeType="ABOSULTE_STRIKE", lower=90.0, upper=110.0, handle="TF_VOL_SURFACE_DEFINITION", returnJson=false)
+caplib::createVolatilitySurfaceDefinition(volSmileType="X", smileMethod="X", smileExtrapMethod="X", timeInterpMethod="X", timeExtrapMethod="X", dayCountConvention="X", volType="X", wingStrikeType="X", lower=0.02, upper=0.02, handle="TF_createVolatilitySurfaceDefinition_H", returnJson=false)

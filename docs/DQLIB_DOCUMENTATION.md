@@ -6,8 +6,8 @@ Caplib 是面向金融衍生品定价与风险分析的 DolphinDB 插件。插�
 
 | 资产类别 | 主要能力 |
 | --- | --- |
-| 固定收益（Fixed Income，FI） | 债券定价、收益率计算、Z-spread、转换因子、隐含回购利率、收益率曲线构建 |
-| 利率（Interest Rate，IR） | 单币种与跨币种曲线、互换、Cap/Floor、Swaption、IBOR 和基差计算 |
+| 固定收益（Fixed Income，FI） | 债券定价、收益率与平价利率计算、债券收益率曲线与信用利差曲线构建 |
+| 利率（Interest Rate，IR） | 单币种与跨币种曲线构建与定价、互换工具模板、利率腿/日程/IBOR 指数定义 |
 | 外汇（Foreign Exchange，FX） | 即期、远期、掉期、NDF、外汇期权和波动率曲面 |
 | 权益（Equity，EQ） | 股息曲线、波动率曲面及欧式、美式、亚式、障碍、雪球等期权定价 |
 | 商品（Commodity，CM） | 商品与贵金属曲线、市场数据、波动率曲面和期权定价 |
@@ -187,38 +187,6 @@ loadPlugin("PluginCaplib")
 
 caplib::createCalendar(calEuta)
 ```
-
-#### createStaticData
-
-##### 语法
-
-```dolphindb
-caplib::createStaticData(staticDataType STRING, staticDataBytes STRING)
-```
-
-##### 详情
-
-验证 StaticDataType，将输入 protobuf 序列化字节发送到 CAPLIB，并注册对应的具体静态数据对象。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `staticDataType` | STRING | 静态数据类型标签。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STATIC_DATA_TYPE`, `SDT_CALENDAR`, `SDT_IBOR_INDEX`, `SDT_IR_YIELD_CURVE`, `SDT_FX_MKT_CONVENTIONS`, `SDT_FX_SPOT`, `SDT_FX_SWAP`, `SDT_FX_FORWARD`, `SDT_FX_NDF`, `SDT_IR_VANILLA_INSTRUMENT`, `SDT_IR_FUTURE`, `SDT_FX_TIME_OPTION`, `SDT_VANILLA_BOND`, `SDT_CREDIT_INSTRUMENT`, `SDT_PM_CASH`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 比较不区分大小写；空字符串和 `NAN` 映射为无效哨兵。 |
-| `staticDataBytes` | STRING | 静态数据 protobuf 字节。 **有效性:** 必须是非空二进制 STRING，并能解析为说明中的精确 protobuf 类型。 |
-
-##### 返回值
-
-**返回：** BOOL `true`；失败时抛出异常，不返回 `false`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::createStaticData(staticDataType, staticDataBytes)
-```
-
 #### getObjectCacheJson
 
 ##### 语法
@@ -1269,118 +1237,6 @@ caplib::buildBondYieldCurve(
     "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL",
     "BOOTSTRAPPING_METHOD", 0, "", "CNY_TREAS_STD_CFETS", true)
 ```
-
-#### calcConversionFactor
-
-##### 语法
-
-```dolphindb
-caplib::calcConversionFactor(bondCouponRate DOUBLE, bondCpnFreq STRING, nominalCpnRate DOUBLE, bondMaturity DATE, settlementDate DATE, lastCpnDate DATE)
-```
-
-##### 详情
-
-根据票息条款、到期日、结算日、上次付息日和频率计算债券期货转换因子。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `bondCouponRate` | DOUBLE | 债券票息率。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `bondCpnFreq` | STRING | 债券票息频率。 **有效性:** 识别值：`ANNUAL`, `SEMIANNUAL`, `QUARTERLY`, `MONTHLY`。不区分大小写。 |
-| `nominalCpnRate` | DOUBLE | 名义票息率。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `bondMaturity` | DATE | 债券到期日。 **有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。 |
-| `settlementDate` | DATE | 结算日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。 |
-| `lastCpnDate` | DATE | 上一票息日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-caplib::calcConversionFactor(
-    0.03, "ANNUAL", 0.03, 2025.07.22, asOfDate, 2021.07.22)
-```
-
-#### calcImpliedRepoRate
-
-##### 语法
-
-```dolphindb
-caplib::calcImpliedRepoRate(futPrice DOUBLE, conversionFactor DOUBLE, bondCleanPrice DOUBLE, bondCpnRate DOUBLE, asOfDate DATE, lastCpnDate DATE, settlementDate DATE, dayCount STRING, nextCpnDate DATE, cpnFreq STRING)
-```
-
-##### 详情
-
-根据期货价格、转换因子、债券净价、票息现金流、日期和日计数约定计算隐含回购利率。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `futPrice` | DOUBLE | 期货价格。 **有效性:** 必须严格为正且有限；包装器通常仅检查类型。 |
-| `conversionFactor` | DOUBLE | 转换因子。 **有效性:** 必须严格为正且有限；包装器通常仅检查类型。 |
-| `bondCleanPrice` | DOUBLE | 债券净价。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `bondCpnRate` | DOUBLE | 债券票息率。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `asOfDate` | DATE | 市场数据基准日或估值参考日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `lastCpnDate` | DATE | 上一票息日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。 |
-| `settlementDate` | DATE | 结算日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。 |
-| `dayCount` | STRING | 日计数约定。 **有效性:** 识别值：`ACT_360`, `ACT/360`, `ACT_365`, `ACT/365`, `30/360`。不区分大小写。 |
-| `nextCpnDate` | DATE | 下一票息日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。 |
-| `cpnFreq` | STRING | 票息频率。 **有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。 任何其他字符串均回退到函数指定的默认频率。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-caplib::calcImpliedRepoRate(
-    98.0, 1.0, 99.0, 0.03, asOfDate, 2021.07.22, 2021.09.22,
-    "ACT_365", 2022.07.22, "ANNUAL")
-```
-
-#### calcZSpread
-
-##### 语法
-
-```dolphindb
-caplib::calcZSpread(npv DOUBLE, calculationDate DATE, bondBytes STRING, discountCurveBytes STRING, spreadCurveBytes STRING)
-```
-
-##### 详情
-
-求解常量 Z 利差，使序列化 VanillaBond 现金流经输入曲线贴现后等于目标 NPV。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `npv` | DOUBLE | 净现值。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `calculationDate` | DATE | 执行计算的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `bondBytes` | STRING | 债券对象 protobuf 字节。 **有效性:** 必须是非空二进制 STRING，并能解析为说明中的精确 protobuf 类型。 |
-| `discountCurveBytes` | STRING | 贴现曲线 protobuf 字节或 内存对象 句柄。 **有效性:** 必须是非空二进制 STRING，并能解析为说明中的精确 protobuf 类型。 |
-| `spreadCurveBytes` | STRING | 利差曲线 protobuf 字节或 内存对象 句柄。 **有效性:** 必须是非空二进制 STRING，并能解析为说明中的精确 protobuf 类型。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::calcZSpread(npv, calculationDate, bondBytes, discountCurveBytes, spreadCurveBytes)
-```
-
 #### calcYieldToMaturity
 
 ##### 语法
@@ -1418,7 +1274,6 @@ caplib::calcYieldToMaturity(
     asOfDate, "DISCRETE_COMPOUNDING", vanillaBond, cnyTreasStdCfets[0], 972294.9381034705,
     "DIRTY_PRICE", "ANNUAL")
 ```
-
 #### calcFixedCpnBondParRate
 
 ##### 语法
@@ -1429,7 +1284,7 @@ caplib::calcFixedCpnBondParRate(calculationDate DATE, bondHandle STRING, discoun
 
 ##### 详情
 
-计算使缓存 VanillaBond 平价的票息；利差曲线句柄为空时使用平坦零利差。
+计算缓存固定利率债券（VanillaBond）的平价票面利率：以给定贴现曲线贴现（可叠加信用利差曲线），求得使债券按面值定价的票息率。 `spreadCurveHandle` 传空字符串时按插件内部平坦零利差处理；传入其他类型曲线对象（如平坦信用曲线）会抛出异常。
 
 ##### 参数
 
@@ -1437,20 +1292,19 @@ caplib::calcFixedCpnBondParRate(calculationDate DATE, bondHandle STRING, discoun
 | --- | --- | --- |
 | `calculationDate` | DATE | 执行计算的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
 | `bondHandle` | STRING | 债券对象 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `discountCurveHandle` | STRING | 贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `spreadCurveHandle` | STRING | 利差曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
+| `discountCurveHandle` | STRING | 贴现曲线（IrYieldCurve） 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
+| `spreadCurveHandle` | STRING | 信用利差曲线 内存对象 句柄。 **有效性:** 传空字符串 `""` 时按内部平坦零利差处理；传非空值时必须是已存在的信用利差曲线 ObjectCache 键。 |
 
 ##### 返回值
 
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
+**返回：** DOUBLE 数值（小数形式的平价利率，如 0.0223）。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
 
 ##### 示例
 
 ```dolphindb
 loadPlugin("PluginCaplib")
 
-caplib::calcFixedCpnBondParRate(
-    asOfDate, vanillaBond, cnyTreasStdCfets[0], "")
+caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0])
 ```
 
 #### priceVanillaBond
@@ -2092,108 +1946,6 @@ caplib::createAssetYieldCurve(
 ```
 
 ### 利率
-
-#### calcIrVanillaSwapRate
-
-##### 语法
-
-```dolphindb
-caplib::calcIrVanillaSwapRate(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, discountCurveHandle STRING, forwardCurveHandle STRING)
-```
-
-##### 详情
-
-在计算日组合缓存的掉期模板、贴现曲线和远期曲线，计算指定期限的平价固定利率。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `calculationDate` | DATE | 执行计算的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `swapTemplateHandle` | STRING | 互换模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `tenor` | STRING | 期限字符串，例如 3M、6M、1Y 或 5Y。 **有效性:** 值必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
-| `discountCurveHandle` | STRING | 贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `forwardCurveHandle` | STRING | 远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::calcIrVanillaSwapRate(calculationDate, swapTemplateHandle, tenor, discountCurveHandle, forwardCurveHandle)
-```
-
-#### calcIborIndexRate
-
-##### 语法
-
-```dolphindb
-caplib::calcIborIndexRate(fixingDates DATE[], iborIndexHandle STRING, irYieldCurveHandle STRING)
-```
-
-##### 详情
-
-把缓存 IborIndex 约定应用到缓存 IrYieldCurve，为每个输入日期计算 IBOR 定盘值；输出顺序与 fixingDates 一致。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `fixingDates` | DATE[] | 观察或定盘日期数组。 **有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。 |
-| `iborIndexHandle` | STRING | IBOR 指数 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `irYieldCurveHandle` | STRING | 利率收益率曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-
-##### 返回值
-
-**返回：** DOUBLE 向量，元素顺序与输入一致。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::calcIborIndexRate(fixingDates, iborIndexHandle, irYieldCurveHandle)
-```
-
-#### calcTenorBasisSwapSpread
-
-##### 语法
-
-```dolphindb
-caplib::calcTenorBasisSwapSpread(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, discountCurveHandle STRING, shortForwardCurveHandle STRING, longForwardCurveHandle STRING)
-```
-
-##### 详情
-
-使用缓存模板、贴现曲线和两条远期曲线，计算使长短期限浮动腿平衡的利差。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `calculationDate` | DATE | 执行计算的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `swapTemplateHandle` | STRING | 互换模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `tenor` | STRING | 期限字符串，例如 3M、6M、1Y 或 5Y。 **有效性:** 值必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
-| `discountCurveHandle` | STRING | 贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `shortForwardCurveHandle` | STRING | 短期限远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `longForwardCurveHandle` | STRING | 长期限远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::calcTenorBasisSwapSpread(calculationDate, swapTemplateHandle, tenor, discountCurveHandle, shortForwardCurveHandle, longForwardCurveHandle)
-```
-
 #### buildIrSingleCurrencyCurve
 
 ##### 语法
@@ -2253,85 +2005,6 @@ caplib::buildIrSingleCurrencyCurve(
     ["IR_BUILT_CURVE"],
     "IR_SINGLE_CCY_BUILD_OUTPUT", true)
 ```
-
-#### buildIrCapFloorVolatilitySurface
-
-##### 语法
-
-```dolphindb
-caplib::buildIrCapFloorVolatilitySurface(iborIndex STRING, referenceDate DATE, quoteMatrixHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, definitionHandle STRING, displacement DOUBLE, name STRING, handle STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-构建利率上限/下限波动率曲面。 函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrCapFloorVolatilitySurface`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `iborIndex` | STRING | IBOR 指数名称或句柄。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
-| `referenceDate` | DATE | 曲线、曲面或构建请求的参考日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `quoteMatrixHandle` | STRING | 期权报价矩阵 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `discountCurveHandle` | STRING | 贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `forwardCurveHandle` | STRING | 远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `definitionHandle` | STRING | 波动率曲面定义 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `displacement` | DOUBLE | 移位对数正态模型使用的位移参数。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `name` | STRING | 写入创建对象的业务名称。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
-| `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `IrCapFloorVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::buildIrCapFloorVolatilitySurface(iborIndex, referenceDate, quoteMatrixHandle, discountCurveHandle, forwardCurveHandle, definitionHandle, displacement, name, handle)
-```
-
-#### buildIrSwaptionVolatilitySurface
-
-##### 语法
-
-```dolphindb
-caplib::buildIrSwaptionVolatilitySurface(instName STRING, referenceDate DATE, quoteCubeHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, underlyingSwapTemplateHandle STRING, handle STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-构建利率互换期权波动率曲面。 函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrSwaptionVolatilitySurface`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `instName` | STRING | 工具或模板名称，通常也作为缓存句柄。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
-| `referenceDate` | DATE | 曲线、曲面或构建请求的参考日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `quoteCubeHandle` | STRING | 报价立方体 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `discountCurveHandle` | STRING | 贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `forwardCurveHandle` | STRING | 远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `definitionHandle` | STRING | 波动率曲面定义 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `buildSettingsHandle` | STRING | 构建设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `underlyingSwapTemplateHandle` | STRING | 标的互换模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `IrSwaptionVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::buildIrSwaptionVolatilitySurface(instName, referenceDate, quoteCubeHandle, discountCurveHandle, forwardCurveHandle, definitionHandle, buildSettingsHandle, underlyingSwapTemplateHandle, handle)
-```
-
 #### priceIrVanillaInstrument
 
 ##### 语法
@@ -2369,81 +2042,6 @@ loadPlugin("PluginCaplib")
 caplib::priceIrVanillaInstrument(
     swap, asOfDate, mktData[0], pricingSettings, irRisk[0], "", "", true)
 ```
-
-#### priceIrCapFloor
-
-##### 语法
-
-```dolphindb
-caplib::priceIrCapFloor(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-执行定价并返回定价结果。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `instrumentHandle` | STRING | 被定价工具的 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingDate` | DATE | 定价请求使用的估值日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `mktDataHandle` | STRING | 定价使用的市场数据集 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingSettingsHandle` | STRING | 定价设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `riskSettingsHandle` | STRING | 风险设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `scnSettingsHandle` | STRING | 情景分析设置 内存对象 句柄；未使用时传空字符串。 **有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `mode` | STRING | 远程执行模式或服务端点；传空字符串使用默认模式。 **有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::priceIrCapFloor(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
-```
-
-#### priceIrEuropeanSwaption
-
-##### 语法
-
-```dolphindb
-caplib::priceIrEuropeanSwaption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-执行定价并返回定价结果。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `instrumentHandle` | STRING | 被定价工具的 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingDate` | DATE | 定价请求使用的估值日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `mktDataHandle` | STRING | 定价使用的市场数据集 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingSettingsHandle` | STRING | 定价设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `riskSettingsHandle` | STRING | 风险设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `scnSettingsHandle` | STRING | 情景分析设置 内存对象 句柄；未使用时传空字符串。 **有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `mode` | STRING | 远程执行模式或服务端点；传空字符串使用默认模式。 **有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::priceIrEuropeanSwaption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
-```
-
 #### buildIrVanillaInstrument
 
 ##### 语法
@@ -2484,85 +2082,6 @@ caplib::buildIrVanillaInstrument(
     "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
     swapTemplate, 1000000.0, "", "IR_SWAP", false)
 ```
-
-#### buildIrCapFloor
-
-##### 语法
-
-```dolphindb
-caplib::buildIrCapFloor(type STRING, strike DOUBLE, startDate DATE, endDate DATE, currency STRING, notionalAmount DOUBLE, instTemplateHandle STRING, handle STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-构建利率上限/下限工具。 函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrCapFloor`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `type` | STRING | 对象类型或业务类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`buildIrCapFloorInput_Type_CAP`, `buildIrCapFloorInput_Type_FLOOR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
-| `strike` | DOUBLE | 行权价。 **有效性:** 利率行权价必须有限；允许负值、零或正值。包装器仅检查类型/形状。 |
-| `startDate` | DATE | 起始日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `endDate` | DATE | 结束日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。 |
-| `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `notionalAmount` | DOUBLE | 名义本金金额。 **有效性:** 必须严格为正且有限；包装器通常仅检查类型。 |
-| `instTemplateHandle` | STRING | 工具模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `IrCapFloor` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::buildIrCapFloor(type, strike, startDate, endDate, currency, notionalAmount, instTemplateHandle, handle)
-```
-
-#### buildIrEuropeanSwaption
-
-##### 语法
-
-```dolphindb
-caplib::buildIrEuropeanSwaption(exerciseDate DATE, settlementDate DATE, settlementType STRING, swapMaturity DATE, fixedRate DOUBLE, payReceive STRING, currency STRING, notionalAmount DOUBLE, instTemplateHandle STRING, handle STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-构建欧式利率互换期权。 函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrEuropeanSwaption`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `exerciseDate` | DATE | 日期或日期数组。 **有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。 |
-| `settlementDate` | DATE | 结算日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。 |
-| `settlementType` | STRING | 结算类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`PHYSICAL_SETTLEMENT`, `CASH_SETTLEMENT`, `CASH_ZERO_COUPON_SETTLEMENT`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
-| `swapMaturity` | DATE | 互换到期期限。 **有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。 |
-| `fixedRate` | DOUBLE | 固定利率。 **有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。 |
-| `payReceive` | STRING | 支付或收取方向。 **有效性:** 值必须是以下完整 protobuf 标签之一：`PAY`, `PAYER`, `RECEIVE`, `RECEIVER`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
-| `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `notionalAmount` | DOUBLE | 名义本金金额。 **有效性:** 必须严格为正且有限；包装器通常仅检查类型。 |
-| `instTemplateHandle` | STRING | 工具模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `IrEuropeanSwaption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::buildIrEuropeanSwaption(exerciseDate, settlementDate, settlementType, swapMaturity, fixedRate, payReceive, currency, notionalAmount, instTemplateHandle, handle)
-```
-
 #### getDiscountFactor
 
 ##### 语法
@@ -2743,88 +2262,6 @@ loadPlugin("PluginCaplib")
 caplib::createIrCurveRiskSettings(
     1, 0, 0, 1.0e-4, 5.0e-1, 0, 1, 1.0e-4, 0, "CR_IR_RISK", false)
 ```
-
-#### calcCrossCurrencySwapRate
-
-##### 语法
-
-```dolphindb
-caplib::calcCrossCurrencySwapRate(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, targetDiscountCurveHandle STRING, baseDiscountCurveHandle STRING, baseForwardCurveHandle STRING)
-```
-
-##### 详情
-
-根据模板与期限、FX 现货信息以及目标/基础币种贴现和远期曲线计算交叉货币掉期利率。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `calculationDate` | DATE | 执行计算的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `swapTemplateHandle` | STRING | 互换模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `tenor` | STRING | 期限字符串，例如 3M、6M、1Y 或 5Y。 **有效性:** 值必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
-| `fxRate` | DOUBLE | 外汇汇率输入值。 **有效性:** 必须严格为正且有限；包装器仅检查 DOUBLE 类型。 |
-| `baseCcy` | STRING | 外汇或跨币种计算中的基准币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `targetCcy` | STRING | 外汇或跨币种计算中的目标币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `refDate` | DATE | 参考日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `spotDate` | DATE | 即期结算日。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。 |
-| `targetDiscountCurveHandle` | STRING | 目标币种贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `baseDiscountCurveHandle` | STRING | 基准币种贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `baseForwardCurveHandle` | STRING | 基准币种远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::calcCrossCurrencySwapRate(calculationDate, swapTemplateHandle, tenor, fxRate, baseCcy, targetCcy, refDate, spotDate, targetDiscountCurveHandle, baseDiscountCurveHandle, baseForwardCurveHandle)
-```
-
-#### calcCrossCurrencyBasisSwapSpread
-
-##### 语法
-
-```dolphindb
-caplib::calcCrossCurrencyBasisSwapSpread(calculationDate DATE, swapTemplateHandle STRING, tenor STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING, refDate DATE, spotDate DATE, targetDiscountCurveHandle STRING, targetForwardCurveHandle STRING, baseDiscountCurveHandle STRING, baseForwardCurveHandle STRING)
-```
-
-##### 详情
-
-根据模板、FX 现货信息、目标币种曲线和基础币种曲线计算平衡基差。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `calculationDate` | DATE | 执行计算的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `swapTemplateHandle` | STRING | 互换模板 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `tenor` | STRING | 期限字符串，例如 3M、6M、1Y 或 5Y。 **有效性:** 值必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
-| `fxRate` | DOUBLE | 外汇汇率输入值。 **有效性:** 必须严格为正且有限；包装器仅检查 DOUBLE 类型。 |
-| `baseCcy` | STRING | 外汇或跨币种计算中的基准币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `targetCcy` | STRING | 外汇或跨币种计算中的目标币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `refDate` | DATE | 参考日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `spotDate` | DATE | 即期结算日。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。 |
-| `targetDiscountCurveHandle` | STRING | 目标币种贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `targetForwardCurveHandle` | STRING | 目标币种远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `baseDiscountCurveHandle` | STRING | 基准币种贴现曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `baseForwardCurveHandle` | STRING | 基准币种远期曲线 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::calcCrossCurrencyBasisSwapSpread(calculationDate, swapTemplateHandle, tenor, fxRate, baseCcy, targetCcy, refDate, spotDate, targetDiscountCurveHandle, targetForwardCurveHandle, baseDiscountCurveHandle, baseForwardCurveHandle)
-```
-
 #### createIrParRateCurve
 
 ##### 语法
@@ -2954,76 +2391,6 @@ loadPlugin("PluginCaplib")
 
 result = caplib::buildIrCrossCurrencyCurve(referenceDate, targetCurveNames, buildSettingsHandles, parCurveHandles, dayCountConvention, compoundingType, frequency, otherCurveHandles, fxSpotHandle, buildingMethod, calcJacobian, shift, finiteDifferenceMethod, threadingMode, targetCurveHandles, outputHandle)
 ```
-
-#### createIrCapFloorQuoteMatrix
-
-##### 语法
-
-```dolphindb
-caplib::createIrCapFloorQuoteMatrix(asOfDate DATE, terms STRING[], strikes DOUBLE vector, vols DOUBLE matrix, instName STRING, factor DOUBLE, handle STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-创建并缓存利率上限/下限报价矩阵。 函数验证并转换字段，构造 `OptionQuoteMatrix` protobuf 并存入 ObjectCache，供后续分析使用。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `asOfDate` | DATE | 市场数据基准日或估值参考日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `terms` | STRING[] | 报价期限数组。 **有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
-| `strikes` | DOUBLE vector | 行权价数组或矩阵。 **有效性:** 利率行权价必须有限；允许负值、零或正值。包装器仅检查类型/形状。 |
-| `vols` | DOUBLE matrix | 波动率节点值数组。 **有效性:** 必须具有所列元素类型和形状；数值必须非负且有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。 |
-| `instName` | STRING | 工具或模板名称，通常也作为缓存句柄。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
-| `factor` | DOUBLE | 报价或工具缩放因子。 **有效性:** 必须严格为正且有限；包装器仅检查 DOUBLE 类型。 |
-| `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::createIrCapFloorQuoteMatrix(asOfDate, terms, strikes, vols, instName, factor, handle)
-```
-
-#### createIrSwaptionQuoteCube
-
-##### 语法
-
-```dolphindb
-caplib::createIrSwaptionQuoteCube(inputBytes STRING, handle STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-创建并缓存利率互换期权报价立方体。 函数验证并转换字段，构造 `IrSwaptionQuoteCube` protobuf 并存入 ObjectCache，供后续分析使用。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `inputBytes` | STRING | 输入对象 protobuf 字节。 **有效性:** 必须是非空二进制 STRING，并能解析为说明中的精确 protobuf 类型。 |
-| `handle` | STRING | 分配给创建对象并由函数返回的 内存对象 键。 **有效性:** 必须是非空 ObjectCache 键。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `IrSwaptionQuoteCube` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::createIrSwaptionQuoteCube(inputBytes, handle)
-```
-
 #### createIrMktDataSet
 
 ##### 语法
@@ -3200,44 +2567,6 @@ loadPlugin("PluginCaplib")
 
 result = caplib::priceIrCrossCurrencySwap(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
 ```
-
-#### priceIrMtmCrossCurrencySwap
-
-##### 语法
-
-```dolphindb
-caplib::priceIrMtmCrossCurrencySwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-执行定价并返回定价结果。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `instrumentHandle` | STRING | 被定价工具的 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingDate` | DATE | 定价请求使用的估值日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `mktDataHandle` | STRING | 定价使用的市场数据集 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingSettingsHandle` | STRING | 定价设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `riskSettingsHandle` | STRING | 风险设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `scnSettingsHandle` | STRING | 情景分析设置 内存对象 句柄；未使用时传空字符串。 **有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `mode` | STRING | 远程执行模式或服务端点；传空字符串使用默认模式。 **有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::priceIrMtmCrossCurrencySwap(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
-```
-
 #### createInterestCalcScheduleDefinition
 
 ##### 语法
@@ -3412,18 +2741,25 @@ caplib::createIrLegDefinition(legType STRING, currency STRING, dayCount STRING, 
 | `legType` | STRING | 现金流腿类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTEREST_RATE_LEG_TYPE`, `FIXED_LEG`, `FLOATING_LEG`, `FRA_LEG`, `STRUCTURED_LEG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
 | `dayCount` | STRING | 日计数约定。 **有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。 任何其他字符串均回退到函数指定的默认日计数。 |
-| `refIndex` | STRING | 参考利率指数名称或句柄。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
-| `payDiscountMethod` | STRING | 支付现金流贴现方法。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
-| `interestCalcMethod` | STRING | 利息计算方法。 **有效性:** 旧版 16 参数签名要求 STRING 标量，但当前实现忽略此值。 |
-| `interestRateCalcMethod` | STRING | 利率计算方法。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTEREST_RATE_CALCULATION_METHOD`, `STANDARD`, `COMPOUND_AVERAGE`, `ARITHMETIC_AVERAGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
-| `brokenRateCalcMethod` | STRING | 不规则期间利率计算方法。 **有效性:** 旧版 16 参数签名要求 STRING 标量，但当前实现忽略此值。 |
+| `refIndex` | STRING | 参考利率指数名称或句柄。 **有效性:** 固定腿传空字符串即可；浮动腿/FRA 腿须为可解析的参考指数。包装器不验证业务标识的字符集或成员资格。 |
+| `paymentDiscountMethod` | STRING | 支付现金流贴现方法。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `rateCalcMethod` | STRING | 利率计算方法。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTEREST_RATE_CALCULATION_METHOD`, `STANDARD`, `COMPOUND_AVERAGE`, `ARITHMETIC_AVERAGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `notionalExchange` | STRING | 是否交换名义本金。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_NOTIONAL_EXCHANGE`, `INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
-| `isSpread` | BOOL | 是否将输入利率作为利差处理。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `isFxConvert` | BOOL | 是否进行外汇折算。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `isFxReset` | BOOL | 是否使用外汇重置。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `calcSched` | STRING | 计息计算日程对象或句柄。 **有效性:** 必须是相应日程定义的 ObjectCache 句柄；仅 fixingSched 可为空。 |
-| `paySched` | STRING | 付款日程对象或句柄。 **有效性:** 必须是相应日程定义的 ObjectCache 句柄；仅 fixingSched 可为空。 |
-| `fixingSched` | STRING | 定盘日程对象或句柄。 **有效性:** 必须是相应日程定义的 ObjectCache 句柄；仅 fixingSched 可为空。 |
+| `spread` | BOOL | 是否将输入利率作为利差处理。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `fxConvert` | BOOL | 是否进行外汇折算。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `fxReset` | BOOL | 是否使用外汇重置。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `calendar` | STRING or STRING[] | 业务日历名称。 **有效性:** 每个名称必须是已注册的非空日历标识。 |
+| `freq` | STRING | 支付或计息频率。 **有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。 其他字符串会回退到该函数的默认/无效哨兵。 |
+| `interestDayConvention` | STRING | 计息日调整约定。 **有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。 其他字符串会回退到该函数的默认/无效哨兵。 |
+| `stubPolicy` | STRING | 短长首末期处理规则。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `brokenPeriodType` | STRING | 不规则首末期处理类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `payDayOffset` | INT | 付款日偏移天数。 **有效性:** 必须是 INT；除非另有说明，可为负、零或正。 |
+| `payDayConvention` | STRING | 付款日调整约定。 **有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。 其他字符串会回退到该函数的默认/无效哨兵。 |
+| `fixingCalendars` | STRING or STRING[] | 定盘日业务日历名称。 **有效性:** 每个名称必须是已注册的非空日历标识。 |
+| `fixingFreq` | STRING | 定盘频率。 **有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。 其他字符串会回退到该函数的默认/无效哨兵。 |
+| `fixingDayConvention` | STRING | 定盘日调整约定。 **有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。 其他字符串会回退到该函数的默认/无效哨兵。 |
+| `fixingMode` | STRING | 定盘值处理方式。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `fixingDayOffset` | INT | 定盘日偏移天数。 **有效性:** 必须是 INT；除非另有说明，可为负、零或正。 |
 | `tag` | STRING | 用于后续获取创建对象的 内存对象 键或标签。 **有效性:** 必须是非空 ObjectCache 键。 |
 | `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
 
@@ -3437,10 +2773,12 @@ caplib::createIrLegDefinition(legType STRING, currency STRING, dayCount STRING, 
 loadPlugin("PluginCaplib")
 
 caplib::createIrLegDefinition(
-    "FIXED_LEG", currency, "ACT_365_FIXED", "",
-    "NO_DISCOUNT", "SIMPLE", "STANDARD", "CURRENT",
-    "INVALID_NOTIONAL_EXCHANGE", 0, 0, 0,
-    fixedCalcSchedule, fixedPaySchedule, "", "IR_FIXED_LEG", false)
+    "FIXED_LEG", "CNY", "ACT_365_FIXED", "",
+    "NO_DISCOUNT", "STANDARD", "INITIAL_EXCHANGE",
+    false, false, false, "CAL_CFETS", "QUARTERLY",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING",
+    "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0,
+    "TF_IR_LEG", true)
 ```
 
 #### createIrVanillaInstrumentTemplate
@@ -3552,116 +2890,6 @@ caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "AN_FLAT_IR_CURVE", false)
 ```
 
 ### 外汇
-
-#### calcFxForwardRate
-
-##### 语法
-
-```dolphindb
-caplib::calcFxForwardRate(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)
-```
-
-##### 详情
-
-根据缓存现货报价以及本币和外币贴现曲线计算交割日 FX 远期汇率。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `calculationDate` | DATE | 该计算使用的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `leftCcy` | STRING | 货币对的左侧币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `rightCcy` | STRING | 货币对的右侧币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `deliveryDate` | DATE | 该计算使用的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。 |
-| `fxSpotRateHandle` | STRING | FxSpotRate 的 ObjectCache 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `domesticDiscountCurveHandle` | STRING | domestic IrYieldCurve 的 ObjectCache 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `foreignDiscountCurveHandle` | STRING | foreign IrYieldCurve 的 ObjectCache 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve)
-```
-
-#### calcFxSwapPoint
-
-##### 语法
-
-```dolphindb
-caplib::calcFxSwapPoint(calculationDate DATE, leftCcy STRING, rightCcy STRING, deliveryDate DATE, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)
-```
-
-##### 详情
-
-根据现货报价与两条贴现曲线隐含的远期相对现货调整计算交割日 FX 掉期点。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `calculationDate` | DATE | 该计算使用的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `leftCcy` | STRING | 货币对的左侧币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `rightCcy` | STRING | 货币对的右侧币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `deliveryDate` | DATE | 该计算使用的日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。 |
-| `fxSpotRateHandle` | STRING | FxSpotRate 的 ObjectCache 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `domesticDiscountCurveHandle` | STRING | domestic IrYieldCurve 的 ObjectCache 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `foreignDiscountCurveHandle` | STRING | foreign IrYieldCurve 的 ObjectCache 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve)
-```
-
-#### calcFxPrice
-
-##### 语法
-
-```dolphindb
-caplib::calcFxPrice(amount DOUBLE, currency STRING, destCcy STRING, fxRate DOUBLE, baseCcy STRING, targetCcy STRING)
-```
-
-##### 详情
-
-按给定基础/目标币种 FX 汇率将金额转换为 destCcy，并返回转换金额。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `amount` | DOUBLE | 金额。 **有效性:** 必须为有限 DOUBLE；负值、零和正值均有效，可表示带符号的换算金额。 |
-| `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `destCcy` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `fxRate` | DOUBLE | 外汇汇率输入值。 **有效性:** 必须严格为正且有限；包装器仅检查 DOUBLE 类型。 |
-| `baseCcy` | STRING | 外汇或跨币种计算中的基准币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-| `targetCcy` | STRING | 外汇或跨币种计算中的目标币种。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
-
-##### 返回值
-
-**返回：** DOUBLE 数值。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::calcFxPrice(amount, currency, destCcy, fxRate, baseCcy, targetCcy)
-```
-
 #### calcFxAtmStrike
 
 ##### 语法
@@ -4010,44 +3238,6 @@ loadPlugin("PluginCaplib")
 caplib::priceFxNonDeliverableForward(
     fxNdf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)
 ```
-
-#### priceFxTimeOption
-
-##### 语法
-
-```dolphindb
-caplib::priceFxTimeOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
-```
-
-##### 详情
-
-定价外汇时间期权。 函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
-
-##### 参数
-
-| 参数 | 类型 / 形状 | 说明 |
-| --- | --- | --- |
-| `instrumentHandle` | STRING | 被定价工具的 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingDate` | DATE | 定价请求使用的估值日期。 **有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。 |
-| `mktDataHandle` | STRING | 定价使用的市场数据集 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `pricingSettingsHandle` | STRING | 定价设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `riskSettingsHandle` | STRING | 风险设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `scnSettingsHandle` | STRING | 情景分析设置 内存对象 句柄；未使用时传空字符串。 **有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。 |
-| `mode` | STRING | 远程执行模式或服务端点；传空字符串使用默认模式。 **有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。 |
-| `returnJson` | BOOL | 可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-
-##### 返回值
-
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。 **状态/错误行为：** 对于服务调用，`success=true` 表示已生成上述结果；`success=false` 表示没有有效结果，服务 `err_msg` 会写入 DolphinDB `RuntimeException`。仅包装器执行的操作不提供状态标量。参数验证、缓存类/句柄、解析和序列化错误也会抛出异常，因此所有错误都表现为异常，而不是备用标量或部分对象。
-
-##### 示例
-
-```dolphindb
-loadPlugin("PluginCaplib")
-
-result = caplib::priceFxTimeOption(instrumentHandle, pricingDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
-```
-
 #### priceFxEuropeanOption
 
 ##### 语法
@@ -8221,8 +7411,8 @@ caplib::getCreditSpread(flatCreditCurve, curveDates)
 // =============================================================================
 // DolphinDB caplib Plugin Example: FI Analytics
 // =============================================================================
-// This script is stripped from test/test_fianalytics.dos and shows the main
-// fixed-income curve and bond pricing flow.
+// Kept in sync with the per-function suites under test/fi; shows the
+// main fixed-income curve and bond pricing flow.
 
 loadPlugin("PluginCaplib")
 
@@ -8245,18 +7435,18 @@ spreadCurve = caplib::createCreditCurve(
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CNY_MTN_AAA", "FI_CREDIT_CURVE", false)
 
-// Create the bond leg definition for the sample bond.
-bondLeg = caplib::createBondLegDefinition(
-    "FIXED_COUPON_BOND", 1, currency, "ACT_365_FIXED", "CAL_CFETS",
-    "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "", "", "ANNUAL",
-    "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "FI_BOND_LEG", false)
-
 // Create the bond template used to build a vanilla bond.
 bondTemplate = caplib::createVanillaBondTemplate(
     "CNY_TREAS_CPN_BOND", "FIXED_COUPON_BOND",
     2020.07.22, 1, 2020.07.22, "5Y",
-    0.03, 100.0, 0.4, bondLeg, false)
+    0.03, currency, 100.0,
+    "ACT_365_FIXED", "CAL_CFETS", "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, false)
 
 // Build the vanilla bond instrument from its template.
 vanillaBond = caplib::buildVanillaBond(

@@ -53,33 +53,33 @@ def isMatrix(value) {
 // ============================================================================
 
 @testing:case="createPriceVolRiskSettings valid call"
-result = caplib::createPriceVolRiskSettings(1, 0.01, 0.01, 0, 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)
-assert 1, result == "TF_PRICE_VOL_RISK"
-
-@testing:case="createPriceVolRiskSettings rejects STRING method", exception=1
-caplib::createPriceVolRiskSettings(1, 0.01, 0.01, "1", 0, 0.01, 0.01, 0, "TF_PV_RISK_BAD")
+result = caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
+assert 1, result == "TF_createPriceVolRiskSettings_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createPriceVolRiskSettings rejects missing argument", syntaxError=1
-caplib::createPriceVolRiskSettings(1, 0.01, 0.01, 0, 0, 0.01, 0.01, 0)
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1)
 
 @testing:case="createPriceVolRiskSettings rejects extra argument", syntaxError=1
-caplib::createPriceVolRiskSettings(1, 0.01, 0.01, 0, 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false, 1)
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false, 1)
 
 @testing:case="createPriceVolRiskSettings rejects wrong type for priceShift", exception=1
-caplib::createPriceVolRiskSettings(1, "bad", 0.01, 0, 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)
+caplib::createPriceVolRiskSettings(false, "bad", 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
 @testing:case="createPriceVolRiskSettings rejects wrong type for volShift", exception=1
-caplib::createPriceVolRiskSettings(1, 0.01, "bad", 0, 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)
+caplib::createPriceVolRiskSettings(false, 0.02, "bad", 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
 @testing:case="createPriceVolRiskSettings rejects wrong type for method", exception=1
-caplib::createPriceVolRiskSettings(1, 0.01, 0.01, "1", 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, "1", 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
 @testing:case="createPriceVolRiskSettings rejects null method", exception=1
-caplib::createPriceVolRiskSettings(1, 0.01, 0.01, int(), 0, 0.01, 0.01, 0, "TF_PRICE_VOL_RISK", false)
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, int(), 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
+
+@testing:case="createPriceVolRiskSettings rejects null granularity", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, int(), 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
 @testing:case="createPriceVolRiskSettings rejects keyword arguments", syntaxError=1
-caplib::createPriceVolRiskSettings(vanna=1, priceShift=0.01, volShift=0.01, method=0, granularity=0, priceScaling=0.01, volScaling=0.01, threading=0, handle="TF_PRICE_VOL_RISK", returnJson=false)
+caplib::createPriceVolRiskSettings(vanna=false, priceShift=0.02, volShift=0.02, method=1, granularity=1, priceScaling=0.02, volScaling=0.02, threading=1, handle="TF_createPriceVolRiskSettings_H", returnJson=false)

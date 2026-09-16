@@ -241,10 +241,6 @@ usdcnhMktData = caplib::createFxMktDataSet(
 usdcnhFallbackMktData = caplib::createFxMktDataSet(
     asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "USDCNH_FALLBACK_MKT", true);
 
-calcFxForwardRateValue = caplib::calcFxForwardRate(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
-calcFxSwapPointValue = caplib::calcFxSwapPoint(
-    asOfDate, "EUR", "USD", 2021.07.01, eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeValue = caplib::calcFxAtmStrike(
     "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 calcFxAtmStrikeShort = caplib::calcFxAtmStrike(
@@ -266,32 +262,37 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
-@testing:case="createFxMktDataSet -> [handle, json]"
-r = caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], builtVolSurface[0], "", "TF_FX_MKT", true);
-assert 1, isHandleJson(r, "TF_FX_MKT")
-
-@testing:case="createFxMktDataSet empty vol surface fallback"
-r2 = caplib::createFxMktDataSet(asOfDate, cnhCurve, usdCurve, usdcnhSpotRate[0], "", "", "TF_FX_MKT_FALLBACK", true);
-assert 1, isHandleJson(r2, "TF_FX_MKT_FALLBACK") && hasJsonField(r2[1], "vol_surf")
+@testing:case="createFxMktDataSet -> handle"
+result = caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", false)
+assert 1, result == "TF_FXMKT"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createFxMktDataSet rejects missing argument", syntaxError=1
-caplib::createFxMktDataSet(2024.01.01, "X", "X", "X", "X", "X")
+caplib::createFxMktDataSet(2024.01.01, "X", "X", "X", "X", "TF_createFxMktDataSet_H")
 
 @testing:case="createFxMktDataSet rejects extra argument", syntaxError=1
-caplib::createFxMktDataSet(2024.01.01, "X", "X", "X", "X", "X", "X", false, 1)
+caplib::createFxMktDataSet(2024.01.01, "X", "X", "X", "X", "TF_createFxMktDataSet_H", "TF_createFxMktDataSet_H", false, 1)
+
+@testing:case="createFxMktDataSet rejects wrong type for asOfDate", exception=1
+caplib::createFxMktDataSet("bad", "X", "X", "X", "X", "TF_createFxMktDataSet_H", "TF_createFxMktDataSet_H", false)
+
+@testing:case="createFxMktDataSet rejects wrong type for domDiscountCurve", exception=1
+caplib::createFxMktDataSet(2024.01.01, 1, "X", "X", "X", "TF_createFxMktDataSet_H", "TF_createFxMktDataSet_H", false)
+
+@testing:case="createFxMktDataSet rejects wrong type for forDiscountCurve", exception=1
+caplib::createFxMktDataSet(2024.01.01, "X", 1, "X", "X", "TF_createFxMktDataSet_H", "TF_createFxMktDataSet_H", false)
 
 @testing:case="createFxMktDataSet rejects null asOfDate", exception=1
-caplib::createFxMktDataSet(date(), "X", "X", "X", "X", "X", "X", false)
+caplib::createFxMktDataSet(date(), "X", "X", "X", "X", "TF_createFxMktDataSet_H", "TF_createFxMktDataSet_H", false)
 
 @testing:case="createFxMktDataSet rejects null domDiscountCurve", exception=1
-caplib::createFxMktDataSet(2024.01.01, string(), "X", "X", "X", "X", "X", false)
+caplib::createFxMktDataSet(2024.01.01, string(), "X", "X", "X", "TF_createFxMktDataSet_H", "TF_createFxMktDataSet_H", false)
 
 @testing:case="createFxMktDataSet rejects vector for scalar asOfDate", exception=1
-caplib::createFxMktDataSet([2024.01.01], "X", "X", "X", "X", "X", "X", false)
+caplib::createFxMktDataSet([2024.01.01], "X", "X", "X", "X", "TF_createFxMktDataSet_H", "TF_createFxMktDataSet_H", false)
 
 @testing:case="createFxMktDataSet rejects keyword arguments", syntaxError=1
-caplib::createFxMktDataSet(asOfDate=2024.01.01, domDiscountCurve="X", forDiscountCurve="X", spot="X", volSurface="X", name="X", tag="X", returnJson=false)
+caplib::createFxMktDataSet(asOfDate=2024.01.01, domDiscountCurve="X", forDiscountCurve="X", spot="X", volSurface="X", name="TF_createFxMktDataSet_H", tag="TF_createFxMktDataSet_H", returnJson=false)

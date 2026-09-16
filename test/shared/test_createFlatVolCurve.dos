@@ -61,36 +61,36 @@ curveValues = [0.02, 0.025];
 // ============================================================================
 
 @testing:case="createFlatVolCurve valid call"
-result = caplib::createFlatVolCurve(asOfDate, 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
-assert 1, result == "TF_FLAT_VOL_CURVE"
+result = caplib::createFlatVolCurve(2024.01.01, 0.02, "X", "TF_createFlatVolCurve_H", false)
+assert 1, result == "TF_createFlatVolCurve_H"
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createFlatVolCurve rejects missing argument", syntaxError=1
-caplib::createFlatVolCurve(asOfDate, 0.20, "TF_UNDERLYING")
+caplib::createFlatVolCurve(2024.01.01, 0.02, "X")
 
 @testing:case="createFlatVolCurve rejects extra argument", syntaxError=1
-caplib::createFlatVolCurve(asOfDate, 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false, 1)
+caplib::createFlatVolCurve(2024.01.01, 0.02, "X", "TF_createFlatVolCurve_H", false, 1)
 
 @testing:case="createFlatVolCurve rejects wrong type for referenceDate", exception=1
-caplib::createFlatVolCurve("bad", 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+caplib::createFlatVolCurve("bad", 0.02, "X", "TF_createFlatVolCurve_H", false)
 
 @testing:case="createFlatVolCurve rejects wrong type for volatility", exception=1
-caplib::createFlatVolCurve(asOfDate, "bad", "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+caplib::createFlatVolCurve(2024.01.01, "bad", "X", "TF_createFlatVolCurve_H", false)
 
 @testing:case="createFlatVolCurve rejects wrong type for underlying", exception=1
-caplib::createFlatVolCurve(asOfDate, 0.20, 1, "TF_FLAT_VOL_CURVE", false)
+caplib::createFlatVolCurve(2024.01.01, 0.02, 1, "TF_createFlatVolCurve_H", false)
 
 @testing:case="createFlatVolCurve rejects null referenceDate", exception=1
-caplib::createFlatVolCurve(date(), 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+caplib::createFlatVolCurve(date(), 0.02, "X", "TF_createFlatVolCurve_H", false)
 
 @testing:case="createFlatVolCurve rejects null volatility", exception=1
-caplib::createFlatVolCurve(asOfDate, double(), "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+caplib::createFlatVolCurve(2024.01.01, double(), "X", "TF_createFlatVolCurve_H", false)
 
 @testing:case="createFlatVolCurve rejects vector for scalar referenceDate", exception=1
-caplib::createFlatVolCurve([2024.01.01], 0.20, "TF_UNDERLYING", "TF_FLAT_VOL_CURVE", false)
+caplib::createFlatVolCurve([2024.01.01], 0.02, "X", "TF_createFlatVolCurve_H", false)
 
 @testing:case="createFlatVolCurve rejects keyword arguments", syntaxError=1
-caplib::createFlatVolCurve(referenceDate=asOfDate, volatility=0.20, underlying="TF_UNDERLYING", handle="TF_FLAT_VOL_CURVE", returnJson=false)
+caplib::createFlatVolCurve(referenceDate=2024.01.01, volatility=0.02, underlying="X", handle="TF_createFlatVolCurve_H", returnJson=false)

@@ -131,19 +131,28 @@ caplib::buildCreditDefaultSwap(-1000000.0, currency, 2019.06.20, 2024.06.20, "PA
 // ----------------------------------------------------------------------------
 
 @testing:case="buildCreditDefaultSwap rejects missing argument", syntaxError=1
-caplib::buildCreditDefaultSwap(0.02, "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X")
+caplib::buildCreditDefaultSwap(0.02, "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H")
 
 @testing:case="buildCreditDefaultSwap rejects extra argument", syntaxError=1
-caplib::buildCreditDefaultSwap(0.02, "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false, 1)
+caplib::buildCreditDefaultSwap(0.02, "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H", "TF_buildCreditDefaultSwap_H", false, 1)
+
+@testing:case="buildCreditDefaultSwap rejects wrong type for nominal", exception=1
+caplib::buildCreditDefaultSwap("bad", "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H", "TF_buildCreditDefaultSwap_H", false)
+
+@testing:case="buildCreditDefaultSwap rejects wrong type for currency", exception=1
+caplib::buildCreditDefaultSwap(0.02, 1, 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H", "TF_buildCreditDefaultSwap_H", false)
+
+@testing:case="buildCreditDefaultSwap rejects wrong type for issueDate", exception=1
+caplib::buildCreditDefaultSwap(0.02, "X", "bad", 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H", "TF_buildCreditDefaultSwap_H", false)
 
 @testing:case="buildCreditDefaultSwap rejects null nominal", exception=1
-caplib::buildCreditDefaultSwap(double(), "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false)
+caplib::buildCreditDefaultSwap(double(), "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H", "TF_buildCreditDefaultSwap_H", false)
 
 @testing:case="buildCreditDefaultSwap rejects null currency", exception=1
-caplib::buildCreditDefaultSwap(0.02, string(), 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false)
+caplib::buildCreditDefaultSwap(0.02, string(), 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H", "TF_buildCreditDefaultSwap_H", false)
 
 @testing:case="buildCreditDefaultSwap rejects vector for scalar nominal", exception=1
-caplib::buildCreditDefaultSwap([0.02], "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "X", "X", false)
+caplib::buildCreditDefaultSwap([0.02], "X", 2024.01.01, 2024.01.01, "X", "X", 0.02, 0.02, "X", 0.02, 0.02, "X", "X", "X", "X", "X", 0.02, false, "TF_buildCreditDefaultSwap_H", "TF_buildCreditDefaultSwap_H", false)
 
 @testing:case="buildCreditDefaultSwap rejects keyword arguments", syntaxError=1
-caplib::buildCreditDefaultSwap(nominal=0.02, currency="X", issueDate=2024.01.01, maturity=2024.01.01, protectionLegPayReceive="X", protectionLegSettlementType="X", protectionLegReferencePrice=0.02, protectionLegLeverage=0.02, creditProtectionType="X", protectionLegRecoveryRate=0.02, couponRate=0.02, creditPremiumType="X", dayCountConvention="X", frequency="X", businessDayConvention="X", calendars="X", upfrontRate=0.02, rebateAccrual=false, name="X", tag="X", returnJson=false)
+caplib::buildCreditDefaultSwap(nominal=0.02, currency="X", issueDate=2024.01.01, maturity=2024.01.01, protectionLegPayReceive="X", protectionLegSettlementType="X", protectionLegReferencePrice=0.02, protectionLegLeverage=0.02, creditProtectionType="X", protectionLegRecoveryRate=0.02, couponRate=0.02, creditPremiumType="X", dayCountConvention="X", frequency="X", businessDayConvention="X", calendars="X", upfrontRate=0.02, rebateAccrual=false, name="TF_buildCreditDefaultSwap_H", tag="TF_buildCreditDefaultSwap_H", returnJson=false)

@@ -139,6 +139,15 @@ caplib::createCdsTemplate("X", "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "
 @testing:case="createCdsTemplate rejects extra argument", syntaxError=1
 caplib::createCdsTemplate("X", "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false, 1)
 
+@testing:case="createCdsTemplate rejects wrong type for instName", exception=1
+caplib::createCdsTemplate(1, "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
+
+@testing:case="createCdsTemplate rejects wrong type for startDelay", exception=1
+caplib::createCdsTemplate("X", 1, "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
+
+@testing:case="createCdsTemplate rejects wrong type for settlementType", exception=1
+caplib::createCdsTemplate("X", "X", 1, 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
+
 @testing:case="createCdsTemplate rejects null instName", exception=1
 caplib::createCdsTemplate(string(), "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 
