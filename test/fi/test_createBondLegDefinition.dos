@@ -94,15 +94,33 @@ caplib::createBondLegDefinition(bondType="X", settlementDays=1, currency="X", da
 // Review wave-1 additions (wiki test-case review)
 // ----------------------------------------------------------------------------
 
-@testing:case="createBondLegDefinition accepts invalid enum bondType (maps to invalid sentinel)"
+@testing:case="createBondLegDefinition accepts invalid enum for bondType (lenient validation, does not raise)"
 result = caplib::createBondLegDefinition("NOT_A_VALID_ENUM_LABEL", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", true)
 assert 1, typestr(result) != "VOID"
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
 
 @testing:case="createBondLegDefinition optional returnJson null uses default"
-result = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", bool())
+result = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondLegDefinition supports all enums (review)"
+labelEnum = ["FIXED_COUPON_BOND", "FLOATING_COUPON_BOND", "ZERO_COUPON_BOND"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createBondLegDefinition(labelEnum[i], 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="createBondLegDefinition rejects negative settlementDays", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", -1.0, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", true)
+

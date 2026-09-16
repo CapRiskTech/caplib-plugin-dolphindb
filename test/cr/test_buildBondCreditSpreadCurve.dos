@@ -216,7 +216,7 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 
 // ============================================================================
 // Tests
-============================================================================
+// ============================================================================
 
 @testing:case="buildBondCreditSpreadCurve -> [handle, json]"
 r = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true);
@@ -264,3 +264,31 @@ caplib::buildBondCreditSpreadCurve(referenceDate=2024.01.01, curveName="X", parC
 @testing:case="buildBondCreditSpreadCurve optional returnJson null uses default"
 result = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondCreditSpreadCurve rejects wrong object type for discountCurveHandle", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], parCnyMtnAaaSprdStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5e additions (built-curve frozen references)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondCreditSpreadCurve -> frozen curve reference"
+csRef = caplib::getCreditSpread(cnyMtnAaaSprdStdCfets[0], [2026.07.22]);
+assert 1, abs(csRef[0] - 0.006076153038623) < 1.0e-12
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondCreditSpreadCurve rejects wrong object type for discountCurveHandle", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], parCnyMtnAaaSprdStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true)
+

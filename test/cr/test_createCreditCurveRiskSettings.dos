@@ -84,7 +84,6 @@ caplib::createCreditCurveRiskSettings(false, false, 0.02, 1, int(), 0.02, 1, "TF
 @testing:case="createCreditCurveRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createCreditCurveRiskSettings(delta=false, gamma=false, shift=0.02, method=1, granularity=1, scaling=0.02, threading=1, handle="TF_createCreditCurveRiskSettings_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -92,3 +91,19 @@ caplib::createCreditCurveRiskSettings(delta=false, gamma=false, shift=0.02, meth
 @testing:case="createCreditCurveRiskSettings optional returnJson null uses default"
 result = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCreditCurveRiskSettings rejects zero scaling (lenient validation, does not raise)"
+result = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 0.0, 0, "TF_CCR", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createCreditCurveRiskSettings rejects negative scaling (lenient validation, does not raise)"
+result = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, -1.0, 0, "TF_CCR", false)
+assert 1, typestr(result) != "VOID"
+

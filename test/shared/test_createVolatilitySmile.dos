@@ -113,9 +113,10 @@ caplib::createVolatilitySmile(volSmileType="X", referenceDate=2024.01.01, strike
 @testing:case="createVolatilitySmile accepts all-null vector strikes (lenient validation, does not raise)"
 result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [double(), double(), double()], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 assert 1, typestr(result) != "VOID"
+
+
 @testing:case="createVolatilitySmile rejects invalid enum for extrapMethod", exception=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "NOT_A_VALID_ENUM_LABEL", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -124,3 +125,28 @@ caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0]
 @testing:case="createVolatilitySmile optional returnJson null uses default"
 result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySmile supports all volSmileType enums"
+labelEnum = ["STRIKE", "STRIKE_VOL_SMILE", "DELTA", "DELTA_VOL_SMILE", "LOG_STRIKE", "LOG_STRIKE_VOL_SMILE"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createVolatilitySmile(labelEnum[i], asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="createVolatilitySmile accepts zero term (lenient validation, does not raise)"
+result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 0.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createVolatilitySmile accepts negative term (lenient validation, does not raise)"
+result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", -1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
+assert 1, typestr(result) != "VOID"
+

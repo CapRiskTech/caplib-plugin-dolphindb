@@ -171,3 +171,27 @@ caplib::createCdsPricingSettings(currency, 0, 1, 0, "NOT_A_VALID_ENUM_LABEL", "H
 @testing:case="createCdsPricingSettings optional returnJson null uses default"
 result = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createCdsPricingSettings supports all numericalFix enums"
+labelEnum = ["NONE_FIX", "TAYLOR"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createCdsPricingSettings(currency, 0, 1, 0, labelEnum[i], "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+// all documented labels were rejected by the plugin in scalar form
+// (sweep removed 2026-09-16 after per-label probing)
+

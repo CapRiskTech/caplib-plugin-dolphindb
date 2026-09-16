@@ -81,7 +81,7 @@ caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTempla
 caplib::buildPmYieldCurve(date(), pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
 @testing:case="buildPmYieldCurve rejects nonexistent parCurveHandle", exception=1
-caplib::buildPmYieldCurve(2019.09.04, "TF_NO_SUCH_HANDLE_buildPmYieldCurve", usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
+caplib::buildPmYieldCurve(2019.09.04, "TF_HANDLE_DOES_NOT_EXIST", usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
 @testing:case="buildPmYieldCurve rejects invalid interp method", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "NOT_AN_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
@@ -98,9 +98,21 @@ caplib::buildPmYieldCurve(referenceDate=2019.09.04, parCurveHandle=pmParRateCurv
 @testing:case="buildPmYieldCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, "TF_NO_SUCH_HANDLE_buildPmYieldCurve", usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
+
 @testing:case="buildPmYieldCurve rejects invalid enum for dayCount", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "NOT_A_VALID_ENUM_LABEL", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
+// ----------------------------------------------------------------------------
+// Review wave-3 additions (independent numeric references)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildPmYieldCurve -> frozen curve reference"
+// The bootstrap output for the upstream fixture is deterministic; the 1M/6M/12M
+// pillar values are frozen (first pillar -0.0041261325250508763).
+rpmb = caplib::buildPmYieldCurve(2019.09.04, "PAR_30", "DEPO_30", "XAUUSD", 1544.06, 0,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 0.0001,
+    "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "FWD_30B", true);
+assert 1, strpos(rpmb[1], "-0.0041261325250508763") >= 0
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -109,3 +121,25 @@ caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTempla
 @testing:case="buildPmYieldCurve optional returnJson null uses default"
 result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildPmYieldCurve rejects wrong object type for discountCurveHandle", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, pmParRateCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+
+
+
+@testing:case="buildPmYieldCurve accepts zero spotPrice (lenient validation, does not raise)"
+result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 0.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="buildPmYieldCurve accepts negative spotPrice (lenient validation, does not raise)"
+result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+assert 1, typestr(result) != "VOID"
+

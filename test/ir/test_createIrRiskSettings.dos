@@ -140,3 +140,22 @@ caplib::createIrRiskSettings(irCurveRiskSettingsHandle="X", thetaRiskSettingsHan
 @testing:case="createIrRiskSettings optional returnJson null uses default"
 result = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IRRISK", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrRiskSettings rejects wrong object type for thetaRiskSettingsHandle", exception=1
+caplib::createIrRiskSettings(irCurveRisk, irCurveRisk, "TF_IRRISK", false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrRiskSettings rejects wrong object type for thetaRiskSettingsHandle", exception=1
+caplib::createIrRiskSettings(irCurveRisk, irCurveRisk, "TF_IRRISK", false)
+

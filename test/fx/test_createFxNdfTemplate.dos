@@ -314,3 +314,24 @@ caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "NOT_A_VALID_ENUM_LABE
 @testing:case="createFxNdfTemplate optional returnJson null uses default"
 result = caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxNdfTemplate supports all deliveryDayConvention enums"
+labelEnum = ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", labelEnum[i], "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+

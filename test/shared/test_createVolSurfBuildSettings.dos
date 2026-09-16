@@ -84,7 +84,6 @@ caplib::createVolSurfBuildSettings([1], 0.02, "TF_createVolSurfBuildSettings_H",
 @testing:case="createVolSurfBuildSettings rejects keyword arguments", syntaxError=1
 caplib::createVolSurfBuildSettings(fixedParamIndex=1, fixedParamValue=0.02, handle="TF_createVolSurfBuildSettings_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -92,3 +91,13 @@ caplib::createVolSurfBuildSettings(fixedParamIndex=1, fixedParamValue=0.02, hand
 @testing:case="createVolSurfBuildSettings optional returnJson null uses default"
 result = caplib::createVolSurfBuildSettings(1, 0.02, "TF_createVolSurfBuildSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolSurfBuildSettings rejects negative fixedParamIndex", exception=1
+caplib::createVolSurfBuildSettings(-1.0, 0.02, "TF_createVolSurfBuildSettings_H", false)
+

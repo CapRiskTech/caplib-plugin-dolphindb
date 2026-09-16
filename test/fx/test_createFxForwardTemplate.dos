@@ -314,3 +314,24 @@ caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", "NOT_A_VALID_ENUM_
 @testing:case="createFxForwardTemplate optional returnJson null uses default"
 result = caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", ["CAL_EUTA","CAL_GBLO"], bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxForwardTemplate supports all deliveryDayConvention enums"
+labelEnum = ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", labelEnum[i], "PRECEDING", ["CAL_EUTA","CAL_GBLO"], false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+

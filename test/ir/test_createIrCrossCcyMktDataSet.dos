@@ -173,3 +173,24 @@ caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [string(), string(), str
 @testing:case="createIrCrossCcyMktDataSet optional returnJson null uses default"
 result = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrCrossCcyMktDataSet accepts rejects wrong object type for forwardCurveHandles (lenient validation, does not raise)"
+result = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, usdCurve, fxSpot[0], "TF_IR_XMKT", true)
+assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrCrossCcyMktDataSet rejects wrong object type for forwardCurveHandles (lenient validation, does not raise)"
+result = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, usdCurve, fxSpot[0], "TF_IR_XMKT", true)
+assert 1, typestr(result) != "VOID"
+

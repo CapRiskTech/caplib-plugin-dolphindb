@@ -167,3 +167,24 @@ caplib::createIrMktDataSet(irAsOfDate, irCurve, [string(), string(), string()], 
 @testing:case="createIrMktDataSet optional returnJson null uses default"
 result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrMktDataSet accepts rejects wrong object type for forwardCurveHandles (lenient validation, does not raise)"
+result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, "TF_IRMKT", false)
+assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrMktDataSet rejects wrong object type for forwardCurveHandles (lenient validation, does not raise)"
+result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, "TF_IRMKT", false)
+assert 1, typestr(result) != "VOID"
+

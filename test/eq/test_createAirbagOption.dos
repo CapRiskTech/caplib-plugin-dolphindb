@@ -211,7 +211,6 @@ caplib::createAirbagOption(payoffType="X", expiry=2024.01.01, delivery=2024.01.0
 result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -219,3 +218,19 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createAirbagOption optional returnJson null uses default"
 result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createAirbagOption rejects zero nominal (lenient validation, does not raise)"
+result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 0.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createAirbagOption rejects negative nominal (lenient validation, does not raise)"
+result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+

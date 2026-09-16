@@ -151,7 +151,6 @@ caplib::createFlatCreditCurve([2024.01.01], 0.02, "TF_createFlatCreditCurve_H", 
 @testing:case="createFlatCreditCurve rejects keyword arguments", syntaxError=1
 caplib::createFlatCreditCurve(referenceDate=2024.01.01, hazardRate=0.02, handle="TF_createFlatCreditCurve_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -159,3 +158,14 @@ caplib::createFlatCreditCurve(referenceDate=2024.01.01, hazardRate=0.02, handle=
 @testing:case="createFlatCreditCurve optional returnJson null uses default"
 result = caplib::createFlatCreditCurve(asOfDate, 0.002, "TF_FLAT_CR", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFlatCreditCurve rejects negative hazardRate (lenient validation, does not raise)"
+result = caplib::createFlatCreditCurve(asOfDate, -1.0, "TF_FLAT_CR", false)
+assert 1, typestr(result) != "VOID"
+

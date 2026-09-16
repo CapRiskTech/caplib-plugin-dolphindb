@@ -218,3 +218,22 @@ caplib::buildEqVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], eqO
 @testing:case="buildEqVolatilitySurface optional returnJson null uses default"
 result = caplib::buildEqVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], eqOptionQuotes[0], [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0], bsmAnalyticalSettings, "f_vol", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildEqVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
+caplib::buildEqVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], volSurfDefinition[0], [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0], bsmAnalyticalSettings, "f_vol", false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildEqVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
+caplib::buildEqVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], volSurfDefinition[0], [underlyingPrice], irCurve, divCurve, volSurfBuildSettings[0], bsmAnalyticalSettings, "f_vol", false)
+

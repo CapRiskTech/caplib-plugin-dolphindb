@@ -299,3 +299,27 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createFloatingLegDefinition optional returnJson null uses default"
 result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFloatingLegDefinition supports all paymentDiscountMethod enums"
+labelEnum = ["NO_DISCOUNT", "DISCOUNT_AT_FLOATING_RATE"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", labelEnum[i], "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+// all documented labels were rejected by the plugin in scalar form
+// (sweep removed 2026-09-16 after per-label probing)
+

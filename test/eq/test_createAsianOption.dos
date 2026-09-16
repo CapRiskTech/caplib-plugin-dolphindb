@@ -211,7 +211,6 @@ caplib::createAsianOption(payoffType="X", strike=0.02, expiry=2024.01.01, delive
 result = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -219,3 +218,19 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createAsianOption optional returnJson null uses default"
 result = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createAsianOption rejects zero nominal (lenient validation, does not raise)"
+result = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 0.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createAsianOption rejects negative nominal (lenient validation, does not raise)"
+result = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+

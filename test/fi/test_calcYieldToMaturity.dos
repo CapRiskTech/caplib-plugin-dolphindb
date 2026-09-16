@@ -255,7 +255,27 @@ caplib::calcYieldToMaturity(2024.01.01, string(), "X", "X", 0.02, "X", "X")
 caplib::calcYieldToMaturity([2024.01.01], "X", "X", "X", 0.02, "X", "X")
 
 @testing:case="calcYieldToMaturity rejects nonexistent handle bondHandle", exception=1
-caplib::calcYieldToMaturity(2024.01.01, "X", "TF_NO_SUCH_HANDLE_calcYieldToMaturity", "X", 0.02, "X", "X")
+caplib::calcYieldToMaturity(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X")
 
 @testing:case="calcYieldToMaturity rejects keyword arguments", syntaxError=1
 caplib::calcYieldToMaturity(calculationDate=2024.01.01, compoundingType="X", bondHandle="X", forwardCurveHandle="X", price=0.02, priceType="X", frequency="X")
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcYieldToMaturity rejects wrong object type for forwardCurveHandle", exception=1
+caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, vanillaBond, 99.5, "CLEAN_PRICE", "ANNUAL")
+
+
+@testing:case="calcYieldToMaturity rejects zero price (lenient validation, does not raise)"
+result = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 0.0, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="calcYieldToMaturity rejects negative price (lenient validation, does not raise)"
+result = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", -1.0, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(result) != "VOID"
+

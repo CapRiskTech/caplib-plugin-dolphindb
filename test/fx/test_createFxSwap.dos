@@ -297,7 +297,6 @@ caplib::createFxSwap(["X"], 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, 
 @testing:case="createFxSwap rejects keyword arguments", syntaxError=1
 caplib::createFxSwap(nearBuyCurrency="X", nearBuyAmount=0.02, nearSellCurrency="X", nearSellAmount=0.02, nearDeliveryDate=2024.01.01, nearExpiryDate=2024.01.01, farBuyCurrency="X", farBuyAmount=0.02, farSellCurrency="X", farSellAmount=0.02, farDeliveryDate=2024.01.01, farExpiryDate=2024.01.01, tag="TF_createFxSwap_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -305,3 +304,19 @@ caplib::createFxSwap(nearBuyCurrency="X", nearBuyAmount=0.02, nearSellCurrency="
 @testing:case="createFxSwap optional returnJson null uses default"
 result = caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxSwap rejects zero nearBuyAmount (lenient validation, does not raise)"
+result = caplib::createFxSwap("EUR", 0.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createFxSwap rejects negative nearBuyAmount (lenient validation, does not raise)"
+result = caplib::createFxSwap("EUR", -1.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+assert 1, typestr(result) != "VOID"
+

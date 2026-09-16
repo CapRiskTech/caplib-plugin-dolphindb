@@ -260,3 +260,22 @@ caplib::calcFixedCpnBondParRate(2024.01.01, "TF_NO_SUCH_HANDLE_calcFixedCpnBondP
 
 @testing:case="calcFixedCpnBondParRate rejects keyword arguments", syntaxError=1
 caplib::calcFixedCpnBondParRate(calculationDate=2024.01.01, bondHandle="X", discountCurveHandle="X", spreadCurveHandle="X")
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFixedCpnBondParRate rejects wrong object type for discountCurveHandle", exception=1
+caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, vanillaBond, cnyMtnAaaSprdStdCfets[0])
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFixedCpnBondParRate rejects wrong object type for discountCurveHandle", exception=1
+caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, vanillaBond, cnyMtnAaaSprdStdCfets[0])
+

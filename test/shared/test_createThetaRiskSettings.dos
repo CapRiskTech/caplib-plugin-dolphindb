@@ -81,7 +81,6 @@ caplib::createThetaRiskSettings(false, [1], 0.02, "TF_createThetaRiskSettings_H"
 @testing:case="createThetaRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createThetaRiskSettings(theta=false, shift=1, scaling=0.02, handle="TF_createThetaRiskSettings_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -89,3 +88,19 @@ caplib::createThetaRiskSettings(theta=false, shift=1, scaling=0.02, handle="TF_c
 @testing:case="createThetaRiskSettings optional returnJson null uses default"
 result = caplib::createThetaRiskSettings(false, 1, 0.02, "TF_createThetaRiskSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createThetaRiskSettings rejects zero scaling (lenient validation, does not raise)"
+result = caplib::createThetaRiskSettings(false, 1, 0.0, "TF_createThetaRiskSettings_H", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createThetaRiskSettings rejects negative scaling (lenient validation, does not raise)"
+result = caplib::createThetaRiskSettings(false, 1, -1.0, "TF_createThetaRiskSettings_H", false)
+assert 1, typestr(result) != "VOID"
+

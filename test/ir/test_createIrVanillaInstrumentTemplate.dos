@@ -169,9 +169,9 @@ caplib::createIrVanillaInstrumentTemplate(instType="X", instName="X", startConve
 @testing:case="createIrVanillaInstrumentTemplate rejects all-null vector legDefinitions", exception=1
 caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [string(), string(), string()], "TF_IR_VIT", true)
 
+
 @testing:case="createIrVanillaInstrumentTemplate rejects invalid enum for instType", exception=1
 caplib::createIrVanillaInstrumentTemplate("NOT_A_VALID_ENUM_LABEL", "TF_IR_VIT", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -180,3 +180,15 @@ caplib::createIrVanillaInstrumentTemplate("NOT_A_VALID_ENUM_LABEL", "TF_IR_VIT",
 @testing:case="createIrVanillaInstrumentTemplate optional returnJson null uses default"
 result = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+
+
+@testing:case="createIrVanillaInstrumentTemplate rejects negative startDelay", exception=1
+caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", -1.0, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)
+

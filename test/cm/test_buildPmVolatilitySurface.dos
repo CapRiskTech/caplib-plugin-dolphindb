@@ -151,11 +151,10 @@ caplib::buildPmVolatilitySurface(2024.01.01, string(), "X", "X", 0.02, "X", "X",
 caplib::buildPmVolatilitySurface([2024.01.01], "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_NO_SUCH_HANDLE_buildPmVolatilitySurface", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
+caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
 @testing:case="buildPmVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::buildPmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrice=0.02, discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", marketConventionsHandle="X", spotTemplateHandle="X", handle="TF_buildPmVolatilitySurface_H", returnJson=false)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -164,3 +163,21 @@ caplib::buildPmVolatilitySurface(referenceDate=2024.01.01, underlying="X", defin
 @testing:case="buildPmVolatilitySurface optional returnJson null uses default"
 result = caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildPmVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
+caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "VDEF_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true)
+
+
+@testing:case="buildPmVolatilitySurface rejects zero underlyingPrice", exception=1
+caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 0.0, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true)
+
+
+@testing:case="buildPmVolatilitySurface rejects negative underlyingPrice", exception=1
+caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", -1.0, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true)
+

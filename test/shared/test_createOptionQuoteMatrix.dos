@@ -120,18 +120,22 @@ caplib::createOptionQuoteMatrix(quoteValueType="X", quoteTermType="X", quoteStri
 @testing:case="createOptionQuoteMatrix accepts all-null vector terms (lenient validation, does not raise)"
 result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [string(), string(), string()], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 assert 1, typestr(result) != "VOID"
+
+
 @testing:case="createOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(STRING, 0, 3), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+
 
 @testing:case="createOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix([string(), string()], [string(), string()]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
+
 @testing:case="createOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["A", string()], [string(), "A"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
+
 @testing:case="createOptionQuoteMatrix rejects invalid enum for quoteValueType", exception=1
 caplib::createOptionQuoteMatrix("NOT_A_VALID_ENUM_LABEL", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -140,3 +144,22 @@ caplib::createOptionQuoteMatrix("NOT_A_VALID_ENUM_LABEL", "OQTT_ABOSULTE_TERM", 
 @testing:case="createOptionQuoteMatrix optional returnJson null uses default"
 result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createOptionQuoteMatrix supports all quoteValueType enums"
+labelEnum = ["OQVT_INVALID", "OQVT_VOLATILITY", "OQVT_PRICE"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createOptionQuoteMatrix(labelEnum[i], "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="createOptionQuoteMatrix rejects zero-col matrix payoffTypes", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(STRING, 3, 0), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+

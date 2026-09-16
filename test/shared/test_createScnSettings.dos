@@ -87,7 +87,6 @@ caplib::createScnSettings([0.02], 0.02, 1, 1, "TF_createScnSettings_H", false)
 @testing:case="createScnSettings rejects keyword arguments", syntaxError=1
 caplib::createScnSettings(min=0.02, max=0.02, size=1, scnGenType=1, handle="TF_createScnSettings_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -95,3 +94,17 @@ caplib::createScnSettings(min=0.02, max=0.02, size=1, scnGenType=1, handle="TF_c
 @testing:case="createScnSettings optional returnJson null uses default"
 result = caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_createScnSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createScnSettings rejects zero size", exception=1
+caplib::createScnSettings(0.02, 0.02, 0.0, 1, "TF_createScnSettings_H", false)
+
+
+@testing:case="createScnSettings rejects negative size", exception=1
+caplib::createScnSettings(0.02, 0.02, -1.0, 1, "TF_createScnSettings_H", false)
+

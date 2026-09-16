@@ -192,7 +192,6 @@ caplib::createDigitalOption(["X"], 0.02, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.0
 @testing:case="createDigitalOption rejects keyword arguments", syntaxError=1
 caplib::createDigitalOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, cash=0.02, asset=0.02, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createDigitalOption_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -200,3 +199,19 @@ caplib::createDigitalOption(payoffType="X", strike=0.02, expiry=2024.01.01, deli
 @testing:case="createDigitalOption optional returnJson null uses default"
 result = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createDigitalOption rejects zero asset (lenient validation, does not raise)"
+result = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 0.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createDigitalOption rejects negative asset (lenient validation, does not raise)"
+result = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, -1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG", false)
+assert 1, typestr(result) != "VOID"
+

@@ -308,3 +308,22 @@ caplib::priceFxForward(instrumentHandle="X", pricingDate=2024.01.01, mktDataHand
 @testing:case="priceFxForward optional returnJson null uses default"
 result = caplib::priceFxForward(forwardInst, asOfDate, eurusdMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxForward rejects wrong object type for mktDataHandle", exception=1
+caplib::priceFxForward(forwardInst, asOfDate, forwardInst, cashAnalyticalSettings, fxRisk[0], "", "", true)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceFxForward rejects wrong object type for mktDataHandle", exception=1
+caplib::priceFxForward(forwardInst, asOfDate, forwardInst, cashAnalyticalSettings, fxRisk[0], "", "", true)
+

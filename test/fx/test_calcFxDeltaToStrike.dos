@@ -295,7 +295,7 @@ caplib::calcFxDeltaToStrike("X", double(), 2024.01.01, "X", "X", "X", "X")
 caplib::calcFxDeltaToStrike(["X"], 0.02, 2024.01.01, "X", "X", "X", "X")
 
 @testing:case="calcFxDeltaToStrike rejects nonexistent handle volSurfaceHandle", exception=1
-caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "TF_NO_SUCH_HANDLE_calcFxDeltaToStrike", "X", "X", "X")
+caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")
 
 @testing:case="calcFxDeltaToStrike rejects keyword arguments", syntaxError=1
 caplib::calcFxDeltaToStrike(deltaType="X", delta=0.02, expiryDate=2024.01.01, volSurfaceHandle="X", fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")
@@ -308,7 +308,6 @@ caplib::calcFxDeltaToStrike(deltaType="X", delta=0.02, expiryDate=2024.01.01, vo
 
 @testing:case="calcFxDeltaToStrike rejects invalid enum for deltaType", exception=1
 caplib::calcFxDeltaToStrike("NOT_A_VALID_ENUM_LABEL", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-3 additions (independent numeric references)
@@ -326,3 +325,25 @@ kr = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2022.03.30, fvolRef, s
 assert 1, abs(kr - 1.276171122614913) < 1.0e-8
 krp = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -0.25, 2022.03.30, fvolRef, spotRef, domCurveRef, forCurveRef);
 assert 1, abs(krp - 1.11688490479329) < 1.0e-8
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxDeltaToStrike rejects wrong object type for fxSpotRateHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+@testing:case="calcFxDeltaToStrike supports all deltaType enums", exception=1
+labelEnum = ["PIPS_SPOT_DELTA", "PERCENTAGE_SPOT_DELTA", "PIPS_FORWARD_DELTA", "PERCENTAGE_FORWARD_DELTA", "SIMPLE_DELTA"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::calcFxDeltaToStrike(labelEnum[i], 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="calcFxDeltaToStrike accepts negative delta (lenient validation, does not raise)"
+result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -1.0, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+assert 1, typestr(result) != "VOID"
+

@@ -99,3 +99,24 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createInterestCalcScheduleDefinition optional returnJson null uses default"
 result = caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestCalcScheduleDefinition supports all stubPolicy enums"
+labelEnum = ["INITIAL", "FINAL", "INITIAL_FINAL_FORWARD", "INITIAL_FINAL_BACKWARD"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createInterestCalcScheduleDefinition("X", "X", "X", labelEnum[i], "X", "X", "TF_createInterestCalcScheduleDefinition_H", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+

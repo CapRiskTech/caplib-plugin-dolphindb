@@ -192,7 +192,6 @@ caplib::createAmericanOption(["X"], 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", 
 @testing:case="createAmericanOption rejects keyword arguments", syntaxError=1
 caplib::createAmericanOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createAmericanOption_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -200,3 +199,13 @@ caplib::createAmericanOption(payoffType="X", strike=0.02, expiry=2024.01.01, del
 @testing:case="createAmericanOption optional returnJson null uses default"
 result = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createAmericanOption rejects negative settlementDays", exception=1
+caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, -1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM", false)
+

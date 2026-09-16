@@ -128,3 +128,22 @@ caplib::createVolatilitySurface(vdef, asOfDate, [string(), string(), string()], 
 @testing:case="createVolatilitySurface optional returnJson null uses default"
 result = caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySurface rejects wrong object type for volSmileHandles", exception=1
+caplib::createVolatilitySurface(vdef, asOfDate, vdef, [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVolatilitySurface rejects wrong object type for volSmileHandles", exception=1
+caplib::createVolatilitySurface(vdef, asOfDate, vdef, [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
+

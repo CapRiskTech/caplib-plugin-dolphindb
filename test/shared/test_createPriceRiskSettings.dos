@@ -81,7 +81,6 @@ caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, int(), 0.02, 1,
 @testing:case="createPriceRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createPriceRiskSettings(delta=false, gamma=false, curvature=false, shift=0.02, curvatureShift=0.02, method=1, scaling=0.02, threading=1, handle="TF_createPriceRiskSettings_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -89,3 +88,19 @@ caplib::createPriceRiskSettings(delta=false, gamma=false, curvature=false, shift
 @testing:case="createPriceRiskSettings optional returnJson null uses default"
 result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPriceRiskSettings rejects zero scaling (lenient validation, does not raise)"
+result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.0, 1, "TF_createPriceRiskSettings_H", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createPriceRiskSettings rejects negative scaling (lenient validation, does not raise)"
+result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, -1.0, 1, "TF_createPriceRiskSettings_H", false)
+assert 1, typestr(result) != "VOID"
+

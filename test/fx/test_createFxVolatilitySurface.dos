@@ -304,7 +304,7 @@ caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01, date()], ma
 caplib::createFxVolatilitySurface(2024.01.01, "X", "X", take(date, 0), matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
-caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "TF_NO_SUCH_HANDLE_createFxVolatilitySurface", "X", "TF_createFxVolatilitySurface_H", false)
+caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "TF_HANDLE_DOES_NOT_EXIST", "X", "TF_createFxVolatilitySurface_H", false)
 
 @testing:case="createFxVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::createFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", termDates=[2024.01.01], strikes=matrix([0.2]), volatilities=matrix([0.2]), definitionHandle="X", marketConventionsHandle="X", handle="TF_createFxVolatilitySurface_H", returnJson=false)
@@ -318,15 +318,25 @@ caplib::createFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCc
 @testing:case="createFxVolatilitySurface rejects all-null vector termDates", exception=1
 caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [date(), date(), date()], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
 
+
 @testing:case="createFxVolatilitySurface rejects zero-row matrix strikes", exception=1
 caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], matrix(DOUBLE, 0, 3), formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
+
 
 @testing:case="createFxVolatilitySurface rejects all-null matrix strikes", exception=1
 caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], matrix([double(), double()], [double(), double()]), formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
 
+
 @testing:case="createFxVolatilitySurface rejects partially-null matrix strikes", exception=1
 caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], matrix([0.2, double()], [double(), 0.2]), formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
 
+// ----------------------------------------------------------------------------
+// Review wave-4 additions (forms / optional param / scale / determinism)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxVolatilitySurface optional returnJson null uses default"
+result = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", bool())
+assert 1, typestr(result) != "VOID"
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -351,10 +361,15 @@ rMM = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30],
 assert 1, rMM == "TF_FXVS_MM"
 
 
+
 // ----------------------------------------------------------------------------
-// Review wave-4 additions (forms / optional param / scale / determinism)
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
 // ----------------------------------------------------------------------------
 
-@testing:case="createFxVolatilitySurface optional returnJson null uses default"
-result = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", bool())
-assert 1, typestr(result) != "VOID"
+@testing:case="createFxVolatilitySurface rejects wrong object type for marketConventionsHandle", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], linearVolSurfDefinition[0], "TF_FXVS", false)
+
+
+@testing:case="createFxVolatilitySurface rejects zero-col matrix strikes", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], matrix(DOUBLE, 3, 0), formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
+

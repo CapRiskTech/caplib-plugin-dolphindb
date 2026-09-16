@@ -210,9 +210,10 @@ caplib::createSnowballAutoCallableNote(couponRate=0.02, startDate=2024.01.01, co
 @testing:case="createSnowballAutoCallableNote accepts all-null vector couponDates (lenient validation, does not raise)"
 result = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, [date(), date(), date()], "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
+
+
 @testing:case="createSnowballAutoCallableNote rejects invalid enum for dayCount", exception=1
 caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "NOT_A_VALID_ENUM_LABEL", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -221,3 +222,15 @@ caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "NOT_A_VAL
 @testing:case="createSnowballAutoCallableNote optional returnJson null uses default"
 result = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+
+
+@testing:case="createSnowballAutoCallableNote rejects negative settlementDays", exception=1
+caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, -1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+

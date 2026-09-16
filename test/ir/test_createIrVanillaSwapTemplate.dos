@@ -156,7 +156,6 @@ caplib::createIrVanillaSwapTemplate(instName="X", startDelay=1, leg1Definition="
 @testing:case="createIrVanillaSwapTemplate rejects invalid enum for startConvention", exception=1
 caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], irFloatingLeg[0], "NOT_A_VALID_ENUM_LABEL", false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -164,3 +163,22 @@ caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], irFloatingLeg[
 @testing:case="createIrVanillaSwapTemplate optional returnJson null uses default"
 result = caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrVanillaSwapTemplate supports all startConvention enums"
+labelEnum = ["SPOTSTART", "TODAYSTART", "TOMORROWSTART"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], irFloatingLeg[0], labelEnum[i], false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="createIrVanillaSwapTemplate rejects negative startDelay", exception=1
+caplib::createIrVanillaSwapTemplate("TF_SWTPL", -1.0, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", false)
+

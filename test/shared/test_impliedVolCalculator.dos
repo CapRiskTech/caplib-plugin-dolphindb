@@ -97,7 +97,7 @@ caplib::impliedVolCalculator(2024.01.01, double(), "X", "X", "X", 0.02, "X", "X"
 caplib::impliedVolCalculator([2024.01.01], 0.02, "X", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
 @testing:case="impliedVolCalculator rejects nonexistent handle discountCurveHandle", exception=1
-caplib::impliedVolCalculator(2024.01.01, 0.02, "TF_NO_SUCH_HANDLE_impliedVolCalculator", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
+caplib::impliedVolCalculator(2024.01.01, 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
 @testing:case="impliedVolCalculator rejects keyword arguments", syntaxError=1
 caplib::impliedVolCalculator(calculationDate=2024.01.01, underlyingPrice=0.02, discountCurveHandle="X", assetCurveHandle="X", pricingSettingsHandle="X", optionPrice=0.02, payoffType="X", exerciseType="X", expiryDate=2024.01.01, strike=0.02)
@@ -111,15 +111,44 @@ caplib::impliedVolCalculator(calculationDate=2024.01.01, underlyingPrice=0.02, d
 @testing:case="impliedVolCalculator rejects invalid enum for exerciseType", exception=1
 caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "NOT_A_VALID_ENUM_LABEL", 2022.09.09, 100.0)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-3 additions (independent numeric references)
 // ----------------------------------------------------------------------------
 
 @testing:case="impliedVolCalculator -> round-trip against independent BSM price"
+// The option price is computed here with an independent Black-Scholes formula
+// (cdfNormal); the plugin must invert it back to the 20% input volatility.
 Tref = 0.5041095890410959;
 d1 = (log(100.0/100.0) + (0.02 - 0.01 + 0.5*0.04)*Tref) / (0.20*sqrt(Tref));
 d2 = d1 - 0.20*sqrt(Tref);
 priceRef = 100.0*exp(-0.01*Tref)*cdfNormal(0, 1, d1) - 100.0*exp(-0.02*Tref)*cdfNormal(0, 1, d2);
 ivr = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, priceRef, "CALL", "EUROPEAN", 2022.09.09, 100.0);
 assert 1, abs(ivr - 0.20) < 1.0e-9
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="impliedVolCalculator rejects wrong object type for assetCurveHandle", exception=1
+caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatIr, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+
+
+@testing:case="impliedVolCalculator supports all payoffType enums"
+labelEnum = ["CALL", "PUT"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, labelEnum[i], "EUROPEAN", 2022.09.09, 100.0); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="impliedVolCalculator accepts zero underlyingPrice (lenient validation, does not raise)"
+result = caplib::impliedVolCalculator(asOfDate, 0.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="impliedVolCalculator rejects negative underlyingPrice", exception=1
+caplib::impliedVolCalculator(asOfDate, -1.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+

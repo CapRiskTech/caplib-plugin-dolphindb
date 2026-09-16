@@ -286,3 +286,22 @@ caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmO
 @testing:case="buildCmVolatilitySurface optional returnJson null uses default"
 result = caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCmVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], volSurfDefinition[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCmVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], volSurfDefinition[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+

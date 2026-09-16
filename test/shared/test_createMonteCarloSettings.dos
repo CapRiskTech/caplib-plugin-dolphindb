@@ -87,7 +87,6 @@ caplib::createMonteCarloSettings([1], 1, 1, 1, 1, false, 1, "TF_createMonteCarlo
 @testing:case="createMonteCarloSettings rejects keyword arguments", syntaxError=1
 caplib::createMonteCarloSettings(numSimulations=1, uniformNumberType=1, seed=1, wienerBuildMethod=1, gaussianMethod=1, useAntithetic=false, numSteps=1, handle="TF_createMonteCarloSettings_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -95,3 +94,13 @@ caplib::createMonteCarloSettings(numSimulations=1, uniformNumberType=1, seed=1, 
 @testing:case="createMonteCarloSettings optional returnJson null uses default"
 result = caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createMonteCarloSettings rejects negative seed", exception=1
+caplib::createMonteCarloSettings(1, 1, -1.0, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+

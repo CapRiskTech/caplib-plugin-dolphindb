@@ -297,7 +297,6 @@ caplib::createFlatFxVolatilitySurface([2024.01.01], "X", 0.02, "TF_createFlatFxV
 @testing:case="createFlatFxVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::createFlatFxVolatilitySurface(referenceDate=2024.01.01, currencyPair="X", vol=0.02, tag="TF_createFlatFxVolatilitySurface_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -305,3 +304,14 @@ caplib::createFlatFxVolatilitySurface(referenceDate=2024.01.01, currencyPair="X"
 @testing:case="createFlatFxVolatilitySurface optional returnJson null uses default"
 result = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.06, "TF_FLATFV", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFlatFxVolatilitySurface rejects negative vol (lenient validation, does not raise)"
+result = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", -1.0, "TF_FLATFV", false)
+assert 1, typestr(result) != "VOID"
+

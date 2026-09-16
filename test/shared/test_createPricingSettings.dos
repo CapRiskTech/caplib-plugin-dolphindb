@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createPricingSettings.dos
 // Per-function test suite for caplib::createPricingSettings (shared).
-// Signature: caplib::createPricingSettings(currency STRING, pricingMethod STRING, incCurrent BOOL, cashFlows BOOL, modelHandle STRING, pdeHandle STRING, mcHandle STRING, handle STRING[, returnJson BOOL])
+// Signature: caplib::createPricingSettings(currency STRING, pricingMethod STRING, incCurrent BOOL, cashFlows BOOL, specificPricingRequests INT[], modelHandle STRING, pdeHandle STRING, mcHandle STRING, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createPricingSettings.dos   // single file
@@ -60,40 +60,55 @@ curveValues = [0.02, 0.025];
 // Tests
 // ============================================================================
 
-@testing:case="createPricingSettings -> handle"
-result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "", "", "", "TF_PRICING", false)
+@testing:case="createPricingSettings -> handle (10-arg documented form, empty requests)"
+result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "TF_PRICING", false)
 assert 1, result == "TF_PRICING"
+
+@testing:case="createPricingSettings with specific requests -> json content"
+// BondSpecificPricingRequest 1=全价(dirty) 2=净价(clean)；请求值原样写入
+// 返回 json 的 specific_pricing_requests 字段（冻结内容校验）。
+rj = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, [1, 2], "", "", "", "TF_PRICING_REQ", true)
+assert 1, strpos(rj[1], "\"specific_pricing_requests\":[1,2]") >= 0
 
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
 @testing:case="createPricingSettings rejects missing argument", syntaxError=1
-caplib::createPricingSettings("X", "X", false, false, "X", "X", "X")
+caplib::createPricingSettings("X", "X", false, false, take(0, 0), "X", "X")
 
 @testing:case="createPricingSettings rejects extra argument", syntaxError=1
-caplib::createPricingSettings("X", "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false, 1)
+caplib::createPricingSettings("X", "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false, 1)
 
 @testing:case="createPricingSettings rejects wrong type for currency", exception=1
-caplib::createPricingSettings(1, "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
+caplib::createPricingSettings(1, "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects wrong type for pricingMethod", exception=1
-caplib::createPricingSettings("X", 1, false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
+caplib::createPricingSettings("X", 1, false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
+
+@testing:case="createPricingSettings rejects wrong type for specificPricingRequests", exception=1
+caplib::createPricingSettings("X", "X", false, false, ["A"], "X", "X", "X", "TF_createPricingSettings_H", false)
+
+@testing:case="createPricingSettings rejects scalar for vector specificPricingRequests", exception=1
+caplib::createPricingSettings("X", "X", false, false, 1, "X", "X", "X", "TF_createPricingSettings_H", false)
+
+@testing:case="createPricingSettings rejects all-null vector specificPricingRequests", exception=1
+caplib::createPricingSettings("X", "X", false, false, [int(), int()], "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects null currency", exception=1
-caplib::createPricingSettings(string(), "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
+caplib::createPricingSettings(string(), "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects null pricingMethod", exception=1
-caplib::createPricingSettings("X", string(), false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
+caplib::createPricingSettings("X", string(), false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects vector for scalar currency", exception=1
-caplib::createPricingSettings(["X"], "X", false, false, "X", "X", "X", "TF_createPricingSettings_H", false)
+caplib::createPricingSettings(["X"], "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects nonexistent handle modelHandle", exception=1
-caplib::createPricingSettings("X", "X", false, false, "TF_NO_SUCH_HANDLE_createPricingSettings", "X", "X", "TF_createPricingSettings_H", false)
+caplib::createPricingSettings("X", "X", false, false, take(0, 0), "TF_NO_SUCH_HANDLE_createPricingSettings", "X", "X", "TF_createPricingSettings_H", false)
 
 @testing:case="createPricingSettings rejects keyword arguments", syntaxError=1
-caplib::createPricingSettings(currency="X", pricingMethod="X", incCurrent=false, cashFlows=false, modelHandle="X", pdeHandle="X", mcHandle="X", handle="TF_createPricingSettings_H", returnJson=false)
+caplib::createPricingSettings(currency="X", pricingMethod="X", incCurrent=false, cashFlows=false, specificPricingRequests=take(0, 0), modelHandle="X", pdeHandle="X", mcHandle="X", handle="TF_createPricingSettings_H", returnJson=false)
 
 
 // ----------------------------------------------------------------------------
@@ -101,5 +116,5 @@ caplib::createPricingSettings(currency="X", pricingMethod="X", incCurrent=false,
 // ----------------------------------------------------------------------------
 
 @testing:case="createPricingSettings optional returnJson null uses default"
-result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "", "", "", "TF_PRICING", bool())
+result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "TF_PRICING", bool())
 assert 1, typestr(result) != "VOID"

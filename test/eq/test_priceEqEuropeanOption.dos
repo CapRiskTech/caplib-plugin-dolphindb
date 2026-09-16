@@ -203,3 +203,22 @@ caplib::priceEqEuropeanOption(instrumentHandle="X", pricingDate=2024.01.01, mktD
 @testing:case="priceEqEuropeanOption optional returnJson null uses default"
 result = caplib::priceEqEuropeanOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqEuropeanOption rejects wrong object type for mktDataHandle", exception=1
+caplib::priceEqEuropeanOption(xinst, asOfDate, xinst, bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="priceEqEuropeanOption rejects wrong object type for mktDataHandle", exception=1
+caplib::priceEqEuropeanOption(xinst, asOfDate, xinst, bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+

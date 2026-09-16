@@ -165,7 +165,6 @@ caplib::buildIrVanillaInstrument("NOT_A_VALID_ENUM_LABEL", 0.05, 0.0, 2022.03.07
 @testing:case="buildIrVanillaInstrument rejects start date after maturity date", exception=1
 caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2023.03.07, 2022.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -173,3 +172,20 @@ caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2023.03.07, 2022.03.07, irSwa
 @testing:case="buildIrVanillaInstrument optional returnJson null uses default"
 result = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+
+
+@testing:case="buildIrVanillaInstrument accepts zero nominal (lenient validation, does not raise)"
+result = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 0.0, "", "TF_IRSWAP", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="buildIrVanillaInstrument rejects negative nominal", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], -1.0, "", "TF_IRSWAP", false)
+

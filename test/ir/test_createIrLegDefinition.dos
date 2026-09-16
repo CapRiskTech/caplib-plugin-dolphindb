@@ -119,3 +119,24 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createIrLegDefinition optional returnJson null uses default"
 result = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrLegDefinition supports all legType enums"
+labelEnum = ["FIXED_LEG", "FLOATING_LEG", "FRA_LEG", "STRUCTURED_LEG"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createIrLegDefinition(labelEnum[i], "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+

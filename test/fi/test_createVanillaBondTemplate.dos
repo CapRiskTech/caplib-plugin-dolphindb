@@ -286,7 +286,6 @@ caplib::createVanillaBondTemplate(instName="X", vanillaBondType="X", issueDate=2
 @testing:case="createVanillaBondTemplate rejects invalid enum for vanillaBondType", exception=1
 caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "NOT_A_VALID_ENUM_LABEL", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -294,3 +293,22 @@ caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "NOT_A_VALID_ENUM_LABEL", as
 @testing:case="createVanillaBondTemplate optional returnJson null uses default"
 result = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createVanillaBondTemplate supports all vanillaBondType enums"
+labelEnum = ["FIXED_COUPON_BOND", "FLOATING_COUPON_BOND", "ZERO_COUPON_BOND"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", labelEnum[i], asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="createVanillaBondTemplate rejects negative settlementDays", exception=1
+caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, -1.0, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+

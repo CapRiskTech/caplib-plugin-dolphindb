@@ -102,3 +102,24 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createInterestPaymentScheduleDefinition optional returnJson null uses default"
 result = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createInterestPaymentScheduleDefinition supports all payDayMode enums"
+labelEnum = ["IN_ADVANCE", "IN_ARREAR"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createInterestPaymentScheduleDefinition("X", "X", labelEnum[i], 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+

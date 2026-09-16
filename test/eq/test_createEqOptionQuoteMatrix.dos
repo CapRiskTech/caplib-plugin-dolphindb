@@ -210,14 +210,18 @@ caplib::createEqOptionQuoteMatrix(exerciseType="X", underlyingType="X", asOfDate
 @testing:case="createEqOptionQuoteMatrix rejects all-null vector termDates", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [date(), date(), date()], quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 
+
 @testing:case="createEqOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(STRING, 0, 3), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+
 
 @testing:case="createEqOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix([string(), string()], [string(), string()]), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 
+
 @testing:case="createEqOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(["A", string()], [string(), "A"]), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+
 
 @testing:case="createEqOptionQuoteMatrix rejects invalid enum for exerciseType", exception=1
 caplib::createEqOptionQuoteMatrix("NOT_A_VALID_ENUM_LABEL", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
@@ -225,12 +229,11 @@ caplib::createEqOptionQuoteMatrix("NOT_A_VALID_ENUM_LABEL", "SPOT_UNDERLYING_TYP
 
 
 // ----------------------------------------------------------------------------
-// Review wave-2b additions (terms/matrix row relationship)
+// Review wave-2 additions (parameter relationships / boundaries)
 // ----------------------------------------------------------------------------
 
 @testing:case="createEqOptionQuoteMatrix rejects terms size mismatch with quote matrix rows", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [2020.02.26, 2020.03.25, 2020.06.24], quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -239,3 +242,22 @@ caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, 
 @testing:case="createEqOptionQuoteMatrix optional returnJson null uses default"
 result = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqOptionQuoteMatrix supports all exerciseType enums"
+labelEnum = ["EUROPEAN", "AMERICAN", "BERMUDAN"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createEqOptionQuoteMatrix(labelEnum[i], "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+@testing:case="createEqOptionQuoteMatrix rejects zero-col matrix payoffTypes", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(STRING, 3, 0), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+

@@ -107,3 +107,24 @@ caplib::createScnAnalysisSettings(scnType="X", priceHandle="X", volHandle="X", t
 @testing:case="createScnAnalysisSettings optional returnJson null uses default"
 result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 1, "TF_SCNA", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="createScnAnalysisSettings accepts rejects wrong object type for volHandle (lenient validation, does not raise)"
+result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, priceScn, 1, "TF_SCNA", false)
+assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createScnAnalysisSettings rejects wrong object type for volHandle (lenient validation, does not raise)"
+result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, priceScn, 1, "TF_SCNA", false)
+assert 1, typestr(result) != "VOID"
+

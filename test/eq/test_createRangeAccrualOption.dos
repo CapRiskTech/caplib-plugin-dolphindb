@@ -211,7 +211,6 @@ caplib::createRangeAccrualOption(expiry=2024.01.01, delivery=2024.01.01, asset=0
 result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -219,3 +218,19 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createRangeAccrualOption optional returnJson null uses default"
 result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createRangeAccrualOption rejects zero asset (lenient validation, does not raise)"
+result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createRangeAccrualOption rejects negative asset (lenient validation, does not raise)"
+result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, -1.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+

@@ -256,7 +256,6 @@ caplib::buildVanillaBond([0.02], "X", "X", 2024.01.01, "TF_buildVanillaBond_H", 
 @testing:case="buildVanillaBond rejects keyword arguments", syntaxError=1
 caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=2024.01.01, tag="TF_buildVanillaBond_H", returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -264,3 +263,19 @@ caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=
 @testing:case="buildVanillaBond optional returnJson null uses default"
 result = caplib::buildVanillaBond(1000000.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildVanillaBond rejects zero nominal (lenient validation, does not raise)"
+result = caplib::buildVanillaBond(0.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="buildVanillaBond rejects negative nominal (lenient validation, does not raise)"
+result = caplib::buildVanillaBond(-1.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", false)
+assert 1, typestr(result) != "VOID"
+

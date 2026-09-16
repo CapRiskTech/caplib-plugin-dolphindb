@@ -211,7 +211,6 @@ caplib::createDoubleSharkFinOption(lowerStrike=0.02, upperStrike=0.02, expiry=20
 result = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -219,3 +218,14 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createDoubleSharkFinOption optional returnJson null uses default"
 result = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createDoubleSharkFinOption rejects negative lowerCashRebate (lenient validation, does not raise)"
+result = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", -1.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+

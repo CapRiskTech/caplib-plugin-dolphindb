@@ -124,15 +124,17 @@ caplib::createPmOptionQuoteMatrix(underlying="X", asOfDate=2024.01.01, terms=["X
 @testing:case="createPmOptionQuoteMatrix rejects all-null vector terms", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, [string(), string(), string()], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
+
 @testing:case="createPmOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(STRING, 0, 3), [0.10], matrix([450.0]), "TF_PM_OQ", true)
+
 
 @testing:case="createPmOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix([string(), string()], [string(), string()]), [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
+
 @testing:case="createPmOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(["A", string()], [string(), "A"]), [0.10], matrix([450.0]), "TF_PM_OQ", true)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -141,3 +143,13 @@ caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(["A", st
 @testing:case="createPmOptionQuoteMatrix optional returnJson null uses default"
 result = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPmOptionQuoteMatrix rejects zero-col matrix payoffTypes", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(STRING, 3, 0), [0.10], matrix([450.0]), "TF_PM_OQ", true)
+

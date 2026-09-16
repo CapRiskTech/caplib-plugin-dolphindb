@@ -319,6 +319,20 @@ caplib::createFxOptionQuoteMatrix(leftCcy="X", rightCcy="X", asOfDate=2024.01.01
 caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, [string(), string(), string()], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ", true)
 
 
+@testing:case="createFxOptionQuoteMatrix rejects zero-row matrix quotes", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix(DOUBLE, 0, 3), "TF_FX_OQ", true)
+
+
+@testing:case="createFxOptionQuoteMatrix accepts all-null matrix quotes (lenient validation, does not raise)"
+result = caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix([double(), double()], [double(), double()]), "TF_FX_OQ", true)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createFxOptionQuoteMatrix accepts partially-null matrix quotes (lenient validation, does not raise)"
+result = caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix([0.2, double()], [double(), 0.2]), "TF_FX_OQ", true)
+assert 1, typestr(result) != "VOID"
+
+
 
 // ----------------------------------------------------------------------------
 // Review wave-2 additions (parameter relationships / boundaries)
@@ -327,7 +341,6 @@ caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, [string(), string(), s
 @testing:case="createFxOptionQuoteMatrix rejects terms size mismatch with quote matrix rows", exception=1
 caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M"], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ", true)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -335,3 +348,13 @@ caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M"], ["ATM", "ATM"]
 @testing:case="createFxOptionQuoteMatrix optional returnJson null uses default"
 result = caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFxOptionQuoteMatrix rejects zero-col matrix quotes", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix(DOUBLE, 3, 0), "TF_FX_OQ", true)
+

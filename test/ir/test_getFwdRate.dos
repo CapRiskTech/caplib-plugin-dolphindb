@@ -145,7 +145,8 @@ caplib::getFwdRate("X", [2024.01.01, date()], 0.02)
 caplib::getFwdRate("X", take(date, 0), 0.02)
 
 @testing:case="getFwdRate rejects nonexistent handle irCurveHandle", exception=1
-caplib::getFwdRate("TF_NO_SUCH_HANDLE_getFwdRate", [2024.01.01], 0.02)
+caplib::getFwdRate("TF_HANDLE_DOES_NOT_EXIST", [2024.01.01], 0.02)
+
 @testing:case="getFwdRate rejects keyword arguments", syntaxError=1
 caplib::getFwdRate(irCurveHandle="X", dates=[2024.01.01], tenor=0.02)
 
@@ -158,7 +159,6 @@ caplib::getFwdRate(irCurveHandle="X", dates=[2024.01.01], tenor=0.02)
 @testing:case="getFwdRate rejects all-null vector dates", exception=1
 caplib::getFwdRate(irCurve, [date(), date(), date()], 0.25)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-3 additions (independent numeric references)
 // ----------------------------------------------------------------------------
@@ -168,3 +168,17 @@ caplib::getFwdRate(irCurve, [date(), date(), date()], 0.25)
 flatIrRef = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_REF_FIR", false);
 frr = caplib::getFwdRate(flatIrRef, [2023.03.09, 2024.03.09], 1.0);
 assert 1, abs(frr[0] - 0.02) < 1.0e-12
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="getFwdRate rejects zero tenor", exception=1
+caplib::getFwdRate(irCurve, [2025.03.10], 0.0)
+
+
+@testing:case="getFwdRate rejects negative tenor", exception=1
+caplib::getFwdRate(irCurve, [2025.03.10], -1.0)
+

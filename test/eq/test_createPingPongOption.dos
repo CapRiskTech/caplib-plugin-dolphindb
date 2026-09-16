@@ -211,7 +211,6 @@ caplib::createPingPongOption(expiry=2024.01.01, delivery=2024.01.01, lowerBarrie
 result = caplib::createPingPongOption(2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PP", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -219,3 +218,19 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createPingPongOption optional returnJson null uses default"
 result = caplib::createPingPongOption(2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PP", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createPingPongOption rejects zero asset (lenient validation, does not raise)"
+result = caplib::createPingPongOption(2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PP", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="createPingPongOption rejects negative asset (lenient validation, does not raise)"
+result = caplib::createPingPongOption(2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, -1.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PP", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+

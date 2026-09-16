@@ -273,3 +273,32 @@ caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED
 @testing:case="createFixedLegDefinition optional returnJson null uses default"
 result = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFixedLegDefinition supports all stubPolicy enums"
+labelEnum = ["INITIAL", "FINAL", "INITIAL_FINAL_FORWARD", "INITIAL_FINAL_BACKWARD"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", labelEnum[i], "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createFixedLegDefinition supports all enums (review)"
+labelEnum = ["INITIAL", "FINAL", "INITIAL_FINAL_FORWARD", "INITIAL_FINAL_BACKWARD"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", labelEnum[i], "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+

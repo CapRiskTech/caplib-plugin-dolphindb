@@ -330,3 +330,37 @@ assert 1, abs(atmr - 1.193874475744343) < 1.0e-8
 a1 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 a2 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 assert 1, a1 == a2
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxAtmStrike rejects wrong object type for fxSpotRateHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], builtVolSurface[0], usdCurve, eurCurve)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxAtmStrike supports all atmType enums"
+labelEnum = ["ATM_FORWARD", "ATM_DNS_PIPS", "ATM_DNS_PERCENTAGE", "ATM_SPOT"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::calcFxAtmStrike(labelEnum[i], 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="calcFxAtmStrike rejects wrong object type for fxSpotRateHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], builtVolSurface[0], usdCurve, eurCurve)
+
+

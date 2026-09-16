@@ -203,3 +203,22 @@ caplib::createEqMktDataSet(asOfDate=2024.01.01, underlying="X", underlyingPrice=
 @testing:case="createEqMktDataSet optional returnJson null uses default"
 result = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "f_eqmkt", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqMktDataSet rejects wrong object type for divHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, irCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "f_eqmkt", false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createEqMktDataSet rejects wrong object type for divHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, irCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "f_eqmkt", false)
+

@@ -168,3 +168,31 @@ caplib::buildCreditCurve(asOfDate=2024.01.01, parCurveHandle="X", discountCurveH
 @testing:case="buildCreditCurve optional returnJson null uses default"
 result = caplib::buildCreditCurve(asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCreditCurve rejects wrong object type for discountCurveHandle", exception=1
+caplib::buildCreditCurve(asOfDate, creditParCurve[0], creditParCurve[0], "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5e additions (built-curve frozen references)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCreditCurve -> frozen curve reference"
+spRef = caplib::getSurvivalProbability(creditCurve[0], [2025.02.21]);
+assert 1, abs(spRef[0] - 0.902476684416324) < 1.0e-12
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCreditCurve rejects wrong object type for discountCurveHandle", exception=1
+caplib::buildCreditCurve(asOfDate, creditParCurve[0], creditParCurve[0], "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", true)
+

@@ -210,9 +210,10 @@ caplib::createPhoenixAutoCallableNote(couponPayoffType="X", couponStrike=0.02, c
 @testing:case="createPhoenixAutoCallableNote accepts all-null vector couponDates (lenient validation, does not raise)"
 result = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, [date(), date(), date()], "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
+
+
 @testing:case="createPhoenixAutoCallableNote rejects invalid enum for dayCount", exception=1
 caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "NOT_A_VALID_ENUM_LABEL", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
-
 
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
@@ -221,3 +222,15 @@ caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "NOT_A_VALI
 @testing:case="createPhoenixAutoCallableNote optional returnJson null uses default"
 result = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+
+
+@testing:case="createPhoenixAutoCallableNote rejects negative settlementDays", exception=1
+caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, -1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+

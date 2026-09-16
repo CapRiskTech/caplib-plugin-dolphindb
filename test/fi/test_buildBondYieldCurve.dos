@@ -264,3 +264,31 @@ caplib::buildBondYieldCurve(referenceDate=2024.01.01, buildSettingsHandle="X", c
 @testing:case="buildBondYieldCurve optional returnJson null uses default"
 result = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondYieldCurve rejects wrong object type for parCurveHandle", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", cnyTreasBuildSettings[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", true)
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5e additions (built-curve frozen references)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondYieldCurve -> frozen curve reference"
+zrRef = caplib::getZeroRate(cnyTreasStdCfets[0], [2026.07.22]);
+assert 1, abs(zrRef[0] - 0.027171736549228) < 1.0e-12
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildBondYieldCurve rejects wrong object type for parCurveHandle", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", cnyTreasBuildSettings[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", true)
+

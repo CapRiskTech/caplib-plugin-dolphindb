@@ -270,3 +270,24 @@ caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "NOT_A_VALID_ENUM_LABEL
 @testing:case="createBondYieldCurveBuildSettings optional returnJson null uses default"
 result = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5b additions (enum sweeps)
+// ----------------------------------------------------------------------------
+
+@testing:case="createBondYieldCurveBuildSettings supports all curveType enums"
+labelEnum = ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", labelEnum[i], "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+

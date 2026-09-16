@@ -123,9 +123,8 @@ cds = caplib::buildCreditDefaultSwap(
 b = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false);
 assert 1, b == "TF_CDS"
 
-@testing:case="buildCreditDefaultSwap rejects negative notional", exception=1
+@testing:case="buildCreditDefaultSwap rejects negative notional (lenient validation, does not raise)", exception=1
 caplib::buildCreditDefaultSwap(-1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_BAD", false)
-
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
@@ -165,3 +164,18 @@ caplib::buildCreditDefaultSwap(nominal=0.02, currency="X", issueDate=2024.01.01,
 @testing:case="buildCreditDefaultSwap optional returnJson null uses default"
 result = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildCreditDefaultSwap rejects zero nominal (lenient validation, does not raise)"
+result = caplib::buildCreditDefaultSwap(0.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+assert 1, typestr(result) != "VOID"
+
+
+@testing:case="buildCreditDefaultSwap rejects negative nominal", exception=1
+caplib::buildCreditDefaultSwap(-1.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+

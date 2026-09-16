@@ -308,3 +308,22 @@ caplib::buildFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy
 @testing:case="buildFxVolatilitySurface optional returnJson null uses default"
 result = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildFxVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], fxMktConventions[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="buildFxVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], fxMktConventions[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+

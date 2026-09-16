@@ -201,7 +201,6 @@ caplib::createOneTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 
 @testing:case="createOneTouchOption rejects keyword arguments", syntaxError=1
 caplib::createOneTouchOption(expiry=2024.01.01, delivery=2024.01.01, barrierType="X", barrierValue=0.02, barrierObsType="X", paymentType="X", cash=0.02, asset=0.02, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createOneTouchOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
 
-
 // ----------------------------------------------------------------------------
 // Review wave-4 additions (forms / optional param / scale / determinism)
 // ----------------------------------------------------------------------------
@@ -209,3 +208,4 @@ caplib::createOneTouchOption(expiry=2024.01.01, delivery=2024.01.01, barrierType
 @testing:case="createOneTouchOption optional returnJson null uses default"
 result = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT", bool())
 assert 1, typestr(result) != "VOID"
+

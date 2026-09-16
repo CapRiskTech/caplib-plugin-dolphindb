@@ -140,3 +140,22 @@ caplib::createXccyIrRiskSettings(irCurveRiskSettingsHandle="X", fxRiskSettingsHa
 @testing:case="createXccyIrRiskSettings optional returnJson null uses default"
 result = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_XCCY", bool())
 assert 1, typestr(result) != "VOID"
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5a additions (wrong-type object handles)
+// ----------------------------------------------------------------------------
+
+@testing:case="createXccyIrRiskSettings rejects wrong object type for fxRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, irCurveRisk, irThetaRisk, "TF_XCCY", false)
+
+
+
+// ----------------------------------------------------------------------------
+// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
+// ----------------------------------------------------------------------------
+
+@testing:case="createXccyIrRiskSettings rejects wrong object type for fxRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, irCurveRisk, irThetaRisk, "TF_XCCY", false)
+
