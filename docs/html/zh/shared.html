@@ -20,7 +20,7 @@
       <section id="user-guide" class="panel"><h2>用户指南</h2><p>跨资产工具、定价设置、风险设置、情景设置以及共享 protobuf 工具。 本页包含 28 个函数。可按函数名、返回类型、参数或说明进行筛选。</p><p>所有会向 内存对象 写入对象的函数都支持可选的最后一个参数 <code>returnJson BOOL</code>。省略或传入 <code>false</code> 时仅返回句柄；传入 <code>true</code> 时返回 <code>[handle, protobufJson]</code>。</p><p class="validity-guide"><strong>参数有效性：</strong> 每个参数均说明精确枚举标签、选择器代码、范围、正负性、形状和跨参数规则。“包装器检查”表示插件立即校验；“业务有效”规则可能由下游服务校验。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 settings = caplib::createPricingSettings(
-    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0,
+    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0, take(0, 0),
     &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
 
 json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>

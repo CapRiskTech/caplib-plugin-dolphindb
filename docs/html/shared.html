@@ -20,7 +20,7 @@
       <section id="user-guide" class="panel"><h2>User Guide</h2><p>Cross-asset utilities, pricing settings, risk settings, scenario settings, and shared protobuf tooling. This page contains 28 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. If omitted or <code>false</code>, the function returns only the handle. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 settings = caplib::createPricingSettings(
-    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0,
+    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0, take(0, 0),
     &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
 
 json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>

@@ -8,15 +8,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-def isHandleJson(result, expectedHandle) {
-    return strpos(typestr(result), "STRING VECTOR") >= 0 &&
-        size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
-}
-
-// ============================================================================
 // Setup: PM chain (calendar -> cash template -> USD depo curve -> 4-col par curve)
 // ============================================================================
 
@@ -88,24 +79,12 @@ caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTempla
 
 @testing:case="buildPmYieldCurve rejects keyword arguments", syntaxError=1
 caplib::buildPmYieldCurve(referenceDate=2019.09.04, parCurveHandle=pmParRateCurve, discountCurveHandle=usdDepoCurve, pmTemplateHandle=pmCashTemplate, spotPrice=1544.06, calcJacobian=false, dayCount="ACT_365_FIXED", interpMethod="LINEAR_INTERP", extrapMethod="FLAT_EXTRAP", curveType="ZERO_RATE", curveName="XAU_XAUUSD", shift=1.0e-4, method="CENTRAL_DIFFERENCE_METHOD", mode="SINGLE_THREADING_MODE", handle="TF_XAU_YIELD", returnJson=false)
-
-
-
-// ----------------------------------------------------------------------------
-// Review wave-1 additions (wiki test-case review)
-// ----------------------------------------------------------------------------
-
 @testing:case="buildPmYieldCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, "TF_NO_SUCH_HANDLE_buildPmYieldCurve", usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 
 @testing:case="buildPmYieldCurve rejects invalid enum for dayCount", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "NOT_A_VALID_ENUM_LABEL", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
-
-// ----------------------------------------------------------------------------
-// Review wave-3 additions (independent numeric references)
-// ----------------------------------------------------------------------------
-
 @testing:case="buildPmYieldCurve -> frozen curve reference"
 // The bootstrap output for the upstream fixture is deterministic; the 1M/6M/12M
 // pillar values are frozen (first pillar -0.0041261325250508763).
@@ -113,21 +92,9 @@ rpmb = caplib::buildPmYieldCurve(2019.09.04, "PAR_30", "DEPO_30", "XAUUSD", 1544
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 0.0001,
     "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "FWD_30B", true);
 assert 1, strpos(rpmb[1], "-0.0041261325250508763") >= 0
-
-// ----------------------------------------------------------------------------
-// Review wave-4 additions (forms / optional param / scale / determinism)
-// ----------------------------------------------------------------------------
-
 @testing:case="buildPmYieldCurve optional returnJson null uses default"
 result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", bool())
 assert 1, typestr(result) != "VOID"
-
-
-
-// ----------------------------------------------------------------------------
-// Review wave-5 additions (wrong-type handles, enum sweeps, boundary values)
-// ----------------------------------------------------------------------------
-
 @testing:case="buildPmYieldCurve rejects wrong object type for discountCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, pmParRateCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
