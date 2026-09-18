@@ -9,14 +9,10 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPricingModelSettings -> handle"
 result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM", false)
 assert 1, result == "TF_BSM"
@@ -25,41 +21,54 @@ assert 1, result == "TF_BSM"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPricingModelSettings rejects missing argument", syntaxError=1
 caplib::createPricingModelSettings("X", "X", false, [0.02])
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPricingModelSettings rejects extra argument", syntaxError=1
 caplib::createPricingModelSettings("X", "X", false, [0.02], "TF_createPricingModelSettings_H", false, 1)
 
+// 用例目的：参数 modelName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects wrong type for modelName", exception=1
 caplib::createPricingModelSettings(1, "X", false, [0.02], "TF_createPricingModelSettings_H", false)
 
+// 用例目的：参数 asset 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects wrong type for asset", exception=1
 caplib::createPricingModelSettings("X", 1, false, [0.02], "TF_createPricingModelSettings_H", false)
 
+// 用例目的：参数 modelName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects null modelName", exception=1
 caplib::createPricingModelSettings(string(), "X", false, [0.02], "TF_createPricingModelSettings_H", false)
 
+// 用例目的：参数 asset 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects null asset", exception=1
 caplib::createPricingModelSettings("X", string(), false, [0.02], "TF_createPricingModelSettings_H", false)
 
+// 用例目的：标量参数 modelName 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects vector for scalar modelName", exception=1
 caplib::createPricingModelSettings(["X"], "X", false, [0.02], "TF_createPricingModelSettings_H", false)
 
+// 用例目的：向量参数 constantParams 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects scalar for vector constantParams", exception=1
 caplib::createPricingModelSettings("X", "X", false, [0.02], "TF_createPricingModelSettings_H", false)
 
+// 用例目的：向量参数 constantParams 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects partially-null vector constantParams", exception=1
 caplib::createPricingModelSettings("X", "X", false, [0.02, double()], "TF_createPricingModelSettings_H", false)
 
+// 用例目的：向量参数 constantParams 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createPricingModelSettings rejects empty vector constantParams", exception=1
 caplib::createPricingModelSettings("X", "X", false, take(double, 0), "TF_createPricingModelSettings_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPricingModelSettings rejects keyword arguments", syntaxError=1
 caplib::createPricingModelSettings(modelName="X", asset="X", calibrated=false, constantParams=[0.02], handle="TF_createPricingModelSettings_H", returnJson=false)
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createPricingModelSettings accepts all-null vector constantParams (lenient validation, does not raise)"
 result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [double(), double(), double()], "TF_BSM", false)
 assert 1, typestr(result) != "VOID"
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPricingModelSettings optional returnJson null uses default"
 result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM", bool())
 assert 1, typestr(result) != "VOID"

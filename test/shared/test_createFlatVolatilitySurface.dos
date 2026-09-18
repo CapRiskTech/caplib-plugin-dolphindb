@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -26,6 +20,7 @@ curveValues = [0.02, 0.025];
 // Tests
 // ============================================================================
 
+// 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createFlatVolatilitySurface valid call"
 result = caplib::createFlatVolatilitySurface(2024.01.01, 0.02, "X", "TF_createFlatVolatilitySurface_H", false)
 assert 1, result == "TF_createFlatVolatilitySurface_H"
@@ -34,32 +29,42 @@ assert 1, result == "TF_createFlatVolatilitySurface_H"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createFlatVolatilitySurface rejects missing argument", syntaxError=1
 caplib::createFlatVolatilitySurface(2024.01.01, 0.02, "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createFlatVolatilitySurface rejects extra argument", syntaxError=1
 caplib::createFlatVolatilitySurface(2024.01.01, 0.02, "X", "TF_createFlatVolatilitySurface_H", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFlatVolatilitySurface rejects wrong type for referenceDate", exception=1
 caplib::createFlatVolatilitySurface("bad", 0.02, "X", "TF_createFlatVolatilitySurface_H", false)
 
+// 用例目的：参数 volatility 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFlatVolatilitySurface rejects wrong type for volatility", exception=1
 caplib::createFlatVolatilitySurface(2024.01.01, "bad", "X", "TF_createFlatVolatilitySurface_H", false)
 
+// 用例目的：参数 underlying 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFlatVolatilitySurface rejects wrong type for underlying", exception=1
 caplib::createFlatVolatilitySurface(2024.01.01, 0.02, 1, "TF_createFlatVolatilitySurface_H", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFlatVolatilitySurface rejects null referenceDate", exception=1
 caplib::createFlatVolatilitySurface(date(), 0.02, "X", "TF_createFlatVolatilitySurface_H", false)
 
+// 用例目的：参数 volatility 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFlatVolatilitySurface rejects null volatility", exception=1
 caplib::createFlatVolatilitySurface(2024.01.01, double(), "X", "TF_createFlatVolatilitySurface_H", false)
 
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createFlatVolatilitySurface rejects vector for scalar referenceDate", exception=1
 caplib::createFlatVolatilitySurface([2024.01.01], 0.02, "X", "TF_createFlatVolatilitySurface_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFlatVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::createFlatVolatilitySurface(referenceDate=2024.01.01, volatility=0.02, underlying="X", handle="TF_createFlatVolatilitySurface_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFlatVolatilitySurface optional returnJson null uses default"
 result = caplib::createFlatVolatilitySurface(2024.01.01, 0.02, "X", "TF_createFlatVolatilitySurface_H", bool())
 assert 1, typestr(result) != "VOID"

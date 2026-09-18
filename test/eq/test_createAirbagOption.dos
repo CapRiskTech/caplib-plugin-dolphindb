@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -120,6 +114,7 @@ mktData = caplib::createEqMktDataSet(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createAirbagOption -> handle"
 result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, result == "f_AB"
@@ -128,53 +123,74 @@ assert 1, result == "f_AB"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createAirbagOption rejects missing argument", syntaxError=1
 caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createAirbagOption rejects extra argument", syntaxError=1
 caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false, 1)
 
+// 用例目的：参数 payoffType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createAirbagOption rejects wrong type for payoffType", exception=1
 caplib::createAirbagOption(1, 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 expiry 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createAirbagOption rejects wrong type for expiry", exception=1
 caplib::createAirbagOption("X", "bad", 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 delivery 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createAirbagOption rejects wrong type for delivery", exception=1
 caplib::createAirbagOption("X", 2024.01.01, "bad", 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 payoffType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createAirbagOption rejects null payoffType", exception=1
 caplib::createAirbagOption(string(), 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 expiry 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createAirbagOption rejects null expiry", exception=1
 caplib::createAirbagOption("X", date(), 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：标量参数 payoffType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createAirbagOption rejects vector for scalar payoffType", exception=1
 caplib::createAirbagOption(["X"], 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：向量参数 fixingDates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createAirbagOption rejects scalar for vector fixingDates", exception=1
 caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：向量参数 fixingDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createAirbagOption rejects partially-null vector fixingDates", exception=1
 caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", [2024.01.01, date()], [0.02], [0.02], false)
 
+// 用例目的：向量参数 fixingDates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createAirbagOption rejects empty vector fixingDates", exception=1
 caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "TF_createAirbagOption_H", take(date, 0), [0.02], [0.02], false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createAirbagOption rejects keyword arguments", syntaxError=1
 caplib::createAirbagOption(payoffType="X", expiry=2024.01.01, delivery=2024.01.01, lowerStrike=0.02, upperStrike=0.02, lowerGearing=0.02, upperGearing=0.02, knockInStrike=0.02, barrierType="X", barrierValue=0.02, barrierObsType="X", nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createAirbagOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createAirbagOption accepts all-null vector fixingDates (lenient validation, does not raise)"
 result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createAirbagOption optional returnJson null uses default"
 result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 nominal 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createAirbagOption rejects zero nominal (lenient validation, does not raise)"
 result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 0.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：参数 nominal 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createAirbagOption rejects negative nominal (lenient validation, does not raise)"
 result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
+// ----------------------------------------------------------------------------
+// 用例目的：两个数组参数长度不一致（fixingDates 多一个元素），实测插件宽松接受——记录实际行为
+@testing:case="createAirbagOption fixingDates length mismatch (lenient validation, does not raise)"
+result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", join(dailyObsDates, dailyObsDates[0]), dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(result) != "VOID"

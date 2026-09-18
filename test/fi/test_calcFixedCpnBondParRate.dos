@@ -10,11 +10,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -184,10 +179,12 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，与独立来源的冻结参考值逐位对比，验证计算正确性
 @testing:case="calcFixedCpnBondParRate -> frozen reference (credit spread curve)"
 r = caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0]);
 assert 1, abs(r - 0.02916137050665697) < 1.0e-12
 
+// 用例目的：正常调用，与独立来源的冻结参考值逐位对比，验证计算正确性
 @testing:case="calcFixedCpnBondParRate -> frozen reference (empty spread curve)"
 // python caplib reference (flat zero credit curve) yields 0.022305497802670465;
 // the plugin's internal empty-spread default differs by ~2.4e-6, frozen as observed.
@@ -198,31 +195,47 @@ assert 1, abs(r2 - 0.022307896014995623) < 1.0e-9 && r2 < r
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="calcFixedCpnBondParRate rejects missing argument", syntaxError=1
 caplib::calcFixedCpnBondParRate(2024.01.01, "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="calcFixedCpnBondParRate rejects extra argument", syntaxError=1
 caplib::calcFixedCpnBondParRate(2024.01.01, "X", "X", "X", 1)
 
+// 用例目的：参数 calculationDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcFixedCpnBondParRate rejects wrong type for calculationDate", exception=1
 caplib::calcFixedCpnBondParRate("bad", "X", "X", "X")
 
+// 用例目的：参数 bondHandle 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcFixedCpnBondParRate rejects wrong type for bondHandle", exception=1
 caplib::calcFixedCpnBondParRate(2024.01.01, 1, "X", "X")
 
+// 用例目的：参数 calculationDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcFixedCpnBondParRate rejects null calculationDate", exception=1
 caplib::calcFixedCpnBondParRate(date(), "X", "X", "X")
 
+// 用例目的：参数 bondHandle 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcFixedCpnBondParRate rejects null bondHandle", exception=1
 caplib::calcFixedCpnBondParRate(2024.01.01, string(), "X", "X")
 
+// 用例目的：标量参数 calculationDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="calcFixedCpnBondParRate rejects vector for scalar calculationDate", exception=1
 caplib::calcFixedCpnBondParRate([2024.01.01], "X", "X", "X")
 
+// 用例目的：句柄参数 bondHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="calcFixedCpnBondParRate rejects nonexistent handle bondHandle", exception=1
 caplib::calcFixedCpnBondParRate(2024.01.01, "TF_NO_SUCH_HANDLE_calcFixedCpnBondParRate", "X", "X")
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="calcFixedCpnBondParRate rejects keyword arguments", syntaxError=1
 caplib::calcFixedCpnBondParRate(calculationDate=2024.01.01, bondHandle="X", discountCurveHandle="X", spreadCurveHandle="X")
+// 用例目的：句柄参数 discountCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="calcFixedCpnBondParRate rejects wrong object type for discountCurveHandle", exception=1
 caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, vanillaBond, cnyMtnAaaSprdStdCfets[0])
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="calcFixedCpnBondParRate deterministic repeat -> identical result"
+r1 = caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0]);
+r2 = caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0]);
+assert 1, max(abs(r1 - r2)) < 1.0e-12

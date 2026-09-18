@@ -30,10 +30,12 @@ def hasJsonField(json, fieldName) {
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createFixedLegDefinition -> [handle, json]"
 leg = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true);
 assert 1, isHandleJson(leg, "TF_IR_FIXED_LEG") && hasJsonField(leg[1], "leg_type")
 
+// 用例目的：rejects INT calendar（预期：插件按文档行为执行）
 @testing:case="createFixedLegDefinition rejects INT calendar", exception=1
 caplib::createFixedLegDefinition("CNY", 1, "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG_BAD", true)
 
@@ -41,37 +43,49 @@ caplib::createFixedLegDefinition("CNY", 1, "QUARTERLY", "ACT_365_FIXED", "MODIFI
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createFixedLegDefinition rejects missing argument", syntaxError=1
 caplib::createFixedLegDefinition("X", "X", "X", "X", "X", "X", "X", 1, "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createFixedLegDefinition rejects extra argument", syntaxError=1
 caplib::createFixedLegDefinition("X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "TF_createFixedLegDefinition_H", false, 1)
 
+// 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects wrong type for currency", exception=1
 caplib::createFixedLegDefinition(1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "TF_createFixedLegDefinition_H", false)
 
+// 用例目的：参数 calendar 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects wrong type for calendar", exception=1
 caplib::createFixedLegDefinition("X", 1, "X", "X", "X", "X", "X", 1, "X", "X", "TF_createFixedLegDefinition_H", false)
 
+// 用例目的：参数 freq 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects wrong type for freq", exception=1
 caplib::createFixedLegDefinition("X", "X", 1, "X", "X", "X", "X", 1, "X", "X", "TF_createFixedLegDefinition_H", false)
 
+// 用例目的：参数 currency 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects null currency", exception=1
 caplib::createFixedLegDefinition(string(), "X", "X", "X", "X", "X", "X", 1, "X", "X", "TF_createFixedLegDefinition_H", false)
 
+// 用例目的：参数 calendar 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects null calendar", exception=1
 caplib::createFixedLegDefinition("X", string(), "X", "X", "X", "X", "X", 1, "X", "X", "TF_createFixedLegDefinition_H", false)
 
+// 用例目的：标量参数 currency 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects vector for scalar currency", exception=1
 caplib::createFixedLegDefinition(["X"], "X", "X", "X", "X", "X", "X", 1, "X", "X", "TF_createFixedLegDefinition_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFixedLegDefinition rejects keyword arguments", syntaxError=1
 caplib::createFixedLegDefinition(currency="X", calendar="X", freq="X", dayCount="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", notionalExchange="X", tag="TF_createFixedLegDefinition_H", returnJson=false)
+// 用例目的：枚举参数 stubPolicy 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects invalid enum for stubPolicy", exception=1
 caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "NOT_A_VALID_ENUM_LABEL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFixedLegDefinition optional returnJson null uses default"
 result = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 stubPolicy 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createFixedLegDefinition supports all stubPolicy enums"
 labelEnum = ["INITIAL", "FINAL", "INITIAL_FINAL_FORWARD", "INITIAL_FINAL_BACKWARD"]
 okEnum = true;
@@ -79,6 +93,7 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", labelEnum[i], "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+// 用例目的：supports all enums (review)（预期：插件按文档行为执行）
 @testing:case="createFixedLegDefinition supports all enums (review)"
 labelEnum = ["INITIAL", "FINAL", "INITIAL_FINAL_FORWARD", "INITIAL_FINAL_BACKWARD"]
 okEnum = true;
@@ -87,3 +102,14 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFixedLegDefinition rejects all-null vector calendar", exception=1
+caplib::createFixedLegDefinition("CNY", [string(), string(), string()], "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFixedLegDefinition rejects empty vector calendar", exception=1
+caplib::createFixedLegDefinition("CNY", take(string, 0), "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true)

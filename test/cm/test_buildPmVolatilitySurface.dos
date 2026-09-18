@@ -55,6 +55,7 @@ irCurve = caplib::createIrYieldCurve(
 // Tests
 // ============================================================================
 
+// 用例目的：按上游回归用例的固定输入调用，验证与上游一致
 @testing:case="buildPmVolatilitySurface -> [handle, json] (upstream regression parity)"
 // Mirror dqlibdolphin test_issues_regression.dos case #30: the 0.0.12 build
 // fixed the createPmMktConventions enum mapping, so the canonical XAUUSD
@@ -99,46 +100,101 @@ assert 1, isHandleJson(pvs, "VS_30") && hasJsonField(pvs[1], "SVI_SMILE_METHOD")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="buildPmVolatilitySurface rejects missing argument", syntaxError=1
 caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="buildPmVolatilitySurface rejects extra argument", syntaxError=1
 caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects wrong type for referenceDate", exception=1
 caplib::buildPmVolatilitySurface("bad", "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
+// 用例目的：参数 underlying 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects wrong type for underlying", exception=1
 caplib::buildPmVolatilitySurface(2024.01.01, 1, "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
+// 用例目的：参数 underlyingPrice 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects wrong type for underlyingPrice", exception=1
 caplib::buildPmVolatilitySurface(2024.01.01, "X", "X", "X", "bad", "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects null referenceDate", exception=1
 caplib::buildPmVolatilitySurface(date(), "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
+// 用例目的：参数 underlying 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects null underlying", exception=1
 caplib::buildPmVolatilitySurface(2024.01.01, string(), "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects vector for scalar referenceDate", exception=1
 caplib::buildPmVolatilitySurface([2024.01.01], "X", "X", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
+// 用例目的：句柄参数 definitionHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
 caplib::buildPmVolatilitySurface(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X", "X", "X", "X", "TF_buildPmVolatilitySurface_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildPmVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::buildPmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrice=0.02, discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", marketConventionsHandle="X", spotTemplateHandle="X", handle="TF_buildPmVolatilitySurface_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildPmVolatilitySurface optional returnJson null uses default"
 result = caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 quoteMatrixHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
 caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "VDEF_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true)
 
 
+// 用例目的：参数 underlyingPrice 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects zero underlyingPrice", exception=1
 caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 0.0, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true)
 
 
+// 用例目的：参数 underlyingPrice 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects negative underlyingPrice", exception=1
 caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", -1.0, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true)
 
+// 用例目的：相同输入连续构建两次，经 getter 取值对比，验证构建结果确定性
+@testing:case="buildPmVolatilitySurface deterministic repeat -> identical result"
+r1 = caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true);
+r2 = caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true);
+assert 1, max(abs(caplib::getVolatility(r1[0], [2021.07.22], [100.0]) - caplib::getVolatility(r2[0], [2021.07.22], [100.0]))) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：正常构建后经 getVolatility 在固定查询点取值，与冻结参考值对比，验证构建到查询的数值正确性
+@testing:case="buildPmVolatilitySurface -> frozen getVolatility reference"
+caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_CFETS"], "ACT_360", false);
+usdDepoP = caplib::createIrYieldCurve(2019.09.04, [2019.09.09, 2020.09.08, 2021.09.07],
+[0.021594, 0.014216, 0.012617], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+"CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "DEPO_30", false);
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD",
+table(["XAUUSD", "XAUUSD", "XAUUSD"] as instrument_name,
+["PM_SWAP", "PM_SWAP", "PM_SWAP"] as instrument_type,
+["1M", "6M", "12M"] as instrument_term,
+[0.0248, 0.0223, 0.0192] as instrument_rate), "PAR_30", false);
+caplib::buildPmYieldCurve(2019.09.04, "PAR_30", "DEPO_30", "XAUUSD", 1544.06, 0,
+"ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 0.0001,
+"CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "FWD_30", false);
+caplib::createPmOptionQuoteMatrix("XAUUSD", 2019.09.04, ["1M", "6M", "1Y"],
+[["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"],
+["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"],
+["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"]],
+[[0, 0.25, 0.25, 0.10, 0.10],
+[0, 0.25, 0.25, 0.10, 0.10],
+[0, 0.25, 0.25, 0.10, 0.10]],
+[[0.15340, 0.03623, 0.00578, 0.06738, 0.01753],
+[0.15153, 0.04255, 0.00808, 0.08120, 0.02148],
+[0.15383, 0.04725, 0.01070, 0.09253, 0.02838]], "Q_30", false);
+caplib::createPmMktConventions("ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y",
+"RR_CALL_PUT", "BUTTERFLY_QUOTE", "XAUUSD", "MKT_30", false);
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD", "FLAT_EXTRAP",
+"LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+-0.0001, 0.0001, "VDEF_30", false);
+caplib::createVolSurfBuildSettings(1, 0.5, "BS_30", false);
+pvs = caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "Q_30", 1544.06,
+"DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true);
+r = caplib::getVolatility(pvs[0], [2021.07.22], [1544.06]);
+assert 1, abs(r[0] - 0.1487449619652463) < 1.4974496196524632e-10

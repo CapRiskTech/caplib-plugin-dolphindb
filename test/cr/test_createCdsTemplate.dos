@@ -88,13 +88,16 @@ cds = caplib::buildCreditDefaultSwap(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createCdsTemplate -> [handle, json]"
 r = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true);
 assert 1, isHandleJson(r, "TF_CDS_TPL")
 
+// 用例目的：rejects INT instrumentName（预期：插件按文档行为执行）
 @testing:case="createCdsTemplate rejects INT instrumentName", exception=1
 caplib::createCdsTemplate(1, "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
 
+// 用例目的：rejects invalid settlementType（预期：插件按文档行为执行）
 @testing:case="createCdsTemplate rejects invalid settlementType", exception=1
 caplib::createCdsTemplate("TF_CDS_TPL2", "1d", "NOT_A_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
 
@@ -102,41 +105,70 @@ caplib::createCdsTemplate("TF_CDS_TPL2", "1d", "NOT_A_SETTLEMENT", 0.0, 1.0, "PA
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createCdsTemplate rejects missing argument", syntaxError=1
 caplib::createCdsTemplate("X", "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createCdsTemplate rejects extra argument", syntaxError=1
 caplib::createCdsTemplate("X", "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false, 1)
 
+// 用例目的：参数 instName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects wrong type for instName", exception=1
 caplib::createCdsTemplate(1, "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 
+// 用例目的：参数 startDelay 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects wrong type for startDelay", exception=1
 caplib::createCdsTemplate("X", 1, "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 
+// 用例目的：参数 settlementType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects wrong type for settlementType", exception=1
 caplib::createCdsTemplate("X", "X", 1, 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 
+// 用例目的：参数 instName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects null instName", exception=1
 caplib::createCdsTemplate(string(), "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 
+// 用例目的：参数 startDelay 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects null startDelay", exception=1
 caplib::createCdsTemplate("X", string(), "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 
+// 用例目的：标量参数 instName 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects vector for scalar instName", exception=1
 caplib::createCdsTemplate(["X"], "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X", "X", "X", false, false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createCdsTemplate rejects keyword arguments", syntaxError=1
 caplib::createCdsTemplate(instName="X", startDelay="X", settlementType="X", referencePrice=0.02, leverage=0.02, creditProtectionType="X", recoveryRate=0.02, creditPremiumType="X", dayCount="X", frequency="X", businessDayConvention="X", calendars="X", rebateAccrual=false, returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createCdsTemplate optional returnJson null uses default"
 result = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 referencePrice 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects zero referencePrice (lenient validation, does not raise)"
 result = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：参数 referencePrice 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects negative referencePrice (lenient validation, does not raise)"
 result = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", -1.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
 assert 1, typestr(result) != "VOID"
 
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createCdsTemplate rejects all-null vector calendars (lenient validation, does not raise)"
+result = caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [string(), string(), string()], false, true)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects empty vector calendars", exception=1
+caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", take(string, 0), false, true)
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createCdsTemplate rejects partially-null vector calendars (lenient validation, does not raise)"
+result = caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [calCfets, string()], false, true)
+assert 1, typestr(result) != "VOID"

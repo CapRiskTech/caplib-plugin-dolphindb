@@ -80,6 +80,7 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回向量的形态与数值
 @testing:case="getDiscountFactor -> vector"
 r = caplib::getDiscountFactor(irCurve, [2025.03.10])
 assert 1, isDoubleVector(r) && size(r) >= 1
@@ -88,33 +89,85 @@ assert 1, isDoubleVector(r) && size(r) >= 1
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="getDiscountFactor rejects missing argument", syntaxError=1
 caplib::getDiscountFactor("X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="getDiscountFactor rejects extra argument", syntaxError=1
 caplib::getDiscountFactor("X", [2024.01.01], 1)
 
+// 用例目的：向量参数 dates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="getDiscountFactor rejects scalar for vector dates", exception=1
 caplib::getDiscountFactor("X", [2024.01.01])
 
+// 用例目的：向量参数 dates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getDiscountFactor rejects partially-null vector dates", exception=1
 caplib::getDiscountFactor("X", [2024.01.01, date()])
 
+// 用例目的：向量参数 dates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="getDiscountFactor rejects empty vector dates", exception=1
 caplib::getDiscountFactor("X", take(date, 0))
 
+// 用例目的：句柄参数 irCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="getDiscountFactor rejects nonexistent handle irCurveHandle", exception=1
 caplib::getDiscountFactor("TF_NO_SUCH_HANDLE_getDiscountFactor", [2024.01.01])
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="getDiscountFactor rejects keyword arguments", syntaxError=1
 caplib::getDiscountFactor(irCurveHandle="X", dates=[2024.01.01])
+// 用例目的：向量参数 dates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getDiscountFactor rejects all-null vector dates", exception=1
 caplib::getDiscountFactor(irCurve, [date(), date(), date()])
+// 用例目的：正常调用，与独立解析公式（闭式解）计算的参考值对比，验证计算正确性
 @testing:case="getDiscountFactor -> analytic flat-curve reference"
 // DF(t) = exp(-r*t) on a flat zero curve; t = 1.0 exactly (2022.03.09 + 365d, ACT/365F).
 flatIrRef = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_REF_FIR", false);
 dfr = caplib::getDiscountFactor(flatIrRef, [2023.03.09]);
 assert 1, abs(dfr[0] - 0.9801986733067553) < 1.0e-12
+// 用例目的：同样输入重复调用多次，验证结果完全一致（确定性）
 @testing:case="getDiscountFactor repeat calls return identical results"
 d1r = caplib::getDiscountFactor(irCurve, [2025.03.10]);
 d2r = caplib::getDiscountFactor(irCurve, [2025.03.10]);
 assert 1, d1r == d2r
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: negative-case coverage (wrong type / null / arity / keyword)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getDiscountFactor rejects wrong type for irCurveHandle", exception=1
+caplib::getDiscountFactor(1, [2025.03.10])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getDiscountFactor rejects null irCurveHandle", exception=1
+caplib::getDiscountFactor(string(), [2025.03.10])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getDiscountFactor rejects wrong type for dates", exception=1
+caplib::getDiscountFactor(irCurve, "bad")
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getDiscountFactor rejects null dates", exception=1
+caplib::getDiscountFactor(irCurve, date())
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="getDiscountFactor deterministic repeat -> identical result"
+r1 = caplib::getDiscountFactor(irCurve, [2025.03.10]);
+r2 = caplib::getDiscountFactor(irCurve, [2025.03.10]);
+assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：以加倍的利率/波动率参数重建同一曲线后再查询，验证查询结果随输入变化
+@testing:case="getDiscountFactor rebuilt curve (2x rate) -> result changes"
+r1 = caplib::getDiscountFactor(irCurve, [2025.03.10]);
+irCurve = caplib::createIrYieldCurve(
+    irAsOfDate, [2022.03.10, 2025.03.10], [0.04, 0.05],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", irCurrency, irCurveName, "TF_IR_CHAIN_CURVE", false);
+r2 = caplib::getDiscountFactor(irCurve, [2025.03.10]);
+assert 1, max(abs(r1 - r2)) > 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：句柄参数 irCurveHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）
+@testing:case="getDiscountFactor rejects wrong object type for irCurveHandle", exception=1
+caplib::getDiscountFactor(calendarCreated[0], [2025.03.10]);

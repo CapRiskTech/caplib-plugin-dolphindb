@@ -65,6 +65,7 @@ cnyTreasStdCfets = caplib::buildBondYieldCurve(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildBondYieldCurve -> [handle, json]"
 r = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", true);
 assert 1, isHandleJson(r, "TF_FI_YC")
@@ -73,40 +74,83 @@ assert 1, isHandleJson(r, "TF_FI_YC")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="buildBondYieldCurve rejects missing argument", syntaxError=1
 caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="buildBondYieldCurve rejects extra argument", syntaxError=1
 caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects wrong type for referenceDate", exception=1
 caplib::buildBondYieldCurve("bad", "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
+// 用例目的：参数 curveName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects wrong type for curveName", exception=1
 caplib::buildBondYieldCurve(2024.01.01, "X", 1, "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
+// 用例目的：参数 dayCount 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects wrong type for dayCount", exception=1
 caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", 1, "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects null referenceDate", exception=1
 caplib::buildBondYieldCurve(date(), "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
+// 用例目的：参数 curveName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects null curveName", exception=1
 caplib::buildBondYieldCurve(2024.01.01, "X", string(), "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects vector for scalar referenceDate", exception=1
 caplib::buildBondYieldCurve([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
+// 用例目的：句柄参数 buildSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects nonexistent handle buildSettingsHandle", exception=1
 caplib::buildBondYieldCurve(2024.01.01, "TF_NO_SUCH_HANDLE_buildBondYieldCurve", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildBondYieldCurve rejects keyword arguments", syntaxError=1
 caplib::buildBondYieldCurve(referenceDate=2024.01.01, buildSettingsHandle="X", curveName="X", parCurveHandle="X", dayCount="X", compoundingType="X", frequency="X", buildingMethod="X", calcJacobian=false, forwardCurveHandle="X", handle="TF_buildBondYieldCurve_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildBondYieldCurve optional returnJson null uses default"
 result = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 parCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects wrong object type for parCurveHandle", exception=1
 caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", cnyTreasBuildSettings[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", true)
+// 用例目的：正常调用，与独立来源的冻结参考值逐位对比，验证计算正确性
 @testing:case="buildBondYieldCurve -> frozen curve reference"
 zrRef = caplib::getZeroRate(cnyTreasStdCfets[0], [2026.07.22]);
 assert 1, abs(zrRef[0] - 0.027171736549228) < 1.0e-12
+
+// 用例目的：相同输入连续构建两次，经 getter 取值对比，验证构建结果确定性
+@testing:case="buildBondYieldCurve deterministic repeat -> identical result"
+r1 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", true);
+r2 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", true);
+assert 1, max(abs(caplib::getZeroRate(r1[0], [2021.07.22]) - caplib::getZeroRate(r2[0], [2021.07.22]))) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：正常构建后经 getZeroRate 在固定查询点取值，与冻结参考值对比，验证构建到查询的数值正确性
+@testing:case="buildBondYieldCurve -> frozen getZeroRate reference"
+r = caplib::getZeroRate(cnyTreasStdCfets[0], [2021.07.22]);
+assert 1, abs(r[0] - 0.016967238845753532) < 1.7967238845753534e-11
+
+// ----------------------------------------------------------------------------
+// 用例目的：将输入报价整体上浮 50% 后重建，验证 getZeroRate 查询结果随输入变化
+@testing:case="buildBondYieldCurve perturbed input -> getZeroRate changes"
+r1 = caplib::getZeroRate(cnyTreasStdCfets[0], [(asOfDate + 30)]);
+cnyTreasBondQuotes = [
+    0.025667999999999996, 0.0274755, 0.0291195, 0.029249999999999998, 0.0323445,
+    0.0374775, 0.038307, 0.041325, 0.043762499999999996, 0.0438945,
+    0.049476, 0.050193, 0.0525345];
+parCnyTreasStdCfets = caplib::createBondParCurve(
+    asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes,
+    "YIELD_TO_MATURITY", cnyTreasStdCfetsName, true);
+cnyTreasStdCfets = caplib::buildBondYieldCurve(
+    asOfDate, cnyTreasBuildSettings[0], cnyTreasStdCfetsName, parCnyTreasStdCfets[0],
+    "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL",
+    "BOOTSTRAPPING_METHOD", 0, "", "CNY_TREAS_STD_CFETS", true);
+r2 = caplib::getZeroRate(cnyTreasStdCfets[0], [(asOfDate + 30)]);
+assert 1, max(abs(r1 - r2)) > 1.0e-12

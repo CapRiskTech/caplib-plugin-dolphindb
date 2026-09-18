@@ -149,6 +149,7 @@ xinst = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.0
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回 PricingResults（含 present_value/cash_value/currency）
 @testing:case="priceEqAmericanOption -> PricingResults"
 result = caplib::priceEqAmericanOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
 assert 1, isPricingResultsJson(result, "h2_results")
@@ -157,40 +158,57 @@ assert 1, isPricingResultsJson(result, "h2_results")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="priceEqAmericanOption rejects missing argument", syntaxError=1
 caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="priceEqAmericanOption rejects extra argument", syntaxError=1
 caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
+// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceEqAmericanOption rejects wrong type for pricingDate", exception=1
 caplib::priceEqAmericanOption("X", "bad", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceEqAmericanOption rejects wrong type for mode", exception=1
 caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
+// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceEqAmericanOption rejects null pricingDate", exception=1
 caplib::priceEqAmericanOption("X", date(), "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceEqAmericanOption rejects null mode", exception=1
 caplib::priceEqAmericanOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
+// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="priceEqAmericanOption rejects vector for scalar pricingDate", exception=1
 caplib::priceEqAmericanOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
+// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="priceEqAmericanOption rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceEqAmericanOption("TF_NO_SUCH_HANDLE_priceEqAmericanOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceEqAmericanOption rejects keyword arguments", syntaxError=1
 caplib::priceEqAmericanOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceEqAmericanOption optional returnJson null uses default"
 result = caplib::priceEqAmericanOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceEqAmericanOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceEqAmericanOption(xinst, asOfDate, xinst, bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+// 用例目的：同一合约名义金额放大 2 倍，验证现值精确翻倍（现值对名义的线性性质）
 @testing:case="priceEqAmericanOption notional scaling -> 2x notional, 2x present value"
 xinst_2X = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1, (1e6) * 2, "CNY", "SPOT", "CNY", "50ETF.SSE", "h2_2X", false);
 p1 = caplib::priceEqAmericanOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
 p2 = caplib::priceEqAmericanOption(xinst_2X, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
 assert 1, abs(presentValue(p2) - 2.0 * presentValue(p1)) <= abs(presentValue(p1)) * 1.0e-9 + 1.0e-6
 
+// 用例目的：相同输入连续定价两次，验证两次现值完全一致（定价确定性）
+@testing:case="priceEqAmericanOption deterministic repeat -> identical result"
+r1 = caplib::priceEqAmericanOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+r2 = caplib::priceEqAmericanOption(xinst, asOfDate, mktData[0], bsmAnalyticalSettings, eqNoRisk[0], "", "", true);
+assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)

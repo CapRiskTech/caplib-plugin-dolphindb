@@ -91,6 +91,7 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
+// 用例目的：按 python caplib 参考实现的等价调用方式构造输入，验证与参考行为一致
 @testing:case="priceIrCrossCurrencySwap -> [handle, PricingResults] (python parity)"
 // The cross-currency swap needs legs in two currencies; the market data set is
 // createIrCrossCcyMktDataSet with both currency curves and the USDCNY spot
@@ -114,34 +115,115 @@ assert 1, isPricingResultsJson(r, "TF_XINST_results")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="priceIrCrossCurrencySwap rejects missing argument", syntaxError=1
 caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="priceIrCrossCurrencySwap rejects extra argument", syntaxError=1
 caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
+// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects wrong type for pricingDate", exception=1
 caplib::priceIrCrossCurrencySwap("X", "bad", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects wrong type for mode", exception=1
 caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
+// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects null pricingDate", exception=1
 caplib::priceIrCrossCurrencySwap("X", date(), "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects null mode", exception=1
 caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
+// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects vector for scalar pricingDate", exception=1
 caplib::priceIrCrossCurrencySwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
+// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceIrCrossCurrencySwap("TF_NO_SUCH_HANDLE_priceIrCrossCurrencySwap", 2024.01.01, "X", "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceIrCrossCurrencySwap rejects keyword arguments", syntaxError=1
 caplib::priceIrCrossCurrencySwap(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceIrCrossCurrencySwap optional returnJson null uses default"
 result = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects wrong object type for mktDataHandle", exception=1
 caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xinst, irPricingSettings, irXccyRisk[0], "", "", true)
+
+// ----------------------------------------------------------------------------
+// 用例目的：相同输入连续定价两次，验证两次定价结果（含 JSON 报文）完全一致（定价确定性）
+@testing:case="priceIrCrossCurrencySwap deterministic repeat -> identical result"
+usdFixedLeg = caplib::createFixedLegDefinition("USD", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING",
+    "INVALID_NOTIONAL_EXCHANGE", "TF_USD_LEG", true);
+xtpl = caplib::createIrVanillaInstrumentTemplate("CROSS_CURRENCY_SWAP", "TF_XTPL", "SPOTSTART", 1,
+    [irFixedLeg[0], usdFixedLeg[0]], "TF_XTPL", true);
+xinst = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+    xtpl[0], 1000000.0, "", "TF_XINST", false);
+fxSpotP = caplib::createFxSpotRate(6.6916, "CNY", "USD", irAsOfDate, irAsOfDate, "TF_XCCY_FXSPOT_P", false);
+usdCurve = caplib::createIrYieldCurve(irAsOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "TF_USD_CURVE_P", false);
+xmkt = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpotP, "TF_IR_XMKT_P", true);
+r1 = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true);
+r2 = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true);
+assert 1, r1[1] == r2[1]
+
+// ----------------------------------------------------------------------------
+// 用例目的：以 2 倍名义重建同一交叉货币互换并定价，验证定价结果随输入变化（JSON 报文不同）
+@testing:case="priceIrCrossCurrencySwap notional x2 -> result changes"
+usdFixedLeg = caplib::createFixedLegDefinition("USD", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+"MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING",
+"INVALID_NOTIONAL_EXCHANGE", "TF_USD_LEG", true);
+xtpl = caplib::createIrVanillaInstrumentTemplate("CROSS_CURRENCY_SWAP", "TF_XTPL", "SPOTSTART", 1,
+[irFixedLeg[0], usdFixedLeg[0]], "TF_XTPL", true);
+xinst = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+xtpl[0], 1000000.0, "", "TF_XINST", false);
+fxSpotP = caplib::createFxSpotRate(6.6916, "CNY", "USD", irAsOfDate, irAsOfDate, "TF_XCCY_FXSPOT_P", false);
+usdCurve = caplib::createIrYieldCurve(irAsOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
+"ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+"CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "TF_USD_CURVE_P", false);
+xmkt = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpotP, "TF_IR_XMKT_P", true);
+r1 = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true);
+xinst2X = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+xtpl[0], 2000000.0, "", "TF_XINST", false);
+r2 = caplib::priceIrCrossCurrencySwap(xinst2X, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true);
+assert 1, r1[1] != r2[1]
+
+// ----------------------------------------------------------------------------
+def extractPv2(pricingResult) {
+    json = pricingResult[1];
+    pvMarker = "present_value";
+    pvStart = strpos(json, pvMarker);
+    if (pvStart < 0) { return double(NULL); }
+    pvStart = pvStart + strlen(pvMarker) + 2;
+    pvRest = substr(json, pvStart);
+    pvEnd = strpos(pvRest, ",");
+    if (pvEnd < 0) { pvEnd = strpos(pvRest, "}"); }
+    return double(substr(pvRest, 0, pvEnd));
+}
+
+// 用例目的：按 python 参考实现的等价输入定价，提取现值与冻结参考值对比，验证计算正确性
+@testing:case="priceIrCrossCurrencySwap -> frozen present_value reference"
+usdFixedLeg = caplib::createFixedLegDefinition("USD", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+"MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING",
+"INVALID_NOTIONAL_EXCHANGE", "TF_USD_LEG", true);
+xtpl = caplib::createIrVanillaInstrumentTemplate("CROSS_CURRENCY_SWAP", "TF_XTPL", "SPOTSTART", 1,
+[irFixedLeg[0], usdFixedLeg[0]], "TF_XTPL", true);
+xinst = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+xtpl[0], 1000000.0, "", "TF_XINST", false);
+fxSpotP = caplib::createFxSpotRate(6.6916, "CNY", "USD", irAsOfDate, irAsOfDate, "TF_XCCY_FXSPOT_P", false);
+usdCurve = caplib::createIrYieldCurve(irAsOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
+"ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+"CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "TF_USD_CURVE_P", false);
+xmkt = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpotP, "TF_IR_XMKT_P", true);
+r = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true);
+assert 1, abs(extractPv2(r) - -49347.43905345611) < 5.034743905345611e-05

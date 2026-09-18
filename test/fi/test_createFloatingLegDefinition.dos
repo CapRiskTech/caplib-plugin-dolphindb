@@ -195,18 +195,22 @@ iborIndex = caplib::createIborIndex(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createFloatingLegDefinition -> [handle, json]"
 leg = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
 assert 1, isHandleJson(leg, "TF_IR_FLOATING_LEG") && hasJsonField(leg[1], "ibor_index")
 
+// 用例目的：calendar/fixingCalendars scalar/scalar（预期：插件按文档行为执行）
 @testing:case="createFloatingLegDefinition calendar/fixingCalendars scalar/scalar"
 legSS = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL1", "CAL1", "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_LEG_SS", true);
 assert 1, isHandleJson(legSS, "TF_LEG_SS")
 
+// 用例目的：calendar/fixingCalendars vector/vector with independent lengths（预期：插件按文档行为执行）
 @testing:case="createFloatingLegDefinition calendar/fixingCalendars vector/vector with independent lengths"
 legVV = caplib::createFloatingLegDefinition("CNY", iborIndex[0], ["CAL1", "CAL2"], ["CAL1"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_LEG_VV", true);
 assert 1, isHandleJson(legVV, "TF_LEG_VV")
 
+// 用例目的：参数 calendar 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects null calendar vector element", exception=1
 caplib::createFloatingLegDefinition("CNY", iborIndex[0], ["CAL1", string()], "CAL1", "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_LEG_BAD", true)
 
@@ -214,43 +218,57 @@ caplib::createFloatingLegDefinition("CNY", iborIndex[0], ["CAL1", string()], "CA
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createFloatingLegDefinition rejects missing argument", syntaxError=1
 caplib::createFloatingLegDefinition("X", "X", "X", "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createFloatingLegDefinition rejects extra argument", syntaxError=1
 caplib::createFloatingLegDefinition("X", "X", "X", "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1, "X", "TF_createFloatingLegDefinition_H", false, 1)
 
+// 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects wrong type for currency", exception=1
 caplib::createFloatingLegDefinition(1, "X", "X", "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1, "X", "TF_createFloatingLegDefinition_H", false)
 
+// 用例目的：参数 refIndex 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects wrong type for refIndex", exception=1
 caplib::createFloatingLegDefinition("X", 1, "X", "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1, "X", "TF_createFloatingLegDefinition_H", false)
 
+// 用例目的：参数 calendar 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects wrong type for calendar", exception=1
 caplib::createFloatingLegDefinition("X", "X", 1, "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1, "X", "TF_createFloatingLegDefinition_H", false)
 
+// 用例目的：参数 currency 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects null currency", exception=1
 caplib::createFloatingLegDefinition(string(), "X", "X", "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1, "X", "TF_createFloatingLegDefinition_H", false)
 
+// 用例目的：参数 refIndex 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects null refIndex", exception=1
 caplib::createFloatingLegDefinition("X", string(), "X", "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1, "X", "TF_createFloatingLegDefinition_H", false)
 
+// 用例目的：标量参数 currency 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects vector for scalar currency", exception=1
 caplib::createFloatingLegDefinition(["X"], "X", "X", "X", "X", "X", "X", "X", "X", false, "X", "X", "X", 1, "X", "X", "X", 1, "X", "TF_createFloatingLegDefinition_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFloatingLegDefinition rejects keyword arguments", syntaxError=1
 caplib::createFloatingLegDefinition(currency="X", refIndex="X", calendar="X", fixingCalendars="X", freq="X", fixingFreq="X", dayCount="X", paymentDiscountMethod="X", rateCalcMethod="X", spread=false, interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, notionalExchange="X", tag="TF_createFloatingLegDefinition_H", returnJson=false)
+// 用例目的：枚举参数 paymentDiscountMethod 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects invalid enum for paymentDiscountMethod", exception=1
 caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NOT_A_VALID_ENUM_LABEL", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createFloatingLegDefinition accepts calendar scalar with longer fixingCalendars vector (lenient validation, does not raise)"
 result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS", "CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
 assert 1, typestr(result) != "VOID"
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createFloatingLegDefinition accepts calendars and fixingCalendars of unequal length (lenient validation, does not raise)"
 result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], ["CAL_CFETS", "CAL_CFETS"], ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
 assert 1, typestr(result) != "VOID"
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFloatingLegDefinition optional returnJson null uses default"
 result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 paymentDiscountMethod 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createFloatingLegDefinition supports all paymentDiscountMethod enums"
 labelEnum = ["NO_DISCOUNT", "DISCOUNT_AT_FLOATING_RATE"]
 okEnum = true;
@@ -261,3 +279,32 @@ assert 1, okEnum
 // all documented labels were rejected by the plugin in scalar form
 // (sweep removed 2026-09-16 after per-label probing)
 
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects all-null vector calendar", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], [string(), string(), string()], ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects empty vector calendar", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], take(string, 0), ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects all-null vector fixingCalendars", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", [string(), string(), string()], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects empty vector fixingCalendars", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", take(string, 0), "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects partially-null vector fixingCalendars", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS", string()], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+
+// ----------------------------------------------------------------------------
+// 用例目的：两个数组参数长度不一致（fixingCalendars 多一个元素），实测插件宽松接受——记录实际行为
+@testing:case="createFloatingLegDefinition fixingCalendars length mismatch (lenient validation, does not raise)"
+result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS", "EXTRA"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
+assert 1, typestr(result) != "VOID"

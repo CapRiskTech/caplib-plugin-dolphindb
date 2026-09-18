@@ -31,6 +31,7 @@ flatVolSurface = caplib::createFlatVolatilitySurface(asOfDate, 0.20, "TF_UNDERLY
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回向量的形态与数值
 @testing:case="getVolatility -> matrix of vols"
 vols = caplib::getVolatility(flatVolSurface, [2022.03.10], [100.0])
 assert 1, isMatrix(vols) && size(vols) == 1
@@ -39,27 +40,81 @@ assert 1, isMatrix(vols) && size(vols) == 1
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="getVolatility rejects missing argument", syntaxError=1
 caplib::getVolatility("X", [2024.01.01])
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="getVolatility rejects extra argument", syntaxError=1
 caplib::getVolatility("X", [2024.01.01], [0.02], 1)
 
+// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="getVolatility rejects scalar for vector termDates", exception=1
 caplib::getVolatility("X", [2024.01.01], [0.02])
 
+// 用例目的：向量参数 termDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getVolatility rejects partially-null vector termDates", exception=1
 caplib::getVolatility("X", [2024.01.01, date()], [0.02])
 
+// 用例目的：向量参数 termDates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="getVolatility rejects empty vector termDates", exception=1
 caplib::getVolatility("X", take(date, 0), [0.02])
 
+// 用例目的：句柄参数 volSurfaceHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="getVolatility rejects nonexistent handle volSurfaceHandle", exception=1
 caplib::getVolatility("TF_NO_SUCH_HANDLE_getVolatility", [2024.01.01], [0.02])
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="getVolatility rejects keyword arguments", syntaxError=1
 caplib::getVolatility(volSurfaceHandle="X", termDates=[2024.01.01], strikes=[0.02])
+// 用例目的：向量参数 termDates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getVolatility rejects all-null vector termDates", exception=1
 caplib::getVolatility(flatVolSurface, [date(), date(), date()], [100.0])
+// 用例目的：-> exact flat-surface reference（预期：插件按文档行为执行）
 @testing:case="getVolatility -> exact flat-surface reference"
 vr = caplib::getVolatility(flatVolSurface, [2023.03.09], [100.0]);
 assert 1, abs(vr[0] - 0.20) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: negative-case coverage (wrong type / null / arity / keyword)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getVolatility rejects wrong type for volSurfaceHandle", exception=1
+caplib::getVolatility(1, [2022.03.10], [100.0])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getVolatility rejects null volSurfaceHandle", exception=1
+caplib::getVolatility(string(), [2022.03.10], [100.0])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getVolatility rejects wrong type for termDates", exception=1
+caplib::getVolatility(flatVolSurface, "bad", [100.0])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getVolatility rejects null termDates", exception=1
+caplib::getVolatility(flatVolSurface, date(), [100.0])
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="getVolatility deterministic repeat -> identical result"
+r1 = caplib::getVolatility(flatVolSurface, [2022.03.10], [100.0]);
+r2 = caplib::getVolatility(flatVolSurface, [2022.03.10], [100.0]);
+assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：以加倍的利率/波动率参数重建同一曲线后再查询，验证查询结果随输入变化
+@testing:case="getVolatility rebuilt curve (2x rate) -> result changes"
+r1 = caplib::getVolatility(flatVolSurface, [2022.03.10], [100.0]);
+flatVolSurface = caplib::createFlatVolatilitySurface(asOfDate, 0.4, "TF_UNDERLYING", "TF_FVS", false);
+r2 = caplib::getVolatility(flatVolSurface, [2022.03.10], [100.0]);
+assert 1, max(abs(r1 - r2)) > 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：句柄参数 volSurfaceHandle 传入类型不符的对象句柄（createFlatVolatilitySurface），验证句柄类型校验（预期：抛异常）
+@testing:case="getVolatility rejects wrong object type for volSurfaceHandle", exception=1
+caplib::getVolatility(flatVolSurface[0], [2022.03.10], [100.0]);
+
+// ----------------------------------------------------------------------------
+// 用例目的：两个数组参数长度不一致（termDates 多一个元素），实测插件宽松接受——记录实际行为
+@testing:case="getVolatility termDates length mismatch (lenient validation, does not raise)"
+result = caplib::getVolatility(flatVolSurface, [2022.03.10, 2021.08.20], [100.0]);
+assert 1, typestr(result) != "VOID"

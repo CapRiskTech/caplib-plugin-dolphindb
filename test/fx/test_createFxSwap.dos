@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -224,6 +218,7 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createFxSwap -> handle"
 result = caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
 assert 1, result == "TF_FXSWP"
@@ -232,40 +227,52 @@ assert 1, result == "TF_FXSWP"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createFxSwap rejects missing argument", syntaxError=1
 caplib::createFxSwap("X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createFxSwap rejects extra argument", syntaxError=1
 caplib::createFxSwap("X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_createFxSwap_H", false, 1)
 
+// 用例目的：参数 nearBuyCurrency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxSwap rejects wrong type for nearBuyCurrency", exception=1
 caplib::createFxSwap(1, 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_createFxSwap_H", false)
 
+// 用例目的：参数 nearBuyAmount 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxSwap rejects wrong type for nearBuyAmount", exception=1
 caplib::createFxSwap("X", "bad", "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_createFxSwap_H", false)
 
+// 用例目的：参数 nearSellCurrency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxSwap rejects wrong type for nearSellCurrency", exception=1
 caplib::createFxSwap("X", 0.02, 1, 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_createFxSwap_H", false)
 
+// 用例目的：参数 nearBuyAmount 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFxSwap rejects null nearBuyAmount", exception=1
 caplib::createFxSwap("X", double(), "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_createFxSwap_H", false)
 
+// 用例目的：参数 nearSellAmount 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFxSwap rejects null nearSellAmount", exception=1
 caplib::createFxSwap("X", 0.02, "X", double(), 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_createFxSwap_H", false)
 
+// 用例目的：标量参数 nearBuyCurrency 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createFxSwap rejects vector for scalar nearBuyCurrency", exception=1
 caplib::createFxSwap(["X"], 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_createFxSwap_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFxSwap rejects keyword arguments", syntaxError=1
 caplib::createFxSwap(nearBuyCurrency="X", nearBuyAmount=0.02, nearSellCurrency="X", nearSellAmount=0.02, nearDeliveryDate=2024.01.01, nearExpiryDate=2024.01.01, farBuyCurrency="X", farBuyAmount=0.02, farSellCurrency="X", farSellAmount=0.02, farDeliveryDate=2024.01.01, farExpiryDate=2024.01.01, tag="TF_createFxSwap_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFxSwap optional returnJson null uses default"
 result = caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 nearBuyAmount 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createFxSwap rejects zero nearBuyAmount (lenient validation, does not raise)"
 result = caplib::createFxSwap("EUR", 0.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：参数 nearBuyAmount 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createFxSwap rejects negative nearBuyAmount (lenient validation, does not raise)"
 result = caplib::createFxSwap("EUR", -1.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
 assert 1, typestr(result) != "VOID"

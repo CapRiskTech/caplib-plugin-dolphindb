@@ -103,6 +103,7 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回 PricingResults（含 present_value/cash_value/currency）
 @testing:case="priceIrVanillaInstrument -> PricingResults"
 result = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true)
 assert 1, isPricingResultsJson(result, "TF_IR_SWAP_results")
@@ -111,32 +112,42 @@ assert 1, isPricingResultsJson(result, "TF_IR_SWAP_results")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="priceIrVanillaInstrument rejects missing argument", syntaxError=1
 caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="priceIrVanillaInstrument rejects extra argument", syntaxError=1
 caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
+// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects wrong type for pricingDate", exception=1
 caplib::priceIrVanillaInstrument("X", "bad", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects wrong type for mode", exception=1
 caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
+// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects null pricingDate", exception=1
 caplib::priceIrVanillaInstrument("X", date(), "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects null mode", exception=1
 caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
+// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects vector for scalar pricingDate", exception=1
 caplib::priceIrVanillaInstrument("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
+// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceIrVanillaInstrument("TF_NO_SUCH_HANDLE_priceIrVanillaInstrument", 2024.01.01, "X", "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceIrVanillaInstrument rejects keyword arguments", syntaxError=1
 caplib::priceIrVanillaInstrument(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+// 用例目的：平移曲线下票息=平价利率的互换现值应为 0，验证定价的数学性质
 @testing:case="priceIrVanillaInstrument -> par swap on flat curve prices to zero"
 // A vanilla swap whose fixed coupon equals the flat curve rate must price to
 // (near) zero; residual is date-convention noise, bounded at 5e-4 of notional.
@@ -145,10 +156,12 @@ parMkt = caplib::createIrMktDataSet(irAsOfDate, flatRef, [iborIndex[0]], [flatRe
 parSwap = caplib::buildIrVanillaInstrument("PAY", 0.03, 0.0, 2022.03.16, 2023.03.16, irSwapTemplate[0], 1000000.0, "", "TF_PAR_SWAP", false);
 parRes = caplib::priceIrVanillaInstrument(parSwap, irAsOfDate, parMkt[0], irPricingSettings, irRisk[0], "", "", true);
 assert 1, abs(presentValue(parRes)) / 1000000.0 < 5.0e-4
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceIrVanillaInstrument optional returnJson null uses default"
 result = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", bool())
 assert 1, typestr(result) != "VOID"
 
+// 用例目的：submitJob 提交 8 个并发定价任务，验证并发结果与串行调用完全一致
 @testing:case="priceIrVanillaInstrument concurrent submitJob results identical"
 // Review P18: the same pricing call submitted as concurrent jobs must return
 // results identical to the sequential call. Builds its own flat-curve fixture;
@@ -170,9 +183,17 @@ for (i in 0..(nJobs-1)) {
     if (typestr(jr) == "VOID" || jr[1] != seq[1]) { okAll = false; }
 }
 assert 1, okAll
+// 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects wrong object type for mktDataHandle", exception=1
 caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irSwap, irPricingSettings, irRisk[0], "", "", true)
+// 用例目的：同样输入重复调用多次，验证结果完全一致（确定性）
 @testing:case="priceIrVanillaInstrument repeat calls return identical results"
 rs1 = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
 rs2 = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
 assert 1, rs1 == rs2
+
+// 用例目的：相同输入连续定价两次，验证两次现值完全一致（定价确定性）
+@testing:case="priceIrVanillaInstrument deterministic repeat -> identical result"
+r1 = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
+r2 = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
+assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)

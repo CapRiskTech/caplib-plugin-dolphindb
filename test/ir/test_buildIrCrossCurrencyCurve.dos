@@ -90,6 +90,7 @@ fxSpot = caplib::createFxSpotRate(6.9, "USD", "CNY", irAsOfDate, 2022.03.16, "TF
 // Tests
 // ============================================================================
 
+// 用例目的：按 python caplib 参考实现的等价调用方式构造输入，验证与参考行为一致
 @testing:case="buildIrCrossCurrencyCurve -> [handle, json] (python parity)"
 // Mirror python test_iranalytics.test_ir_cross_ccy_curve_builder: the target
 // curve is an USD curve bootstrapped from FX_SWAP points (factor 10000), with
@@ -118,52 +119,69 @@ assert 1, isHandleJson(xc, "TF_XCCY_OUT") && hasJsonField(xc[1], "target_curves"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="buildIrCrossCurrencyCurve rejects missing argument", syntaxError=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"])
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="buildIrCrossCurrencyCurve rejects extra argument", syntaxError=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects wrong type for referenceDate", exception=1
 caplib::buildIrCrossCurrencyCurve("bad", ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：参数 dayCountConvention 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects wrong type for dayCountConvention", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], 1, "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：参数 compoundingType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects wrong type for compoundingType", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", 1, "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects null referenceDate", exception=1
 caplib::buildIrCrossCurrencyCurve(date(), ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：参数 dayCountConvention 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects null dayCountConvention", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], string(), "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects vector for scalar referenceDate", exception=1
 caplib::buildIrCrossCurrencyCurve([2024.01.01], ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：向量参数 targetCurveNames 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects scalar for vector targetCurveNames", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：向量参数 targetCurveNames 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects partially-null vector targetCurveNames", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X", string()], ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：向量参数 targetCurveNames 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects empty vector targetCurveNames", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, take(string, 0), ["X"], ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：句柄参数 buildSettingsHandles 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects nonexistent handle buildSettingsHandles", exception=1
 caplib::buildIrCrossCurrencyCurve(2024.01.01, ["X"], "TF_NO_SUCH_HANDLE_buildIrCrossCurrencyCurve", ["X"], "X", "X", "X", ["X"], "X", "X", false, 0.02, "X", "X", ["X"], "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildIrCrossCurrencyCurve rejects keyword arguments", syntaxError=1
 caplib::buildIrCrossCurrencyCurve(referenceDate=2024.01.01, targetCurveNames=["X"], buildSettingsHandles=["X"], parCurveHandles=["X"], dayCountConvention="X", compoundingType="X", frequency="X", otherCurveHandles=["X"], fxSpotHandle="X", buildingMethod="X", calcJacobian=false, shift=0.02, finiteDifferenceMethod="X", threadingMode="X", targetCurveHandles=["X"], outputHandle="X", returnJson=false)
+// 用例目的：向量参数 targetCurveNames 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects all-null vector targetCurveNames", exception=1
 caplib::buildIrCrossCurrencyCurve(irAsOfDate, [string(), string(), string()], [cbsFx[0]], [bpcFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
 
+// 用例目的：枚举参数 dayCountConvention 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects invalid enum for dayCountConvention", exception=1
 caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [bpcFx[0]], "NOT_A_VALID_ENUM_LABEL", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildIrCrossCurrencyCurve optional returnJson null uses default"
 result = caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [bpcFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 parCurveHandles 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildIrCrossCurrencyCurve rejects wrong object type for parCurveHandles", exception=1
 caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [cbsFx[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpotX, "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_XCCY_CURVE"], "TF_XCCY_OUT", true)
 

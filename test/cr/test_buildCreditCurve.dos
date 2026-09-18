@@ -88,10 +88,12 @@ cds = caplib::buildCreditDefaultSwap(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildCreditCurve -> [handle, json]"
 r = caplib::buildCreditCurve(asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", true);
 assert 1, isHandleJson(r, "TF_CR_BUILT")
 
+// 用例目的：rejects wrong discount curve handle（预期：插件按文档行为执行）
 @testing:case="buildCreditCurve rejects wrong discount curve handle", exception=1
 caplib::buildCreditCurve(asOfDate, creditParCurve[0], creditParCurve[0], "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT_BAD", true)
 
@@ -99,40 +101,83 @@ caplib::buildCreditCurve(asOfDate, creditParCurve[0], creditParCurve[0], "BOND_C
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="buildCreditCurve rejects missing argument", syntaxError=1
 caplib::buildCreditCurve(2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="buildCreditCurve rejects extra argument", syntaxError=1
 caplib::buildCreditCurve(2024.01.01, "X", "X", "X", "X", "TF_buildCreditCurve_H", false, 1)
 
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects wrong type for asOfDate", exception=1
 caplib::buildCreditCurve("bad", "X", "X", "X", "X", "TF_buildCreditCurve_H", false)
 
+// 用例目的：参数 curveName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects wrong type for curveName", exception=1
 caplib::buildCreditCurve(2024.01.01, "X", "X", 1, "X", "TF_buildCreditCurve_H", false)
 
+// 用例目的：参数 method 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects wrong type for method", exception=1
 caplib::buildCreditCurve(2024.01.01, "X", "X", "X", 1, "TF_buildCreditCurve_H", false)
 
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects null asOfDate", exception=1
 caplib::buildCreditCurve(date(), "X", "X", "X", "X", "TF_buildCreditCurve_H", false)
 
+// 用例目的：参数 curveName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects null curveName", exception=1
 caplib::buildCreditCurve(2024.01.01, "X", "X", string(), "X", "TF_buildCreditCurve_H", false)
 
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects vector for scalar asOfDate", exception=1
 caplib::buildCreditCurve([2024.01.01], "X", "X", "X", "X", "TF_buildCreditCurve_H", false)
 
+// 用例目的：句柄参数 parCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildCreditCurve(2024.01.01, "TF_NO_SUCH_HANDLE_buildCreditCurve", "X", "X", "X", "TF_buildCreditCurve_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildCreditCurve rejects keyword arguments", syntaxError=1
 caplib::buildCreditCurve(asOfDate=2024.01.01, parCurveHandle="X", discountCurveHandle="X", curveName="X", method="X", handle="TF_buildCreditCurve_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildCreditCurve optional returnJson null uses default"
 result = caplib::buildCreditCurve(asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 discountCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects wrong object type for discountCurveHandle", exception=1
 caplib::buildCreditCurve(asOfDate, creditParCurve[0], creditParCurve[0], "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", true)
+// 用例目的：正常调用，与独立来源的冻结参考值逐位对比，验证计算正确性
 @testing:case="buildCreditCurve -> frozen curve reference"
 spRef = caplib::getSurvivalProbability(creditCurve[0], [2025.02.21]);
 assert 1, abs(spRef[0] - 0.902476684416324) < 1.0e-12
+
+// 用例目的：相同输入连续构建两次，经 getter 取值对比，验证构建结果确定性
+@testing:case="buildCreditCurve deterministic repeat -> identical result"
+r1 = caplib::buildCreditCurve(asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", true);
+r2 = caplib::buildCreditCurve(asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT", true);
+assert 1, max(abs(caplib::getSurvivalProbability(r1[0], [2021.07.22]) - caplib::getSurvivalProbability(r2[0], [2021.07.22]))) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：正常构建后经 getSurvivalProbability 在固定查询点取值，与冻结参考值对比，验证构建到查询的数值正确性
+@testing:case="buildCreditCurve -> frozen getSurvivalProbability reference"
+r = caplib::getSurvivalProbability(creditCurve[0], [2021.07.22]);
+assert 1, abs(r[0] - 0.9790677326301659) < 9.80067732630166e-10
+
+// ----------------------------------------------------------------------------
+// 用例目的：将输入报价整体上浮 50% 后重建，验证 getSurvivalProbability 查询结果随输入变化
+@testing:case="buildCreditCurve perturbed input -> getSurvivalProbability changes"
+r1 = caplib::getSurvivalProbability(creditCurve[0], [(asOfDate + 30)]);
+creditParCurve = caplib::createCreditParCurve(
+    asOfDate, currency, "BOND_CREDIT",
+    ["CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA"],
+    ["CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP"],
+    ["1Y", "3Y", "5Y"],
+    [0.012, 0.015, 0.018000000000000002],
+    ["SPOTSTART", "SPOTSTART", "SPOTSTART"],
+    "CR_CREDIT_PAR_CURVE", true);
+creditCurve = caplib::buildCreditCurve(
+    asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT",
+    "BOOTSTRAPPING_METHOD", "CR_CREDIT_CURVE", true);
+r2 = caplib::getSurvivalProbability(creditCurve[0], [(asOfDate + 30)]);
+assert 1, max(abs(r1 - r2)) > 1.0e-12

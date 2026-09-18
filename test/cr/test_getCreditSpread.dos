@@ -91,6 +91,7 @@ flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.002, "TF_FLAT_CR2", 
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回向量的形态与数值
 @testing:case="getCreditSpread -> vector"
 r = caplib::getCreditSpread(flatCreditCurve, [2020.05.21])
 assert 1, isDoubleVector(r) && size(r) >= 1
@@ -99,28 +100,76 @@ assert 1, isDoubleVector(r) && size(r) >= 1
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="getCreditSpread rejects missing argument", syntaxError=1
 caplib::getCreditSpread("X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="getCreditSpread rejects extra argument", syntaxError=1
 caplib::getCreditSpread("X", [2024.01.01], 1)
 
+// 用例目的：向量参数 dates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="getCreditSpread rejects scalar for vector dates", exception=1
 caplib::getCreditSpread("X", [2024.01.01])
 
+// 用例目的：向量参数 dates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getCreditSpread rejects partially-null vector dates", exception=1
 caplib::getCreditSpread("X", [2024.01.01, date()])
 
+// 用例目的：向量参数 dates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="getCreditSpread rejects empty vector dates", exception=1
 caplib::getCreditSpread("X", take(date, 0))
 
+// 用例目的：句柄参数 creditCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="getCreditSpread rejects nonexistent handle creditCurveHandle", exception=1
 caplib::getCreditSpread("TF_NO_SUCH_HANDLE_getCreditSpread", [2024.01.01])
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="getCreditSpread rejects keyword arguments", syntaxError=1
 caplib::getCreditSpread(creditCurveHandle="X", dates=[2024.01.01])
+// 用例目的：向量参数 dates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getCreditSpread rejects all-null vector dates", exception=1
 caplib::getCreditSpread(flatCreditCurve, [date(), date(), date()])
+// 用例目的：正常调用，与独立解析公式（闭式解）计算的参考值对比，验证计算正确性
 @testing:case="getCreditSpread -> analytic flat-hazard reference"
 // The credit spread of a flat hazard curve equals the hazard rate.
 csr = caplib::getCreditSpread(flatCreditCurve, [2021.02.20]);
 assert 1, abs(csr[0] - 0.002) < 1.0e-9
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: negative-case coverage (wrong type / null / arity / keyword)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getCreditSpread rejects wrong type for creditCurveHandle", exception=1
+caplib::getCreditSpread(1, [2020.05.21])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getCreditSpread rejects null creditCurveHandle", exception=1
+caplib::getCreditSpread(string(), [2020.05.21])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getCreditSpread rejects wrong type for dates", exception=1
+caplib::getCreditSpread(flatCreditCurve, "bad")
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getCreditSpread rejects null dates", exception=1
+caplib::getCreditSpread(flatCreditCurve, date())
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="getCreditSpread deterministic repeat -> identical result"
+r1 = caplib::getCreditSpread(flatCreditCurve, [2020.05.21]);
+r2 = caplib::getCreditSpread(flatCreditCurve, [2020.05.21]);
+assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：以加倍的利率/波动率参数重建同一曲线后再查询，验证查询结果随输入变化
+@testing:case="getCreditSpread rebuilt curve (2x rate) -> result changes"
+r1 = caplib::getCreditSpread(flatCreditCurve, [2020.05.21]);
+flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.004, "TF_FLAT_CR2", false);
+r2 = caplib::getCreditSpread(flatCreditCurve, [2020.05.21]);
+assert 1, max(abs(r1 - r2)) > 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：句柄参数 creditCurveHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）
+@testing:case="getCreditSpread rejects wrong object type for creditCurveHandle", exception=1
+caplib::getCreditSpread(calendarCreated[0], [2020.05.21]);

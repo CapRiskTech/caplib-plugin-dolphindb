@@ -91,6 +91,7 @@ flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.002, "TF_FLAT_CR3", 
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回向量的形态与数值
 @testing:case="getSurvivalProbability -> vector"
 r = caplib::getSurvivalProbability(flatCreditCurve, [2020.02.21])
 assert 1, isDoubleVector(r) && size(r) >= 1
@@ -99,28 +100,76 @@ assert 1, isDoubleVector(r) && size(r) >= 1
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="getSurvivalProbability rejects missing argument", syntaxError=1
 caplib::getSurvivalProbability("X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="getSurvivalProbability rejects extra argument", syntaxError=1
 caplib::getSurvivalProbability("X", [2024.01.01], 1)
 
+// 用例目的：向量参数 dates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="getSurvivalProbability rejects scalar for vector dates", exception=1
 caplib::getSurvivalProbability("X", [2024.01.01])
 
+// 用例目的：向量参数 dates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getSurvivalProbability rejects partially-null vector dates", exception=1
 caplib::getSurvivalProbability("X", [2024.01.01, date()])
 
+// 用例目的：向量参数 dates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="getSurvivalProbability rejects empty vector dates", exception=1
 caplib::getSurvivalProbability("X", take(date, 0))
 
+// 用例目的：句柄参数 creditCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="getSurvivalProbability rejects nonexistent handle creditCurveHandle", exception=1
 caplib::getSurvivalProbability("TF_NO_SUCH_HANDLE_getSurvivalProbability", [2024.01.01])
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="getSurvivalProbability rejects keyword arguments", syntaxError=1
 caplib::getSurvivalProbability(creditCurveHandle="X", dates=[2024.01.01])
+// 用例目的：向量参数 dates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getSurvivalProbability rejects all-null vector dates", exception=1
 caplib::getSurvivalProbability(flatCreditCurve, [date(), date(), date()])
+// 用例目的：正常调用，与独立解析公式（闭式解）计算的参考值对比，验证计算正确性
 @testing:case="getSurvivalProbability -> analytic flat-hazard reference"
 // SP(t) = exp(-h*t) on a flat credit curve; t = 1.0 (2020.02.21 + 365d, ACT/365F).
 spr = caplib::getSurvivalProbability(flatCreditCurve, [2021.02.20]);
 assert 1, abs(spr[0] - 0.9980019986673331) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: negative-case coverage (wrong type / null / arity / keyword)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getSurvivalProbability rejects wrong type for creditCurveHandle", exception=1
+caplib::getSurvivalProbability(1, [2020.02.21])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getSurvivalProbability rejects null creditCurveHandle", exception=1
+caplib::getSurvivalProbability(string(), [2020.02.21])
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getSurvivalProbability rejects wrong type for dates", exception=1
+caplib::getSurvivalProbability(flatCreditCurve, "bad")
+
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+@testing:case="getSurvivalProbability rejects null dates", exception=1
+caplib::getSurvivalProbability(flatCreditCurve, date())
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="getSurvivalProbability deterministic repeat -> identical result"
+r1 = caplib::getSurvivalProbability(flatCreditCurve, [2020.02.21]);
+r2 = caplib::getSurvivalProbability(flatCreditCurve, [2020.02.21]);
+assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：以加倍的利率/波动率参数重建同一曲线后再查询，验证查询结果随输入变化
+@testing:case="getSurvivalProbability rebuilt curve (2x rate) -> result changes"
+r1 = caplib::getSurvivalProbability(flatCreditCurve, [2022.02.21]);
+flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.004, "TF_FLAT_CR3", false);
+r2 = caplib::getSurvivalProbability(flatCreditCurve, [2022.02.21]);
+assert 1, max(abs(r1 - r2)) > 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：句柄参数 creditCurveHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）
+@testing:case="getSurvivalProbability rejects wrong object type for creditCurveHandle", exception=1
+caplib::getSurvivalProbability(calendarCreated[0], [2020.02.21]);

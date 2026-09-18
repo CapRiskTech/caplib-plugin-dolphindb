@@ -9,11 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -182,10 +177,12 @@ vanillaBondPricingResult = caplib::priceVanillaBond(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildVanillaBond -> handle"
 b = caplib::buildVanillaBond(1000000.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", false);
 assert 1, b == "TF_FI_BOND"
 
+// 用例目的：rejects wrong template handle（预期：插件按文档行为执行）
 @testing:case="buildVanillaBond rejects wrong template handle", exception=1
 caplib::buildVanillaBond(1000000.0, cnyTreasStdCfets[0], "", 2020.10.10, "TF_FI_BOND_BAD", false)
 
@@ -193,40 +190,52 @@ caplib::buildVanillaBond(1000000.0, cnyTreasStdCfets[0], "", 2020.10.10, "TF_FI_
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="buildVanillaBond rejects missing argument", syntaxError=1
 caplib::buildVanillaBond(0.02, "X", "X", 2024.01.01)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="buildVanillaBond rejects extra argument", syntaxError=1
 caplib::buildVanillaBond(0.02, "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false, 1)
 
+// 用例目的：参数 nominal 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects wrong type for nominal", exception=1
 caplib::buildVanillaBond("bad", "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
+// 用例目的：参数 instTemplate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects wrong type for instTemplate", exception=1
 caplib::buildVanillaBond(0.02, 1, "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
+// 用例目的：参数 fixings 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects wrong type for fixings", exception=1
 caplib::buildVanillaBond(0.02, "X", 1, 2024.01.01, "TF_buildVanillaBond_H", false)
 
+// 用例目的：参数 nominal 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects null nominal", exception=1
 caplib::buildVanillaBond(double(), "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
+// 用例目的：参数 instTemplate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects null instTemplate", exception=1
 caplib::buildVanillaBond(0.02, string(), "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
+// 用例目的：标量参数 nominal 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects vector for scalar nominal", exception=1
 caplib::buildVanillaBond([0.02], "X", "X", 2024.01.01, "TF_buildVanillaBond_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildVanillaBond rejects keyword arguments", syntaxError=1
 caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=2024.01.01, tag="TF_buildVanillaBond_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildVanillaBond optional returnJson null uses default"
 result = caplib::buildVanillaBond(1000000.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 nominal 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects zero nominal (lenient validation, does not raise)"
 result = caplib::buildVanillaBond(0.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", false)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：参数 nominal 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="buildVanillaBond rejects negative nominal (lenient validation, does not raise)"
 result = caplib::buildVanillaBond(-1.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", false)
 assert 1, typestr(result) != "VOID"

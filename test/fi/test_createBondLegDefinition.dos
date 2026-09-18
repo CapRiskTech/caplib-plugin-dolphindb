@@ -21,6 +21,7 @@ def isHandleJson(result, expectedHandle) {
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createBondLegDefinition -> [handle, json]"
 r = caplib::createBondLegDefinition(
     "FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS",
@@ -33,35 +34,46 @@ assert 1, isHandleJson(r, "TF_FI_LEG")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createBondLegDefinition rejects missing argument", syntaxError=1
 caplib::createBondLegDefinition("X", 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createBondLegDefinition rejects extra argument", syntaxError=1
 caplib::createBondLegDefinition("X", 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false, 1)
 
+// 用例目的：参数 bondType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createBondLegDefinition rejects wrong type for bondType", exception=1
 caplib::createBondLegDefinition(1, 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
 
+// 用例目的：参数 settlementDays 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createBondLegDefinition rejects wrong type for settlementDays", exception=1
 caplib::createBondLegDefinition("X", "1", "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
 
+// 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createBondLegDefinition rejects wrong type for currency", exception=1
 caplib::createBondLegDefinition("X", 1, 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
 
+// 用例目的：参数 settlementDays 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createBondLegDefinition rejects null settlementDays", exception=1
 caplib::createBondLegDefinition("X", int(), "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
 
+// 用例目的：标量参数 bondType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createBondLegDefinition rejects vector for scalar bondType", exception=1
 caplib::createBondLegDefinition(["X"], 1, "X", "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createBondLegDefinition rejects keyword arguments", syntaxError=1
 caplib::createBondLegDefinition(bondType="X", settlementDays=1, currency="X", dayCount="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, instName="X", returnJson=false)
+// 用例目的：枚举参数 bondType 传入非法取值，实测插件宽松接受（映射到无效哨兵、不抛异常）——记录实际行为
 @testing:case="createBondLegDefinition accepts invalid enum for bondType (lenient validation, does not raise)"
 result = caplib::createBondLegDefinition("NOT_A_VALID_ENUM_LABEL", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", true)
 assert 1, typestr(result) != "VOID"
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createBondLegDefinition optional returnJson null uses default"
 result = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：supports all enums (review)（预期：插件按文档行为执行）
 @testing:case="createBondLegDefinition supports all enums (review)"
 labelEnum = ["FIXED_COUPON_BOND", "FLOATING_COUPON_BOND", "ZERO_COUPON_BOND"]
 okEnum = true;
@@ -71,6 +83,7 @@ for (i in 0..(size(labelEnum)-1)) {
 assert 1, okEnum
 
 
+// 用例目的：参数 settlementDays 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createBondLegDefinition rejects negative settlementDays", exception=1
 caplib::createBondLegDefinition("FIXED_COUPON_BOND", -1.0, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", true)
 

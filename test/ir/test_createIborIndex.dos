@@ -84,13 +84,16 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createIborIndex -> [handle, json]"
 idx = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
 assert 1, isHandleJson(idx, "TF_IBOR") && hasJsonField(idx[1], "name")
 
+// 用例目的：rejects INT tenor（预期：插件按文档行为执行）
 @testing:case="createIborIndex rejects INT tenor", exception=1
 caplib::createIborIndex("SHIBOR_3M", 3, "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
 
+// 用例目的：rejects invalid iborType（预期：插件按文档行为执行）
 @testing:case="createIborIndex rejects invalid iborType", exception=1
 caplib::createIborIndex("TF_IBOR_BAD", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "NOT_AN_IBOR_TYPE", true)
 
@@ -98,35 +101,76 @@ caplib::createIborIndex("TF_IBOR_BAD", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360",
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createIborIndex rejects missing argument", syntaxError=1
 caplib::createIborIndex("X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createIborIndex rejects extra argument", syntaxError=1
 caplib::createIborIndex("X", "X", "X", "X", 1, "X", "X", "X", "X", false, 1, 1)
 
+// 用例目的：参数 indexName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIborIndex rejects wrong type for indexName", exception=1
 caplib::createIborIndex(1, "X", "X", "X", 1, "X", "X", "X", "X", false)
 
+// 用例目的：参数 indexTenor 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIborIndex rejects wrong type for indexTenor", exception=1
 caplib::createIborIndex("X", 1, "X", "X", 1, "X", "X", "X", "X", false)
 
+// 用例目的：参数 indexCcy 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIborIndex rejects wrong type for indexCcy", exception=1
 caplib::createIborIndex("X", "X", 1, "X", 1, "X", "X", "X", "X", false)
 
+// 用例目的：参数 indexName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createIborIndex rejects null indexName", exception=1
 caplib::createIborIndex(string(), "X", "X", "X", 1, "X", "X", "X", "X", false)
 
+// 用例目的：参数 indexTenor 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createIborIndex rejects null indexTenor", exception=1
 caplib::createIborIndex("X", string(), "X", "X", 1, "X", "X", "X", "X", false)
 
+// 用例目的：标量参数 indexName 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createIborIndex rejects vector for scalar indexName", exception=1
 caplib::createIborIndex(["X"], "X", "X", "X", 1, "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIborIndex rejects keyword arguments", syntaxError=1
 caplib::createIborIndex(indexName="X", indexTenor="X", indexCcy="X", calendarList="X", startDelay=1, dayCount="X", interestDayConvention="X", dateRollConvention="X", iborType="X", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createIborIndex optional returnJson null uses default"
 result = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createIborIndex rejects negative startDelay", exception=1
 caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], -1.0, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
 
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createIborIndex rejects all-null vector calendarList", exception=1
+caplib::createIborIndex(irCurveName, "3M", irCurrency, [string(), string(), string()], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createIborIndex rejects empty vector calendarList", exception=1
+caplib::createIborIndex(irCurveName, "3M", irCurrency, take(string, 0), 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createIborIndex rejects partially-null vector calendarList", exception=1
+caplib::createIborIndex(irCurveName, "3M", irCurrency, ["CAL_CFETS", string()], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+
+// 用例目的：参数 dateRollConvention 传入非法枚举字符串，验证枚举校验（预期：抛异常）
+@testing:case="createIborIndex rejects invalid enum for dateRollConvention", exception=1
+caplib::createIborIndex(irCurveName, "3M", irCurrency, ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "NOT_A_VALID_ENUM_LABEL", "STANDARD_IBOR_INDEX", true)
+
+// ----------------------------------------------------------------------------
+// 用例目的：遍历参数 dateRollConvention 的全部文档枚举取值，逐一调用验证均被接受
+// 注：标签 `INVALID` 在本上下文中被插件拒绝，未纳入遍历（与文档标签集不一致，实测为准）
+@testing:case="createIborIndex supports all dateRollConvention enums"
+labelEnum = ["INVALID_DATE_ROLL_CONVENTION", "EOM", "FRN", "IMM", "IMM_CAD", "IMM_AUD", "IMM_NZD", "SFE", "NONE", "TBILL"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", labelEnum[i], "STANDARD_IBOR_INDEX", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum

@@ -214,6 +214,7 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 // Tests
 // ============================================================================
 
+// 用例目的：-> [handle, present_value reference]（预期：插件按文档行为执行）
 @testing:case="priceCmRangeAccrualOption -> [handle, present_value reference]"
 inst = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice * 0.95, underlyingPrice * 1.05, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 r = caplib::priceCmRangeAccrualOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
@@ -224,34 +225,62 @@ assert 2, abs(presentValue(r) - 4730.3973122983625) < abs(4730.3973122983625) * 
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="priceCmRangeAccrualOption rejects missing argument", syntaxError=1
 caplib::priceCmRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="priceCmRangeAccrualOption rejects extra argument", syntaxError=1
 caplib::priceCmRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
+// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceCmRangeAccrualOption rejects wrong type for pricingDate", exception=1
 caplib::priceCmRangeAccrualOption("X", "bad", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceCmRangeAccrualOption rejects wrong type for mode", exception=1
 caplib::priceCmRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
+// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceCmRangeAccrualOption rejects null pricingDate", exception=1
 caplib::priceCmRangeAccrualOption("X", date(), "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceCmRangeAccrualOption rejects null mode", exception=1
 caplib::priceCmRangeAccrualOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
+// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="priceCmRangeAccrualOption rejects vector for scalar pricingDate", exception=1
 caplib::priceCmRangeAccrualOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
+// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="priceCmRangeAccrualOption rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceCmRangeAccrualOption("TF_NO_SUCH_HANDLE_priceCmRangeAccrualOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceCmRangeAccrualOption rejects keyword arguments", syntaxError=1
 caplib::priceCmRangeAccrualOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceCmRangeAccrualOption optional returnJson null uses default"
 result = caplib::priceCmRangeAccrualOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceCmRangeAccrualOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceCmRangeAccrualOption(inst, asOfDate, inst, bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+
+// ----------------------------------------------------------------------------
+// 用例目的：相同输入连续定价两次，验证两次现值完全一致（定价确定性）
+@testing:case="priceCmRangeAccrualOption deterministic repeat -> identical result"
+inst = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice * 0.95, underlyingPrice * 1.05, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+r1 = caplib::priceCmRangeAccrualOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+r2 = caplib::priceCmRangeAccrualOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
+
+// ----------------------------------------------------------------------------
+// 用例目的：以 2 倍名义重新构造同一产品并定价，验证现值随名义线性缩放（输入影响输出）
+@testing:case="priceCmRangeAccrualOption notional x2 -> 2x present value"
+inst = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice * 0.95, underlyingPrice * 1.05, 1000000.0, currency, "FUTURE", currency, underlying, "TF_CM_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+r1 = caplib::priceCmRangeAccrualOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+inst = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice * 0.95, underlyingPrice * 1.05, 2000000.0, currency, "FUTURE", currency, underlying, "TF_CM_RA_2X", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+r2 = caplib::priceCmRangeAccrualOption(inst, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true);
+assert 1, abs(presentValue(r2) - 2.0 * presentValue(r1)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)

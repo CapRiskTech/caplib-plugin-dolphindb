@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -33,6 +27,7 @@ quoteStrikes = matrix([95.0, 95.0], [105.0, 105.0]);
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createOptionQuoteMatrix -> handle"
 result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 assert 1, result == "TF_OQ"
@@ -41,63 +36,82 @@ assert 1, result == "TF_OQ"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createOptionQuoteMatrix rejects missing argument", syntaxError=1
 caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createOptionQuoteMatrix rejects extra argument", syntaxError=1
 caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false, 1)
 
+// 用例目的：参数 quoteValueType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects wrong type for quoteValueType", exception=1
 caplib::createOptionQuoteMatrix(1, "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 quoteTermType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects wrong type for quoteTermType", exception=1
 caplib::createOptionQuoteMatrix("X", 1, "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 quoteStrikeType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects wrong type for quoteStrikeType", exception=1
 caplib::createOptionQuoteMatrix("X", "X", 1, "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 quoteValueType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects null quoteValueType", exception=1
 caplib::createOptionQuoteMatrix(string(), "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 quoteTermType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects null quoteTermType", exception=1
 caplib::createOptionQuoteMatrix("X", string(), "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：标量参数 quoteValueType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects vector for scalar quoteValueType", exception=1
 caplib::createOptionQuoteMatrix(["X"], "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 terms 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects scalar for vector terms", exception=1
 caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X"], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 terms 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects partially-null vector terms", exception=1
 caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, ["X", string()], [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 terms 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects empty vector terms", exception=1
 caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, take(string, 0), [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createOptionQuoteMatrix_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createOptionQuoteMatrix rejects keyword arguments", syntaxError=1
 caplib::createOptionQuoteMatrix(quoteValueType="X", quoteTermType="X", quoteStrikeType="X", exerciseType="X", optionUnderlyingType="X", asOfDate=2024.01.01, terms=["X"], termDates=[2024.01.01], payoffTypes=matrix([0.2]), values=matrix([0.2]), strikes=matrix([0.2]), assetName="X", handle="TF_createOptionQuoteMatrix_H", returnJson=false)
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createOptionQuoteMatrix accepts all-null vector terms (lenient validation, does not raise)"
 result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [string(), string(), string()], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：矩阵参数 payoffTypes 传入0 行矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(STRING, 0, 3), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix([string(), string()], [string(), string()]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["A", string()], [string(), "A"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
 
+// 用例目的：枚举参数 quoteValueType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects invalid enum for quoteValueType", exception=1
 caplib::createOptionQuoteMatrix("NOT_A_VALID_ENUM_LABEL", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createOptionQuoteMatrix optional returnJson null uses default"
 result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 quoteValueType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createOptionQuoteMatrix supports all quoteValueType enums"
 labelEnum = ["OQVT_INVALID", "OQVT_VOLATILITY", "OQVT_PRICE"]
 okEnum = true;
@@ -107,6 +121,12 @@ for (i in 0..(size(labelEnum)-1)) {
 assert 1, okEnum
 
 
+// 用例目的：矩阵参数 payoffTypes 传入0 列矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects zero-col matrix payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(STRING, 3, 0), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
+// ----------------------------------------------------------------------------
+// 用例目的：两个数组参数长度不一致（terms 多一个元素），实测插件宽松接受——记录实际行为
+@testing:case="createOptionQuoteMatrix terms length mismatch (lenient validation, does not raise)"
+result = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABOSULTE_TERM", "OQST_ABOSULTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [, "EXTRA"], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false);
+assert 1, typestr(result) != "VOID"

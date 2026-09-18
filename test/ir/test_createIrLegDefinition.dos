@@ -21,6 +21,7 @@ def isHandleJson(result, expectedHandle) {
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createIrLegDefinition -> [handle, json]"
 r = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true);
 assert 1, isHandleJson(r, "TF_IR_LEG")
@@ -29,43 +30,57 @@ assert 1, isHandleJson(r, "TF_IR_LEG")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createIrLegDefinition rejects missing argument", syntaxError=1
 caplib::createIrLegDefinition("X", "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createIrLegDefinition rejects extra argument", syntaxError=1
 caplib::createIrLegDefinition("X", "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "TF_createIrLegDefinition_H", false, 1)
 
+// 用例目的：参数 legType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIrLegDefinition rejects wrong type for legType", exception=1
 caplib::createIrLegDefinition(1, "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "TF_createIrLegDefinition_H", false)
 
+// 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIrLegDefinition rejects wrong type for currency", exception=1
 caplib::createIrLegDefinition("X", 1, "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "TF_createIrLegDefinition_H", false)
 
+// 用例目的：参数 dayCount 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIrLegDefinition rejects wrong type for dayCount", exception=1
 caplib::createIrLegDefinition("X", "X", 1, "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "TF_createIrLegDefinition_H", false)
 
+// 用例目的：参数 legType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createIrLegDefinition rejects null legType", exception=1
 caplib::createIrLegDefinition(string(), "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "TF_createIrLegDefinition_H", false)
 
+// 用例目的：参数 currency 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createIrLegDefinition rejects null currency", exception=1
 caplib::createIrLegDefinition("X", string(), "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "TF_createIrLegDefinition_H", false)
 
+// 用例目的：标量参数 legType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createIrLegDefinition rejects vector for scalar legType", exception=1
 caplib::createIrLegDefinition(["X"], "X", "X", "X", "X", "X", "X", false, false, false, "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", 1, "TF_createIrLegDefinition_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIrLegDefinition rejects keyword arguments", syntaxError=1
 caplib::createIrLegDefinition(legType="X", currency="X", dayCount="X", refIndex="X", paymentDiscountMethod="X", rateCalcMethod="X", notionalExchange="X", spread=false, fxConvert=false, fxReset=false, calendar="X", freq="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, tag="TF_createIrLegDefinition_H", returnJson=false)
+// 用例目的：枚举参数 legType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createIrLegDefinition rejects invalid enum for legType", exception=1
 caplib::createIrLegDefinition("NOT_A_VALID_ENUM_LABEL", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true)
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createIrLegDefinition accepts calendar scalar with longer fixingCalendars vector (lenient validation, does not raise)"
 result = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", ["CAL_CFETS", "CAL_CFETS"], "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true)
 assert 1, typestr(result) != "VOID"
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createIrLegDefinition accepts calendars and fixingCalendars of unequal length (lenient validation, does not raise)"
 result = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, ["CAL_CFETS", "CAL_CFETS"], "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", ["CAL_CFETS"], "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true)
 assert 1, typestr(result) != "VOID"
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createIrLegDefinition optional returnJson null uses default"
 result = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 legType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createIrLegDefinition supports all legType enums"
 labelEnum = ["FIXED_LEG", "FLOATING_LEG", "FRA_LEG", "STRUCTURED_LEG"]
 okEnum = true;
@@ -73,3 +88,23 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createIrLegDefinition(labelEnum[i], "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createIrLegDefinition rejects all-null vector calendar", exception=1
+caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, [string(), string(), string()], "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createIrLegDefinition rejects empty vector calendar", exception=1
+caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, take(string, 0), "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createIrLegDefinition rejects all-null vector fixingCalendars", exception=1
+caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", [string(), string(), string()], "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createIrLegDefinition rejects empty vector fixingCalendars", exception=1
+caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", take(string, 0), "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", true)

@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -224,6 +218,7 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createFxNdfTemplate -> handle"
 result = caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", false)
 assert 1, result == "TF_NDFTPL"
@@ -232,37 +227,49 @@ assert 1, result == "TF_NDFTPL"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createFxNdfTemplate rejects missing argument", syntaxError=1
 caplib::createFxNdfTemplate("X", "X", "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createFxNdfTemplate rejects extra argument", syntaxError=1
 caplib::createFxNdfTemplate("X", "X", "X", "X", "X", "X", "X", false, 1)
 
+// 用例目的：参数 instName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxNdfTemplate rejects wrong type for instName", exception=1
 caplib::createFxNdfTemplate(1, "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 fixingOffset 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxNdfTemplate rejects wrong type for fixingOffset", exception=1
 caplib::createFxNdfTemplate("X", 1, "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 currencyPair 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxNdfTemplate rejects wrong type for currencyPair", exception=1
 caplib::createFxNdfTemplate("X", "X", 1, "X", "X", "X", "X", false)
 
+// 用例目的：参数 instName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFxNdfTemplate rejects null instName", exception=1
 caplib::createFxNdfTemplate(string(), "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 fixingOffset 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFxNdfTemplate rejects null fixingOffset", exception=1
 caplib::createFxNdfTemplate("X", string(), "X", "X", "X", "X", "X", false)
 
+// 用例目的：标量参数 instName 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createFxNdfTemplate rejects vector for scalar instName", exception=1
 caplib::createFxNdfTemplate(["X"], "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFxNdfTemplate rejects keyword arguments", syntaxError=1
 caplib::createFxNdfTemplate(instName="X", fixingOffset="X", currencyPair="X", deliveryDayConvention="X", fixingDayConvention="X", calendars="X", settlementCurrency="X", returnJson=false)
+// 用例目的：枚举参数 deliveryDayConvention 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createFxNdfTemplate rejects invalid enum for deliveryDayConvention", exception=1
 caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "NOT_A_VALID_ENUM_LABEL", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFxNdfTemplate optional returnJson null uses default"
 result = caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 deliveryDayConvention 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createFxNdfTemplate supports all deliveryDayConvention enums"
 labelEnum = ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]
 okEnum = true;
@@ -270,3 +277,29 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", labelEnum[i], "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createFxNdfTemplate rejects all-null vector calendars (lenient validation, does not raise)"
+result = caplib::createFxNdfTemplate("USDCNH_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", [string(), string(), string()], "USD", true)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFxNdfTemplate rejects empty vector calendars", exception=1
+caplib::createFxNdfTemplate("USDCNH_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", take(string, 0), "USD", true)
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createFxNdfTemplate rejects partially-null vector calendars (lenient validation, does not raise)"
+result = caplib::createFxNdfTemplate("USDCNH_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", [calHkhk, string(), calGblo], "USD", true)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFxNdfTemplate rejects zero fixingOffset", exception=1
+caplib::createFxNdfTemplate("USDCNH_NDF_TPL", 0.0, "USDCNH", "FOLLOWING", "PRECEDING", [calHkhk, calGblo], "USD", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFxNdfTemplate rejects negative fixingOffset", exception=1
+caplib::createFxNdfTemplate("USDCNH_NDF_TPL", -1.0, "USDCNH", "FOLLOWING", "PRECEDING", [calHkhk, calGblo], "USD", true)

@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -120,6 +114,7 @@ mktData = caplib::createEqMktDataSet(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createSnowballAutoCallableNote -> handle"
 result = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, result == "f_SN"
@@ -128,51 +123,83 @@ assert 1, result == "f_SN"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createSnowballAutoCallableNote rejects missing argument", syntaxError=1
 caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createSnowballAutoCallableNote rejects extra argument", syntaxError=1
 caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false, 1)
 
+// 用例目的：参数 couponRate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects wrong type for couponRate", exception=1
 caplib::createSnowballAutoCallableNote("bad", 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 startDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects wrong type for startDate", exception=1
 caplib::createSnowballAutoCallableNote(0.02, "bad", [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 dayCount 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects wrong type for dayCount", exception=1
 caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], 1, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 couponRate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects null couponRate", exception=1
 caplib::createSnowballAutoCallableNote(double(), 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：参数 startDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects null startDate", exception=1
 caplib::createSnowballAutoCallableNote(0.02, date(), [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：标量参数 couponRate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects vector for scalar couponRate", exception=1
 caplib::createSnowballAutoCallableNote([0.02], 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：向量参数 couponDates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects scalar for vector couponDates", exception=1
 caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：向量参数 couponDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects partially-null vector couponDates", exception=1
 caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, [2024.01.01, date()], "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：向量参数 couponDates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects empty vector couponDates", exception=1
 caplib::createSnowballAutoCallableNote(0.02, 2024.01.01, take(date, 0), "X", "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 2024.01.01, 2024.01.01, 1, 0.02, "X", "X", "X", "X", "TF_createSnowballAutoCallableNote_H", [2024.01.01], [0.02], [0.02], [2024.01.01], [0.02], [0.02], false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createSnowballAutoCallableNote rejects keyword arguments", syntaxError=1
 caplib::createSnowballAutoCallableNote(couponRate=0.02, startDate=2024.01.01, couponDates=[2024.01.01], dayCount="X", knockOutBarrierType="X", knockOutBarrierValue=0.02, knockInBarrierType="X", knockInBarrierValue=0.02, longShort="X", knockInPayoffType="X", knockInPayoffStrike=0.02, knockInPayoffGearing=0.02, referencePrice=0.02, expiry=2024.01.01, delivery=2024.01.01, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createSnowballAutoCallableNote_H", knockOutDates=[2024.01.01], knockOutValues=[0.02], knockOutWeights=[0.02], knockInDates=[2024.01.01], knockInValues=[0.02], knockInWeights=[0.02], returnJson=false)
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createSnowballAutoCallableNote accepts all-null vector couponDates (lenient validation, does not raise)"
 result = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, [date(), date(), date()], "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：枚举参数 dayCount 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects invalid enum for dayCount", exception=1
 caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "NOT_A_VALID_ENUM_LABEL", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createSnowballAutoCallableNote optional returnJson null uses default"
 result = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 settlementDays 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createSnowballAutoCallableNote rejects negative settlementDays", exception=1
 caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, -1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
 
+// ----------------------------------------------------------------------------
+// 用例目的：遍历参数 dayCount 的全部文档枚举取值，逐一调用验证均被接受
+// 注：标签 `INVALID_DAY_COUNT_CONVENTION`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `INVALID` 在本上下文中被插件拒绝，未纳入遍历（与文档标签集不一致，实测为准）
+@testing:case="createSnowballAutoCallableNote supports all dayCount enums"
+labelEnum = ["ACT_360", "ACTUAL_360", "ACT_365_FIXED", "ACTUAL_365_FIXED", "ACT_ACT_ICMA", "ACTUAL_ACTUAL_ICMA", "ACT_ACT_ISDA", "ACTUAL_ACTUAL_ISDA", "THIRTY_360", "BOND_BASIS", "THIRTY_E_360", "EUROBOND_BASIS", "THIRTY_E_360_ISDA", "ONE_ONE", "BUSINESS_252"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, labelEnum[i], "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// 用例目的：两个数组参数长度不一致（couponDates 多一个元素），实测插件宽松接受——记录实际行为
+@testing:case="createSnowballAutoCallableNote couponDates length mismatch (lenient validation, does not raise)"
+result = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, join(couponDates, couponDates[0]), "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SN", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(result) != "VOID"

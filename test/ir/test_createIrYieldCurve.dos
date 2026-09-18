@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -81,10 +75,12 @@ curveValues = [0.02, 0.025];
 // Tests
 // ============================================================================
 
+// 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createIrYieldCurve valid call"
 result = caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
 assert 1, result == "TF_IR_CURVE"
 
+// 用例目的：遍历参数 curveType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createIrYieldCurve supports all curveType enums"
 for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
     handle = "TF_IR_ENUM_" + curveType;
@@ -92,6 +88,7 @@ for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
     assert 1, result == handle
 }
 
+// 用例目的：遍历参数 dcc 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createIrYieldCurve supports all dcc enums"
 for (dcc in ["ACT_360", "ACTUAL_360", "ACT/360", "ACT_365", "ACT_365_FIXED", "ACTUAL_365_FIXED", "ACT/365", "ACT_ACT", "ACT_ACT_ISDA", "ACTUAL_ACTUAL_ISDA", "ACT_ACT_ICMA", "ACTUAL_ACTUAL_ICMA", "THIRTY_360", "30_360", "30/360", "BOND_BASIS"]) {
     handle = "TF_IR_DCC_" + dcc;
@@ -99,15 +96,19 @@ for (dcc in ["ACT_360", "ACTUAL_360", "ACT/360", "ACT_365", "ACT_365_FIXED", "AC
     assert 1, result == handle
 }
 
+// 用例目的：rejects dates/values length mismatch（预期：插件按文档行为执行）
 @testing:case="createIrYieldCurve rejects dates/values length mismatch", exception=1
 caplib::createIrYieldCurve(asOfDate, curveDates, [0.02], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "TF_IR_BAD", false)
 
+// 用例目的：rejects duplicate pillar dates（预期：插件按文档行为执行）
 @testing:case="createIrYieldCurve rejects duplicate pillar dates", exception=1
 caplib::createIrYieldCurve(asOfDate, [2022.03.10, 2022.03.10], curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "TF_IR_BAD", false)
 
+// 用例目的：rejects partially-null values（预期：插件按文档行为执行）
 @testing:case="createIrYieldCurve rejects partially-null values", exception=1
 caplib::createIrYieldCurve(asOfDate, curveDates, [0.02, double()], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "X", "TF_IR_BAD", false)
 
+// 用例目的：supports boundary vector lengths（预期：插件按文档行为执行）
 @testing:case="createIrYieldCurve supports boundary vector lengths"
 for (n in [1, 1024, 65536]) {
     datesN = 2022.03.10 + 0..(n - 1);
@@ -121,43 +122,57 @@ for (n in [1, 1024, 65536]) {
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createIrYieldCurve rejects missing argument", syntaxError=1
 caplib::createIrYieldCurve(2024.01.01, [2024.01.01], [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createIrYieldCurve rejects extra argument", syntaxError=1
 caplib::createIrYieldCurve(2024.01.01, [2024.01.01], [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects wrong type for referenceDate", exception=1
 caplib::createIrYieldCurve("bad", [2024.01.01], [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：参数 curveType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects wrong type for curveType", exception=1
 caplib::createIrYieldCurve(2024.01.01, [2024.01.01], [0.02], 1, "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：参数 dcc 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects wrong type for dcc", exception=1
 caplib::createIrYieldCurve(2024.01.01, [2024.01.01], [0.02], "X", 1, "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects null referenceDate", exception=1
 caplib::createIrYieldCurve(date(), [2024.01.01], [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：参数 curveType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects null curveType", exception=1
 caplib::createIrYieldCurve(2024.01.01, [2024.01.01], [0.02], string(), "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects vector for scalar referenceDate", exception=1
 caplib::createIrYieldCurve([2024.01.01], [2024.01.01], [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：向量参数 pillarDates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects scalar for vector pillarDates", exception=1
 caplib::createIrYieldCurve(2024.01.01, [2024.01.01], [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：向量参数 pillarDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects partially-null vector pillarDates", exception=1
 caplib::createIrYieldCurve(2024.01.01, [2024.01.01, date()], [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：向量参数 pillarDates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects empty vector pillarDates", exception=1
 caplib::createIrYieldCurve(2024.01.01, take(date, 0), [0.02], "X", "X", "X", "X", "X", "X", "TF_createIrYieldCurve_H", "TF_createIrYieldCurve_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIrYieldCurve rejects keyword arguments", syntaxError=1
 caplib::createIrYieldCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], pillarValues=[0.02], curveType="X", dcc="X", interp="X", extrap="X", compounding="X", currency="X", name="TF_createIrYieldCurve_H", handle="TF_createIrYieldCurve_H", returnJson=false)
+// 用例目的：向量参数 pillarDates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrYieldCurve rejects all-null vector pillarDates", exception=1
 caplib::createIrYieldCurve(asOfDate, [date(), date(), date()], curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createIrYieldCurve optional returnJson null uses default"
 result = caplib::createIrYieldCurve(asOfDate, curveDates, curveValues, "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "TF_IR_CURVE", bool())
 assert 1, typestr(result) != "VOID"

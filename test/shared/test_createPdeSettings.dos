@@ -9,14 +9,10 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Tests
 // ============================================================================
 
+// 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createPdeSettings valid call"
 result = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 assert 1, result == "TF_createPdeSettings_H"
@@ -25,39 +21,51 @@ assert 1, result == "TF_createPdeSettings_H"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPdeSettings rejects missing argument", syntaxError=1
 caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPdeSettings rejects extra argument", syntaxError=1
 caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false, 1)
 
+// 用例目的：参数 tSize 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPdeSettings rejects wrong type for tSize", exception=1
 caplib::createPdeSettings("1", 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
+// 用例目的：参数 xSize 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPdeSettings rejects wrong type for xSize", exception=1
 caplib::createPdeSettings(1, "1", 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
+// 用例目的：参数 xMin 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPdeSettings rejects wrong type for xMin", exception=1
 caplib::createPdeSettings(1, 1, "bad", 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
+// 用例目的：参数 tSize 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPdeSettings rejects null tSize", exception=1
 caplib::createPdeSettings(int(), 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
+// 用例目的：参数 xSize 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPdeSettings rejects null xSize", exception=1
 caplib::createPdeSettings(1, int(), 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
+// 用例目的：标量参数 tSize 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createPdeSettings rejects vector for scalar tSize", exception=1
 caplib::createPdeSettings([1], 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPdeSettings rejects keyword arguments", syntaxError=1
 caplib::createPdeSettings(tSize=1, xSize=1, xMin=0.02, xMax=0.02, xMinMaxType=1, ySize=1, yMin=0.02, yMax=0.02, yMinMaxType=1, zSize=1, zMin=0.02, zMax=0.02, zMinMaxType=1, xDensity=0.02, yDensity=0.02, zDensity=0.02, xGridType=1, yGridType=1, zGridType=1, xInterp=1, yInterp=1, zInterp=1, handle="TF_createPdeSettings_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPdeSettings optional returnJson null uses default"
 result = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 tSize 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createPdeSettings rejects zero tSize", exception=1
 caplib::createPdeSettings(0.0, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
 
+// 用例目的：参数 tSize 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createPdeSettings rejects negative tSize", exception=1
 caplib::createPdeSettings(-1.0, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 

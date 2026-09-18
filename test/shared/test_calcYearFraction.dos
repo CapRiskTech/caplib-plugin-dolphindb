@@ -9,14 +9,10 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Tests
 // ============================================================================
 
+// 用例目的：ACT/360 -> positive year fraction（预期：插件按文档行为执行）
 @testing:case="calcYearFraction ACT/360 -> positive year fraction"
 yf = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
 assert 1, yf > 0.9 && yf < 1.2
@@ -25,36 +21,60 @@ assert 1, yf > 0.9 && yf < 1.2
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="calcYearFraction rejects missing argument", syntaxError=1
 caplib::calcYearFraction(2024.01.01, 2024.01.01)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="calcYearFraction rejects extra argument", syntaxError=1
 caplib::calcYearFraction(2024.01.01, 2024.01.01, "X", 1)
 
+// 用例目的：参数 startDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcYearFraction rejects wrong type for startDate", exception=1
 caplib::calcYearFraction("bad", 2024.01.01, "X")
 
+// 用例目的：参数 endDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcYearFraction rejects wrong type for endDate", exception=1
 caplib::calcYearFraction(2024.01.01, "bad", "X")
 
+// 用例目的：参数 dayCountConvention 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcYearFraction rejects wrong type for dayCountConvention", exception=1
 caplib::calcYearFraction(2024.01.01, 2024.01.01, 1)
 
+// 用例目的：参数 startDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcYearFraction rejects null startDate", exception=1
 caplib::calcYearFraction(date(), 2024.01.01, "X")
 
+// 用例目的：参数 endDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcYearFraction rejects null endDate", exception=1
 caplib::calcYearFraction(2024.01.01, date(), "X")
 
+// 用例目的：标量参数 startDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="calcYearFraction rejects vector for scalar startDate", exception=1
 caplib::calcYearFraction([2024.01.01], 2024.01.01, "X")
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="calcYearFraction rejects keyword arguments", syntaxError=1
 caplib::calcYearFraction(startDate=2024.01.01, endDate=2024.01.01, dayCountConvention="X")
+// 用例目的：-> exact ACT/360 reference (364/360)（预期：插件按文档行为执行）
 @testing:case="calcYearFraction -> exact ACT/360 reference (364/360)"
 yf = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
 assert 1, abs(yf - 364.0/360.0) < 1.0e-12
 
+// 用例目的：-> exact ACT/365F reference (364/365)（预期：插件按文档行为执行）
 @testing:case="calcYearFraction -> exact ACT/365F reference (364/365)"
 yf2 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_365_FIXED");
 assert 1, abs(yf2 - 364.0/365.0) < 1.0e-12
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="calcYearFraction deterministic repeat -> identical result"
+r1 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
+r2 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
+assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：结束日期平移 30 天后再次计算，验证年化因子随输入变化（输入影响输出）
+@testing:case="calcYearFraction second input (+30d end date) -> result changes"
+r1 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
+r2 = caplib::calcYearFraction(2025.01.01, (2025.12.31 + 30), "ACTUAL_360");
+assert 1, abs(r1 - r2) > 0.0

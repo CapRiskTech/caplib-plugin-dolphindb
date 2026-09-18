@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -77,6 +71,7 @@ irSwapPricingResult = caplib::priceIrVanillaInstrument(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createIrMktDataSet -> handle"
 result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", false)
 assert 1, result == "TF_IRMKT"
@@ -85,44 +80,62 @@ assert 1, result == "TF_IRMKT"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createIrMktDataSet rejects missing argument", syntaxError=1
 caplib::createIrMktDataSet(2024.01.01, "X", ["X"], ["X"])
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createIrMktDataSet rejects extra argument", syntaxError=1
 caplib::createIrMktDataSet(2024.01.01, "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false, 1)
 
+// 用例目的：参数 irAsOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects wrong type for irAsOfDate", exception=1
 caplib::createIrMktDataSet("bad", "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
+// 用例目的：参数 irAsOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects null irAsOfDate", exception=1
 caplib::createIrMktDataSet(date(), "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
+// 用例目的：标量参数 irAsOfDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects vector for scalar irAsOfDate", exception=1
 caplib::createIrMktDataSet([2024.01.01], "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
+// 用例目的：向量参数 underlyingInterestRates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects scalar for vector underlyingInterestRates", exception=1
 caplib::createIrMktDataSet(2024.01.01, "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
+// 用例目的：向量参数 underlyingInterestRates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects partially-null vector underlyingInterestRates", exception=1
 caplib::createIrMktDataSet(2024.01.01, "X", ["X", string()], ["X"], "TF_createIrMktDataSet_H", false)
 
+// 用例目的：向量参数 underlyingInterestRates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects empty vector underlyingInterestRates", exception=1
 caplib::createIrMktDataSet(2024.01.01, "X", take(string, 0), ["X"], "TF_createIrMktDataSet_H", false)
 
+// 用例目的：句柄参数 discountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects nonexistent handle discountCurveHandle", exception=1
 caplib::createIrMktDataSet(2024.01.01, "TF_NO_SUCH_HANDLE_createIrMktDataSet", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIrMktDataSet rejects keyword arguments", syntaxError=1
 caplib::createIrMktDataSet(irAsOfDate=2024.01.01, discountCurveHandle="X", underlyingInterestRates=["X"], forwardCurveHandles=["X"], handle="TF_createIrMktDataSet_H", returnJson=false)
+// 用例目的：向量参数 underlyingInterestRates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects all-null vector underlyingInterestRates", exception=1
 caplib::createIrMktDataSet(irAsOfDate, irCurve, [string(), string(), string()], [irCurve], "TF_IRMKT", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createIrMktDataSet optional returnJson null uses default"
 result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createIrMktDataSet accepts rejects wrong object type for forwardCurveHandles (lenient validation, does not raise)"
 result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, "TF_IRMKT", false)
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 forwardCurveHandles 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects wrong object type for forwardCurveHandles (lenient validation, does not raise)"
 result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, "TF_IRMKT", false)
 assert 1, typestr(result) != "VOID"
 
+// ----------------------------------------------------------------------------
+// 用例目的：两个成对数组参数长度不一致（forwardCurveHandles 多一个元素），验证参数间关系校验（预期：抛异常）
+@testing:case="createIrMktDataSet rejects forwardCurveHandles length mismatch", exception=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve, "EXTRA"], "TF_IRMKT", false);

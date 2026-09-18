@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -40,6 +34,7 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPmCashTemplate -> handle"
 result = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_GBLO"], "ACT_360", false)
 assert 1, result == "XAUUSD"
@@ -48,32 +43,54 @@ assert 1, result == "XAUUSD"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPmCashTemplate rejects missing argument", syntaxError=1
 caplib::createPmCashTemplate("X", 1, "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPmCashTemplate rejects extra argument", syntaxError=1
 caplib::createPmCashTemplate("X", 1, "X", "X", "X", false, 1)
 
+// 用例目的：参数 instName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmCashTemplate rejects wrong type for instName", exception=1
 caplib::createPmCashTemplate(1, 1, "X", "X", "X", false)
 
+// 用例目的：参数 startDelay 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmCashTemplate rejects wrong type for startDelay", exception=1
 caplib::createPmCashTemplate("X", "1", "X", "X", "X", false)
 
+// 用例目的：参数 deliveryDayConvention 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmCashTemplate rejects wrong type for deliveryDayConvention", exception=1
 caplib::createPmCashTemplate("X", 1, 1, "X", "X", false)
 
+// 用例目的：参数 startDelay 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPmCashTemplate rejects null startDelay", exception=1
 caplib::createPmCashTemplate("X", int(), "X", "X", "X", false)
 
+// 用例目的：标量参数 instName 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createPmCashTemplate rejects vector for scalar instName", exception=1
 caplib::createPmCashTemplate(["X"], 1, "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPmCashTemplate rejects keyword arguments", syntaxError=1
 caplib::createPmCashTemplate(instName="X", startDelay=1, deliveryDayConvention="X", calendars="X", dayCount="X", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPmCashTemplate optional returnJson null uses default"
 result = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_GBLO"], "ACT_360", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createPmCashTemplate rejects negative startDelay", exception=1
 caplib::createPmCashTemplate("XAUUSD", -1.0, "FOLLOWING", ["CAL_GBLO"], "ACT_360", false)
 
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createPmCashTemplate rejects all-null vector calendars (lenient validation, does not raise)"
+result = caplib::createPmCashTemplate("AU_CASH", 0, "FOLLOWING", [string(), string(), string()], "ACT_365_FIXED", true)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createPmCashTemplate rejects empty vector calendars", exception=1
+caplib::createPmCashTemplate("AU_CASH", 0, "FOLLOWING", take(string, 0), "ACT_365_FIXED", true)

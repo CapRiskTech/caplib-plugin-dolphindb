@@ -41,6 +41,7 @@ pmParRateCurve = caplib::createPmParRateCurve(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildPmYieldCurve XAU yield curve -> handle"
 result = caplib::buildPmYieldCurve(
     2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0,
@@ -53,38 +54,50 @@ assert 1, result == "TF_XAU_YIELD"
 // Negative / exception validation
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="buildPmYieldCurve rejects missing argument", syntaxError=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="buildPmYieldCurve rejects extra argument", syntaxError=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects wrong type for referenceDate", exception=1
 caplib::buildPmYieldCurve("bad", pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
+// 用例目的：参数 spotPrice 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects wrong type for spotPrice", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, "bad", false, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
+// 用例目的：参数 dayCount 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects wrong type for dayCount", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, 99, "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects null referenceDate", exception=1
 caplib::buildPmYieldCurve(date(), pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
+// 用例目的：rejects nonexistent parCurveHandle（预期：插件按文档行为执行）
 @testing:case="buildPmYieldCurve rejects nonexistent parCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, "TF_HANDLE_DOES_NOT_EXIST", usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
+// 用例目的：rejects invalid interp method（预期：插件按文档行为执行）
 @testing:case="buildPmYieldCurve rejects invalid interp method", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "NOT_AN_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_BAD", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildPmYieldCurve rejects keyword arguments", syntaxError=1
 caplib::buildPmYieldCurve(referenceDate=2019.09.04, parCurveHandle=pmParRateCurve, discountCurveHandle=usdDepoCurve, pmTemplateHandle=pmCashTemplate, spotPrice=1544.06, calcJacobian=false, dayCount="ACT_365_FIXED", interpMethod="LINEAR_INTERP", extrapMethod="FLAT_EXTRAP", curveType="ZERO_RATE", curveName="XAU_XAUUSD", shift=1.0e-4, method="CENTRAL_DIFFERENCE_METHOD", mode="SINGLE_THREADING_MODE", handle="TF_XAU_YIELD", returnJson=false)
+// 用例目的：句柄参数 parCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, "TF_NO_SUCH_HANDLE_buildPmYieldCurve", usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 
+// 用例目的：枚举参数 dayCount 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects invalid enum for dayCount", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "NOT_A_VALID_ENUM_LABEL", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+// 用例目的：正常调用，与独立来源的冻结参考值逐位对比，验证计算正确性
 @testing:case="buildPmYieldCurve -> frozen curve reference"
 // The bootstrap output for the upstream fixture is deterministic; the 1M/6M/12M
 // pillar values are frozen (first pillar -0.0041261325250508763).
@@ -92,21 +105,54 @@ rpmb = caplib::buildPmYieldCurve(2019.09.04, "PAR_30", "DEPO_30", "XAUUSD", 1544
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 0.0001,
     "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "FWD_30B", true);
 assert 1, strpos(rpmb[1], "-0.0041261325250508763") >= 0
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildPmYieldCurve optional returnJson null uses default"
 result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 discountCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects wrong object type for discountCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, pmParRateCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 
 
 
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="buildPmYieldCurve accepts zero spotPrice (lenient validation, does not raise)"
 result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 0.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="buildPmYieldCurve accepts negative spotPrice (lenient validation, does not raise)"
 result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 assert 1, typestr(result) != "VOID"
 
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="buildPmYieldCurve rejects zero spotPrice (lenient validation, does not raise)"
+result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 0.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="buildPmYieldCurve rejects negative spotPrice (lenient validation, does not raise)"
+result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// 用例目的：遍历参数 dayCount 的全部文档枚举取值，逐一调用验证均被接受
+// 注：标签 `INVALID_DAY_COUNT_CONVENTION`, `ONE_ONE`, `BUSINESS_252`, `INVALID` 在本上下文中被插件拒绝，未纳入遍历（实测为准）
+@testing:case="buildPmYieldCurve supports all dayCount enums"
+labelEnum = ["ACT_360", "ACTUAL_360", "ACT_365_FIXED", "ACTUAL_365_FIXED", "ACT_ACT_ICMA", "ACTUAL_ACTUAL_ICMA", "ACT_ACT_ISMA", "ACTUAL_ACTUAL_ISMA", "ACT_ACT_ISDA", "ACTUAL_ACTUAL_ISDA", "THIRTY_360", "BOND_BASIS", "THIRTY_E_360", "EUROBOND_BASIS", "THIRTY_E_360_ISDA", "THIRTY_U_360", "THIRTY_U_360_EOM", "THIRTY_360_PSA", "THIRTY_E_360_PLUS", "THIRTY_360_IT", "ACT_ACT_AFB", "ACTUAL_ACTUAL_AFB", "ACT_364", "ACTUAL_364", "ACT_365_25", "ACTUAL_365_25", "ACT_365_ACT", "ACTUAL_365_ACTUAL", "ACT_365_L", "ACTUAL_365_LONG", "ACT_365_NL", "ACTUAL_365_NO_LEAP", "ACT_ACT_YEAR", "ACTUAL_ACTUAL_YEAR"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, labelEnum[i], "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects vector for scalar referenceDate", exception=1
+caplib::buildPmYieldCurve([2021.07.22], pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false);

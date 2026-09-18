@@ -43,6 +43,7 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPmOptionQuoteMatrix -> [handle, json]"
 r = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true);
 assert 1, isHandleJson(r, "TF_PM_OQ")
@@ -51,55 +52,76 @@ assert 1, isHandleJson(r, "TF_PM_OQ")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPmOptionQuoteMatrix rejects missing argument", syntaxError=1
 caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]))
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPmOptionQuoteMatrix rejects extra argument", syntaxError=1
 caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false, 1)
 
+// 用例目的：参数 underlying 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects wrong type for underlying", exception=1
 caplib::createPmOptionQuoteMatrix(1, 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects wrong type for asOfDate", exception=1
 caplib::createPmOptionQuoteMatrix("X", "bad", ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 underlying 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects null underlying", exception=1
 caplib::createPmOptionQuoteMatrix(string(), 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects null asOfDate", exception=1
 caplib::createPmOptionQuoteMatrix("X", date(), ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：标量参数 underlying 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects vector for scalar underlying", exception=1
 caplib::createPmOptionQuoteMatrix(["X"], 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 terms 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects scalar for vector terms", exception=1
 caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 terms 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects partially-null vector terms", exception=1
 caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X", string()], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 terms 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects empty vector terms", exception=1
 caplib::createPmOptionQuoteMatrix("X", 2024.01.01, take(string, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPmOptionQuoteMatrix rejects keyword arguments", syntaxError=1
 caplib::createPmOptionQuoteMatrix(underlying="X", asOfDate=2024.01.01, terms=["X"], payoffTypes=matrix([0.2]), deltas=matrix([0.2]), quotes=matrix([0.2]), handle="TF_createPmOptionQuoteMatrix_H", returnJson=false)
+// 用例目的：向量参数 terms 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects all-null vector terms", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, [string(), string(), string()], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入0 行矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(STRING, 0, 3), [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix([string(), string()], [string(), string()]), [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(["A", string()], [string(), "A"]), [0.10], matrix([450.0]), "TF_PM_OQ", true)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPmOptionQuoteMatrix optional returnJson null uses default"
 result = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：矩阵参数 payoffTypes 传入0 列矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects zero-col matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(STRING, 3, 0), [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
+// ----------------------------------------------------------------------------
+// 用例目的：两个成对数组参数长度不一致（terms 多一个元素），验证参数间关系校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects terms length mismatch", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M", "EXTRA"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true);

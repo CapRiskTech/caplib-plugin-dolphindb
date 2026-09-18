@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -40,6 +34,7 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPmParRateCurve 4-column pillars table -> handle"
 result = caplib::createPmParRateCurve(
     2019.09.04, "USD", "XAU_XAUUSD",
@@ -55,45 +50,59 @@ assert 1, result == "TF_PM_PAR_OK"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPmParRateCurve rejects missing argument", syntaxError=1
 caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]))
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPmParRateCurve rejects extra argument", syntaxError=1
 caplib::createPmParRateCurve(2024.01.01, "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false, 1)
 
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects wrong type for asOfDate", exception=1
 caplib::createPmParRateCurve("bad", "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
+// 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects wrong type for currency", exception=1
 caplib::createPmParRateCurve(2024.01.01, 1, "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
+// 用例目的：参数 curveName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects wrong type for curveName", exception=1
 caplib::createPmParRateCurve(2024.01.01, "X", 1, matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects null asOfDate", exception=1
 caplib::createPmParRateCurve(date(), "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
+// 用例目的：参数 currency 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects null currency", exception=1
 caplib::createPmParRateCurve(2024.01.01, string(), "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects vector for scalar asOfDate", exception=1
 caplib::createPmParRateCurve([2024.01.01], "X", "X", matrix([0.2]), "TF_createPmParRateCurve_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPmParRateCurve rejects keyword arguments", syntaxError=1
 caplib::createPmParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", pillarsTable=matrix([0.2]), tag="TF_createPmParRateCurve_H", returnJson=false)
+// 用例目的：矩阵参数 pillarsTable 传入0 行矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects zero-row matrix pillarsTable", exception=1
 caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix(DOUBLE, 0, 3), "TF_PM_PAR_OK", false)
 
 
+// 用例目的：矩阵参数 pillarsTable 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects all-null matrix pillarsTable", exception=1
 caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix([double(), double()], [double(), double()]), "TF_PM_PAR_OK", false)
 
 
+// 用例目的：矩阵参数 pillarsTable 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects partially-null matrix pillarsTable", exception=1
 caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix([0.2, double()], [double(), 0.2]), "TF_PM_PAR_OK", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPmParRateCurve optional returnJson null uses default"
 result = caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", table( ["XAUUSD","XAUUSD","XAUUSD"] as instrument_name, ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type, ["1W","2W","1M"] as instrument_term, [0.025,0.025,0.0248] as instrument_rate), "TF_PM_PAR_OK", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：矩阵参数 pillarsTable 传入0 列矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmParRateCurve rejects zero-col matrix pillarsTable", exception=1
 caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix(DOUBLE, 3, 0), "TF_PM_PAR_OK", false)
 

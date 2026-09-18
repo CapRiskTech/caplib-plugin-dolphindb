@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -26,10 +20,12 @@ curveValues = [0.02, 0.025];
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPricingSettings -> handle (10-arg documented form, empty requests)"
 result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "TF_PRICING", false)
 assert 1, result == "TF_PRICING"
 
+// 用例目的：with specific requests -> json content（预期：插件按文档行为执行）
 @testing:case="createPricingSettings with specific requests -> json content"
 // BondSpecificPricingRequest 1=全价(dirty) 2=净价(clean)；请求值原样写入
 // 返回 json 的 specific_pricing_requests 字段（冻结内容校验）。
@@ -40,41 +36,54 @@ assert 1, strpos(rj[1], "\"specific_pricing_requests\":[1,2]") >= 0
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPricingSettings rejects missing argument", syntaxError=1
 caplib::createPricingSettings("X", "X", false, false, take(0, 0), "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPricingSettings rejects extra argument", syntaxError=1
 caplib::createPricingSettings("X", "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false, 1)
 
+// 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPricingSettings rejects wrong type for currency", exception=1
 caplib::createPricingSettings(1, "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：参数 pricingMethod 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPricingSettings rejects wrong type for pricingMethod", exception=1
 caplib::createPricingSettings("X", 1, false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：参数 specificPricingRequests 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPricingSettings rejects wrong type for specificPricingRequests", exception=1
 caplib::createPricingSettings("X", "X", false, false, ["A"], "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：向量参数 specificPricingRequests 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createPricingSettings rejects scalar for vector specificPricingRequests", exception=1
 caplib::createPricingSettings("X", "X", false, false, 1, "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：向量参数 specificPricingRequests 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createPricingSettings rejects all-null vector specificPricingRequests", exception=1
 caplib::createPricingSettings("X", "X", false, false, [int(), int()], "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：参数 currency 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPricingSettings rejects null currency", exception=1
 caplib::createPricingSettings(string(), "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：参数 pricingMethod 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPricingSettings rejects null pricingMethod", exception=1
 caplib::createPricingSettings("X", string(), false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：标量参数 currency 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createPricingSettings rejects vector for scalar currency", exception=1
 caplib::createPricingSettings(["X"], "X", false, false, take(0, 0), "X", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：句柄参数 modelHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="createPricingSettings rejects nonexistent handle modelHandle", exception=1
 caplib::createPricingSettings("X", "X", false, false, take(0, 0), "TF_NO_SUCH_HANDLE_createPricingSettings", "X", "X", "TF_createPricingSettings_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPricingSettings rejects keyword arguments", syntaxError=1
 caplib::createPricingSettings(currency="X", pricingMethod="X", incCurrent=false, cashFlows=false, specificPricingRequests=take(0, 0), modelHandle="X", pdeHandle="X", mcHandle="X", handle="TF_createPricingSettings_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPricingSettings optional returnJson null uses default"
 result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "TF_PRICING", bool())
 assert 1, typestr(result) != "VOID"

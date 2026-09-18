@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -30,6 +24,7 @@ ps = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), bm, ""
 // Tests
 // ============================================================================
 
+// 用例目的：-> positive vol（预期：插件按文档行为执行）
 @testing:case="impliedVolCalculator -> positive vol"
 v = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 assert 1, v > 0.0
@@ -38,37 +33,49 @@ assert 1, v > 0.0
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="impliedVolCalculator rejects missing argument", syntaxError=1
 caplib::impliedVolCalculator(2024.01.01, 0.02, "X", "X", "X", 0.02, "X", "X", 2024.01.01)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="impliedVolCalculator rejects extra argument", syntaxError=1
 caplib::impliedVolCalculator(2024.01.01, 0.02, "X", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02, 1)
 
+// 用例目的：参数 calculationDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects wrong type for calculationDate", exception=1
 caplib::impliedVolCalculator("bad", 0.02, "X", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
+// 用例目的：参数 underlyingPrice 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects wrong type for underlyingPrice", exception=1
 caplib::impliedVolCalculator(2024.01.01, "bad", "X", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
+// 用例目的：参数 optionPrice 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects wrong type for optionPrice", exception=1
 caplib::impliedVolCalculator(2024.01.01, 0.02, "X", "X", "X", "bad", "X", "X", 2024.01.01, 0.02)
 
+// 用例目的：参数 calculationDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects null calculationDate", exception=1
 caplib::impliedVolCalculator(date(), 0.02, "X", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
+// 用例目的：参数 underlyingPrice 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects null underlyingPrice", exception=1
 caplib::impliedVolCalculator(2024.01.01, double(), "X", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
+// 用例目的：标量参数 calculationDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects vector for scalar calculationDate", exception=1
 caplib::impliedVolCalculator([2024.01.01], 0.02, "X", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
+// 用例目的：句柄参数 discountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects nonexistent handle discountCurveHandle", exception=1
 caplib::impliedVolCalculator(2024.01.01, 0.02, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", 0.02, "X", "X", 2024.01.01, 0.02)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="impliedVolCalculator rejects keyword arguments", syntaxError=1
 caplib::impliedVolCalculator(calculationDate=2024.01.01, underlyingPrice=0.02, discountCurveHandle="X", assetCurveHandle="X", pricingSettingsHandle="X", optionPrice=0.02, payoffType="X", exerciseType="X", expiryDate=2024.01.01, strike=0.02)
+// 用例目的：枚举参数 exerciseType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects invalid enum for exerciseType", exception=1
 caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "NOT_A_VALID_ENUM_LABEL", 2022.09.09, 100.0)
+// 用例目的：用测试内独立 Black-Scholes 公式构造期权价格，验证插件反推出的隐含波动率与输入一致
 @testing:case="impliedVolCalculator -> round-trip against independent BSM price"
 // The option price is computed here with an independent Black-Scholes formula
 // (cdfNormal); the plugin must invert it back to the 20% input volatility.
@@ -78,10 +85,12 @@ d2 = d1 - 0.20*sqrt(Tref);
 priceRef = 100.0*exp(-0.01*Tref)*cdfNormal(0, 1, d1) - 100.0*exp(-0.02*Tref)*cdfNormal(0, 1, d2);
 ivr = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, priceRef, "CALL", "EUROPEAN", 2022.09.09, 100.0);
 assert 1, abs(ivr - 0.20) < 1.0e-9
+// 用例目的：句柄参数 assetCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects wrong object type for assetCurveHandle", exception=1
 caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatIr, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 
 
+// 用例目的：遍历参数 payoffType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="impliedVolCalculator supports all payoffType enums"
 labelEnum = ["CALL", "PUT"]
 okEnum = true;
@@ -91,11 +100,13 @@ for (i in 0..(size(labelEnum)-1)) {
 assert 1, okEnum
 
 
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="impliedVolCalculator accepts zero underlyingPrice (lenient validation, does not raise)"
 result = caplib::impliedVolCalculator(asOfDate, 0.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 assert 1, typestr(result) != "VOID"
 
 
+// 用例目的：参数 underlyingPrice 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects negative underlyingPrice", exception=1
 caplib::impliedVolCalculator(asOfDate, -1.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 

@@ -43,6 +43,7 @@ pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPmMktConventions -> [handle, json]"
 r = caplib::createPmMktConventions("ATM", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true);
 assert 1, isHandleJson(r, "TF_PM_CONV")
@@ -51,32 +52,42 @@ assert 1, isHandleJson(r, "TF_PM_CONV")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPmMktConventions rejects missing argument", syntaxError=1
 caplib::createPmMktConventions("X", "X", "X", "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPmMktConventions rejects extra argument", syntaxError=1
 caplib::createPmMktConventions("X", "X", "X", "X", "X", "X", "X", "TF_createPmMktConventions_H", false, 1)
 
+// 用例目的：参数 atmType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmMktConventions rejects wrong type for atmType", exception=1
 caplib::createPmMktConventions(1, "X", "X", "X", "X", "X", "X", "TF_createPmMktConventions_H", false)
 
+// 用例目的：参数 shortDeltaType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmMktConventions rejects wrong type for shortDeltaType", exception=1
 caplib::createPmMktConventions("X", 1, "X", "X", "X", "X", "X", "TF_createPmMktConventions_H", false)
 
+// 用例目的：参数 longDeltaType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPmMktConventions rejects wrong type for longDeltaType", exception=1
 caplib::createPmMktConventions("X", "X", 1, "X", "X", "X", "X", "TF_createPmMktConventions_H", false)
 
+// 用例目的：标量参数 atmType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createPmMktConventions rejects vector for scalar atmType", exception=1
 caplib::createPmMktConventions(["X"], "X", "X", "X", "X", "X", "X", "TF_createPmMktConventions_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPmMktConventions rejects keyword arguments", syntaxError=1
 caplib::createPmMktConventions(atmType="X", shortDeltaType="X", longDeltaType="X", deltaCutoff="X", riskReversal="X", smileQuoteType="X", underlying="X", tag="TF_createPmMktConventions_H", returnJson=false)
+// 用例目的：accepts invalid enum atmType (maps to invalid sentinel)（预期：插件按文档行为执行）
 @testing:case="createPmMktConventions accepts invalid enum atmType (maps to invalid sentinel)"
 result = caplib::createPmMktConventions("NOT_A_VALID_ENUM_LABEL", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true)
 assert 1, typestr(result) != "VOID"
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPmMktConventions optional returnJson null uses default"
 result = caplib::createPmMktConventions("ATM", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 atmType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createPmMktConventions supports all atmType enums"
 labelEnum = ["ATM_FORWARD", "ATM_DNS_PIPS", "ATM_DNS_PERCENTAGE", "ATM_SPOT"]
 okEnum = true;
@@ -84,6 +95,7 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createPmMktConventions(labelEnum[i], "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+// 用例目的：supports all enums (review)（预期：插件按文档行为执行）
 @testing:case="createPmMktConventions supports all enums (review)"
 labelEnum = ["ATM_FORWARD", "ATM_DNS_PIPS", "ATM_DNS_PERCENTAGE", "ATM_SPOT"]
 okEnum = true;
@@ -92,3 +104,16 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: negative-case coverage (wrong type / null / arity / keyword)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数传入错误类型/空值（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createPmMktConventions rejects null atmType (lenient validation, does not raise)"
+result = caplib::createPmMktConventions(string(), "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：参数传入错误类型/空值（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createPmMktConventions rejects null shortDeltaType (lenient validation, does not raise)"
+result = caplib::createPmMktConventions("ATM", string(), "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true)
+assert 1, typestr(result) != "VOID"

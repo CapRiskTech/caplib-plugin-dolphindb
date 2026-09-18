@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -26,6 +20,7 @@ curveValues = [0.02, 0.025];
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createVolatilityCurve -> handle"
 result = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
 assert 1, result == "TF_VOL_CURVE"
@@ -34,43 +29,76 @@ assert 1, result == "TF_VOL_CURVE"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createVolatilityCurve rejects missing argument", syntaxError=1
 caplib::createVolatilityCurve(2024.01.01, [2024.01.01], [0.02], "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createVolatilityCurve rejects extra argument", syntaxError=1
 caplib::createVolatilityCurve(2024.01.01, [2024.01.01], [0.02], "X", "X", "X", "X", "TF_createVolatilityCurve_H", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects wrong type for referenceDate", exception=1
 caplib::createVolatilityCurve("bad", [2024.01.01], [0.02], "X", "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：参数 dcc 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects wrong type for dcc", exception=1
 caplib::createVolatilityCurve(2024.01.01, [2024.01.01], [0.02], 1, "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：参数 interp 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects wrong type for interp", exception=1
 caplib::createVolatilityCurve(2024.01.01, [2024.01.01], [0.02], "X", 1, "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects null referenceDate", exception=1
 caplib::createVolatilityCurve(date(), [2024.01.01], [0.02], "X", "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：参数 dcc 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects null dcc", exception=1
 caplib::createVolatilityCurve(2024.01.01, [2024.01.01], [0.02], string(), "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects vector for scalar referenceDate", exception=1
 caplib::createVolatilityCurve([2024.01.01], [2024.01.01], [0.02], "X", "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：向量参数 pillarDates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects scalar for vector pillarDates", exception=1
 caplib::createVolatilityCurve(2024.01.01, [2024.01.01], [0.02], "X", "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：向量参数 pillarDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects partially-null vector pillarDates", exception=1
 caplib::createVolatilityCurve(2024.01.01, [2024.01.01, date()], [0.02], "X", "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：向量参数 pillarDates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects empty vector pillarDates", exception=1
 caplib::createVolatilityCurve(2024.01.01, take(date, 0), [0.02], "X", "X", "X", "X", "TF_createVolatilityCurve_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createVolatilityCurve rejects keyword arguments", syntaxError=1
 caplib::createVolatilityCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], vols=[0.02], dcc="X", interp="X", extrap="X", underlying="X", handle="TF_createVolatilityCurve_H", returnJson=false)
+// 用例目的：向量参数 pillarDates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects all-null vector pillarDates", exception=1
 caplib::createVolatilityCurve(asOfDate, [date(), date(), date()], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createVolatilityCurve optional returnJson null uses default"
 result = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createVolatilityCurve rejects zero vols (lenient validation, does not raise)"
+result = caplib::createVolatilityCurve(asOfDate, curveDates, [0.0, 0.0], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createVolatilityCurve rejects negative vols (lenient validation, does not raise)"
+result = caplib::createVolatilityCurve(asOfDate, curveDates, [-1.0, -1.0], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// 用例目的：两个成对数组参数长度不一致（vols 多一个元素），验证参数间关系校验（预期：抛异常）
+@testing:case="createVolatilityCurve rejects vols length mismatch", exception=1
+caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21, 0.03], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false);

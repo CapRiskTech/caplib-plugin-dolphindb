@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -85,6 +79,7 @@ cds = caplib::buildCreditDefaultSwap(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createCreditParCurve -> handle"
 result = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
 assert 1, result == "TF_CPC"
@@ -93,38 +88,55 @@ assert 1, result == "TF_CPC"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createCreditParCurve rejects missing argument", syntaxError=1
 caplib::createCreditParCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], ["X"])
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createCreditParCurve rejects extra argument", syntaxError=1
 caplib::createCreditParCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false, 1)
 
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects wrong type for asOfDate", exception=1
 caplib::createCreditParCurve("bad", "X", "X", ["X"], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
+// 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects wrong type for currency", exception=1
 caplib::createCreditParCurve(2024.01.01, 1, "X", ["X"], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
+// 用例目的：参数 curveName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects wrong type for curveName", exception=1
 caplib::createCreditParCurve(2024.01.01, "X", 1, ["X"], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects null asOfDate", exception=1
 caplib::createCreditParCurve(date(), "X", "X", ["X"], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects vector for scalar asOfDate", exception=1
 caplib::createCreditParCurve([2024.01.01], "X", "X", ["X"], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
+// 用例目的：向量参数 instrumentNames 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects partially-null vector instrumentNames", exception=1
 caplib::createCreditParCurve(2024.01.01, "X", "X", ["X", string()], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
+// 用例目的：向量参数 instrumentNames 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects empty vector instrumentNames", exception=1
 caplib::createCreditParCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createCreditParCurve rejects keyword arguments", syntaxError=1
 caplib::createCreditParCurve(asOfDate=2024.01.01, currency="X", curveName="X", instrumentNames=["X"], instrumentTypes=["X"], maturities=["X"], quotes=[0.02], startConventions=["X"], handle="TF_createCreditParCurve_H", returnJson=false)
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="createCreditParCurve accepts all-null vector instrumentNames (lenient validation, does not raise)"
 result = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", [string(), string(), string()], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
 assert 1, typestr(result) != "VOID"
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createCreditParCurve optional returnJson null uses default"
 result = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// 用例目的：两个成对数组参数长度不一致（instrumentTypes 多一个元素），验证参数间关系校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects instrumentTypes length mismatch", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP", "EXTRA"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false);

@@ -195,6 +195,7 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildCmVolatilitySurface -> [handle, json]"
 r = caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true);
 assert 1, isHandleJson(r, "TF_CM_VOL") && hasJsonField(r[1], "vol_smiles")
@@ -203,45 +204,72 @@ assert 1, isHandleJson(r, "TF_CM_VOL") && hasJsonField(r[1], "vol_smiles")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="buildCmVolatilitySurface rejects missing argument", syntaxError=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="buildCmVolatilitySurface rejects extra argument", syntaxError=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false, 1)
 
+// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects wrong type for referenceDate", exception=1
 caplib::buildCmVolatilitySurface("bad", "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：参数 underlying 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects wrong type for underlying", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, 1, "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects null referenceDate", exception=1
 caplib::buildCmVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：参数 underlying 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects null underlying", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects vector for scalar referenceDate", exception=1
 caplib::buildCmVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：向量参数 underlyingPrices 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects scalar for vector underlyingPrices", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：向量参数 underlyingPrices 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects partially-null vector underlyingPrices", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02, double()], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：向量参数 underlyingPrices 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects empty vector underlyingPrices", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", take(double, 0), "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：句柄参数 definitionHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_NO_SUCH_HANDLE_buildCmVolatilitySurface", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildCmVolatilitySurface rejects keyword arguments", syntaxError=1
 caplib::buildCmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", handle="TF_buildCmVolatilitySurface_H", returnJson=false)
+// 用例目的：向量参数 underlyingPrices 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects all-null vector underlyingPrices", exception=1
 caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], [double(), double(), double()], irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildCmVolatilitySurface optional returnJson null uses default"
 result = caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 quoteMatrixHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
 caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], volSurfDefinition[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：相同输入连续构建两次，经 getter 取值对比，验证构建结果确定性
+@testing:case="buildCmVolatilitySurface deterministic repeat -> identical result"
+r1 = caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true);
+r2 = caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true);
+assert 1, max(abs(caplib::getVolatility(r1[0], [2021.07.22], [100.0]) - caplib::getVolatility(r2[0], [2021.07.22], [100.0]))) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：正常构建后经 getVolatility 在固定查询点取值，与冻结参考值对比，验证构建到查询的数值正确性
+@testing:case="buildCmVolatilitySurface -> frozen getVolatility reference"
+r = caplib::getVolatility(volSurface[0], [2021.07.22], [201.0]);
+assert 1, abs(r[0] - 0.21195227955361473) < 2.1295227955361474e-10

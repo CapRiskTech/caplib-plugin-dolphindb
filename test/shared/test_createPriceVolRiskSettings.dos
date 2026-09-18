@@ -9,14 +9,10 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Tests
 // ============================================================================
 
+// 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createPriceVolRiskSettings valid call"
 result = caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 assert 1, result == "TF_createPriceVolRiskSettings_H"
@@ -25,33 +21,48 @@ assert 1, result == "TF_createPriceVolRiskSettings_H"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createPriceVolRiskSettings rejects missing argument", syntaxError=1
 caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createPriceVolRiskSettings rejects extra argument", syntaxError=1
 caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false, 1)
 
+// 用例目的：参数 priceShift 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPriceVolRiskSettings rejects wrong type for priceShift", exception=1
 caplib::createPriceVolRiskSettings(false, "bad", 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
+// 用例目的：参数 volShift 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPriceVolRiskSettings rejects wrong type for volShift", exception=1
 caplib::createPriceVolRiskSettings(false, 0.02, "bad", 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
+// 用例目的：参数 method 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createPriceVolRiskSettings rejects wrong type for method", exception=1
 caplib::createPriceVolRiskSettings(false, 0.02, 0.02, "1", 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
+// 用例目的：参数 method 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPriceVolRiskSettings rejects null method", exception=1
 caplib::createPriceVolRiskSettings(false, 0.02, 0.02, int(), 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
+// 用例目的：参数 granularity 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createPriceVolRiskSettings rejects null granularity", exception=1
 caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, int(), 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPriceVolRiskSettings rejects keyword arguments", syntaxError=1
 caplib::createPriceVolRiskSettings(vanna=false, priceShift=0.02, volShift=0.02, method=1, granularity=1, priceScaling=0.02, volScaling=0.02, threading=1, handle="TF_createPriceVolRiskSettings_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPriceVolRiskSettings optional returnJson null uses default"
 result = caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 volShift 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createPriceVolRiskSettings rejects negative volShift (lenient validation, does not raise)"
 result = caplib::createPriceVolRiskSettings(false, 0.02, -1.0, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 assert 1, typestr(result) != "VOID"
 
+// ----------------------------------------------------------------------------
+// 用例目的：标量参数 vanna 传入单元素向量，实测插件宽松接受——记录实际行为
+@testing:case="createPriceVolRiskSettings vector for scalar vanna (lenient validation, does not raise)"
+result = caplib::createPriceVolRiskSettings([true], 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false);
+assert 1, typestr(result) != "VOID"

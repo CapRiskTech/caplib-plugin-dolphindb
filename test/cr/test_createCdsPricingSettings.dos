@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -85,6 +79,7 @@ cds = caplib::buildCreditDefaultSwap(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createCdsPricingSettings -> handle"
 result = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
 assert 1, result == "TF_CDSPS"
@@ -93,37 +88,49 @@ assert 1, result == "TF_CDSPS"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createCdsPricingSettings rejects missing argument", syntaxError=1
 caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createCdsPricingSettings rejects extra argument", syntaxError=1
 caplib::createCdsPricingSettings("X", false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false, 1)
 
+// 用例目的：参数 pricingCurrency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCdsPricingSettings rejects wrong type for pricingCurrency", exception=1
 caplib::createCdsPricingSettings(1, false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
+// 用例目的：参数 numericalFix 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCdsPricingSettings rejects wrong type for numericalFix", exception=1
 caplib::createCdsPricingSettings("X", false, false, false, 1, "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
+// 用例目的：参数 accrualBias 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCdsPricingSettings rejects wrong type for accrualBias", exception=1
 caplib::createCdsPricingSettings("X", false, false, false, "X", 1, "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
+// 用例目的：参数 pricingCurrency 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createCdsPricingSettings rejects null pricingCurrency", exception=1
 caplib::createCdsPricingSettings(string(), false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
+// 用例目的：参数 numericalFix 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createCdsPricingSettings rejects null numericalFix", exception=1
 caplib::createCdsPricingSettings("X", false, false, false, string(), "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
+// 用例目的：标量参数 pricingCurrency 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createCdsPricingSettings rejects vector for scalar pricingCurrency", exception=1
 caplib::createCdsPricingSettings(["X"], false, false, false, "X", "X", "X", "TF_createCdsPricingSettings_H", "TF_createCdsPricingSettings_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createCdsPricingSettings rejects keyword arguments", syntaxError=1
 caplib::createCdsPricingSettings(pricingCurrency="X", includeCurrentFlow=false, cashFlows=false, includeSettlementFlow=false, numericalFix="X", accrualBias="X", fwdsInCpnPeriod="X", name="TF_createCdsPricingSettings_H", tag="TF_createCdsPricingSettings_H", returnJson=false)
+// 用例目的：枚举参数 numericalFix 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createCdsPricingSettings rejects invalid enum for numericalFix", exception=1
 caplib::createCdsPricingSettings(currency, 0, 1, 0, "NOT_A_VALID_ENUM_LABEL", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createCdsPricingSettings optional returnJson null uses default"
 result = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 numericalFix 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createCdsPricingSettings supports all numericalFix enums"
 labelEnum = ["NONE_FIX", "TAYLOR"]
 okEnum = true;

@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -120,6 +114,7 @@ mktData = caplib::createEqMktDataSet(
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createEqOptionQuoteMatrix -> handle"
 result = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 assert 1, result == "f_eqoq"
@@ -128,64 +123,84 @@ assert 1, result == "f_eqoq"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createEqOptionQuoteMatrix rejects missing argument", syntaxError=1
 caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createEqOptionQuoteMatrix rejects extra argument", syntaxError=1
 caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false, 1)
 
+// 用例目的：参数 exerciseType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects wrong type for exerciseType", exception=1
 caplib::createEqOptionQuoteMatrix(1, "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 underlyingType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects wrong type for underlyingType", exception=1
 caplib::createEqOptionQuoteMatrix("X", 1, 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects wrong type for asOfDate", exception=1
 caplib::createEqOptionQuoteMatrix("X", "X", "bad", [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 exerciseType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects null exerciseType", exception=1
 caplib::createEqOptionQuoteMatrix(string(), "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：参数 underlyingType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects null underlyingType", exception=1
 caplib::createEqOptionQuoteMatrix("X", string(), 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：标量参数 exerciseType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects vector for scalar exerciseType", exception=1
 caplib::createEqOptionQuoteMatrix(["X"], "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects scalar for vector termDates", exception=1
 caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 termDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects partially-null vector termDates", exception=1
 caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01, date()], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：向量参数 termDates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects empty vector termDates", exception=1
 caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, take(date, 0), matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createEqOptionQuoteMatrix rejects keyword arguments", syntaxError=1
 caplib::createEqOptionQuoteMatrix(exerciseType="X", underlyingType="X", asOfDate=2024.01.01, termDates=[2024.01.01], payoffTypes=matrix([0.2]), optionPrices=matrix([0.2]), optionStrikes=matrix([0.2]), underlying="X", handle="TF_createEqOptionQuoteMatrix_H", returnJson=false)
+// 用例目的：向量参数 termDates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects all-null vector termDates", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [date(), date(), date()], quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入0 行矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(STRING, 0, 3), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix([string(), string()], [string(), string()]), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 
 
+// 用例目的：矩阵参数 payoffTypes 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(["A", string()], [string(), "A"]), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 
 
+// 用例目的：枚举参数 exerciseType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects invalid enum for exerciseType", exception=1
 caplib::createEqOptionQuoteMatrix("NOT_A_VALID_ENUM_LABEL", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+// 用例目的：terms 数量与报价矩阵行数不一致，验证参数间关系校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects terms size mismatch with quote matrix rows", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [2020.02.26, 2020.03.25, 2020.06.24], quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createEqOptionQuoteMatrix optional returnJson null uses default"
 result = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 exerciseType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createEqOptionQuoteMatrix supports all exerciseType enums"
 labelEnum = ["EUROPEAN", "AMERICAN", "BERMUDAN"]
 okEnum = true;
@@ -195,6 +210,7 @@ for (i in 0..(size(labelEnum)-1)) {
 assert 1, okEnum
 
 
+// 用例目的：矩阵参数 payoffTypes 传入0 列矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects zero-col matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(STRING, 3, 0), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 

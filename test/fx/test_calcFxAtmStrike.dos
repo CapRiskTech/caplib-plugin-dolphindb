@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -224,6 +218,7 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
+// 用例目的：-> numeric（预期：插件按文档行为执行）
 @testing:case="calcFxAtmStrike -> numeric"
 r = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
 assert 1, r > 0.0
@@ -232,34 +227,45 @@ assert 1, r > 0.0
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="calcFxAtmStrike rejects missing argument", syntaxError=1
 caplib::calcFxAtmStrike("X", 2024.01.01, "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="calcFxAtmStrike rejects extra argument", syntaxError=1
 caplib::calcFxAtmStrike("X", 2024.01.01, "X", "X", "X", "X", 1)
 
+// 用例目的：参数 atmType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects wrong type for atmType", exception=1
 caplib::calcFxAtmStrike(1, 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：参数 expiryDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects wrong type for expiryDate", exception=1
 caplib::calcFxAtmStrike("X", "bad", "X", "X", "X", "X")
 
+// 用例目的：参数 atmType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects null atmType", exception=1
 caplib::calcFxAtmStrike(string(), 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：参数 expiryDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects null expiryDate", exception=1
 caplib::calcFxAtmStrike("X", date(), "X", "X", "X", "X")
 
+// 用例目的：标量参数 atmType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects vector for scalar atmType", exception=1
 caplib::calcFxAtmStrike(["X"], 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：句柄参数 volSurfaceHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects nonexistent handle volSurfaceHandle", exception=1
 caplib::calcFxAtmStrike("X", 2024.01.01, "TF_NO_SUCH_HANDLE_calcFxAtmStrike", "X", "X", "X")
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="calcFxAtmStrike rejects keyword arguments", syntaxError=1
 caplib::calcFxAtmStrike(atmType="X", expiryDate=2024.01.01, volSurfaceHandle="X", fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")
+// 用例目的：枚举参数 atmType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects invalid enum for atmType", exception=1
 caplib::calcFxAtmStrike("NOT_A_VALID_ENUM_LABEL", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+// 用例目的：正常调用，与独立解析公式（闭式解）计算的参考值对比，验证计算正确性
 @testing:case="calcFxAtmStrike -> analytic flat-fixture reference"
 // Garman-Kohlhagen with S=1.1761, rd=2%, rf=1%, sigma=10%, T=1.0 (365d):
 // F = S*exp((rd-rf)*T) = 1.1879200015076898; ATM DNS strike = F*exp(sigma^2*T/2).
@@ -269,12 +275,15 @@ spotRef = caplib::createFxSpotRate(1.1761, "EUR", "USD", 2021.03.30, 2021.03.30,
 fvolRef = caplib::createFlatFxVolatilitySurface(2021.03.30, "EURUSD", 0.10, "TF_REF_FVOL", false);
 atmr = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2022.03.30, fvolRef, spotRef, domCurveRef, forCurveRef);
 assert 1, abs(atmr - 1.193874475744343) < 1.0e-8
+// 用例目的：同样输入重复调用多次，验证结果完全一致（确定性）
 @testing:case="calcFxAtmStrike repeat calls return identical results"
 a1 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 a2 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 assert 1, a1 == a2
+// 用例目的：句柄参数 fxSpotRateHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="calcFxAtmStrike rejects wrong object type for fxSpotRateHandle", exception=1
 caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], builtVolSurface[0], usdCurve, eurCurve)
+// 用例目的：遍历参数 atmType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="calcFxAtmStrike supports all atmType enums"
 labelEnum = ["ATM_FORWARD", "ATM_DNS_PIPS", "ATM_DNS_PERCENTAGE", "ATM_SPOT"]
 okEnum = true;
@@ -282,3 +291,16 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::calcFxAtmStrike(labelEnum[i], 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="calcFxAtmStrike deterministic repeat -> identical result"
+r1 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+r2 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：估值日期平移 7 天后再次计算，验证 ATM 行权价随输入变化（输入影响输出）
+@testing:case="calcFxAtmStrike second input (+7d) -> result changes"
+r1 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+r2 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", (2021.09.26 + 7), builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+assert 1, abs(r1 - r2) > 0.0

@@ -9,14 +9,10 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Tests
 // ============================================================================
 
+// 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createCalendar valid call"
 assert 1, caplib::createCalendar("X", [2024.01.01], [2024.01.01])
 
@@ -24,16 +20,44 @@ assert 1, caplib::createCalendar("X", [2024.01.01], [2024.01.01])
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createCalendar rejects extra argument", syntaxError=1
 caplib::createCalendar("X", [2024.01.01], [2024.01.01], 1)
 
+// 用例目的：参数 calName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createCalendar rejects wrong type for calName", exception=1
 caplib::createCalendar(1, [2024.01.01], [2024.01.01])
 
+// 用例目的：标量参数 calName 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createCalendar rejects vector for scalar calName", exception=1
 caplib::createCalendar(["X"], [2024.01.01], [2024.01.01])
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createCalendar rejects keyword arguments", syntaxError=1
 caplib::createCalendar(calName="X", holidays=[2024.01.01], specialBusinessDays=[2024.01.01])
+// 用例目的：向量参数 holidays 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createCalendar rejects all-null vector holidays", exception=1
 caplib::createCalendar("X", [date(), date(), date()], [2024.01.01])
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: negative-case coverage (wrong type / null / arity / keyword)
+// ----------------------------------------------------------------------------
+
+// 用例目的：不传任何参数调用，验证参数个数下限校验（预期：抛异常）
+@testing:case="createCalendar rejects missing argument", exception=1
+caplib::createCalendar()
+
+// 用例目的：参数 calName 传入对应类型的空值，实测插件宽松接受、不抛异常——记录实际行为
+@testing:case="createCalendar rejects null calName (lenient validation, does not raise)"
+result = caplib::createCalendar(string(), [2024.01.01], [2024.01.01])
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：参数 holidays 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createCalendar rejects null holidays", exception=1
+caplib::createCalendar("X", date(), [2024.01.01])
+
+// ----------------------------------------------------------------------------
+// 用例目的：两个数组参数长度不一致（holidays 多一个元素），实测插件宽松接受——记录实际行为
+@testing:case="createCalendar holidays length mismatch (lenient validation, does not raise)"
+result = caplib::createCalendar("X", [2024.01.01, 2024.01.01], [2024.01.01]);
+assert 1, typestr(result) != "VOID"

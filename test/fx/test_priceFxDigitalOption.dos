@@ -253,6 +253,7 @@ tdg = caplib::createDigitalOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, 0.
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回 PricingResults（含 present_value/cash_value/currency）
 @testing:case="priceFxDigitalOption -> PricingResults"
 result = caplib::priceFxDigitalOption(tdg, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
 assert 1, isPricingResultsJson(result, "TF_PDG_results")
@@ -261,40 +262,57 @@ assert 1, isPricingResultsJson(result, "TF_PDG_results")
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="priceFxDigitalOption rejects missing argument", syntaxError=1
 caplib::priceFxDigitalOption("X", 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="priceFxDigitalOption rejects extra argument", syntaxError=1
 caplib::priceFxDigitalOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
+// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceFxDigitalOption rejects wrong type for pricingDate", exception=1
 caplib::priceFxDigitalOption("X", "bad", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceFxDigitalOption rejects wrong type for mode", exception=1
 caplib::priceFxDigitalOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
+// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceFxDigitalOption rejects null pricingDate", exception=1
 caplib::priceFxDigitalOption("X", date(), "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceFxDigitalOption rejects null mode", exception=1
 caplib::priceFxDigitalOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
+// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="priceFxDigitalOption rejects vector for scalar pricingDate", exception=1
 caplib::priceFxDigitalOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
+// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="priceFxDigitalOption rejects nonexistent handle instrumentHandle", exception=1
 caplib::priceFxDigitalOption("TF_NO_SUCH_HANDLE_priceFxDigitalOption", 2024.01.01, "X", "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceFxDigitalOption rejects keyword arguments", syntaxError=1
 caplib::priceFxDigitalOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceFxDigitalOption optional returnJson null uses default"
 result = caplib::priceFxDigitalOption(tdg, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceFxDigitalOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxDigitalOption(tdg, asOfDate, tdg, bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// 用例目的：同一合约名义金额放大 2 倍，验证现值精确翻倍（现值对名义的线性性质）
 @testing:case="priceFxDigitalOption notional scaling -> 2x notional, 2x present value"
 tdg_2X = caplib::createDigitalOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27, 0.0, 1.0, (1000000.0) * 2, currency, "SPOT", currency, "EURUSD", "TF_PDG_2X", false);
 p1 = caplib::priceFxDigitalOption(tdg, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
 p2 = caplib::priceFxDigitalOption(tdg_2X, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
 assert 1, abs(presentValue(p2) - 2.0 * presentValue(p1)) <= abs(presentValue(p1)) * 1.0e-9 + 1.0e-6
 
+// 用例目的：相同输入连续定价两次，验证两次现值完全一致（定价确定性）
+@testing:case="priceFxDigitalOption deterministic repeat -> identical result"
+r1 = caplib::priceFxDigitalOption(tdg, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
+r2 = caplib::priceFxDigitalOption(tdg, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
+assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)

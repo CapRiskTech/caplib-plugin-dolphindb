@@ -9,14 +9,10 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-// ============================================================================
 // Tests
 // ============================================================================
 
+// 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createVolSurfBuildSettings valid call"
 result = caplib::createVolSurfBuildSettings(1, 0.02, "TF_createVolSurfBuildSettings_H", false)
 assert 1, result == "TF_createVolSurfBuildSettings_H"
@@ -25,32 +21,42 @@ assert 1, result == "TF_createVolSurfBuildSettings_H"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createVolSurfBuildSettings rejects missing argument", syntaxError=1
 caplib::createVolSurfBuildSettings(1, 0.02)
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createVolSurfBuildSettings rejects extra argument", syntaxError=1
 caplib::createVolSurfBuildSettings(1, 0.02, "TF_createVolSurfBuildSettings_H", false, 1)
 
+// 用例目的：参数 fixedParamIndex 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createVolSurfBuildSettings rejects wrong type for fixedParamIndex", exception=1
 caplib::createVolSurfBuildSettings("1", 0.02, "TF_createVolSurfBuildSettings_H", false)
 
+// 用例目的：参数 fixedParamValue 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createVolSurfBuildSettings rejects wrong type for fixedParamValue", exception=1
 caplib::createVolSurfBuildSettings(1, "bad", "TF_createVolSurfBuildSettings_H", false)
 
+// 用例目的：参数 fixedParamIndex 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createVolSurfBuildSettings rejects null fixedParamIndex", exception=1
 caplib::createVolSurfBuildSettings(int(), 0.02, "TF_createVolSurfBuildSettings_H", false)
 
+// 用例目的：参数 fixedParamValue 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createVolSurfBuildSettings rejects null fixedParamValue", exception=1
 caplib::createVolSurfBuildSettings(1, double(), "TF_createVolSurfBuildSettings_H", false)
 
+// 用例目的：标量参数 fixedParamIndex 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createVolSurfBuildSettings rejects vector for scalar fixedParamIndex", exception=1
 caplib::createVolSurfBuildSettings([1], 0.02, "TF_createVolSurfBuildSettings_H", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createVolSurfBuildSettings rejects keyword arguments", syntaxError=1
 caplib::createVolSurfBuildSettings(fixedParamIndex=1, fixedParamValue=0.02, handle="TF_createVolSurfBuildSettings_H", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createVolSurfBuildSettings optional returnJson null uses default"
 result = caplib::createVolSurfBuildSettings(1, 0.02, "TF_createVolSurfBuildSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：参数 fixedParamIndex 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createVolSurfBuildSettings rejects negative fixedParamIndex", exception=1
 caplib::createVolSurfBuildSettings(-1.0, 0.02, "TF_createVolSurfBuildSettings_H", false)
 

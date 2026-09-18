@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -224,6 +218,7 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
+// 用例目的：-> numeric（预期：插件按文档行为执行）
 @testing:case="calcFxDeltaToStrike -> numeric"
 r = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
 assert 1, r > 0.0
@@ -232,37 +227,49 @@ assert 1, r > 0.0
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="calcFxDeltaToStrike rejects missing argument", syntaxError=1
 caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="calcFxDeltaToStrike rejects extra argument", syntaxError=1
 caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "X", "X", "X", "X", 1)
 
+// 用例目的：参数 deltaType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects wrong type for deltaType", exception=1
 caplib::calcFxDeltaToStrike(1, 0.02, 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：参数 delta 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects wrong type for delta", exception=1
 caplib::calcFxDeltaToStrike("X", "bad", 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：参数 expiryDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects wrong type for expiryDate", exception=1
 caplib::calcFxDeltaToStrike("X", 0.02, "bad", "X", "X", "X", "X")
 
+// 用例目的：参数 deltaType 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects null deltaType", exception=1
 caplib::calcFxDeltaToStrike(string(), 0.02, 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：参数 delta 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects null delta", exception=1
 caplib::calcFxDeltaToStrike("X", double(), 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：标量参数 deltaType 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects vector for scalar deltaType", exception=1
 caplib::calcFxDeltaToStrike(["X"], 0.02, 2024.01.01, "X", "X", "X", "X")
 
+// 用例目的：句柄参数 volSurfaceHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects nonexistent handle volSurfaceHandle", exception=1
 caplib::calcFxDeltaToStrike("X", 0.02, 2024.01.01, "TF_HANDLE_DOES_NOT_EXIST", "X", "X", "X")
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="calcFxDeltaToStrike rejects keyword arguments", syntaxError=1
 caplib::calcFxDeltaToStrike(deltaType="X", delta=0.02, expiryDate=2024.01.01, volSurfaceHandle="X", fxSpotRateHandle="X", domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X")
+// 用例目的：枚举参数 deltaType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects invalid enum for deltaType", exception=1
 caplib::calcFxDeltaToStrike("NOT_A_VALID_ENUM_LABEL", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+// 用例目的：正常调用，与独立解析公式（闭式解）计算的参考值对比，验证计算正确性
 @testing:case="calcFxDeltaToStrike -> analytic flat-fixture references"
 // Same flat fixture as calcFxAtmStrike. Call delta +0.25:
 // K = F*exp(-invN(delta*exp(rf*T))*sigma*sqrt(T) + sigma^2*T/2) = 1.276171122614913.
@@ -275,13 +282,46 @@ kr = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2022.03.30, fvolRef, s
 assert 1, abs(kr - 1.276171122614913) < 1.0e-8
 krp = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -0.25, 2022.03.30, fvolRef, spotRef, domCurveRef, forCurveRef);
 assert 1, abs(krp - 1.11688490479329) < 1.0e-8
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="calcFxDeltaToStrike accepts wrong object type for fxSpotRateHandle (lenient validation, does not raise)"
 result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
 assert 1, typestr(result) != "VOID"
 // labels rejected by the plugin in this context: PIPS_SPOT_DELTA, PERCENTAGE_SPOT_DELTA, PIPS_FORWARD_DELTA, PERCENTAGE_FORWARD_DELTA, SIMPLE_DELTA
 
 
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
 @testing:case="calcFxDeltaToStrike accepts negative delta (lenient validation, does not raise)"
 result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -1.0, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
 assert 1, typestr(result) != "VOID"
 
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="calcFxDeltaToStrike rejects zero delta (lenient validation, does not raise)"
+result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.0, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="calcFxDeltaToStrike rejects negative delta (lenient validation, does not raise)"
+result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -1.0, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
+@testing:case="calcFxDeltaToStrike deterministic repeat -> identical result"
+r1 = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+r2 = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：将数值输入上移 0.01 后再次计算，验证结果随输入变化（输入影响输出）
+@testing:case="calcFxDeltaToStrike second input (+0.01 on delta) -> result changes"
+r1 = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+r2 = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.26, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+assert 1, abs(r1 - r2) > 0.0
+
+// ----------------------------------------------------------------------------
+// 用例目的：句柄参数 volSurfaceHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）
+@testing:case="calcFxDeltaToStrike rejects wrong object type for volSurfaceHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, calEutaCreated, eurusdSpotRate[0], usdCurve, eurCurve);

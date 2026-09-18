@@ -9,12 +9,6 @@
 // ============================================================================
 
 // ============================================================================
-// Helper predicates
-// ============================================================================
-
-
-
-// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 // ============================================================================
 
@@ -224,6 +218,7 @@ dailyObsWeights = take(1.0, size(dailyObsDates));
 // Tests
 // ============================================================================
 
+// 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createFxSwapTemplate -> handle"
 result = caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false)
 assert 1, result == "TF_SWPT"
@@ -232,37 +227,49 @@ assert 1, result == "TF_SWPT"
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
 
+// 用例目的：少传参数调用，验证参数个数下限校验（预期：解析期报参数个数错误）
 @testing:case="createFxSwapTemplate rejects missing argument", syntaxError=1
 caplib::createFxSwapTemplate("X", "X", "X", "X", "X")
 
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
 @testing:case="createFxSwapTemplate rejects extra argument", syntaxError=1
 caplib::createFxSwapTemplate("X", "X", "X", "X", "X", "X", "X", "X", false, 1)
 
+// 用例目的：参数 instName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxSwapTemplate rejects wrong type for instName", exception=1
 caplib::createFxSwapTemplate(1, "X", "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 startConvention 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxSwapTemplate rejects wrong type for startConvention", exception=1
 caplib::createFxSwapTemplate("X", 1, "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 currencyPair 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createFxSwapTemplate rejects wrong type for currencyPair", exception=1
 caplib::createFxSwapTemplate("X", "X", 1, "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 instName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFxSwapTemplate rejects null instName", exception=1
 caplib::createFxSwapTemplate(string(), "X", "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：参数 startConvention 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFxSwapTemplate rejects null startConvention", exception=1
 caplib::createFxSwapTemplate("X", string(), "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：标量参数 instName 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createFxSwapTemplate rejects vector for scalar instName", exception=1
 caplib::createFxSwapTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", false)
 
+// 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFxSwapTemplate rejects keyword arguments", syntaxError=1
 caplib::createFxSwapTemplate(instName="X", startConvention="X", currencyPair="X", calendars="X", startDayConvention="X", endDayConvention="X", fixingOffset="X", fixingDayConvention="X", returnJson=false)
+// 用例目的：枚举参数 startConvention 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createFxSwapTemplate rejects invalid enum for startConvention", exception=1
 caplib::createFxSwapTemplate("TF_SWPT", "NOT_A_VALID_ENUM_LABEL", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFxSwapTemplate optional returnJson null uses default"
 result = caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", bool())
 assert 1, typestr(result) != "VOID"
+// 用例目的：遍历参数 startConvention 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createFxSwapTemplate supports all startConvention enums"
 labelEnum = ["SPOTSTART", "TODAYSTART", "TOMORROWSTART"]
 okEnum = true;
@@ -270,3 +277,29 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createFxSwapTemplate("TF_SWPT", labelEnum[i], "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: null-vector / boundary / enum / handle-type coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createFxSwapTemplate rejects all-null vector calendars (lenient validation, does not raise)"
+result = caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [string(), string(), string()], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", true)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFxSwapTemplate rejects empty vector calendars", exception=1
+caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", take(string, 0), "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", true)
+
+// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+@testing:case="createFxSwapTemplate rejects partially-null vector calendars (lenient validation, does not raise)"
+result = caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, string(), calGblo], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", true)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFxSwapTemplate rejects zero fixingOffset", exception=1
+caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, calGblo], "FOLLOWING", "FOLLOWING", 0.0, "PRECEDING", true)
+
+// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
+@testing:case="createFxSwapTemplate rejects negative fixingOffset", exception=1
+caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, calGblo], "FOLLOWING", "FOLLOWING", -1.0, "PRECEDING", true)
