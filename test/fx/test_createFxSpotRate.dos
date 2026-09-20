@@ -5,7 +5,6 @@
 // Uses the native DolphinDB testing framework:
 //     test("test/fx")            // whole domain directory
 //     python run_tests.py --file fx/test_createFxSpotRate.dos   // single file
-// Hand-maintained suite; do not regenerate with tools/gen_function_tests.
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
