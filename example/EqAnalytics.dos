@@ -33,7 +33,7 @@ modelParams = [0.0]
 bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
 bsmSettings = caplib::createPricingSettings(
-    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+    currency, "ANALYTICAL", 0, 0, array(INT, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
 
 // Enable EQ risk settings so pricing returns a structured result handle.
 eqRisk = caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true)

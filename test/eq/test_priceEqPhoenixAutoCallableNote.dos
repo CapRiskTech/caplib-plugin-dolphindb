@@ -6,11 +6,9 @@
 //     test("test/eq")            // whole domain directory
 //     python run_tests.py --file eq/test_priceEqPhoenixAutoCallableNote.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -42,7 +40,6 @@ def presentValue(pricingResult) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 currency = "CNY";
 underlying = "50ETF.SSE";
@@ -94,16 +91,11 @@ modelParams = [0.0];
 bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MODEL", false);
 bsmAnalyticalSettings = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "BSM_ANALYTICAL", false);
-pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "PDE_SETTINGS", false);
-bsmPdeModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_PDE_MODEL", false);
-bsmPdeSettings = caplib::createPricingSettings("CNY", "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "BSM_PDE", false);
 mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "MC_SETTINGS", false);
 bsmMcModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MC_MODEL", false);
 bsmMcSettings = caplib::createPricingSettings("CNY", "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "BSM_MC", false);
 
-eqRisk = caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true);
 eqNoRisk = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_NO_RISK", true);
 
 quantoIr = caplib::createIrYieldCurve(
@@ -142,12 +134,10 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
-
 xinst = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h14", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回 PricingResults（含 present_value/cash_value/currency）
 @testing:case="priceEqPhoenixAutoCallableNote -> PricingResults"

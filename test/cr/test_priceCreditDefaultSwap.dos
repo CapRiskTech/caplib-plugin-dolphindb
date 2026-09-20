@@ -6,11 +6,9 @@
 //     test("test/cr")            // whole domain directory
 //     python run_tests.py --file cr/test_priceCreditDefaultSwap.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -42,12 +40,9 @@ def presentValue(pricingResult) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 asOfDate = 2020.02.21;
 currency = "CNY";
-calCfets = "CAL_CFETS";
-calendarCreated = caplib::createCalendar(calCfets);
 
 discountDates = [2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21,
                  2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21, 2030.02.21];
@@ -57,20 +52,6 @@ discountCurve = caplib::createIrYieldCurve(
     asOfDate, discountDates, discountRates,
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", currency, "CN_TREAS", "CR_DISCOUNT_CURVE", false);
-
-baseCreditDates = [2020.03.01, 2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21,
-                   2022.02.21, 2023.02.21, 2024.02.21, 2025.02.21, 2026.02.21];
-baseCreditSpreads = [0.0012, 0.0018, 0.0024, 0.0030, 0.0042,
-                     0.0058, 0.0065, 0.0072, 0.0078, 0.0084];
-baseCreditCurve = caplib::createCreditCurve(
-    asOfDate, baseCreditDates, baseCreditSpreads,
-    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "BOND_CREDIT", "CR_BASE_CREDIT_CURVE", false);
-
-cdsTemplate = caplib::createCdsTemplate(
-    "CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0,
-    1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD",
-    "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [calCfets], false, true);
 
 pricingSettings = caplib::createCdsPricingSettings(
     currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE",
@@ -109,7 +90,6 @@ cds = caplib::buildCreditDefaultSwap(
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：-> [handle, present_value reference]（预期：插件按文档行为执行）
 @testing:case="priceCreditDefaultSwap -> [handle, present_value reference]"
@@ -172,6 +152,7 @@ caplib::priceCreditDefaultSwap(cds, asOfDate, cds, pricingSettings[0], crRisk[0]
 @testing:case="priceCreditDefaultSwap deterministic repeat -> identical result"
 r1 = caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true);
 r2 = caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true);
+print("FLAKE-DEBUG pv1=" + string(presentValue(r1)) + " pv2=" + string(presentValue(r2)) + " diff=" + string(abs(presentValue(r1) - presentValue(r2))));
 assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
 
 // ----------------------------------------------------------------------------

@@ -95,7 +95,7 @@ try {
 
 // createPricingSettings — current native signature.
 try {
-    h = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, "MODEL_DOCKER", "", "", "PRC_DOCKER", false);
+    h = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, array(INT, 0), "MODEL_DOCKER", "", "", "PRC_DOCKER", false);
     ok = t("createPricingSettings → " + h, h == "PRC_DOCKER");
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
 } catch(ex) {

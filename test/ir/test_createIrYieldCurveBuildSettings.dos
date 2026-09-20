@@ -6,70 +6,16 @@
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_createIrYieldCurveBuildSettings.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 // Precondition: register the CNY calendar used by indices, legs and schedules
 calendarCreated = caplib::createCalendar("CAL_CFETS");
 assert 1, calendarCreated;
 
-irAsOfDate = 2022.03.09;
-irCurrency = "CNY";
-irCurveName = "CNY_SHIBOR_3M";
-irCurve = caplib::createIrYieldCurve(
-    irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", irCurrency, irCurveName, "TF_IR_CHAIN_CURVE", false);
-
-iborIndex = caplib::createIborIndex(
-    irCurveName, "3M", irCurrency, ["CAL_CFETS"], 1,
-    "ACT_360", "MODIFIED_FOLLOWING",
-    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
-
-irFixedLeg = caplib::createFixedLegDefinition(
-    irCurrency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true);
-
-irFloatingLeg = caplib::createFloatingLegDefinition(
-    irCurrency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
-    "QUARTERLY", "QUARTERLY", "ACT_360",
-    "NO_DISCOUNT", "STANDARD", false,
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
-    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
-
-irSwapTemplate = caplib::createIrVanillaSwapTemplate(
-    irCurveName, 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", true);
-
-irSwap = caplib::buildIrVanillaInstrument(
-    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
-    irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false);
-
-irPricingModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_IR_MODEL", false);
-irPricingSettings = caplib::createPricingSettings(irCurrency, "ANALYTICAL", 1, 1, take(0, 0), irPricingModel, "", "", "TF_IR_PRICING", false);
-
-irCurveRisk = caplib::createIrCurveRiskSettings(
-    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false);
-irPriceRisk = caplib::createPriceRiskSettings(
-    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "TF_IR_PRICE_RISK", false);
-irThetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_IR_THETA_RISK", false);
-irRisk = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
-irXccyRisk = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
-
-irMktData = caplib::createIrMktDataSet(
-    irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
-
-irSwapPricingResult = caplib::priceIrVanillaInstrument(
-    irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
-
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createIrYieldCurveBuildSettings valid call"
@@ -112,14 +58,12 @@ assert 1, typestr(result) != "VOID"
 // ----------------------------------------------------------------------------
 
 // 用例目的：参数传入错误类型/空值（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createIrYieldCurveBuildSettings rejects wrong type for curveName (lenient validation, does not raise)"
-result = caplib::createIrYieldCurveBuildSettings(1, false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createIrYieldCurveBuildSettings rejects wrong type for curveName", exception=1
+caplib::createIrYieldCurveBuildSettings(1, false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
 
 // 用例目的：参数传入错误类型/空值（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createIrYieldCurveBuildSettings rejects null curveName (lenient validation, does not raise)"
-result = caplib::createIrYieldCurveBuildSettings(string(), false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createIrYieldCurveBuildSettings rejects null curveName", exception=1
+caplib::createIrYieldCurveBuildSettings(string(), false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
 
 // 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
 @testing:case="createIrYieldCurveBuildSettings rejects wrong type for useOnTnFxSwap", exception=1
@@ -136,6 +80,5 @@ caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X", "EXTRA"], ["X"]
 
 // ----------------------------------------------------------------------------
 // 用例目的：标量参数 curveName 传入单元素向量，实测插件宽松接受——记录实际行为
-@testing:case="createIrYieldCurveBuildSettings vector for scalar curveName (lenient validation, does not raise)"
-result = caplib::createIrYieldCurveBuildSettings(["X"], false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false);
-assert 1, typestr(result) != "VOID"
+@testing:case="createIrYieldCurveBuildSettings vector for scalar curveName", exception=1
+caplib::createIrYieldCurveBuildSettings(["X"], false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false);

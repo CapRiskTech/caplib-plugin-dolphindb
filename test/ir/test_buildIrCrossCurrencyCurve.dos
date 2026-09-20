@@ -6,11 +6,9 @@
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_buildIrCrossCurrencyCurve.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -23,7 +21,6 @@ def hasJsonField(json, fieldName) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 // Precondition: register the CNY calendar used by indices, legs and schedules
 calendarCreated = caplib::createCalendar("CAL_CFETS");
@@ -37,58 +34,8 @@ irCurve = caplib::createIrYieldCurve(
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", irCurrency, irCurveName, "TF_IR_CHAIN_CURVE", false);
 
-iborIndex = caplib::createIborIndex(
-    irCurveName, "3M", irCurrency, ["CAL_CFETS"], 1,
-    "ACT_360", "MODIFIED_FOLLOWING",
-    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
-
-irFixedLeg = caplib::createFixedLegDefinition(
-    irCurrency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true);
-
-irFloatingLeg = caplib::createFloatingLegDefinition(
-    irCurrency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
-    "QUARTERLY", "QUARTERLY", "ACT_360",
-    "NO_DISCOUNT", "STANDARD", false,
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
-    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
-
-irSwapTemplate = caplib::createIrVanillaSwapTemplate(
-    irCurveName, 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", true);
-
-irSwap = caplib::buildIrVanillaInstrument(
-    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
-    irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false);
-
-irPricingModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_IR_MODEL", false);
-irPricingSettings = caplib::createPricingSettings(irCurrency, "ANALYTICAL", 1, 1, take(0, 0), irPricingModel, "", "", "TF_IR_PRICING", false);
-
-irCurveRisk = caplib::createIrCurveRiskSettings(
-    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false);
-irPriceRisk = caplib::createPriceRiskSettings(
-    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "TF_IR_PRICE_RISK", false);
-irThetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_IR_THETA_RISK", false);
-irRisk = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
-irXccyRisk = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
-
-irMktData = caplib::createIrMktDataSet(
-    irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
-
-irSwapPricingResult = caplib::priceIrVanillaInstrument(
-    irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
-
-usdCurve = caplib::createIrYieldCurve(
-    irAsOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "TF_USD_CURVE", false);
-fxSpot = caplib::createFxSpotRate(6.9, "USD", "CNY", irAsOfDate, 2022.03.16, "TF_FXSPOT", true);
-
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：按 python caplib 参考实现的等价调用方式构造输入，验证与参考行为一致
 @testing:case="buildIrCrossCurrencyCurve -> [handle, json] (python parity)"
@@ -105,8 +52,8 @@ bpcFx = caplib::createIrParRateCurve(irAsOfDate, "USD", "USD_USDCNY_FX",
     "TF_USD_FX_PAR", true);
 cbsFx = caplib::createIrYieldCurveBuildSettings("USD_USDCNY_FX", true,
     ["USD", "CNY"], ["USD_USDCNY_FX", irCurveName], [], [], "TF_XCBS", true);
-fxSpotTplX = caplib::createFxSpotTemplate("USDCNY_SPOT_TPL", "USDCNY", "FOLLOWING", ["CAL_CFETS"], "2d", false);
-fxSwapTplX = caplib::createFxSwapTemplate("USDCNY_SWP_TPL", "SPOTSTART", "USDCNY", ["CAL_CFETS"],
+caplib::createFxSpotTemplate("USDCNY_SPOT_TPL", "USDCNY", "FOLLOWING", ["CAL_CFETS"], "2d", false);
+caplib::createFxSwapTemplate("USDCNY_SWP_TPL", "SPOTSTART", "USDCNY", ["CAL_CFETS"],
     "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false);
 fxSpotX = caplib::createFxSpotRate(6.6916, "CNY", "USD", irAsOfDate, irAsOfDate, "TF_XCCY_FXSPOT", false);
 xc = caplib::buildIrCrossCurrencyCurve(irAsOfDate, ["USD_USDCNY_FX"], [cbsFx[0]], [bpcFx[0]],

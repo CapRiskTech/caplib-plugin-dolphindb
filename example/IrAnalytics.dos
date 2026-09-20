@@ -64,7 +64,7 @@ swap = caplib::buildIrVanillaInstrument(
 pricingModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, [0.0], "IR_MODEL", false)
 pricingSettings = caplib::createPricingSettings(
-    currency, "ANALYTICAL", 1, 1, take(0, 0), pricingModel, "", "", "IR_PRICING", false)
+    currency, "ANALYTICAL", 1, 1, array(INT, 0), pricingModel, "", "", "IR_PRICING", false)
 
 // Create IR risk settings for the pricing wrapper.
 irCurveRisk = caplib::createIrCurveRiskSettings(

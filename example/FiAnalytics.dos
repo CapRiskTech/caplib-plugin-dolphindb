@@ -46,7 +46,9 @@ vanillaBond = caplib::buildVanillaBond(
 pricingModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, [0.0], "FI_MODEL", false)
 pricingSettings = caplib::createPricingSettings(
-    currency, "ANALYTICAL", 1, 1, [1, 2], pricingModel, "", "", "FI_PRICING", false)
+    currency, "ANALYTICAL", 1, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8], pricingModel, "", "", "FI_PRICING", false)
+// specificPricingRequests: 0=YTM, 1=dirty, 2=clean, 3=accrued, 4=simple duration,
+// 5=modified duration, 6=Macaulay duration, 7=convexity, 8=basis point value.
 
 // Create FI risk settings from IR, credit, and theta components.
 irRisk = caplib::createIrCurveRiskSettings(

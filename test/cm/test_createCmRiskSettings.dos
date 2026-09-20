@@ -6,11 +6,9 @@
 //     test("test/cm")            // whole domain directory
 //     python run_tests.py --file cm/test_createCmRiskSettings.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -23,9 +21,6 @@ def hasJsonField(json, fieldName) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
-
-// ============================================================================
 
 currency = "CNY";
 underlying = "CU.SHFE";
@@ -52,29 +47,7 @@ fwdCurve = caplib::createDividendCurve(
     "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false);
 
-modelParams = [0.0];
-bsmModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false);
-bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false);
-
-pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
-    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "CM_PDE_SETTINGS", false);
-bsmPdeModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_PDE_MODEL", false);
-bsmPdeSettings = caplib::createPricingSettings(currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "CM_BSM_PDE", false);
-
-mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false);
-bsmMcModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false);
-bsmMcSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "CM_BSM_MC", false);
-
 cmRisk = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", true);
-cmNoRisk = caplib::createCmRiskSettings(0, 0, 0, 0, "CM_NO_RISK", true);
-
-priceScn = caplib::createScnSettings(-0.20, 0.20, 11, 1, "CM_PRICE_SCN", false);
-volScn = caplib::createScnSettings(-0.05, 0.05, 12, 0, "CM_VOL_SCN", false);
-scnAnalysis = caplib::createScnAnalysisSettings(
-    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 0, "CM_SCN_ANALYSIS", false);
 
 termDates = [2020.03.12, 2020.04.13, 2020.05.12, 2020.06.12,
              2020.07.10, 2020.08.12, 2020.09.11];
@@ -143,14 +116,6 @@ prices = [
 ];
 underlyingPrices = [66810.00, 66750.00, 66620.00, 66620.00, 66490.00, 66460.00, 66380.00];
 
-dailyObsDates = 2020.02.22..2020.08.19;
-dailyObsValues = take(0.0, size(dailyObsDates));
-dailyObsWeights = take(1.0, size(dailyObsDates));
-couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
-               2020.06.22, 2020.07.23, 2020.08.22];
-couponObsValues = take(0.0, size(couponDates));
-couponObsWeights = take(1.0, size(couponDates));
-
 // Explicit zero-rate quanto curves are supplied even with zero correlation.
 quantoDates = [2020.02.22, 2030.02.24];
 quantoValues = [0.0, 0.0];
@@ -193,7 +158,6 @@ assert 1, isHandleJson(mktData, "CM_MKT")
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createCmRiskSettings -> [handle, json]"

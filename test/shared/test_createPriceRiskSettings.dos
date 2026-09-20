@@ -6,11 +6,9 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createPriceRiskSettings.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createPriceRiskSettings valid call"
@@ -53,18 +51,14 @@ caplib::createPriceRiskSettings(delta=false, gamma=false, curvature=false, shift
 result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", bool())
 assert 1, typestr(result) != "VOID"
 // 用例目的：参数 scaling 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createPriceRiskSettings rejects zero scaling (lenient validation, does not raise)"
-result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.0, 1, "TF_createPriceRiskSettings_H", false)
-assert 1, typestr(result) != "VOID"
-
+@testing:case="createPriceRiskSettings rejects zero scaling", exception=1
+caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.0, 1, "TF_createPriceRiskSettings_H", false)
 
 // 用例目的：参数 scaling 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createPriceRiskSettings rejects negative scaling (lenient validation, does not raise)"
-result = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, -1.0, 1, "TF_createPriceRiskSettings_H", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createPriceRiskSettings rejects negative scaling", exception=1
+caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, -1.0, 1, "TF_createPriceRiskSettings_H", false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：标量参数 delta 传入单元素向量，实测插件宽松接受——记录实际行为
-@testing:case="createPriceRiskSettings vector for scalar delta (lenient validation, does not raise)"
-result = caplib::createPriceRiskSettings([true], false, false, 0.02, 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", false);
-assert 1, typestr(result) != "VOID"
+@testing:case="createPriceRiskSettings vector for scalar delta", exception=1
+caplib::createPriceRiskSettings([true], false, false, 0.02, 0.02, 1, 0.02, 1, "TF_createPriceRiskSettings_H", false);

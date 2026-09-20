@@ -6,11 +6,9 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createCalendar.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createCalendar valid call"
@@ -48,9 +46,8 @@ caplib::createCalendar("X", [date(), date(), date()], [2024.01.01])
 caplib::createCalendar()
 
 // 用例目的：参数 calName 传入对应类型的空值，实测插件宽松接受、不抛异常——记录实际行为
-@testing:case="createCalendar rejects null calName (lenient validation, does not raise)"
-result = caplib::createCalendar(string(), [2024.01.01], [2024.01.01])
-assert 1, typestr(result) != "VOID"
+@testing:case="createCalendar rejects null calName", exception=1
+caplib::createCalendar(string(), [2024.01.01], [2024.01.01])
 
 // 用例目的：参数 holidays 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createCalendar rejects null holidays", exception=1

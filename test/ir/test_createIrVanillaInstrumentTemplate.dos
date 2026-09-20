@@ -6,11 +6,9 @@
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_createIrVanillaInstrumentTemplate.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -19,19 +17,13 @@ def isHandleJson(result, expectedHandle) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 // Precondition: register the CNY calendar used by indices, legs and schedules
 calendarCreated = caplib::createCalendar("CAL_CFETS");
 assert 1, calendarCreated;
 
-irAsOfDate = 2022.03.09;
 irCurrency = "CNY";
 irCurveName = "CNY_SHIBOR_3M";
-irCurve = caplib::createIrYieldCurve(
-    irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", irCurrency, irCurveName, "TF_IR_CHAIN_CURVE", false);
 
 iborIndex = caplib::createIborIndex(
     irCurveName, "3M", irCurrency, ["CAL_CFETS"], 1,
@@ -51,34 +43,8 @@ irFloatingLeg = caplib::createFloatingLegDefinition(
     0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
     "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
 
-irSwapTemplate = caplib::createIrVanillaSwapTemplate(
-    irCurveName, 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", true);
-
-irSwap = caplib::buildIrVanillaInstrument(
-    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
-    irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false);
-
-irPricingModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_IR_MODEL", false);
-irPricingSettings = caplib::createPricingSettings(irCurrency, "ANALYTICAL", 1, 1, take(0, 0), irPricingModel, "", "", "TF_IR_PRICING", false);
-
-irCurveRisk = caplib::createIrCurveRiskSettings(
-    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false);
-irPriceRisk = caplib::createPriceRiskSettings(
-    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "TF_IR_PRICE_RISK", false);
-irThetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_IR_THETA_RISK", false);
-irRisk = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
-irXccyRisk = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
-
-irMktData = caplib::createIrMktDataSet(
-    irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
-
-irSwapPricingResult = caplib::priceIrVanillaInstrument(
-    irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
-
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createIrVanillaInstrumentTemplate swap -> [handle, json]"
@@ -144,7 +110,6 @@ caplib::createIrVanillaInstrumentTemplate(instType="X", instName="X", startConve
 // 用例目的：向量参数 legDefinitions 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrVanillaInstrumentTemplate rejects all-null vector legDefinitions", exception=1
 caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [string(), string(), string()], "TF_IR_VIT", true)
-
 
 // 用例目的：枚举参数 instType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createIrVanillaInstrumentTemplate rejects invalid enum for instType", exception=1

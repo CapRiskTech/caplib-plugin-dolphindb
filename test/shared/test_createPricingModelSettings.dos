@@ -6,11 +6,9 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createPricingModelSettings.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPricingModelSettings -> handle"
@@ -65,9 +63,8 @@ caplib::createPricingModelSettings("X", "X", false, take(double, 0), "TF_createP
 @testing:case="createPricingModelSettings rejects keyword arguments", syntaxError=1
 caplib::createPricingModelSettings(modelName="X", asset="X", calibrated=false, constantParams=[0.02], handle="TF_createPricingModelSettings_H", returnJson=false)
 // 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createPricingModelSettings accepts all-null vector constantParams (lenient validation, does not raise)"
-result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [double(), double(), double()], "TF_BSM", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createPricingModelSettings accepts all-null vector constantParams", exception=1
+caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [double(), double(), double()], "TF_BSM", false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPricingModelSettings optional returnJson null uses default"
 result = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BSM", bool())

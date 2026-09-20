@@ -6,23 +6,17 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createProxyOptionQuoteMatrix.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 asOfDate = 2022.03.09;
-curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
-
 
 asOfDate = 2022.03.09;
 flatVolSurface = caplib::createFlatVolatilitySurface(asOfDate, 0.20, "TF_UNDERLYING", "TF_FVS", false);
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createProxyOptionQuoteMatrix -> handle"
@@ -77,13 +71,10 @@ caplib::createProxyOptionQuoteMatrix(underlyingName="X", refVolSurfaceHandle="X"
 result = caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, 100.0, 101.0, "TF_POQ", bool())
 assert 1, typestr(result) != "VOID"
 // 用例目的：参数 refUnderlyingPrice 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createProxyOptionQuoteMatrix rejects zero refUnderlyingPrice (lenient validation, does not raise)"
-result = caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, 0.0, 101.0, "TF_POQ", false)
-assert 1, typestr(result) != "VOID"
-
+@testing:case="createProxyOptionQuoteMatrix rejects zero refUnderlyingPrice", exception=1
+caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, 0.0, 101.0, "TF_POQ", false)
 
 // 用例目的：参数 refUnderlyingPrice 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createProxyOptionQuoteMatrix rejects negative refUnderlyingPrice (lenient validation, does not raise)"
-result = caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, -1.0, 101.0, "TF_POQ", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createProxyOptionQuoteMatrix rejects negative refUnderlyingPrice", exception=1
+caplib::createProxyOptionQuoteMatrix("TF_UNDERLYING", flatVolSurface, -1.0, 101.0, "TF_POQ", false)
 

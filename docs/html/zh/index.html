@@ -42,11 +42,11 @@
         <p>按标准模板编排的完整中文文档见 <a href="../../DQLIB_DOCUMENTATION.md"><code>docs/DQLIB_DOCUMENTATION.md</code></a>。</p>
         <p>Caplib 通过 CapRiskTech 的 `dqlibc` 计算库提供 180 个 DolphinDB 接口。按资产类别浏览逐接口说明：</p>
         <div class="domain-grid">
-          <a class="domain-tile" href="fixed-income.html"><span>固定收益、利率与信用</span><strong>73</strong><em>曲线、债券、互换、CDS、市场数据和风险设置。</em></a>
-          <a class="domain-tile" href="currency.html"><span>外汇</span><strong>39</strong><em>汇率计算、报价矩阵、波动率曲面、外汇现金类产品和期权定价。</em></a>
+          <a class="domain-tile" href="fixed-income.html"><span>固定收益、利率与信用</span><strong>56</strong><em>曲线、债券、互换、CDS、市场数据和风险设置。</em></a>
+          <a class="domain-tile" href="currency.html"><span>外汇</span><strong>35</strong><em>汇率计算、报价矩阵、波动率曲面、外汇现金类产品和期权定价。</em></a>
           <a class="domain-tile" href="commodity.html"><span>商品</span><strong>25</strong><em>商品与贵金属市场数据、收益率曲线、波动率曲面和期权定价。</em></a>
           <a class="domain-tile" href="equity.html"><span>权益</span><strong>36</strong><em>股息曲线、波动率曲面、权益期权工具和定价。</em></a>
-          <a class="domain-tile" href="shared.html"><span>通用</span><strong>29</strong><em>日期、通用曲线、定价设置、风险设置和情景设置。</em></a>
+          <a class="domain-tile" href="shared.html"><span>通用</span><strong>28</strong><em>日期、通用曲线、定价设置、风险设置和情景设置。</em></a>
         </div>
       </section>
 
@@ -72,11 +72,11 @@ listRemotePlugins()
 installPlugin("caplib")
 loadPlugin("caplib")</code></pre>
         <h3>预编译发行包</h3>
-        <p>版本 0.0.11 基于上游 <code>c0cb21d</code>，使用 GCC 8.4 / ABI0。下载<a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11">0.0.11 发行包</a>；参见<a href="../../GCC8_OFFICIAL_IMAGE.md">兼容性与升级说明</a>及<a href="../../../releases/0.0.11.md">发行说明</a>。</p>
+        <p>版本 0.0.13 基于上游 <code>release-caplib</code> 分支，使用 GCC 8.4 / ABI0。下载<a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13">0.0.13 发行包</a>；参见<a href="../../GCC8_OFFICIAL_IMAGE.md">兼容性与升级说明</a>及<a href="../../../releases/0.0.13.md">发行说明</a>。注意：<code>createPricingSettings</code> 自 0.0.13 起必须传入 <code>specificPricingRequests</code>（10 参正式形式）。</p>
         <p>若远程列表中没有 `caplib`，将 `libPluginCaplib.so`、生成后的 `PluginCaplib.txt`、`libdqlibc.so` 和 `dqlibc.lic` 放在同一目录，并把 `calendars.bin` 放到 `data/` 子目录：</p>
         <pre><code>loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")</code></pre>
         <p>停止服务后同时替换两个动态库，保留合法许可证和日历数据，再重启加载。挂载文件改变不会自动重载已加载的动态库。</p>
-        <p>请使用本仓库发行包内已配置的 <code>PluginCaplib.txt</code>；不要部署源码仓库中的 CMake 模板。</p>
+        <p>请使用发行包内已配置的 <code>PluginCaplib.txt</code>；不要部署源码仓库中的 CMake 模板。</p>
       </section>
 
       <section id="concepts" class="panel">

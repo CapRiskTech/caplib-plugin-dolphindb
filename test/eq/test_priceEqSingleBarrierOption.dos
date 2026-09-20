@@ -6,11 +6,9 @@
 //     test("test/eq")            // whole domain directory
 //     python run_tests.py --file eq/test_priceEqSingleBarrierOption.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -42,7 +40,6 @@ def presentValue(pricingResult) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 currency = "CNY";
 underlying = "50ETF.SSE";
@@ -94,16 +91,7 @@ modelParams = [0.0];
 bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MODEL", false);
 bsmAnalyticalSettings = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "BSM_ANALYTICAL", false);
-pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "PDE_SETTINGS", false);
-bsmPdeModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_PDE_MODEL", false);
-bsmPdeSettings = caplib::createPricingSettings("CNY", "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "BSM_PDE", false);
-mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "MC_SETTINGS", false);
-bsmMcModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, modelParams, "BSM_MC_MODEL", false);
-bsmMcSettings = caplib::createPricingSettings("CNY", "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "BSM_MC", false);
 
-eqRisk = caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true);
 eqNoRisk = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_NO_RISK", true);
 
 quantoIr = caplib::createIrYieldCurve(
@@ -114,14 +102,6 @@ quantoFxVol = caplib::createVolatilityCurve(
     asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     underlying, "QUANTO_FX_VOL", false);
-
-dailyObsDates = 2020.02.22..2020.08.19;
-dailyObsValues = take(0.0, size(dailyObsDates));
-dailyObsWeights = take(1.0, size(dailyObsDates));
-couponDates = [2020.03.23, 2020.04.22, 2020.05.22,
-               2020.06.22, 2020.07.23, 2020.08.22];
-couponObsValues = take(0.0, size(couponDates));
-couponObsWeights = take(1.0, size(couponDates));
 
 volSurfDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
@@ -142,12 +122,10 @@ mktData = caplib::createEqMktDataSet(
     irCurve, divCurve, volSurface[0],
     quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
-
 xinst = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "h7", false);
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回 PricingResults（含 present_value/cash_value/currency）
 @testing:case="priceEqSingleBarrierOption -> PricingResults"

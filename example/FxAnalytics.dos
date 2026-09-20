@@ -48,7 +48,7 @@ modelParams = [0.0]
 bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
 bsmSettings = caplib::createPricingSettings(
-    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+    currency, "ANALYTICAL", 0, 0, array(INT, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
 
 // Build FX risk settings for the pricing wrappers.
 irCurveRisk = caplib::createIrCurveRiskSettings(

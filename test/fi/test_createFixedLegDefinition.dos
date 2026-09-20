@@ -6,17 +6,14 @@
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_createFixedLegDefinition.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
         size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
 }
-
 
 def hasJsonField(json, fieldName) {
     return strpos(json, "\"" + fieldName + "\"") >= 0;
@@ -24,11 +21,9 @@ def hasJsonField(json, fieldName) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createFixedLegDefinition -> [handle, json]"

@@ -6,11 +6,9 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createPriceVolRiskSettings.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createPriceVolRiskSettings valid call"
@@ -57,12 +55,10 @@ caplib::createPriceVolRiskSettings(vanna=false, priceShift=0.02, volShift=0.02, 
 result = caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", bool())
 assert 1, typestr(result) != "VOID"
 // 用例目的：参数 volShift 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createPriceVolRiskSettings rejects negative volShift (lenient validation, does not raise)"
-result = caplib::createPriceVolRiskSettings(false, 0.02, -1.0, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createPriceVolRiskSettings rejects negative volShift", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, -1.0, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：标量参数 vanna 传入单元素向量，实测插件宽松接受——记录实际行为
-@testing:case="createPriceVolRiskSettings vector for scalar vanna (lenient validation, does not raise)"
-result = caplib::createPriceVolRiskSettings([true], 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false);
-assert 1, typestr(result) != "VOID"
+@testing:case="createPriceVolRiskSettings vector for scalar vanna", exception=1
+caplib::createPriceVolRiskSettings([true], 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "TF_createPriceVolRiskSettings_H", false);

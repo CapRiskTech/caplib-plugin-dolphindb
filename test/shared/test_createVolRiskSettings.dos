@@ -6,11 +6,9 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createVolRiskSettings.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createVolRiskSettings valid call"
@@ -57,18 +55,14 @@ caplib::createVolRiskSettings(vega=false, volga=false, shift=0.02, method=1, gra
 result = caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "TF_createVolRiskSettings_H", bool())
 assert 1, typestr(result) != "VOID"
 // 用例目的：参数 scaling 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createVolRiskSettings rejects zero scaling (lenient validation, does not raise)"
-result = caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.0, 1, "TF_createVolRiskSettings_H", false)
-assert 1, typestr(result) != "VOID"
-
+@testing:case="createVolRiskSettings rejects zero scaling", exception=1
+caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.0, 1, "TF_createVolRiskSettings_H", false)
 
 // 用例目的：参数 scaling 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createVolRiskSettings rejects negative scaling (lenient validation, does not raise)"
-result = caplib::createVolRiskSettings(false, false, 0.02, 1, 1, -1.0, 1, "TF_createVolRiskSettings_H", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createVolRiskSettings rejects negative scaling", exception=1
+caplib::createVolRiskSettings(false, false, 0.02, 1, 1, -1.0, 1, "TF_createVolRiskSettings_H", false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：标量参数 vega 传入单元素向量，实测插件宽松接受——记录实际行为
-@testing:case="createVolRiskSettings vector for scalar vega (lenient validation, does not raise)"
-result = caplib::createVolRiskSettings([true], false, 0.02, 1, 1, 0.02, 1, "TF_createVolRiskSettings_H", false);
-assert 1, typestr(result) != "VOID"
+@testing:case="createVolRiskSettings vector for scalar vega", exception=1
+caplib::createVolRiskSettings([true], false, 0.02, 1, 1, 0.02, 1, "TF_createVolRiskSettings_H", false);

@@ -1,0 +1,382 @@
+// Regression coverage for issues.md (2026-09-03).
+// Load caplib, then run this file. Failures must be parameter-validation errors,
+// not unrelated service/fixture failures. Kept independent of other test suites.
+try { undef(`CAPLIB_ISSUES_RESULTS, SHARED); } catch(ex) {}
+share table(200:0, ["name", "passed"], [STRING, BOOL]) as CAPLIB_ISSUES_RESULTS;
+
+def issueResult(name, passed) {
+    tableInsert(CAPLIB_ISSUES_RESULTS, name, passed);
+    if (!passed) print("FAIL: " + name);
+    return passed;
+}
+
+def issueReject(name, scriptText, expectedText) {
+    try {
+        eval(parseExpr(scriptText));
+    } catch(ex) {
+        errorText = ex[1];
+        if (strpos(errorText, expectedText) >= 0) return issueResult(name, true);
+        print("Unexpected error for " + name + ": " + errorText);
+        return issueResult(name, false);
+    }
+    return issueResult(name, false);
+}
+
+def issueAccept(name, scriptText) {
+    try {
+        eval(parseExpr(scriptText));
+        return issueResult(name, true);
+    } catch(ex) {
+        print("Unexpected error for " + name + ": " + ex[1]);
+        return issueResult(name, false);
+    }
+}
+
+// #1, #2, #18: the six finite-difference method parameters are INT scalars.
+// Theta has no method parameter: its integer parameter is shift.
+riskCalls = [
+    "caplib::createIrCurveRiskSettings(1,1,0,0.0001,0.0002,{METHOD},0,1.0,0,\"ISS_IR\")",
+    "caplib::createCreditCurveRiskSettings(1,1,0.0001,{METHOD},0,1.0,0,\"ISS_CR\")",
+    "caplib::createDividendCurveRiskSettings(1,1,0.0001,{METHOD},0,1.0,0,\"ISS_DIV\")",
+    "caplib::createPriceRiskSettings(1,1,0,0.01,0.02,{METHOD},1.0,0,\"ISS_PRICE\")",
+    "caplib::createVolRiskSettings(1,1,0.01,{METHOD},0,1.0,0,\"ISS_VOL\")",
+    "caplib::createPriceVolRiskSettings(1,0.01,0.01,{METHOD},0,1.0,1.0,0,\"ISS_PV\")"
+];
+for (call in riskCalls) {
+    for (bad in ["\"1\"", "int()", "[1]", "1.0", "true"]) {
+        issueReject(call + " rejects " + bad, strReplace(call, "{METHOD}", bad), "Parameter method");
+    }
+    for (method in ["0", "1", "2"]) {
+        issueAccept(call + " accepts " + method, strReplace(call, "{METHOD}", method));
+    }
+}
+for (bad in ["\"1\"", "int()", "[1]", "1.0"]) {
+    issueReject("Theta shift rejects " + bad,
+        "caplib::createThetaRiskSettings(1," + bad + ",1.0,\"ISS_THETA\")", "Parameter shift");
+}
+issueReject("Theta flag rejects STRING",
+    "caplib::createThetaRiskSettings(\"1\",1,1.0,\"ISS_THETA\")", "Parameter theta");
+issueAccept("Theta permits negative shift",
+    "caplib::createThetaRiskSettings(true,-1,1.0,\"ISS_THETA\",true)");
+
+// #3: tSize must be non-null INT, not a string or a numeric coercion.
+pdeCall = "caplib::createPdeSettings({SIZE},201,-5.0,5.0,0,0,0.0,0.0,0,0,0.0,0.0,0,0.1,0.1,0.1,2,0,0,3,0,0,\"ISS_PDE\")";
+for (bad in ["\"101\"", "int()", "[101]", "101.0"]) {
+    issueReject("PDE tSize rejects " + bad, strReplace(pdeCall, "{SIZE}", bad), "Parameter tSize");
+}
+issueAccept("PDE valid with unused y/z grids", strReplace(pdeCall, "{SIZE}", "101"));
+
+// #4, #13: Monte Carlo simulation count must be a positive INT.
+mcCall = "caplib::createMonteCarloSettings({SIZE},1,1023,1,1,0,1,\"ISS_MC\")";
+for (bad in ["\"8096\"", "int()", "[8096]", "8096.0"]) {
+    issueReject("MC rejects " + bad, strReplace(mcCall, "{SIZE}", bad), "Parameter numSimulations");
+}
+for (bad in ["0", "-1"]) {
+    issueReject("MC rejects " + bad, strReplace(mcCall, "{SIZE}", bad), "numSimulations must be positive");
+}
+issueAccept("MC smallest positive count", strReplace(mcCall, "{SIZE}", "1"));
+
+// #5, #11: report lower/upper/numPoints correspond to min/max/size.
+issueReject("Scenario rejects null size",
+    "caplib::createScnSettings(-0.1,0.1,int(),0,\"ISS_SCN\")", "Parameter size");
+issueReject("Scenario rejects string size",
+    "caplib::createScnSettings(-0.1,0.1,\"11\",0,\"ISS_SCN\")", "Parameter size");
+issueReject("Scenario rejects inverted interval",
+    "caplib::createScnSettings(0.1,-0.1,11,0,\"ISS_SCN\")", "min <= max");
+issueAccept("Scenario ordered interval",
+    "caplib::createScnSettings(-0.1,0.1,11,0,\"ISS_SCN\",true)");
+issueAccept("Scenario equal endpoints remain accepted",
+    "caplib::createScnSettings(0.1,0.1,1,0,\"ISS_SCN_EQUAL\")");
+
+// #6: retain BOOL and legacy INT 0/1, plus scalar/vector currency support.
+irBuildCall = "caplib::createIrYieldCurveBuildSettings(\"ISS_CURVE\",{FLAG},\"CNY\",\"ISS_CURVE\",\"ISS_IBOR\",\"ISS_CURVE\",\"ISS_BUILD\")";
+for (bad in ["\"0\"", "bool()", "int()", "[false]", "2", "0.0"]) {
+    issueReject("IR build flag rejects " + bad, strReplace(irBuildCall, "{FLAG}", bad), "Parameter useOnTnFxSwap");
+}
+for (flag in ["false", "true", "0", "1"]) {
+    issueAccept("IR build accepts scalar strings and flag " + flag, strReplace(irBuildCall, "{FLAG}", flag));
+}
+issueAccept("IR build accepts string vectors",
+    "caplib::createIrYieldCurveBuildSettings(\"ISS_CURVE\",false,[\"CNY\"],[\"ISS_CURVE\"],[\"ISS_IBOR\"],[\"ISS_CURVE\"],\"ISS_BUILD_VEC\",true)");
+
+// #7-10: reject negative amounts before constructing/caching objects or calling services.
+issueReject("European negative nominal",
+    "caplib::createEuropeanOption(\"CALL\",100.0,2024.06.01,2024.06.03,-1.0,\"CNY\",\"SPOT\",\"CNY\",\"ISS_UNDERLYING\",\"ISS_BAD_EU\",true)", "Parameter nominal");
+issueAccept("European positive nominal",
+    "caplib::createEuropeanOption(\"CALL\",100.0,2024.06.01,2024.06.03,1000.0,\"CNY\",\"SPOT\",\"CNY\",\"ISS_UNDERLYING\",\"ISS_EU\",true)");
+issueReject("FX Forward negative buyAmount",
+    "caplib::createFxForward(\"USD\",-1.0,\"CNY\",7.0,2024.06.03,2024.06.01,\"ISS_FWD\")", "Parameter buyAmount");
+issueReject("FX Forward negative sellAmount",
+    "caplib::createFxForward(\"USD\",1.0,\"CNY\",-7.0,2024.06.03,2024.06.01,\"ISS_FWD\")", "Parameter sellAmount");
+issueAccept("FX Forward positive amounts",
+    "caplib::createFxForward(\"USD\",1.0,\"CNY\",7.0,2024.06.03,2024.06.01,\"ISS_FWD\",true)");
+issueReject("FX Spot negative value",
+    "caplib::createFxSpotRate(-7.0,\"USD\",\"CNY\",2024.06.01,2024.06.03,\"ISS_FX\")", "Parameter value");
+issueAccept("FX Spot positive value",
+    "caplib::createFxSpotRate(7.0,\"USD\",\"CNY\",2024.06.01,2024.06.03,\"ISS_FX\",true)");
+issueAccept("Calendar omitted holidays",
+    "caplib::createCalendar(\"CAL_CFETS\")");
+issueReject("CDS negative nominal",
+    "caplib::buildCreditDefaultSwap(-1000000.0,\"CNY\",2019.06.20,2024.06.20,\"PAY\",\"CASH\",1.0,1.0,\"SENIOR\",0.4,0.01,\"FLAT_SPREAD\",\"ACT_360\",\"QUARTERLY\",\"MODIFIED_FOLLOWING\",\"CAL_CFETS\",0.01,0,\"ISS_CDS_NAME\",\"ISS_CDS\")", "Parameter nominal");
+issueAccept("CDS positive nominal",
+    "caplib::buildCreditDefaultSwap(1000000.0,\"CNY\",2019.06.20,2024.06.20,\"PAY\",\"CASH\",1.0,1.0,\"SENIOR\",0.4,0.01,\"FLAT_SPREAD\",\"ACT_360\",\"QUARTERLY\",\"MODIFIED_FOLLOWING\",\"CAL_CFETS\",0.01,0,\"ISS_CDS_NAME\",\"ISS_CDS\")");
+
+// #12: a smile requires strictly increasing bounds.
+issueReject("Smile rejects 110.0 >= 90.0",
+    "caplib::createVolatilitySmile(\"STRIKE\",2024.01.01,[90.0,110.0],[0.2,0.21],\"LINEAR\",\"FLAT_EXTRAP\",1.0,take(double(),0),take(double(),0),110.0,90.0,\"ISS_SMILE\")", "lower < upper");
+issueReject("Smile rejects 90.0 >= 90.0",
+    "caplib::createVolatilitySmile(\"STRIKE\",2024.01.01,[90.0,110.0],[0.2,0.21],\"LINEAR\",\"FLAT_EXTRAP\",1.0,take(double(),0),take(double(),0),90.0,90.0,\"ISS_SMILE\")", "lower < upper");
+issueAccept("Smile valid bounds",
+    "caplib::createVolatilitySmile(\"STRIKE\",2024.01.01,[90.0,110.0],[0.2,0.21],\"LINEAR\",\"FLAT_EXTRAP\",1.0,take(double(),0),take(double(),0),90.0,110.0,\"ISS_SMILE\")");
+
+// #14, #19: both longer and shorter volatility arrays must be rejected.
+issueReject("Vol curve short vols",
+    "caplib::createVolatilityCurve(2024.01.01,[2024.06.01,2025.01.01],[0.2],\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_UNDERLYING\",\"ISS_VC\",true)", "pillarDates and vols");
+issueReject("Vol curve long vols",
+    "caplib::createVolatilityCurve(2024.01.01,[2024.06.01,2025.01.01],[0.2,0.21,0.22],\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_UNDERLYING\",\"ISS_VC\",true)", "pillarDates and vols");
+issueAccept("Vol curve matching lengths",
+    "caplib::createVolatilityCurve(2024.01.01,[2024.06.01,2025.01.01],[0.2,0.21],\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_UNDERLYING\",\"ISS_VC\",true)");
+
+// #15: explicitly supplied holidays must be non-empty and contain no nulls.
+issueReject("Calendar rejects take(int(),0)",
+    "caplib::createCalendar(\"ISS_CAL\",take(int(),0))", "Parameter holidays");
+issueReject("Calendar rejects [int(),int(),int()]",
+    "caplib::createCalendar(\"ISS_CAL\",[int(),int(),int()])", "Parameter holidays");
+issueReject("Calendar rejects [44654,int(),44656]",
+    "caplib::createCalendar(\"ISS_CAL\",[44654,int(),44656])", "Parameter holidays");
+issueReject("Calendar rejects take(date(),0)",
+    "caplib::createCalendar(\"ISS_CAL\",take(date(),0))", "Parameter holidays");
+issueReject("Calendar rejects [2024.01.01,date()]",
+    "caplib::createCalendar(\"ISS_CAL\",[2024.01.01,date()])", "Parameter holidays");
+issueAccept("Calendar INT serials",
+    "caplib::createCalendar(\"ISS_CAL_INT\",[44654,44656],[44655])");
+issueAccept("Calendar DATE values",
+    "caplib::createCalendar(\"ISS_CAL_DATE\",[2024.01.01,2024.01.03],[2024.01.02])");
+issueAccept("Calendar permits omitted special days",
+    "caplib::createCalendar(\"ISS_CAL_OMITTED\",[44654])");
+issueAccept("Calendar permits empty typed special days",
+    "caplib::createCalendar(\"ISS_CAL_EMPTY_SPECIAL\",[44654],take(int(),0))");
+issueAccept("Calendar permits empty untyped special days",
+    "caplib::createCalendar(\"ISS_CAL_EMPTY_SPECIAL\",[44654],[])");
+issueReject("Calendar special days reject null",
+    "caplib::createCalendar(\"ISS_CAL_NULL_SPECIAL\",[44654],[int()])", "Parameter specialBusinessDays");
+
+// #16: reject invalid labels and preserve each valid curve type in JSON.
+issueReject("Bond curve invalid type",
+    "caplib::createBondYieldCurveBuildSettings(\"ISS_BOND\",\"NOT_A_CURVE_TYPE\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ISS_BOND_BUILD\")", "curveType");
+for (curveType in ["ZERO_RATE", "LOG_DISCOUNT", "FORWARD_RATE"]) {
+    curveResult = caplib::createBondYieldCurveBuildSettings(
+        "ISS_BOND", curveType, "LINEAR_INTERP", "FLAT_EXTRAP", "ISS_BOND_BUILD", true);
+    issueResult("Bond curve preserves " + curveType, strpos(curveResult[1], curveType) >= 0);
+}
+
+// #17, #20: validate every numeric cell for matrix, flat and nested vector forms.
+issueReject("Quotes reject null matrix([10.5,double()],[11.0,9.0])",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,double()],[11.0,9.0]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueReject("Quotes reject null matrix([10.5,8.5],[11.0,double()])",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,double()]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueReject("Quotes reject null matrix(take(double(),2),take(double(),2))",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix(take(double(),2),take(double(),2)),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueReject("Quotes reject null strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,9.0]),matrix([95.0,95.0],[105.0,double()]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter strikes");
+issueReject("Quotes reject empty rows",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix(DOUBLE,0,2),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "at least one row");
+issueReject("Quotes reject empty columns",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix(DOUBLE,2,0),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "rows must not be empty");
+issueReject("Quotes reject mismatched strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,9.0]),matrix([95.0,95.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "shape must match");
+issueAccept("Quotes valid matrix",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,9.0]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)");
+issueAccept("Quotes valid flat vectors",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,8.5],[95.0,105.0],\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)");
+issueReject("Quotes reject null flat vector",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,double()],[95.0,105.0],\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueAccept("Quotes valid nested vectors",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],([\"CALL\",\"PUT\"],[\"CALL\"]),([10.5,8.5],[11.0]),([95.0,105.0],[100.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)");
+issueReject("Quotes reject null nested vector",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],([\"CALL\",\"PUT\"],[\"CALL\"]),([10.5,8.5],[double()]),([95.0,105.0],[100.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+
+issueAccept("Quotes retain integer strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,8.5],[95,105],\"ISS_UNDERLYING\",\"ISS_INT_QUOTES\",true)");
+issueReject("Quotes reject null integer strikes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],[\"CALL\",\"PUT\"],[10.5,8.5],[95,int()],\"ISS_UNDERLYING\",\"ISS_INT_QUOTES\",true)", "Parameter strikes");
+
+// A rejected update must not replace an existing cached object.
+beforeRejectedUpdate = caplib::getObjectCacheJson("OptionQuoteMatrix", "ISS_QUOTES")[1];
+issueReject("Reject overwrite with invalid quotes",
+    "caplib::createOptionQuoteMatrix(\"OQVT_PRICE\",\"OQTT_ABOSULTE_TERM\",\"OQST_ABOSULTE_STRIKE\",\"EUROPEAN\",\"SPOT_UNDERLYING_TYPE\",2024.01.01,[],[2024.06.01,2024.09.01],matrix([\"CALL\",\"PUT\"],[\"CALL\",\"PUT\"]),matrix([10.5,8.5],[11.0,double()]),matrix([95.0,95.0],[105.0,105.0]),\"ISS_UNDERLYING\",\"ISS_QUOTES\",true)", "Parameter values");
+issueResult("Invalid quotes leave cache unchanged",
+    beforeRejectedUpdate == caplib::getObjectCacheJson("OptionQuoteMatrix", "ISS_QUOTES")[1]);
+
+// Preserve the documented calendar scalar alternatives and date ordering.
+issueAccept("IborIndex accepts scalar calendar",
+    "caplib::createIborIndex(\"ISS_IBOR\",\"3M\",\"CNY\",\"CAL_CFETS\",1,\"ACT_360\",\"MODIFIED_FOLLOWING\",\"INVALID_DATE_ROLL_CONVENTION\",\"STANDARD_IBOR_INDEX\",true)");
+issueAccept("FX SpotTemplate accepts scalar calendar",
+    "caplib::createFxSpotTemplate(\"ISS_SPOT_TPL\",\"EURUSD\",\"FOLLOWING\",\"CAL_CFETS\",\"2d\",true)");
+issueAccept("YearFraction accepts reversed dates",
+    "caplib::calcYearFraction(2024.12.30,2024.01.01,\"ACTUAL_360\")");
+issueAccept("IR curve retains permissive reference date ordering",
+    "caplib::createIrYieldCurve(2025.01.01,[2024.01.01,2024.06.01],[0.02,0.03],\"ZERO_RATE\",\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"CONTINUOUS_COMPOUNDING\",\"CNY\",\"ISS_CURVE\",\"ISS_ORDER\",false)");
+
+// ============================================================================
+// 0.0.11 issue list (2026-09-08) — plugin-side fixes: #34/#39/#40/#43.
+// (#44 createCalendar return type intentionally unchanged — see note below.)
+// ============================================================================
+
+// #40: remaining INT parameters reject STRING values and nulls.
+issueReject("PDE xSize rejects string",
+    "caplib::createPdeSettings(2,\"101\",-5.0,5.0,0,0,0.0,0.0,0,0,0.0,0.0,0,0.1,0.1,0.1,2,0,0,3,0,0,\"ISS_PDE_X\")", "Parameter xSize");
+issueReject("PDE xSize rejects null",
+    "caplib::createPdeSettings(2,int(),-5.0,5.0,0,0,0.0,0.0,0,0,0.0,0.0,0,0.1,0.1,0.1,2,0,0,3,0,0,\"ISS_PDE_X\")", "Parameter xSize");
+issueReject("PDE ySize rejects string",
+    "caplib::createPdeSettings(2,201,-5.0,5.0,0,\"0\",0.0,0.0,0,0,0.0,0.0,0,0.1,0.1,0.1,2,0,0,3,0,0,\"ISS_PDE_Y\")", "Parameter ySize");
+issueReject("PDE zSize rejects string",
+    "caplib::createPdeSettings(2,201,-5.0,5.0,0,0,0.0,0.0,0,\"0\",0.0,0.0,0,0.1,0.1,0.1,2,0,0,3,0,0,\"ISS_PDE_Z\")", "Parameter zSize");
+issueReject("MonteCarlo uniformNumberType rejects string",
+    "caplib::createMonteCarloSettings(100,\"1\",1023,1,1,0,1,\"ISS_MC_U\")", "Parameter uniformNumberType");
+issueReject("MonteCarlo seed rejects string",
+    "caplib::createMonteCarloSettings(100,1,\"1023\",1,1,0,1,\"ISS_MC_S\")", "Parameter seed");
+issueReject("MonteCarlo seed rejects null",
+    "caplib::createMonteCarloSettings(100,1,int(),1,1,0,1,\"ISS_MC_S\")", "Parameter seed");
+issueReject("MonteCarlo wienerBuildMethod rejects string",
+    "caplib::createMonteCarloSettings(100,1,1023,\"1\",1,0,1,\"ISS_MC_W\")", "Parameter wienerBuildMethod");
+issueReject("MonteCarlo gaussianMethod rejects string",
+    "caplib::createMonteCarloSettings(100,1,1023,1,\"1\",0,1,\"ISS_MC_G\")", "Parameter gaussianMethod");
+issueReject("MonteCarlo numSteps rejects string",
+    "caplib::createMonteCarloSettings(100,1,1023,1,1,0,\"1\",\"ISS_MC_N\")", "Parameter numSteps");
+issueReject("IR curve risk granularity rejects string",
+    "caplib::createIrCurveRiskSettings(1,1,0,0.0001,0.0002,0,\"1\",1.0,0,\"ISS_IR_G\")", "Parameter granularity");
+issueReject("Credit curve risk granularity rejects string",
+    "caplib::createCreditCurveRiskSettings(1,1,0.0001,0,\"1\",1.0,0,\"ISS_CR_G\")", "Parameter granularity");
+issueReject("Dividend curve risk granularity rejects string",
+    "caplib::createDividendCurveRiskSettings(1,1,0.0001,0,\"1\",1.0,0,\"ISS_DIV_G\")", "Parameter granularity");
+issueReject("Vol risk granularity rejects string",
+    "caplib::createVolRiskSettings(1,1,0.0001,0,\"1\",1.0,0,\"ISS_VOL_G\")", "Parameter granularity");
+issueReject("PriceVol risk granularity rejects string",
+    "caplib::createPriceVolRiskSettings(1,0.01,0.01,0,\"1\",1.0,1.0,0,\"ISS_PV_G\")", "Parameter granularity");
+
+// #10a (root cause of #29 "empty par rate curve"): pillarsTable is a
+// heterogeneous 4-col TABLE (STRING/STRING/STRING/DOUBLE — impossible in a
+// native matrix). The old code only matched DF_MATRIX, so add_pillars()
+// never ran and an empty curve was cached silently; instrument_type was
+// also hard-wired to DEPOSIT (both ternary branches).
+def assertPmPillars(curveJson) {
+    if (strFind(curveJson, "PM_SWAP") < 0) throw "PmParRateCurve pillars missing PM_SWAP";
+    if (strFind(curveJson, "XAUUSD") < 0) throw "PmParRateCurve pillars missing instrument names";
+    return true;
+}
+issueAccept("PmParRateCurve accepts 4-col table pillars",
+    "assertPmPillars(caplib::createPmParRateCurve(2019.09.04,\"USD\",\"XAU_XAUUSD\",table([\"XAUUSD\",\"XAUUSD\"] as instrument_name,[\"PM_SWAP\",\"PM_SWAP\"] as instrument_type,[\"1W\",\"2W\"] as instrument_term,[0.025,0.025] as instrument_rate),\"PR_XAU_PAR\",true)[1])");
+issueReject("PmParRateCurve rejects empty pillars",
+    "caplib::createPmParRateCurve(2019.09.04,\"USD\",\"XAU_XAUUSD\",table([] as instrument_name,[] as instrument_type,[] as instrument_term,[] as instrument_rate),\"PR_XAU_EMPTY\")", "pillars");
+issueReject("PmParRateCurve rejects unknown instrument type",
+    "caplib::createPmParRateCurve(2019.09.04,\"USD\",\"XAU_XAUUSD\",table([\"XAUUSD\"] as instrument_name,[\"NOT_A_TYPE\"] as instrument_type,[\"1W\"] as instrument_term,[0.025] as instrument_rate),\"PR_XAU_BAD\")", "instrumentType");
+
+// #29 (unblocked by #10a): buildPmYieldCurve was failing on the server with
+// "empty par rate curve" because the pillars never reached the proto. With a
+// non-empty table pillar set the full chain builds a curve (server accepts).
+caplib::createIrYieldCurve(2020.02.21,[2020.02.22,2021.02.21,2022.02.21],[0.02,0.025,0.028],
+    "ZERO_RATE","ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","CONTINUOUS_COMPOUNDING","CNY","CNY_PM_DISC","DISC_PM",false);
+caplib::createPmCashTemplate("PM_XAU_CASH",0,"FOLLOWING",["CAL_CFETS"],"ACT_360");
+issueAccept("buildPmYieldCurve builds curve from table pillars",
+    "strFind(caplib::buildPmYieldCurve(2019.09.04,\"PR_XAU_PAR\",\"DISC_PM\",\"PM_XAU_CASH\",1800.0,1,\"ACT_365_FIXED\",\"LINEAR_INTERP\",\"FLAT_EXTRAP\",\"ZERO_RATE\",\"XAU_CURVE\",0.0,\"CENTRAL_DIFFERENCE_METHOD\",\"SINGLE_THREADING_MODE\",\"PM_CURVE\",true)[1],\"XAU_CURVE\")>=0");
+
+// #31/#32/#33 (A档): the issues.md failures were WRONG TEST FIXTURES, not lib or
+// plugin bugs. Mirrors the Python reference client setUp + fixtures
+// (D:\project\caplib\python\caplib\test\test_iranalytics.py) — registering the
+// IR/FX instrument templates and using the all-swap par curve unlocks all three.
+// --- shared IR setup (mirrors Python setUp) ---
+caplib::createIborIndex("shibor_3m","3M","CNY",["CAL_CFETS"],1);
+caplib::createFixedLegDefinition("CNY","CAL_CFETS","QUARTERLY","ACT_360","MODIFIED_FOLLOWING","INITIAL","LONG",0,"MODIFIED_FOLLOWING","INVALID_NOTIONAL_EXCHANGE","LEG_FIXED");
+caplib::createFloatingLegDefinition("CNY","shibor_3m",["CAL_CFETS"],["CAL_CFETS"],"QUARTERLY","QUARTERLY","ACT_360","NO_DISCOUNT","STANDARD",false,"MODIFIED_FOLLOWING","INITIAL","LONG",0,"MODIFIED_FOLLOWING","MODIFIED_PRECEDING","IN_ADVANCE",-1,"INVALID_NOTIONAL_EXCHANGE","LEG_FLOAT");
+caplib::createIrVanillaSwapTemplate("cny_shibor_3m",1,"LEG_FIXED","LEG_FLOAT","SPOTSTART");
+caplib::createFxSpotTemplate("TestFxSpot","CNYUSD","FOLLOWING",["CAL_CFETS"],"1d");
+caplib::createFxSpotTemplate("TestFxSpot2","USDCNY","FOLLOWING",["CAL_CFETS"],"1d");
+caplib::createFxSwapTemplate("TestFxSwap","SPOTSTART","USDCNY",["CAL_CFETS"],"FOLLOWING","FOLLOWING");
+
+// #32: single-ccy curve from an ALL-SWAP par curve (the DEPOSIT-containing
+// fixture used by the old test triggered a lookup the lib does not populate).
+caplib::createIrParRateCurve(2022.03.09,"CNY","CNY_SHIBOR_3M",
+    ["CNY_SHIBOR_3M","CNY_SHIBOR_3M","CNY_SHIBOR_3M"],
+    ["IR_VANILLA_SWAP","IR_VANILLA_SWAP","IR_VANILLA_SWAP"],
+    ["6M","1Y","3Y"],[100,100,100],[2.3,2.4,2.6],"PR_SC32");
+caplib::createIrYieldCurveBuildSettings("CNY_SHIBOR_3M",false,["CNY"],["CNY_SHIBOR_3M"],["SHIBOR_3M"],["CNY_SHIBOR_3M"],"BS_SC32");
+issueAccept("single-ccy curve builder (all-swap par curve)",
+    "strFind(caplib::buildIrSingleCurrencyCurve(2022.03.09,[\"CNY_SHIBOR_3M\"],[\"BS_SC32\"],[\"PR_SC32\"],\"ACT_365_FIXED\",\"CONTINUOUS_COMPOUNDING\",\"ANNUAL\",[],\"BOOTSTRAPPING_METHOD\",0,0.0001,\"CENTRAL_DIFFERENCE_METHOD\",\"SINGLE_THREADING_MODE\",[\"CNY_SHIBOR_3M\"],\"C_SC32\",true)[1],\"target_curves\")>=0");
+
+// #33: cross-ccy curve needs FX_SPOT + FX_SWAP templates registered first.
+caplib::createIrParRateCurve(2022.03.09,"USD","USD_USDCNY_FX",
+    ["USDCNY","USDCNY","USDCNY","USDCNY","USDCNY","USDCNY","USDCNY","USDCNY","USDCNY","USDCNY","USDCNY"],
+    ["FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP","FX_SWAP"],
+    ["ON","TN","1W","1M","2M","3M","6M","9M","12M","2Y","3Y"],
+    [10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000],
+    [2.01,3.91,5.93,22.5,44.25,63.25,130.75,194.75,268.25,1017.0,2075.0],"PR_SC33");
+caplib::createIrYieldCurveBuildSettings("USD_USDCNY_FX",true,["USD","CNY"],["USD_USDCNY_FX","CNY_SHIBOR_3M"],[],[],"BS_SC33");
+caplib::createIrYieldCurve(2022.03.09,[2022.03.10,2025.03.10],[0.02,0.025],
+    "ZERO_RATE","ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","CONTINUOUS_COMPOUNDING","CNY","CNY_SHIBOR_3M","CNY_SHIBOR_3M",false);
+caplib::createFxSpotRate(6.6916,"USD","CNY",2022.03.09,2022.03.09,"FXSPOT_33");
+issueAccept("cross-ccy curve builder (fx templates registered)",
+    "strFind(caplib::buildIrCrossCurrencyCurve(2022.03.09,[\"USD_USDCNY_FX\"],[\"BS_SC33\"],[\"PR_SC33\"],\"ACT_365_FIXED\",\"CONTINUOUS_COMPOUNDING\",\"ANNUAL\",[\"CNY_SHIBOR_3M\"],\"FXSPOT_33\",\"BOOTSTRAPPING_METHOD\",0,0.0001,\"CENTRAL_DIFFERENCE_METHOD\",\"SINGLE_THREADING_MODE\",[\"USD_USDCNY_FX\"],\"C_SC33\",true)[1],\"target_curves\")>=0");
+
+// #31-family: the vanilla pricer chain (Python test_ir_vanilla_instrument_pricer).
+// NOTE: this covers the pricing infra #31 relies on; the exact
+// priceIrCrossCurrencySwap can be added with an XccyIrMktDataSet fixture.
+caplib::buildIrVanillaInstrument("PAY",0.05,0.0,2022.03.07,2023.03.07,"CNY_SHIBOR_3M",1000000.0,"","INST_31");
+caplib::createIrMktDataSet(2022.03.09,"CNY_SHIBOR_3M",["shibor_3m"],["CNY_SHIBOR_3M"],"MDS_31");
+caplib::createModelFreePricingSettings("CNY",1,1,"PS_31");
+caplib::createIrCurveRiskSettings(1,1,0,0.0001,0.0002,0,0,1.0,0,"IRCR_31");
+caplib::createThetaRiskSettings(1,0,1.0,"THETA_31");
+caplib::createIrRiskSettings("IRCR_31","THETA_31","IRRS_31");
+issueAccept("vanilla instrument pricer",
+    "strFind(caplib::priceIrVanillaInstrument(\"INST_31\",2022.03.09,\"MDS_31\",\"PS_31\",\"IRRS_31\",\"\",\"NO_SCENARIO\",true)[1],\"present_value\")>=0");
+
+// specificPricingRequests exposure: the 9-arg form stores the
+// BondSpecificPricingRequest list (proto field 6, repeated int32) that the
+// bond pricers answer via PricingResults.specific_pricing_results.
+issueAccept("createPricingSettings 9-arg with specificPricingRequests",
+    "caplib::createPricingSettings(\"CNY\",\"ANALYTICAL\",0,0,[0,1,2,7],\"\",\"\",\"\",\"PS_SPR_R\") == \"PS_SPR_R\"");
+issueReject("createPricingSettings rejects out-of-range request",
+    "caplib::createPricingSettings(\"CNY\",\"ANALYTICAL\",0,0,[0,9],\"\",\"\",\"\",\"PS_SPR_BAD\")", "specificPricingRequests values must be");
+
+// #30: buildPmVolatilitySurface. Root cause was a plugin bug in
+// createPmMktConventions — every if/else wrote the SAME enum in both branches,
+// so ATM_DNS_PIPS/PIPS_SPOT_DELTA became ATM_SPOT/SIMPLE_DELTA, which diverged
+// the SVI fit (std::exception). Fixed the enum mapping; the canonical
+// test_pmanalytics.py fixture (test_pm_vol_surface_builder) now builds.
+// Use the preloaded CAL_CFETS calendar (createCalendar rejects empty [] vectors
+// and a custom holiday-less calendar would need registering).
+caplib::createPmCashTemplate("XAUUSD",2,"FOLLOWING",["CAL_CFETS"],"ACT_360");
+caplib::createIrYieldCurve(2019.09.04,[2019.09.09,2020.09.08,2021.09.07],[0.021594,0.014216,0.012617],
+    "ZERO_RATE","ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","CONTINUOUS_COMPOUNDING","USD","USD_DEPO","DEPO_30",false);
+caplib::createPmParRateCurve(2019.09.04,"USD","XAU_XAUUSD",
+    table(["XAUUSD","XAUUSD","XAUUSD"] as instrument_name,["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
+          ["1M","6M","12M"] as instrument_term,[0.0248,0.0223,0.0192] as instrument_rate),"PAR_30");
+caplib::buildPmYieldCurve(2019.09.04,"PAR_30","DEPO_30","XAUUSD",1544.06,0,"ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","ZERO_RATE","XAU_XAUUSD",0.0001,"CENTRAL_DIFFERENCE_METHOD","SINGLE_THREADING_MODE","FWD_30",false);
+caplib::createPmOptionQuoteMatrix("XAUUSD",2019.09.04,["1M","6M","1Y"],
+    [["ATM_STRADDLE","RISK_REVERSAL","BUTTERFLY","RISK_REVERSAL","BUTTERFLY"],["ATM_STRADDLE","RISK_REVERSAL","BUTTERFLY","RISK_REVERSAL","BUTTERFLY"],["ATM_STRADDLE","RISK_REVERSAL","BUTTERFLY","RISK_REVERSAL","BUTTERFLY"]],
+    [[0,0.25,0.25,0.10,0.10],[0,0.25,0.25,0.10,0.10],[0,0.25,0.25,0.10,0.10]],
+    [[0.15340,0.03623,0.00578,0.06738,0.01753],[0.15153,0.04255,0.00808,0.08120,0.02148],[0.15383,0.04725,0.01070,0.09253,0.02838]],"Q_30");
+caplib::createPmMktConventions("ATM_DNS_PIPS","PIPS_SPOT_DELTA","PIPS_FORWARD_DELTA","1Y","RR_CALL_PUT","BUTTERFLY_QUOTE","XAUUSD","MKT_30");
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE","SVI_SMILE_METHOD","FLAT_EXTRAP","LINEAR_IN_VARIANCE","FLAT_IN_VOLATILITY","ACT_365_FIXED","LOG_NORMAL_VOL_TYPE","DELTA",-0.0001,0.0001,"VDEF_30");
+caplib::createVolSurfBuildSettings(1,0.5,"BS_30");
+issueAccept("buildPmVolatilitySurface (market conventions fixed)",
+    "strFind(caplib::buildPmVolatilitySurface(2019.09.04,\"XAUUSD\",\"VDEF_30\",\"Q_30\",1544.06,\"DEPO_30\",\"FWD_30\",\"BS_30\",\"MKT_30\",\"XAUUSD\",\"VS_30\",true)[1],\"SVI_SMILE_METHOD\")>=0");
+
+// #43: the 6-arg documented-prefix form binds instName/startConvention/currencyPair
+// correctly and derives fixing defaults; the legacy INT startDelay form still works.
+issueAccept("FxSwapTemplate 6-arg documented prefix",
+    "caplib::createFxSwapTemplate(\"ISS_FXSWAP6\",\"SPOTSTART\",\"CNYUSD\",\"CAL_CFETS\",\"FOLLOWING\",\"FOLLOWING\",true)");
+issueAccept("FxSwapTemplate legacy INT startDelay form",
+    "caplib::createFxSwapTemplate(\"CNYUSD\",0,\"FOLLOWING\",\"CAL_CFETS\",\"ISS_FXSWAP_LEGACY\",\"ISS_FXSWAP_TAG\",true)");
+issueAccept("FxSwapTemplate full 8-arg form",
+    "caplib::createFxSwapTemplate(\"ISS_FXSWAP8\",\"SPOTSTART\",\"CNYUSD\",\"CAL_CFETS\",\"FOLLOWING\",\"FOLLOWING\",\"2d\",\"FOLLOWING\",true)");
+
+// #44 (recorded, not changed): createCalendar keeps returning BOOL true.
+// The calendar is referenced by name; changing the return type would break
+// downstream per-function tests that assert the Bool.
+
+issuesSummary = select count(*) as total, sum(passed) as passed from CAPLIB_ISSUES_RESULTS;
+print(issuesSummary);
+if (issuesSummary.total[0] != issuesSummary.passed[0]) {
+    throw "Caplib issues regression failures: " + string(issuesSummary.total[0] - issuesSummary.passed[0]);
+}

@@ -30,7 +30,7 @@ modelParams = [0.0]
 bsmModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
 bsmSettings = caplib::createPricingSettings(
-    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+    currency, "ANALYTICAL", 0, 0, array(INT, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
 
 // Enable CM risk settings so pricers return structured results.
 cmRisk = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", true)

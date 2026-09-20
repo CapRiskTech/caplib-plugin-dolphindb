@@ -6,19 +6,12 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createFlatVolatilitySurface.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
-
-asOfDate = 2022.03.09;
-curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createFlatVolatilitySurface valid call"

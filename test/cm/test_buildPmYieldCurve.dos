@@ -5,11 +5,9 @@
 //     pmTemplateHandle, spotPrice, calcJacobian, dayCount, interpMethod,
 //     extrapMethod, curveType, curveName, shift, method, mode, handle)
 // Reference recipe: python caplib test_pmanalytics.py (XAU yield curve).
-// ============================================================================
 
 // ============================================================================
 // Setup: PM chain (calendar -> cash template -> USD depo curve -> 4-col par curve)
-// ============================================================================
 
 // Calendar
 calendarCreated = caplib::createCalendar("CAL_GBLO", [44623]);
@@ -39,7 +37,6 @@ pmParRateCurve = caplib::createPmParRateCurve(
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildPmYieldCurve XAU yield curve -> handle"
@@ -93,7 +90,6 @@ caplib::buildPmYieldCurve(referenceDate=2019.09.04, parCurveHandle=pmParRateCurv
 @testing:case="buildPmYieldCurve rejects nonexistent handle parCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, "TF_NO_SUCH_HANDLE_buildPmYieldCurve", usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
-
 // 用例目的：枚举参数 dayCount 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects invalid enum for dayCount", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "NOT_A_VALID_ENUM_LABEL", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
@@ -113,33 +109,25 @@ assert 1, typestr(result) != "VOID"
 @testing:case="buildPmYieldCurve rejects wrong object type for discountCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, pmParRateCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
-
-
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
+@testing:case="buildPmYieldCurve accepts zero spotPrice", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 0.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 // 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="buildPmYieldCurve accepts zero spotPrice (lenient validation, does not raise)"
-result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 0.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
-assert 1, typestr(result) != "VOID"
-
-
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="buildPmYieldCurve accepts negative spotPrice (lenient validation, does not raise)"
-result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="buildPmYieldCurve accepts negative spotPrice", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 // ----------------------------------------------------------------------------
 // Review gap-fill: null-vector / boundary / enum / handle-type coverage
 // ----------------------------------------------------------------------------
 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="buildPmYieldCurve rejects zero spotPrice (lenient validation, does not raise)"
-result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 0.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="buildPmYieldCurve rejects zero spotPrice", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 0.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="buildPmYieldCurve rejects negative spotPrice (lenient validation, does not raise)"
-result = caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="buildPmYieldCurve rejects negative spotPrice", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：遍历参数 dayCount 的全部文档枚举取值，逐一调用验证均被接受

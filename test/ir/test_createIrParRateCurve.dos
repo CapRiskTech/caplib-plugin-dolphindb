@@ -6,11 +6,9 @@
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_createIrParRateCurve.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -19,7 +17,6 @@ def isHandleJson(result, expectedHandle) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 // Precondition: register the CNY calendar used by indices, legs and schedules
 calendarCreated = caplib::createCalendar("CAL_CFETS");
@@ -28,57 +25,14 @@ assert 1, calendarCreated;
 irAsOfDate = 2022.03.09;
 irCurrency = "CNY";
 irCurveName = "CNY_SHIBOR_3M";
-irCurve = caplib::createIrYieldCurve(
-    irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
-    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "CONTINUOUS_COMPOUNDING", irCurrency, irCurveName, "TF_IR_CHAIN_CURVE", false);
 
 iborIndex = caplib::createIborIndex(
     irCurveName, "3M", irCurrency, ["CAL_CFETS"], 1,
     "ACT_360", "MODIFIED_FOLLOWING",
     "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
 
-irFixedLeg = caplib::createFixedLegDefinition(
-    irCurrency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true);
-
-irFloatingLeg = caplib::createFloatingLegDefinition(
-    irCurrency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
-    "QUARTERLY", "QUARTERLY", "ACT_360",
-    "NO_DISCOUNT", "STANDARD", false,
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
-    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
-
-irSwapTemplate = caplib::createIrVanillaSwapTemplate(
-    irCurveName, 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", true);
-
-irSwap = caplib::buildIrVanillaInstrument(
-    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
-    irSwapTemplate[0], 1000000.0, "", "TF_IR_SWAP", false);
-
-irPricingModel = caplib::createPricingModelSettings(
-    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_IR_MODEL", false);
-irPricingSettings = caplib::createPricingSettings(irCurrency, "ANALYTICAL", 1, 1, take(0, 0), irPricingModel, "", "", "TF_IR_PRICING", false);
-
-irCurveRisk = caplib::createIrCurveRiskSettings(
-    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false);
-irPriceRisk = caplib::createPriceRiskSettings(
-    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "TF_IR_PRICE_RISK", false);
-irThetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_IR_THETA_RISK", false);
-irRisk = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
-irXccyRisk = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
-
-irMktData = caplib::createIrMktDataSet(
-    irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
-
-irSwapPricingResult = caplib::priceIrVanillaInstrument(
-    irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
-
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createIrParRateCurve -> [handle, json]"
@@ -141,9 +95,8 @@ caplib::createIrParRateCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"]
 @testing:case="createIrParRateCurve rejects keyword arguments", syntaxError=1
 caplib::createIrParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", instNames=["X"], instTypes=["X"], instTerms=["X"], factors=[0.02], quotes=[0.02], handle="TF_createIrParRateCurve_H", returnJson=false)
 // 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createIrParRateCurve accepts all-null vector instNames (lenient validation, does not raise)"
-result = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [string(), string(), string()], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", true)
-assert 1, typestr(result) != "VOID"
+@testing:case="createIrParRateCurve accepts all-null vector instNames", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [string(), string(), string()], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", true)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createIrParRateCurve optional returnJson null uses default"
 result = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", bool())

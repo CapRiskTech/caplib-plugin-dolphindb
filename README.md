@@ -2,11 +2,13 @@
 
 Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件。插件通过 CapRiskTech 提供的 `dqlibc` 计算库，覆盖固定收益（Fixed Income，FI）、利率（Interest Rate，IR）、外汇（Foreign Exchange，FX）、权益（Equity，EQ）、商品（Commodity，CM）和信用（Credit，CR）等资产类别，可用于曲线构建、市场数据组装、金融工具创建、定价和风险分析。
 
-当前版本 `0.0.11`，基于 `dqlibdolphin` 的 `release-caplib`
-提交 `c0cb21d` 构建，提供 180 个对外接口（0.0.12 净删 22 个接口，含 specificPricingRequests 新暴露：CapFloor/Swaption/
-cross-currency 曲线、部分 calc* 计算器、静态数据 bytes 类接口）。插件及 C++ 依赖使用 GCC 8.4 / ABI0，
+当前版本 `0.0.13`，基于 `dqlibdolphin` 的 `release-caplib` 分支构建，提供 180 个对外接口
+（相对 0.0.11 净删 22 个接口：Cap/Floor、Swaption、跨币种曲线构建、部分 calc* 计算器和静态数据 bytes 类接口；
+同时新增 `specificPricingRequests` 暴露）。注意：`createPricingSettings` 自 0.0.13 起仅支持
+9 必填 + 可选 `returnJson` 的 10 参形式，不含 `specificPricingRequests` 的旧形式不再接受（破坏性变更）。
+插件及 C++ 依赖使用 GCC 8.4 / ABI0，
 可使用官方 DolphinDB v3.00.5 镜像自带的 C++ 运行库，无需替换 `libstdc++.so.6`。
-下载 [0.0.11 发行包](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11)，详见 [发行说明](releases/0.0.11.md)。
+下载 [0.0.13 发行包](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13)，详见 [发行说明](releases/0.0.13.md)。
 完整文档入口：
 
 - [完整中文使用说明](docs/DQLIB_DOCUMENTATION.md)
@@ -19,12 +21,12 @@ cross-currency 曲线、部分 calc* 计算器、静态数据 bytes 类接口）
 
 | 领域 | 主要能力 |
 | --- | --- |
-| 固定收益与信用 | 债券、信用违约互换（CDS）定价；到期收益率、Z-spread、转换因子、隐含回购利率计算；收益率曲线和信用曲线构建 |
-| 利率 | 单币种与跨币种曲线构建；存款、远期利率协议、互换、跨币种互换、Cap/Floor 和 Swaption 定价 |
-| 外汇 | 即期、远期、掉期、NDF 和外汇期权定价；远期汇率、掉期点和波动率曲面计算 |
+| 固定收益与信用 | 债券、信用违约互换（CDS）定价；到期收益率、应计利息、久期、凸性等债券指标计算；收益率曲线和信用曲线构建 |
+| 利率 | 单币种与跨币种曲线构建；存款、远期利率协议、互换、跨币种互换定价 |
+| 外汇 | 即期、远期、掉期、NDF 和外汇期权定价；波动率曲面构建 |
 | 权益 | 欧式、美式、亚式、数字、障碍、触碰、雪球等期权定价；股息曲线和波动率曲面构建 |
 | 商品 | 商品及贵金属曲线、波动率曲面和期权定价 |
-| 市场风险 | 历史模拟、风险价值（VaR）、预期损失（ES）、敏感度转换和情景分析 |
+| 市场风险 | 价格与波动率敏感度、曲线风险和情景分析 |
 
 ## 第三方库说明
 
@@ -60,8 +62,8 @@ loadPlugin("caplib")
 
 ### 使用预编译发行包安装
 
-1. 从本仓库的 [GitHub Releases](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11)
-   下载 `caplib-plugin-dolphindb-0.0.11.tar.gz` 及其 SHA-256 校验文件。
+1. 从本仓库的 [GitHub Releases](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13)
+   下载 `caplib-plugin-dolphindb-0.0.13.tar.gz` 及其 SHA-256 校验文件。
 2. 将下列文件放在同一插件目录中，并保留 `data` 子目录：
 
    ```text
@@ -146,7 +148,7 @@ loadPlugin("caplib")
 | 分类 | 接口数 | 中文 | English |
 | --- | ---: | --- | --- |
 | 通用函数与共享设置 | 28 | [查看](docs/html/zh/shared.html#api-reference) | [View](docs/html/shared.html#api-reference) |
-| 固定收益 | 17 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
+| 固定收益 | 18 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
 | 利率 | 24 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
 | 信用 | 14 | [查看](docs/html/zh/fixed-income.html#api-reference) | [View](docs/html/fixed-income.html#api-reference) |
 | 外汇 | 35 | [查看](docs/html/zh/currency.html#api-reference) | [View](docs/html/currency.html#api-reference) |
@@ -226,7 +228,7 @@ vanillaBond = caplib::buildVanillaBond(
 pricingModel = caplib::createPricingModelSettings(
     "BLACK_SCHOLES_MERTON", "", 0, [0.0], "FI_MODEL", false)
 pricingSettings = caplib::createPricingSettings(
-    currency, "ANALYTICAL", 1, 1, pricingModel, "", "", "FI_PRICING", false)
+    currency, "ANALYTICAL", 1, 1, [0, 1, 2, 3, 4, 5, 6, 7, 8], pricingModel, "", "", "FI_PRICING", false)
 
 irRisk = caplib::createIrCurveRiskSettings(
     1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "FI_IR_RISK", false)
@@ -260,7 +262,7 @@ bash docker/build.sh --test
 使用本地包或离线构建：
 
 ```bash
-CAPLIB_PLUGIN_ARCHIVE="$PWD/caplib-plugin-dolphindb-0.0.11.tar.gz" bash docker/build.sh
+CAPLIB_PLUGIN_ARCHIVE="$PWD/caplib-plugin-dolphindb-0.0.13.tar.gz" bash docker/build.sh
 ```
 
 Windows 可先设置 `$env:CAPLIB_PLUGIN_ARCHIVE` 再运行 `docker\build.bat`。
@@ -269,15 +271,15 @@ Windows 可先设置 `$env:CAPLIB_PLUGIN_ARCHIVE` 再运行 `docker\build.bat`�
 ### 编译说明
 
 本仓库分发插件，不包含 C++ 源码。源码构建要求见
-[上游 BUILD_REQUIREMENTS.md](https://github.com/dqlab/dqlibdolphin/blob/c0cb21d/BUILD_REQUIREMENTS.md)。
+[上游 BUILD_REQUIREMENTS.md](https://github.com/dqlab/dqlibdolphin/blob/release-caplib/BUILD_REQUIREMENTS.md)。
 GCC 8 兼容包的符号要求和验证方法见 [升级说明](docs/GCC8_OFFICIAL_IMAGE.md)。
 
 ### 回归测试
 
-保留本仓库最新的原生 DolphinDB 测试，并新增上游 133 项参数校验回归。
-加载新插件后执行 `python run_tests.py --container <测试容器>`。
-`test_issues_regression.dos` 在一个原生测试用例中检查全部 133 项，并断言检查数量；
-任一子检查失败都会让该用例失败。完整 Monte Carlo 定价测试使用 `maxMemSize=16`，
+保留本仓库最新的原生 DolphinDB 测试，并新增上游 161 项参数校验回归。
+加载新插件后执行 `python run_tests.py --container <测试容器>`，并单独执行
+`docker/test_issues_regression.dos`（脚本自检 161 项参数校验，结尾输出 `total passed`
+表；任一子检查失败都会打印 FAIL）。完整 Monte Carlo 定价测试使用 `maxMemSize=16`，
 2 GB 配额会导致内存分配失败。
 
 ### License 说明
@@ -295,7 +297,7 @@ GCC 8 兼容包的符号要求和验证方法见 [升级说明](docs/GCC8_OFFICI
 | 现象 | 原因 | 处理方式 |
 | --- | --- | --- |
 | `Invalid plugin file` | 使用了带 CMake 变量的源模板，或描述文件版本不匹配 | 使用本仓库发行包内的 `PluginCaplib.txt`，并确保版本匹配 |
-| `GLIBCXX_* not found` | 加载了旧的 GCC 13 二进制，或混用了两个版本的动态库 | 同时替换为 0.0.11 GCC 8 包内两个动态库，保留镜像运行库；见 [升级说明](docs/GCC8_OFFICIAL_IMAGE.md) |
+| `GLIBCXX_* not found` | 加载了旧的 GCC 13 二进制，或混用了两个版本的动态库 | 同时替换为 0.0.13 GCC 8 包内两个动态库，保留镜像运行库；见 [升级说明](docs/GCC8_OFFICIAL_IMAGE.md) |
 | `LICENSE_FILE_NOT_FOUND` | 未找到 `dqlibc.lic` | 将许可证放到上述三个位置之一 |
 | 句柄类型错误 | 对象句柄的 protobuf 类型与参数要求不符 | 检查逐接口参数表中 `*Handle` 的来源和类型 |
 | 函数抛出异常 | 服务失败或插件参数校验失败 | 查看异常消息；插件不会返回部分结果 |

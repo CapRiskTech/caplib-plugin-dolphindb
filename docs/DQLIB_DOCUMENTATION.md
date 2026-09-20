@@ -6,13 +6,13 @@ Caplib 是面向金融衍生品定价与风险分析的 DolphinDB 插件。插�
 
 | 资产类别 | 主要能力 |
 | --- | --- |
-| 固定收益（Fixed Income，FI） | 债券定价、收益率与平价利率计算、债券收益率曲线与信用利差曲线构建 |
+| 固定收益（Fixed Income，FI） | 债券定价、到期收益率与应计利息、久期、凸性等债券指标计算、债券收益率曲线与信用利差曲线构建 |
 | 利率（Interest Rate，IR） | 单币种与跨币种曲线构建与定价、互换工具模板、利率腿/日程/IBOR 指数定义 |
 | 外汇（Foreign Exchange，FX） | 即期、远期、掉期、NDF、外汇期权和波动率曲面 |
 | 权益（Equity，EQ） | 股息曲线、波动率曲面及欧式、美式、亚式、障碍、雪球等期权定价 |
 | 商品（Commodity，CM） | 商品与贵金属曲线、市场数据、波动率曲面和期权定价 |
 | 信用（Credit，CR） | 信用曲线、信用违约互换（CDS）定价和信用风险设置 |
-| 市场风险 | 历史模拟、风险价值（VaR）、预期损失（ES）、敏感度转换与情景分析 |
+| 市场风险 | 价格与波动率敏感度、曲线风险和情景分析 |
 
 ## 第三方库说明
 
@@ -65,7 +65,7 @@ caplib/
 loadPlugin("/your/path/to/caplib/PluginCaplib.txt")
 ```
 
-> 请使用本仓库发行包内已配置的 `PluginCaplib.txt`；不要部署源码仓库中的 CMake 模板。
+> 请使用发行包内已配置的 `PluginCaplib.txt`（源码构建时为 `build/PluginCaplib.txt`）；不要部署含 CMake 变量的模板。
 
 ## 核心概念
 
@@ -609,6 +609,8 @@ caplib::createPricingSettings(currency STRING, pricingMethod STRING, incCurrent 
 
 创建并缓存定价设置。 函数验证并转换字段，构造 `PricingSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
+创建并缓存定价设置对象。`specificPricingRequests` 对应 `PricingSettings.specific_pricing_requests`（repeated INT），服务端按 `BondSpecificPricingRequest` 枚举把对应指标填入定价结果的 `specific_pricing_results`：0=到期收益率（YIELD_TO_MATUIRTY_REQUEST）、1=全价（DIRTY_PRICE_REQUEST）、2=净价（CLEAN_PRICE_REQUEST）、3=应计利息（ACCRUED_INTEREST_REQUEST）、4=久期（SIMPLE_DURATION_REQUEST）、5=修正久期（MODIFIED_DURATION_REQUEST）、6=麦考利久期（MACAULAY_DURATION_REQUEST）、7=凸性（CONVEXITY_REQUEST）、8=基点价值（BASIS_POINT_VALUE_REQUEST）。主要用于债券类定价；空向量等价于不请求。**注意：请求列表不要包含 0（YTM 请求）**——服务端在请求含 0 时返回空 `specific_pricing_results`；不包含 0 时返回全量 9 项指标（YTM 值无需请求即出现在返回向量的首个元素）。
+
 ##### 参数
 
 | 参数 | 类型 / 形状 | 说明 |
@@ -616,7 +618,7 @@ caplib::createPricingSettings(currency STRING, pricingMethod STRING, incCurrent 
 | `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
 | `pricingMethod` | STRING | 定价方法。 **有效性:** 可接受值：`ANALYTICAL`, `ANALYTICAL_SMILE_ON`, `PDE`, `MONTE_CARLO`, `BINOMIAL_TREE`, `MOMENT_MATCHING`。仅接受所示精确拼写。 |
 | `incCurrent` | BOOL | 估值输出中是否包含当前现金流。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `specificPricingRequests` | INT[] | 可选（9 参形式）。具体定价请求列表，取值为 BondSpecificPricingRequest 枚举：0=到期收益率，1=全价，2=净价，3=应计利息，4=久期，5=修正久期，6=麦考利久期，7=凸性，8=基点价值。服务端把对应指标填入定价结果的 `specific_pricing_results`。空向量等价于不请求。 **注意：** 请求列表不要包含 0（YTM 请求），否则服务端返回空结果；YTM 值无需请求即出现在返回向量首元素。 |
+| `specificPricingRequests` | INT[] | 必填。具体定价请求列表，取值为 BondSpecificPricingRequest 枚举：0=到期收益率，1=全价，2=净价，3=应计利息，4=久期，5=修正久期，6=麦考利久期，7=凸性，8=基点价值。服务端把对应指标填入定价结果的 `specific_pricing_results`。空向量等价于不请求。 **注意：** 请求列表不要包含 0（YTM 请求），否则服务端返回空结果；YTM 值无需请求即出现在返回向量首元素。 |
 | `cashFlows` | BOOL | 定价结果中是否包含详细现金流输出。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
 | `modelHandle` | STRING | 定价模型设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `pdeHandle` | STRING | PDE 设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
@@ -1958,6 +1960,7 @@ caplib::buildIrSingleCurrencyCurve(referenceDate DATE, targetCurveNames STRING[]
 ##### 详情
 
 构建单币种利率曲线组。 函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrSingleCurrencyCurveBuildingOutput`。
+> **用法说明：** `targetCurveHandles` 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；`outputHandle` 指向构建输出容器本身。
 
 ##### 参数
 
@@ -2283,7 +2286,7 @@ caplib::createIrParRateCurve(asOfDate DATE, currency STRING, curveName STRING, i
 | `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
 | `curveName` | STRING | 曲线业务名称。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
 | `instNames` | STRING[] | 与工具类型、期限和报价对齐的工具名称。 **有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。 |
-| `instTypes` | STRING[] | 构建曲线使用的工具类型数组。 **有效性:** 每个元素必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_TYPE`, `DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `instTypes` | STRING[] | 构建曲线使用的工具类型数组。 **有效性:** 每个元素必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。 |
 | `instTerms` | STRING[] | 与工具名称对齐的工具期限。 **有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
 | `factors` | DOUBLE[] | 与工具或报价对齐的缩放因子。 **有效性:** 必须具有所列元素类型和形状；数值必须有限；除明确说明外包装器不强制非空。 |
 | `quotes` | DOUBLE[] | 市场报价值数组。 **有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。 |
@@ -2358,6 +2361,7 @@ caplib::buildIrCrossCurrencyCurve(referenceDate DATE, targetCurveNames STRING[],
 ##### 详情
 
 构建跨币种利率曲线组。 函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrCrossCurrencyCurveBuildingOutput`。
+> **用法说明：** `targetCurveHandles` 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；`outputHandle` 指向构建输出容器本身。
 
 ##### 参数
 
@@ -2791,6 +2795,7 @@ caplib::createIrVanillaInstrumentTemplate(instType STRING, instName STRING, star
 ```
 
 ##### 详情
+> **服务端支持范围（实测）：** 下列 25 个类型会被静态数据服务拒收（`not find value`），不能用于本接口：FX_TIME_OPTION、FX_DIGITAL_OPTION、FX_QUANTO_OPTION、FX_TOUCH_OPTION、FX_BARRIER_OPTION、FX_VANILLA_STRATEGY、FX_TOUCH_QUANTO_OPTION、FX_DIGITAL_QUANTO_OPTION（FX 期权族）；EQ_EUROPEAN_OPTION、EQ_AMERICAN_OPTION、EQ_SPOT、EQ_VANILLA_OPTION、EQ_DIGITAL_OPTION、EQ_BARRIER_OPTION、EQ_RANGE_ACCRUAL_OPTION、EQ_TOUCH_OPTION、EQ_QUANTO_OPTION（权益）；CM_EUROPEAN_OPTION、CM_AMERICAN_OPTION、CM_VANILLA_OPTION、CM_ASIAN_OPTION、CM_DIGITAL_OPTION、CM_DIGITAL_ASIAN_OPTION（商品期权）；PM_SPOT、PM_SWAP（贵金属）。其余 IR 域类型（DEPOSIT、FRA、IR_VANILLA_SWAP、IR_CAP_FLOOR、IR_BOND、IR_FUTURE*、IR_EUROPEAN_SWAPTION 等）与 FX 即期/远期/掉期/NDF 均可注册。
 
 创建并缓存标准利率工具模板。 函数验证并转换字段，构造 `InterestRateInstrumentTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
@@ -2798,7 +2803,7 @@ caplib::createIrVanillaInstrumentTemplate(instType STRING, instName STRING, star
 
 | 参数 | 类型 / 形状 | 说明 |
 | --- | --- | --- |
-| `instType` | STRING | 工具类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_TYPE`, `DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `instType` | STRING | 工具类型。 **有效性:** 值必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `EQ_INDEX_FUTURE`, `CM_SPOT`, `CM_FUTURE`, `CM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。 |
 | `instName` | STRING | 工具或模板名称，通常也作为缓存句柄。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
 | `startConvention` | STRING | 工具起息约定。 **有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
 | `startDelay` | INT | 起息或交割延迟天数。 **有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
@@ -3930,7 +3935,7 @@ caplib::createFxSwapTemplate(instName STRING, startConvention STRING, currencyPa
 
 ##### 详情
 
-创建并缓存外汇掉期模板。 函数验证并转换字段，构造 `FxSwapTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
+创建并缓存外汇掉期模板。 函数验证并转换字段，构造 `FxSwapTemplate` protobuf 并存入 ObjectCache，供后续分析使用。 另支持两种 6 参简写形式，按第二个参数的类型区分：传入 STRING `startConvention` 时为文档签名的前 6 参（`instName, startConvention, currencyPair, calendars, startDayConvention, endDayConvention`），此时 `fixingOffset` 取 `0d`、`fixingDayConvention` 由 `startDayConvention` 派生；传入 INT `startDelay` 时为旧式 `currencyPair, startDelay, deliveryDayConvention, calendar, instName, tag` 形式。
 
 ##### 参数
 
@@ -6995,7 +7000,7 @@ caplib::createCreditParCurve(asOfDate DATE, currency STRING, curveName STRING, i
 | `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
 | `curveName` | STRING | 曲线业务名称。 **有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。 |
 | `instrumentNames` | STRING[] | 市场工具名称数组。 **有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。 |
-| `instrumentTypes` | STRING[] | 市场工具类型数组。 **有效性:** 每个元素必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_TYPE`, `DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
+| `instrumentTypes` | STRING[] | 市场工具类型数组。 **有效性:** 每个元素必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。 |
 | `maturities` | STRING[] | 工具到期期限数组。 **有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。 |
 | `quotes` | DOUBLE[] | 市场报价值数组。 **有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。 |
 | `startConventions` | STRING[] | 工具起息日约定数组。 **有效性:** 每个元素必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。 |
@@ -7414,8 +7419,7 @@ caplib::getCreditSpread(flatCreditCurve, curveDates)
 // =============================================================================
 // DolphinDB caplib Plugin Example: FI Analytics
 // =============================================================================
-// Kept in sync with the per-function suites under test/fi; shows the
-// main fixed-income curve and bond pricing flow.
+// Shows the main fixed-income curve and bond pricing flow; matches example/FiAnalytics.dos.
 
 loadPlugin("PluginCaplib")
 
@@ -7438,18 +7442,18 @@ spreadCurve = caplib::createCreditCurve(
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CNY_MTN_AAA", "FI_CREDIT_CURVE", false)
 
+// Create the bond leg definition for the sample bond.
+bondLeg = caplib::createBondLegDefinition(
+    "FIXED_COUPON_BOND", 1, currency, "ACT_365_FIXED", "CAL_CFETS",
+    "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "", "", "ANNUAL",
+    "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "FI_BOND_LEG", false)
+
 // Create the bond template used to build a vanilla bond.
 bondTemplate = caplib::createVanillaBondTemplate(
     "CNY_TREAS_CPN_BOND", "FIXED_COUPON_BOND",
     2020.07.22, 1, 2020.07.22, "5Y",
-    0.03, currency, 100.0,
-    "ACT_365_FIXED", "CAL_CFETS", "ANNUAL",
-    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "",
-    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
-    "INVALID_DATE_GENERATION_MODE", -1,
-    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
-    "CONST_NOTIONAL", 0.0, false)
+    0.03, 100.0, 0.4, bondLeg, false)
 
 // Build the vanilla bond instrument from its template.
 vanillaBond = caplib::buildVanillaBond(
@@ -7502,7 +7506,7 @@ Caplib 和 `dqlibc` 为专有软件。请通过 [caprisktech.com](https://capris
 
 | 现象 | 原因 | 处理方式 |
 | --- | --- | --- |
-| `Invalid plugin file` | 使用了包含 CMake 变量的源模板，或描述文件版本与 Server 不匹配 | 使用本仓库发行包内的 `PluginCaplib.txt`，并确保版本一致 |
+| `Invalid plugin file` | 使用了包含 CMake 变量的源模板，或描述文件版本与 Server 不匹配 | 使用发行包内（或源码构建产物 `build/` 下）的 `PluginCaplib.txt`，并确保版本一致 |
 | `GLIBCXX_* not found` | C++ 运行库版本不兼容 | 使用匹配的 ABI0 运行环境；参考 Docker 部署说明 |
 | `LICENSE_FILE_NOT_FOUND` | `dqlibc.lic` 不在搜索路径 | 将许可证放到规定位置 |
 | 句柄类型错误 | ObjectCache 对象的 protobuf 类型与参数要求不匹配 | 检查句柄来源及参数表中的类型要求 |

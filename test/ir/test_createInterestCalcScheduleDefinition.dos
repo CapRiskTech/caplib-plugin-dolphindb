@@ -6,11 +6,9 @@
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_createInterestCalcScheduleDefinition.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createInterestCalcScheduleDefinition valid call"
@@ -70,11 +68,9 @@ assert 1, okEnum
 // ----------------------------------------------------------------------------
 
 // 用例目的：参数传入错误类型/空值（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createInterestCalcScheduleDefinition rejects null calendars (lenient validation, does not raise)"
-result = caplib::createInterestCalcScheduleDefinition(string(), "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createInterestCalcScheduleDefinition rejects null calendars", exception=1
+caplib::createInterestCalcScheduleDefinition(string(), "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
 
 // 用例目的：参数传入错误类型/空值（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createInterestCalcScheduleDefinition rejects null frequency (lenient validation, does not raise)"
-result = caplib::createInterestCalcScheduleDefinition("X", string(), "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createInterestCalcScheduleDefinition rejects null frequency", exception=1
+caplib::createInterestCalcScheduleDefinition("X", string(), "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)

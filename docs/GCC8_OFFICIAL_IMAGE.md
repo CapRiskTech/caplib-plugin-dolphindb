@@ -1,8 +1,13 @@
-# Caplib 0.0.11：官方 DolphinDB 镜像兼容升级
+# Caplib 0.0.13：官方 DolphinDB 镜像兼容性与升级说明
 
-0.0.11 基于上游 `dqlibdolphin/release-caplib` 提交
-`c0cb21d193e276624acbdeb7100196038b038eba`，同步参数校验修复和 GCC 8.4 / ABI0 构建。
-发行包与 SHA-256 校验文件见 [0.0.11 GitHub Release](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11)。
+0.0.13 基于上游 `dqlibdolphin/release-caplib` 分支，使用 GCC 8.4 / ABI0 构建。
+发行包与 SHA-256 校验文件见 [0.0.13 GitHub Release](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13)。
+自 0.0.13 起 `createPricingSettings` 必须传入 `specificPricingRequests`
+（10 参正式形式），不含该参数的旧形式在解析期被拒（破坏性变更）。
+
+> 历史：0.0.11 基于上游提交
+> `c0cb21d193e276624acbdeb7100196038b038eba`，首次完成 GCC 8.4 / ABI0
+> 重编与参数校验修复，其验证记录见下文带日期小节。
 
 ## 运行库要求
 
@@ -19,17 +24,17 @@ ABI0 和 GLIBCXX 版本是两个独立要求，单独设置 ABI0 不能让 GCC 1
 两个动态库和所链接的 C++ 静态库均已用 GCC 8 重编译，包括 18 个 dqlib 核心库、
 Boost、log4cplus、Protobuf、Abseil 和 licensecc；zlib 使用 PIC 静态构建，
 OpenSSL 复用原有 C 静态库。构建过程保留许可证校验、公钥和原有业务逻辑。
-包内许可证和日历数据的校验值与已发布的 0.0.10 一致。
+包内许可证和日历数据沿用已发布版本（0.0.10/0.0.11 以来的校验值未变）。
 
-上游在未替换运行库的 `dolphindb/dolphindb:v3.00.5` 上通过 408/408 项回归，
-包括 133 项问题清单校验。镜像 digest：
+0.0.11 时点：上游在未替换运行库的 `dolphindb/dolphindb:v3.00.5` 上通过
+408/408 项回归，包括当时的 133 项问题清单校验。镜像 digest：
 `sha256:01b1607f0b255a22ace6d41a4c80717c47486886b8f2b5f508035835c379e58b`。
 服务端原有 libstdc++ 的 SHA-256 始终为：
 `5f0901ff6590cfb426d068d9b6efe969335cb30353c0d1c59787db34ddf09f6c`。
 
 ## 完整目录和加载
 
-解压 `caplib-plugin-dolphindb-0.0.11.tar.gz`，将其完整目录安装或挂载到
+解压 `caplib-plugin-dolphindb-0.0.13.tar.gz`，将其完整目录安装或挂载到
 `/data/ddb/server/plugins/caplib`：
 
 ```text
@@ -73,17 +78,24 @@ CMake 检查仅覆盖数值型 GLIBCXX / CXXABI 要求；还应运行目标镜�
 以便在构建阶段拒绝旧 GCC 13 包或混用的依赖。
 
 已保留分发仓库最新的八个原生测试文件，并追加
-`test/test_issues_regression.dos`：一个原生测试用例执行全部 133 项上游检查，
+`docker/test_issues_regression.dos`：一个原生测试用例执行全部 133 项上游检查，
 并断言检查数量。任一子检查失败都会让该用例失败。
 完整定价测试使用 `maxMemSize=16`；2 GB 配额会导致 Monte Carlo 内存分配失败。
 
 本次分发仓库验证结果：**379/379 原生用例通过**，其中新增回归用例内部
 **133/133 检查通过**。新 Dockerfile 对 0.0.11 包构建成功，对已发布的
 0.0.10 GCC 13 包在构建阶段拒绝；测试期间官方 libstdc++ 校验值未变。
+（以上为 0.0.11 时点记录，回归脚本其后扩充为 161 项。）
+
+## 0.0.13 验证结果（2026-09-18）
+
+0.0.13 包在官方 `dolphindb/dolphindb:v3.00.5` 镜像通过全部发布门禁：
+插件加载门禁、冒烟测试 7/7、161 项问题回归。自 0.0.13 起
+`createPricingSettings` 必须传入 `specificPricingRequests`（10 参正式形式）。
 
 ```bash
 python run_tests.py --container <测试容器> --port <映射端口>
 ```
 
 源码构建说明见
-[上游 GCC 8 构建记录](https://github.com/dqlab/dqlibdolphin/blob/c0cb21d/docs/GCC8_OFFICIAL_IMAGE.md)。
+[上游 GCC 8 构建记录](https://github.com/dqlab/dqlibdolphin/blob/release-caplib/docs/GCC8_OFFICIAL_IMAGE.md)。

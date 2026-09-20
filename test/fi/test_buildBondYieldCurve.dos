@@ -6,11 +6,9 @@
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_buildBondYieldCurve.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -19,9 +17,6 @@ def isHandleJson(result, expectedHandle) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
-
-
 
 asOfDate = 2021.07.22;
 
@@ -63,7 +58,6 @@ cnyTreasStdCfets = caplib::buildBondYieldCurve(
     "BOOTSTRAPPING_METHOD", 0, "", "CNY_TREAS_STD_CFETS", true);
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildBondYieldCurve -> [handle, json]"

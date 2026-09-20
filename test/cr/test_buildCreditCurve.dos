@@ -6,11 +6,9 @@
 //     test("test/cr")            // whole domain directory
 //     python run_tests.py --file cr/test_buildCreditCurve.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -19,12 +17,9 @@ def isHandleJson(result, expectedHandle) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 asOfDate = 2020.02.21;
 currency = "CNY";
-calCfets = "CAL_CFETS";
-calendarCreated = caplib::createCalendar(calCfets);
 
 discountDates = [2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21,
                  2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21, 2030.02.21];
@@ -34,32 +29,6 @@ discountCurve = caplib::createIrYieldCurve(
     asOfDate, discountDates, discountRates,
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", currency, "CN_TREAS", "CR_DISCOUNT_CURVE", false);
-
-baseCreditDates = [2020.03.01, 2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21,
-                   2022.02.21, 2023.02.21, 2024.02.21, 2025.02.21, 2026.02.21];
-baseCreditSpreads = [0.0012, 0.0018, 0.0024, 0.0030, 0.0042,
-                     0.0058, 0.0065, 0.0072, 0.0078, 0.0084];
-baseCreditCurve = caplib::createCreditCurve(
-    asOfDate, baseCreditDates, baseCreditSpreads,
-    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    "BOND_CREDIT", "CR_BASE_CREDIT_CURVE", false);
-
-cdsTemplate = caplib::createCdsTemplate(
-    "CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0,
-    1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD",
-    "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [calCfets], false, true);
-
-pricingSettings = caplib::createCdsPricingSettings(
-    currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE",
-    "CR_PRICING_NAME", "CR_PRICING", true);
-
-irRisk = caplib::createIrCurveRiskSettings(
-    1, 0, 0, 1.0e-4, 5.0e-1, 0, 1, 1.0e-4, 0, "CR_IR_RISK", false);
-creditRisk = caplib::createCreditCurveRiskSettings(
-    1, 0, 1.0e-4, 0, 1, 1.0e-4, 0, "CR_CREDIT_RISK", false);
-thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "CR_THETA_RISK", false);
-crRisk = caplib::createCrRiskSettings(
-    irRisk, creditRisk, thetaRisk, "CR_RISK_NAME", "CR_RISK", true);
 
 creditParCurve = caplib::createCreditParCurve(
     asOfDate, currency, "BOND_CREDIT",
@@ -74,19 +43,8 @@ creditCurve = caplib::buildCreditCurve(
     asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT",
     "BOOTSTRAPPING_METHOD", "CR_CREDIT_CURVE", true);
 
-mktData = caplib::createCrMktDataSet(
-    asOfDate, discountCurve, creditCurve[0], "CR_MKT_NAME", "CR_MKT", true);
-
-cds = caplib::buildCreditDefaultSwap(
-    1000000.0, currency, 2019.06.20, 2024.06.20,
-    "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4,
-    0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY",
-    "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0,
-    "CR_CDS_NAME", "CR_CDS", false);
-
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="buildCreditCurve -> [handle, json]"

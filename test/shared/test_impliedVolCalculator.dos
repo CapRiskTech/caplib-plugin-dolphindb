@@ -6,15 +6,11 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_impliedVolCalculator.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 asOfDate = 2022.03.09;
-curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
 flatIr = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "TF_FIR", false);
 flatDiv = caplib::createFlatDividendCurve(asOfDate, 0.01, "TF_FDIV", "TF_FDIV", false);
 bm = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "TF_BM", false);
@@ -22,7 +18,6 @@ ps = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), bm, ""
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：-> positive vol（预期：插件按文档行为执行）
 @testing:case="impliedVolCalculator -> positive vol"
@@ -89,7 +84,6 @@ assert 1, abs(ivr - 0.20) < 1.0e-9
 @testing:case="impliedVolCalculator rejects wrong object type for assetCurveHandle", exception=1
 caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatIr, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 
-
 // 用例目的：遍历参数 payoffType 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="impliedVolCalculator supports all payoffType enums"
 labelEnum = ["CALL", "PUT"]
@@ -99,12 +93,9 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
-
 // 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="impliedVolCalculator accepts zero underlyingPrice (lenient validation, does not raise)"
-result = caplib::impliedVolCalculator(asOfDate, 0.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
-assert 1, typestr(result) != "VOID"
-
+@testing:case="impliedVolCalculator accepts zero underlyingPrice", exception=1
+caplib::impliedVolCalculator(asOfDate, 0.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 
 // 用例目的：参数 underlyingPrice 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects negative underlyingPrice", exception=1

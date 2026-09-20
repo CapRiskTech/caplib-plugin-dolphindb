@@ -6,19 +6,15 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createVolatilityCurve.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 asOfDate = 2022.03.09;
 curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createVolatilityCurve -> handle"
@@ -94,9 +90,8 @@ result = caplib::createVolatilityCurve(asOfDate, curveDates, [0.0, 0.0], "ACT_36
 assert 1, typestr(result) != "VOID"
 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createVolatilityCurve rejects negative vols (lenient validation, does not raise)"
-result = caplib::createVolatilityCurve(asOfDate, curveDates, [-1.0, -1.0], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createVolatilityCurve rejects negative vols", exception=1
+caplib::createVolatilityCurve(asOfDate, curveDates, [-1.0, -1.0], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：两个成对数组参数长度不一致（vols 多一个元素），验证参数间关系校验（预期：抛异常）

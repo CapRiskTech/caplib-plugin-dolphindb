@@ -6,11 +6,9 @@
 //     test("test/cm")            // whole domain directory
 //     python run_tests.py --file cm/test_createPmOptionQuoteMatrix.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -19,29 +17,13 @@ def isHandleJson(result, expectedHandle) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 // Precondition: register the CNY calendar used by the PM cash template
 calendarCreated = caplib::createCalendar("CAL_CFETS");
 assert 1, calendarCreated;
 
-pmCashTemplate = caplib::createPmCashTemplate("AU_CASH", 0, "FOLLOWING", "CAL_CFETS", "ACT_365_FIXED", true);
-pmMktConventions = caplib::createPmMktConventions("ATM", "PUT_25", "CALL_25", "DELTA_10", "0", "BUTTERFLY", "AU.SHFE", "TF_PM_CONV", true);
-pmParRateCurve = caplib::createPmParRateCurve(
-    2019.09.04, "USD", "XAU_XAUUSD",
-    table(
-        ["XAUUSD","XAUUSD","XAUUSD"] as instrument_name,
-        ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
-        ["1W","2W","1M"] as instrument_term,
-        [0.025,0.025,0.0248] as instrument_rate),
-    "TF_PM_PAR", false);
-pmOptionQuoteMatrix = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true);
-pmVolDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "TF_PM_VOLDEF", true);
-pmBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "TF_PM_VSB", true);
-
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createPmOptionQuoteMatrix -> [handle, json]"
@@ -99,16 +81,13 @@ caplib::createPmOptionQuoteMatrix(underlying="X", asOfDate=2024.01.01, terms=["X
 @testing:case="createPmOptionQuoteMatrix rejects all-null vector terms", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, [string(), string(), string()], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
-
 // 用例目的：矩阵参数 payoffTypes 传入0 行矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(STRING, 0, 3), [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
-
 // 用例目的：矩阵参数 payoffTypes 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects all-null matrix payoffTypes", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix([string(), string()], [string(), string()]), [0.10], matrix([450.0]), "TF_PM_OQ", true)
-
 
 // 用例目的：矩阵参数 payoffTypes 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects partially-null matrix payoffTypes", exception=1

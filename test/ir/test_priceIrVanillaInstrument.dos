@@ -6,11 +6,9 @@
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_priceIrVanillaInstrument.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
 
 def isHandleJson(result, expectedHandle) {
     return strpos(typestr(result), "STRING VECTOR") >= 0 &&
@@ -42,7 +40,6 @@ def presentValue(pricingResult) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 // Precondition: register the CNY calendar used by indices, legs and schedules
 calendarCreated = caplib::createCalendar("CAL_CFETS");
@@ -87,21 +84,14 @@ irPricingSettings = caplib::createPricingSettings(irCurrency, "ANALYTICAL", 1, 1
 
 irCurveRisk = caplib::createIrCurveRiskSettings(
     1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IR_CURVE_RISK", false);
-irPriceRisk = caplib::createPriceRiskSettings(
-    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "TF_IR_PRICE_RISK", false);
 irThetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "TF_IR_THETA_RISK", false);
 irRisk = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IR_RISK", true);
-irXccyRisk = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_IR_XCCY_RISK", true);
 
 irMktData = caplib::createIrMktDataSet(
     irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IR_MKT", true);
 
-irSwapPricingResult = caplib::priceIrVanillaInstrument(
-    irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);
-
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回 PricingResults（含 present_value/cash_value/currency）
 @testing:case="priceIrVanillaInstrument -> PricingResults"

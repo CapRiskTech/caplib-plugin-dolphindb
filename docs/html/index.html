@@ -42,11 +42,11 @@
         <p>The complete Chinese guide following the standard documentation template is available at <a href="../DQLIB_DOCUMENTATION.md"><code>docs/DQLIB_DOCUMENTATION.md</code></a>.</p>
         <p>Caplib exposes 180 DolphinDB functions backed by the CapRiskTech `dqlibc` calculation library.</p>
         <div class="domain-grid">
-          <a class="domain-tile" href="fixed-income.html"><span>Fixed Income, IR, and Credit</span><strong>73</strong><em>Curves, bonds, swaps, CDS, market data, and risk settings.</em></a>
-          <a class="domain-tile" href="currency.html"><span>Foreign Exchange</span><strong>39</strong><em>FX calculators, quote matrices, volatility surfaces, cash products, and option pricing.</em></a>
+          <a class="domain-tile" href="fixed-income.html"><span>Fixed Income, IR, and Credit</span><strong>56</strong><em>Curves, bonds, swaps, CDS, market data, and risk settings.</em></a>
+          <a class="domain-tile" href="currency.html"><span>Foreign Exchange</span><strong>35</strong><em>FX calculators, quote matrices, volatility surfaces, cash products, and option pricing.</em></a>
           <a class="domain-tile" href="commodity.html"><span>Commodity</span><strong>25</strong><em>Commodity and precious-metal market data, curves, volatility surfaces, and pricing.</em></a>
           <a class="domain-tile" href="equity.html"><span>Equity</span><strong>36</strong><em>Dividend curves, volatility surfaces, equity instruments, and pricing.</em></a>
-          <a class="domain-tile" href="shared.html"><span>Common</span><strong>29</strong><em>Date utilities, common curves, pricing, risk, and scenario settings.</em></a>
+          <a class="domain-tile" href="shared.html"><span>Common</span><strong>28</strong><em>Date utilities, common curves, pricing, risk, and scenario settings.</em></a>
         </div>
       </section>
 
@@ -72,11 +72,11 @@ listRemotePlugins()
 installPlugin("caplib")
 loadPlugin("caplib")</code></pre>
         <h3>Prebuilt package</h3>
-        <p>Version 0.0.11 is built from upstream <code>c0cb21d</code>, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.11">0.0.11 release</a>. See the <a href="../GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and <a href="../../releases/0.0.11.md">release notes</a>.</p>
+        <p>Version 0.0.13 is built from the upstream <code>release-caplib</code> branch, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13">0.0.13 release</a>. See the <a href="../GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and <a href="../../releases/0.0.13.md">release notes</a>. Note: <code>createPricingSettings</code> requires <code>specificPricingRequests</code> (10-argument documented form) since 0.0.13.</p>
         <p>If `caplib` is not listed remotely, place `libPluginCaplib.so`, the generated `PluginCaplib.txt`, `libdqlibc.so`, and `dqlibc.lic` together, with `calendars.bin` in the `data/` subdirectory:</p>
         <pre><code>loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")</code></pre>
         <p>Stop the server before replacing both native libraries, retain the valid license and calendar data, then restart and load the plugin. Updating mounted files does not reload an already loaded library.</p>
-        <p>Use the configured <code>PluginCaplib.txt</code> from this repository's release archive; do not deploy the CMake template from the source repository.</p>
+        <p>Use the configured <code>PluginCaplib.txt</code> from the release archive (or <code>build/PluginCaplib.txt</code> from a source build); do not deploy the template containing CMake variables.</p>
       </section>
 
       <section id="concepts" class="panel">

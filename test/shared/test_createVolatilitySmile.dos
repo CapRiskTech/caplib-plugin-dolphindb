@@ -6,19 +6,14 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createVolatilitySmile.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 asOfDate = 2022.03.09;
-curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createVolatilitySmile -> handle"
@@ -77,10 +72,8 @@ caplib::createVolatilitySmile("X", 2024.01.01, take(double, 0), [0.02], "X", "X"
 @testing:case="createVolatilitySmile rejects keyword arguments", syntaxError=1
 caplib::createVolatilitySmile(volSmileType="X", referenceDate=2024.01.01, strikes=[0.02], vols=[0.02], smileMethod="X", extrapMethod="X", term=0.02, modelParams=[0.02], auxiliaryParams=[0.02], lower=0.02, upper=0.02, handle="TF_createVolatilitySmile_H", returnJson=false)
 // 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createVolatilitySmile accepts all-null vector strikes (lenient validation, does not raise)"
-result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [double(), double(), double()], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
-assert 1, typestr(result) != "VOID"
-
+@testing:case="createVolatilitySmile accepts all-null vector strikes", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [double(), double(), double()], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
 // 用例目的：枚举参数 extrapMethod 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createVolatilitySmile rejects invalid enum for extrapMethod", exception=1
@@ -98,17 +91,13 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
+// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
+@testing:case="createVolatilitySmile accepts zero term", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 0.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
 // 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createVolatilitySmile accepts zero term (lenient validation, does not raise)"
-result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 0.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
-assert 1, typestr(result) != "VOID"
-
-
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createVolatilitySmile accepts negative term (lenient validation, does not raise)"
-result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", -1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createVolatilitySmile accepts negative term", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", -1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
 // ----------------------------------------------------------------------------
 // Review gap-fill: null-vector / boundary / enum / handle-type coverage
@@ -120,9 +109,8 @@ result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.
 assert 1, typestr(result) != "VOID"
 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createVolatilitySmile rejects negative vols (lenient validation, does not raise)"
-result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [-1.0, -1.0, -1.0], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
-assert 1, typestr(result) != "VOID"
+@testing:case="createVolatilitySmile rejects negative vols", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [-1.0, -1.0, -1.0], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：两个成对数组参数长度不一致（strikes 多一个元素），验证参数间关系校验（预期：抛异常）

@@ -6,13 +6,9 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_getVolatility.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Helper predicates
-// ============================================================================
-
-
 
 def isMatrix(value) {
     return strpos(typestr(value), "MATRIX") >= 0;
@@ -20,16 +16,12 @@ def isMatrix(value) {
 
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
-// ============================================================================
 
 asOfDate = 2022.03.09;
-curveDates = [2022.03.10, 2025.03.10];
-curveValues = [0.02, 0.025];
 flatVolSurface = caplib::createFlatVolatilitySurface(asOfDate, 0.20, "TF_UNDERLYING", "TF_FVS", false);
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：正常调用，验证返回向量的形态与数值
 @testing:case="getVolatility -> matrix of vols"

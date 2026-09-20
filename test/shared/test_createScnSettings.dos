@@ -6,11 +6,9 @@
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createScnSettings.dos   // single file
 // Hand-maintained suite; do not regenerate with tools/gen_function_tests.
-// ============================================================================
 
 // ============================================================================
 // Tests
-// ============================================================================
 
 // 用例目的：valid call（预期：插件按文档行为执行）
 @testing:case="createScnSettings valid call"
@@ -63,7 +61,6 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：参数 size 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createScnSettings rejects zero size", exception=1
 caplib::createScnSettings(0.02, 0.02, 0.0, 1, "TF_createScnSettings_H", false)
-
 
 // 用例目的：参数 size 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createScnSettings rejects negative size", exception=1
