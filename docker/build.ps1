@@ -10,7 +10,7 @@
 #   powershell -File docker\build.ps1 [--run|--test]   (equivalent)
 #
 # Environment variables (same as build.sh):
-#   DDB_BASE_IMAGE, CAPLIB_PLUGIN_TAG, CAPLIB_PLUGIN_ARCHIVE, IMAGE_NAME, IMAGE_TAG, GITHUB_TOKEN
+#   DDB_BASE_IMAGE, CAPLIB_PLUGIN_TAG (override; default: latest via GitHub API),
 # ─────────────────────────────────────────────────────────────
 # NOTE: deliberately NOT setting $ErrorActionPreference='Stop'. On Windows
 # PowerShell 5.1, a native command writing to stderr (e.g. `docker rm -f` on a
@@ -35,11 +35,42 @@ $tar = Join-Path $env:SystemRoot 'System32\tar.exe'
 
 $env:IMAGE_NAME = if ($env:IMAGE_NAME) { $env:IMAGE_NAME } else { 'caplibdolphin' }
 $env:IMAGE_TAG  = if ($env:IMAGE_TAG)  { $env:IMAGE_TAG  } else { 'latest' }
-$CAPLIB_PLUGIN_TAG = if ($env:CAPLIB_PLUGIN_TAG) { $env:CAPLIB_PLUGIN_TAG } else { '0.0.11' }
 $CAPLIB_PLUGIN_REPO  = 'CapRiskTech/caplib-plugin-dolphindb'
-$CAPLIB_PLUGIN_ASSET = "caplib-plugin-dolphindb-$CAPLIB_PLUGIN_TAG.tar.gz"
 $LICENSE_ASSET = 'dqlibc.lic'
-$EXPECTED_PLUGIN_FUNCTIONS = 202
+# Fallback tag when the GitHub API can't be reached. The script auto-detects
+# the latest release via the GitHub API unless CAPLIB_PLUGIN_TAG is set;
+# bump this fallback only occasionally (e.g. first build offline).
+$CAPLIB_PLUGIN_TAG_FALLBACK = '0.0.13'
+$CAPLIB_PLUGIN_TAG = if ($env:CAPLIB_PLUGIN_TAG) { $env:CAPLIB_PLUGIN_TAG } else { '' }
+
+# Auto-detect the latest release tag from GitHub (so version upgrades don't
+# require editing this script). Falls back to CAPLIB_PLUGIN_TAG_FALLBACK when
+# the API is unreachable or returns no tag.
+function Get-LatestTag {
+    $api = if ($env:GITHUB_API_URL) { $env:GITHUB_API_URL } else { 'https://api.github.com' }
+    try {
+        $headers = @{ 'User-Agent' = 'caplib-build' }
+        $release = Invoke-RestMethod -Uri "$api/repos/$CAPLIB_PLUGIN_REPO/releases/latest" `
+            -Headers $headers -TimeoutSec 15 -ErrorAction Stop
+        if ($release.tag_name) { return $release.tag_name }
+    } catch {
+        # fall through to empty -> caller uses the fallback
+    }
+    return ''
+}
+if (-not $CAPLIB_PLUGIN_TAG) {
+    $detected = Get-LatestTag
+    if ($detected) {
+        # strip a leading "v"
+        $CAPLIB_PLUGIN_TAG = $detected -replace '^v', ''
+        Write-Host "  Auto-detected latest release: $CAPLIB_PLUGIN_TAG" -ForegroundColor Green
+    } else {
+        $CAPLIB_PLUGIN_TAG = $CAPLIB_PLUGIN_TAG_FALLBACK
+        Write-Host "  GitHub API unreachable; using fallback tag $CAPLIB_PLUGIN_TAG (set CAPLIB_PLUGIN_TAG to override)" -ForegroundColor Yellow
+    }
+}
+$CAPLIB_PLUGIN_ASSET = "caplib-plugin-dolphindb-$CAPLIB_PLUGIN_TAG.tar.gz"
+$EXPECTED_PLUGIN_FUNCTIONS = 180
 $REQUIRED_PLUGIN_FUNCTIONS = @('createPricingModelSettings', 'createVolatilityCurve', 'createVolatilitySurface')
 $DDB_BASE_IMAGE = if ($env:DDB_BASE_IMAGE) { $env:DDB_BASE_IMAGE } else { 'dolphindb/dolphindb:v3.00.5' }
 
