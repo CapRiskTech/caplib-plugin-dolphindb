@@ -85,8 +85,40 @@ download_release() {
     local auth=()
     [ -n "${GITHUB_TOKEN:-}" ] && auth=(-H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/octet-stream")
     curl -fL --retry 5 --retry-all-errors --retry-delay 3 -C - "${auth[@]}" \
-        -o "$dest/$asset" "$url"
-    [ -s "$dest/$asset" ] || fail "Download produced an empty file for $asset"
+        -o "$dest/$asset" "$url" || return 1
+    [ -s "$dest/$asset" ] || return 1
+}
+
+# Step-by-step manual-download instructions shown when the network cannot
+# reach GitHub. $1 = optional run mode echoed in the re-run command.
+manual_download_help() {
+    local url="https://github.com/${CAPLIB_PLUGIN_REPO}/releases/download/${CAPLIB_PLUGIN_TAG}/${CAPLIB_PLUGIN_ASSET}"
+    local page="https://github.com/${CAPLIB_PLUGIN_REPO}/releases/tag/${CAPLIB_PLUGIN_TAG}"
+    local mode="${1:-}"
+    local c_yellow=$'\033[0;33m'; c_bold=$'\033[1m'; c_off=$'\033[0m'
+    cat <<EOF
+
+${c_yellow}======================================================================
+  自动下载失败（本机网络无法访问 GitHub）。请按下列步骤手动下载：
+======================================================================${c_off}
+
+  1. ${c_bold}在能上网的机器上用浏览器打开（任选其一）：${c_off}
+     发行页: ${page}
+     直  链: ${url}
+
+  2. ${c_bold}下载下面这个文件（约 17 MB；文件名保持不变，不要解压）：${c_off}
+     ${CAPLIB_PLUGIN_ASSET}
+     建议同时下载 ${CAPLIB_PLUGIN_ASSET}.sha256 校验文件
+
+  3. ${c_bold}把文件复制到本机下面这个目录（目录不存在请新建）：${c_off}
+     ${TARBALL}
+
+  4. ${c_bold}放好后重新运行本脚本，即会自动使用该文件继续：${c_off}
+     bash docker/build.sh${mode:+ $mode}
+     也可用环境变量指定任意位置：
+     CAPLIB_PLUGIN_ARCHIVE=/路径/${CAPLIB_PLUGIN_ASSET} bash docker/build.sh${mode:+ $mode}
+
+EOF
 }
 
 echo "==================================================="
@@ -117,7 +149,11 @@ elif [ -s "$TARBALL" ] && tar -tzf "$TARBALL" >/dev/null 2>&1; then
 else
     rm -f "$TARBALL"
     info "Downloading $CAPLIB_PLUGIN_ASSET..."
-    download_release "$CAPLIB_PLUGIN_REPO" "$CAPLIB_PLUGIN_TAG" "$CAPLIB_PLUGIN_ASSET" "$RELEASE_DIR"
+    if ! download_release "$CAPLIB_PLUGIN_REPO" "$CAPLIB_PLUGIN_TAG" "$CAPLIB_PLUGIN_ASSET" "$RELEASE_DIR"; then
+        rm -f "$TARBALL"
+        manual_download_help "$1"
+        fail "无法继续：自动下载失败且未发现手动放置的归档（按上面 4 步操作后重跑）"
+    fi
 fi
 
 info "Extracting $CAPLIB_PLUGIN_ASSET..."

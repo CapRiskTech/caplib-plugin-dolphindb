@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────
 # caplib DolphinDB Docker Build Script — Windows (PowerShell)
 # Self-contained mirror of docker/build.sh. No bash, no python:
 #   - download:  curl.exe (retry + resume; this release is public)
@@ -88,6 +88,34 @@ Write-Host "  Base:      $DDB_BASE_IMAGE"
 Write-Host "  Release:   $CAPLIB_PLUGIN_REPO@$CAPLIB_PLUGIN_TAG"
 Write-Host ''
 
+# Printed when the network cannot reach GitHub: tells the user exactly what to
+# download, where to place it, and how to re-run.
+function Show-ManualDownloadHelp {
+    $url  = "https://github.com/$CAPLIB_PLUGIN_REPO/releases/download/$CAPLIB_PLUGIN_TAG/$CAPLIB_PLUGIN_ASSET"
+    $page = "https://github.com/$CAPLIB_PLUGIN_REPO/releases/tag/$CAPLIB_PLUGIN_TAG"
+    Write-Host ''
+    Write-Host '======================================================================' -ForegroundColor Yellow
+    Write-Host '  自动下载失败（本机网络无法访问 GitHub）。请按下列步骤手动下载：' -ForegroundColor Yellow
+    Write-Host '======================================================================' -ForegroundColor Yellow
+    Write-Host ''
+    Write-Host '  1. ' -NoNewline; Write-Host '在能上网的机器上用浏览器打开（任选其一）：'
+    Write-Host "     发行页: $page"
+    Write-Host "     直  链: $url"
+    Write-Host ''
+    Write-Host '  2. ' -NoNewline; Write-Host '下载下面这个文件（约 17 MB；文件名保持不变，不要解压）：'
+    Write-Host "     $CAPLIB_PLUGIN_ASSET"
+    Write-Host "     建议同时下载 $CAPLIB_PLUGIN_ASSET.sha256 校验文件"
+    Write-Host ''
+    Write-Host '  3. ' -NoNewline; Write-Host '把文件复制到本机下面这个目录（目录不存在请新建）：'
+    Write-Host "     $tgz"
+    Write-Host ''
+    Write-Host '  4. ' -NoNewline; Write-Host '放好后重新运行本脚本，即会自动使用该文件继续：'
+    Write-Host '     powershell -File docker\build.ps1'
+    Write-Host '     也可用环境变量指定任意位置：'
+    Write-Host "     `$env:CAPLIB_PLUGIN_ARCHIVE='C:\路径\$CAPLIB_PLUGIN_ASSET'; powershell -File docker\build.ps1"
+    Write-Host ''
+}
+
 # ─── Step 1: Obtain + extract plugin release ────────────────
 $releaseDir = Join-Path $scriptDir '.cache\caplib-plugin-release'
 New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
@@ -122,7 +150,11 @@ if ($useCache) {
         $curlArgs += @('-H', "Authorization: token $env:GITHUB_TOKEN", '-H', 'Accept: application/octet-stream')
     }
     curl.exe @curlArgs
-    if ($LASTEXITCODE -ne 0) { Fail "Download failed for $CAPLIB_PLUGIN_ASSET" }
+    if ($LASTEXITCODE -ne 0) {
+        Remove-Item $tgz -Force -ErrorAction SilentlyContinue
+        Show-ManualDownloadHelp
+        Fail "无法继续：自动下载失败且未发现手动放置的归档（按上面的步骤操作后重跑）"
+    }
 }
 
 Info "Extracting $CAPLIB_PLUGIN_ASSET..."
