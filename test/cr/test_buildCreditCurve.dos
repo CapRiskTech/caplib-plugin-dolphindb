@@ -19,6 +19,10 @@ def isHandleJson(result, expectedHandle) {
 
 asOfDate = 2020.02.21;
 currency = "CNY";
+calCfets = "CAL_CFETS";
+calCfetsCreated = caplib::createCalendar(calCfets);
+cdsTpl = caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true);
+
 
 discountDates = [2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21,
                  2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21, 2030.02.21];

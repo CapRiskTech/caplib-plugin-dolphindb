@@ -11,6 +11,12 @@
 
 caplib::createCalendar("CAL_CFETS");
 
+// 正向用例按类型+名称查询 ObjectCache,须先注册一个 IrYieldCurve 供其检索
+irObj = caplib::createIrYieldCurve(
+    2022.03.09, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "TF_IR", "TF_IR", false);
+
 // ============================================================================
 // Tests
 

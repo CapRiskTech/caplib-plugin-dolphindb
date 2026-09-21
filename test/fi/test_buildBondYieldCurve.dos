@@ -14,12 +14,57 @@ def isHandleJson(result, expectedHandle) {
         size(result) == 2 && result[0] == expectedHandle && strlen(result[1]) > 0;
 }
 
+def createStdFixedBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::createVanillaBondTemplate(
+        instName, "FIXED_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
+def createStdZeroBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::createVanillaBondTemplate(
+        instName, "ZERO_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 
 asOfDate = 2021.07.22;
 
 currency = "CNY";
+calCfets = "CAL_CFETS";
+
+calCfetsCreated = caplib::createCalendar(calCfets);
+
+cnyTreasZero1m = createStdZeroBondTemplate("CNY_TREAS_ZERO_1M", "1M", currency, calCfets, asOfDate);
+cnyTreasCpnA3m = createStdFixedBondTemplate("CNY_TREAS_CPN_A_3M", "3M", currency, calCfets, asOfDate);
+cnyTreasCpnA6m = createStdFixedBondTemplate("CNY_TREAS_CPN_A_6M", "6M", currency, calCfets, asOfDate);
+cnyTreasCpnA9m = createStdFixedBondTemplate("CNY_TREAS_CPN_A_9M", "9M", currency, calCfets, asOfDate);
+cnyTreasCpnA1y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_1Y", "1Y", currency, calCfets, asOfDate);
+cnyTreasCpnA2y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_2Y", "2Y", currency, calCfets, asOfDate);
+cnyTreasCpnA3y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_3Y", "3Y", currency, calCfets, asOfDate);
+cnyTreasCpnA5y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_5Y", "5Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa7y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_7Y", "7Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa10y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_10Y", "10Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa15y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_15Y", "15Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa20y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_20Y", "20Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa30y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_30Y", "30Y", currency, calCfets, asOfDate);
 
 cnyTreasStdCfetsName = "cny_treas_std_cfets";
 

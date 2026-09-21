@@ -11,6 +11,35 @@
 // ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 
+
+def createStdFixedBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::createVanillaBondTemplate(
+        instName, "FIXED_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
+def createStdZeroBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::createVanillaBondTemplate(
+        instName, "ZERO_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
 asOfDate = 2021.07.22;
 currency = "CNY";
 calCfets = "CAL_CFETS";

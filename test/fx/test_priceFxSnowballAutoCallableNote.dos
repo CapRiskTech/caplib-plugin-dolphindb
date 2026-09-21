@@ -41,6 +41,11 @@ def presentValue(pricingResult) {
 // Setup: fixtures (plain script, executed before the test cases)
 
 asOfDate = 2021.03.30;
+
+calEuta = "CAL_EUTA";
+calEutaCreated = caplib::createCalendar(calEuta);
+fxSpotTpl = caplib::createFxSpotTemplate(
+    "EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", ["CAL_EUTA"], "2d", true);
 currency = "USD";
 underlying = "EURUSD";
 eurusdSpot = 1.1761;

@@ -28,6 +28,29 @@ assert 1, calendarCreated;
 irAsOfDate = 2022.03.09;
 irCurveName = "CNY_SHIBOR_3M";
 
+// buildIrSingleCurrencyCurve 需要 IR_VANILLA_SWAP/CNY_SHIBOR_3M 模板现于 ObjectCache，
+// 由 iborIndex + fixed/floating leg + IrVanillaSwapTemplate 注册链提供（见测试注释）。
+iborIndex = caplib::createIborIndex(
+    irCurveName, "3M", "CNY", ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true);
+
+irFixedLeg = caplib::createFixedLegDefinition(
+    "CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true);
+
+irFloatingLeg = caplib::createFloatingLegDefinition(
+    "CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
+
+irSwapTemplate = caplib::createIrVanillaSwapTemplate(
+    irCurveName, 1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", true);
+
 // ============================================================================
 // Tests
 

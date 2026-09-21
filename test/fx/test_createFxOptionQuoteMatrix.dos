@@ -23,6 +23,11 @@ def hasJsonField(json, fieldName) {
 
 asOfDate = 2021.03.30;
 
+calEuta = "CAL_EUTA";
+calEutaCreated = caplib::createCalendar(calEuta);
+fxSpotTpl = caplib::createFxSpotTemplate(
+    "EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", ["CAL_EUTA"], "2d", true);
+
 // All documented vector/matrix combinations, using one term so that each
 // vector or one-row matrix describes the same three-strike smile.
 

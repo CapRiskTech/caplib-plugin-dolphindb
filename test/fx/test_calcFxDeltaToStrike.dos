@@ -15,6 +15,11 @@ eurusdSpot = 1.1761;
 calEuta = "CAL_EUTA";
 calEutaCreated = caplib::createCalendar(calEuta);
 
+calEuta = "CAL_EUTA";
+calEutaCreated = caplib::createCalendar(calEuta);
+fxSpotTpl = caplib::createFxSpotTemplate(
+    "EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", ["CAL_EUTA"], "2d", true);
+
 usdDates = [2021.04.06, 2021.04.13, 2021.04.20, 2021.04.30,
             2021.06.01, 2021.06.30, 2021.07.30, 2021.08.30,
             2021.09.30, 2021.12.30, 2022.03.30, 2022.09.30,
