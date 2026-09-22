@@ -618,8 +618,8 @@ caplib::createPricingSettings(currency STRING, pricingMethod STRING, incCurrent 
 | `currency` | STRING | 币种代码。 **有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。 |
 | `pricingMethod` | STRING | 定价方法。 **有效性:** 可接受值：`ANALYTICAL`, `ANALYTICAL_SMILE_ON`, `PDE`, `MONTE_CARLO`, `BINOMIAL_TREE`, `MOMENT_MATCHING`。仅接受所示精确拼写。 |
 | `incCurrent` | BOOL | 估值输出中是否包含当前现金流。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
-| `specificPricingRequests` | INT[] | 必填。具体定价请求列表，取值为 BondSpecificPricingRequest 枚举：0=到期收益率，1=全价，2=净价，3=应计利息，4=久期，5=修正久期，6=麦考利久期，7=凸性，8=基点价值。服务端把对应指标填入定价结果的 `specific_pricing_results`。空向量等价于不请求。 **注意：** 请求列表不要包含 0（YTM 请求），否则服务端返回空结果；YTM 值无需请求即出现在返回向量首元素。 |
 | `cashFlows` | BOOL | 定价结果中是否包含详细现金流输出。 **有效性:** 必须是 BOOL 标量，仅可为 false 或 true。 |
+| `specificPricingRequests` | INT[] | 必填。具体定价请求列表，取值为 BondSpecificPricingRequest 枚举：0=到期收益率，1=全价，2=净价，3=应计利息，4=久期，5=修正久期，6=麦考利久期，7=凸性，8=基点价值。服务端把对应指标填入定价结果的 `specific_pricing_results`。空向量等价于不请求。 **注意：** 请求列表不要包含 0（YTM 请求），否则服务端返回空结果；YTM 值无需请求即出现在返回向量首元素。 |
 | `modelHandle` | STRING | 定价模型设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `pdeHandle` | STRING | PDE 设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
 | `mcHandle` | STRING | 蒙特卡洛设置 内存对象 句柄。 **有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。 |
