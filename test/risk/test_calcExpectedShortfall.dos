@@ -73,3 +73,7 @@ assert 1, abs(v - (-100.0)) < 1e-12
 @testing:case="calcES exact frozen reference (50%)"
 v = caplib::calcExpectedShortfall([-100.0,-50.0,0.0,50.0,100.0], 0.50, false)
 assert 1, abs(v - (-50.0)) < 1e-12
+
+// 用例目的：空样本向量应被拒绝（此前会导致 dqlibc 段错误崩溃）
+@testing:case="calcExpectedShortfall rejects empty samples", exception=1
+caplib::calcExpectedShortfall(take(double, 0), 0.95, false)
