@@ -55,7 +55,7 @@ if [ -z "$CAPLIB_PLUGIN_TAG" ]; then
     fi
 fi
 CAPLIB_PLUGIN_ASSET="caplib-plugin-dolphindb-${CAPLIB_PLUGIN_TAG}.tar.gz"
-EXPECTED_PLUGIN_FUNCTIONS=180
+EXPECTED_PLUGIN_FUNCTIONS=186
 REQUIRED_PLUGIN_FUNCTIONS=(
     "createPricingModelSettings"
     "createVolatilityCurve"
@@ -278,6 +278,11 @@ if [ "$MODE" = "--run" ] || [ "$MODE" = "--test" ]; then
 import dolphindb as ddb
 s = ddb.session()
 s.connect('localhost', 8848, 'admin', '123456')
+# the container does not preload the plugin — load it before running the script
+try:
+    s.run('loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")')
+except Exception:
+    pass  # already loaded in this server process
 s.run('run("/data/ddb/test_plugin.dos")')
 print('')
 print('  (test results shown above - DolphinDB relays print output to the client)')

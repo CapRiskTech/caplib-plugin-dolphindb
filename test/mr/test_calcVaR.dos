@@ -1,0 +1,42 @@
+// ============================================================================
+// test_calcVaR.dos
+// Per-function test for caplib::calcVaR (MarketRisk service).
+// Signature: calcVaR(profitLossSamples DOUBLE[], probability DOUBLE (0..1),
+//                    antithetic BOOL) -> DOUBLE
+// Run: test("test/mr")  |  python run_tests.py --file mr/test_calcVaR.dos
+
+samples = [-100.0, -50.0, 0.0, 50.0, 100.0];
+
+// 用例目的：正常调用，验证返回有限 DOUBLE 标量
+@testing:case="calcVaR -> finite scalar"
+v = caplib::calcVaR(samples, 0.95, false)
+assert 1, typestr(v) == "DOUBLE" && !isNull(v)
+
+// 用例目的：概率取边界内小值，验证仍返回有限值
+@testing:case="calcVaR small probability"
+v = caplib::calcVaR(samples, 0.05, false)
+assert 1, !isNull(v)
+
+// 用例目的：概率越界（=1），拒绝
+@testing:case="calcVaR rejects probability = 1", exception=1
+caplib::calcVaR(samples, 1.0, false)
+
+// 用例目的：概率越界（<=0），拒绝
+@testing:case="calcVaR rejects probability = 0", exception=1
+caplib::calcVaR(samples, 0.0, false)
+
+// 用例目的：概率传字符串（非 DOUBLE），拒绝
+@testing:case="calcVaR rejects non-double probability", exception=1
+caplib::calcVaR(samples, "0.95", false)
+
+// 用例目的：样本含非有限值，拒绝
+@testing:case="calcVaR rejects non-finite samples", exception=1
+caplib::calcVaR([1.0, 2.0/0.0], 0.95, false)
+
+// 用例目的：样本传标量，拒绝
+@testing:case="calcVaR rejects scalar samples", exception=1
+caplib::calcVaR(100.0, 0.95, false)
+
+// 用例目的：少传参数，解析期报错
+@testing:case="calcVaR rejects missing args", syntaxError=1
+caplib::calcVaR(samples)

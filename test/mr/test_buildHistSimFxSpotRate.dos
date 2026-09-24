@@ -1,0 +1,39 @@
+// ============================================================================
+// test_buildHistSimFxSpotRate.dos
+// Signature: buildHistSimFxSpotRate(simDate DATE, referenceSpot H, histStart H,
+//            histEnd H, useTemplate BOOL, fxSpotTemplate H ('' ok),
+//            handle STRING) -> handle
+// Run: test("test/mr")
+
+simDate = 2020.02.21;
+caplib::createCalendar("CAL_CFETS");
+
+refSpot   = caplib::createFxSpotRate(7.00, "USD", "CNY", simDate, simDate, "MR_SPOT_REF");
+startSpot = caplib::createFxSpotRate(6.99, "USD", "CNY", simDate, simDate, "MR_SPOT_START");
+endSpot   = caplib::createFxSpotRate(7.01, "USD", "CNY", simDate, simDate, "MR_SPOT_END");
+
+// 用例目的：useTemplate=false，模板句柄传空串，正常调用返回句柄
+@testing:case="buildHistSimFxSpotRate -> handle"
+h = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                                   false, "", "MR_SPOT_RESULT")
+assert 1, h == "MR_SPOT_RESULT"
+
+// 用例目的：结果对象已入缓存
+@testing:case="buildHistSimFxSpotRate result cached"
+r = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_RESULT")
+assert 1, size(r)==2 && r[0]=="MR_SPOT_RESULT"
+
+// 用例目的：useTemplate=true 但模板句柄为空，拒绝
+@testing:case="buildHistSimFxSpotRate requires template when enabled", exception=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                               true, "", "MR_SPOT_RESULT_X")
+
+// 用例目的：参考 spot 传不存在句柄，拒绝
+@testing:case="buildHistSimFxSpotRate rejects bad ref handle", exception=1
+caplib::buildHistSimFxSpotRate(simDate, "NO_SUCH_SPOT", startSpot, endSpot,
+                               false, "", "MR_SPOT_RESULT_Y")
+
+// 用例目的：useTemplate 传非 BOOL 标量，拒绝
+@testing:case="buildHistSimFxSpotRate rejects non-bool useTemplate", exception=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                               5, "", "MR_SPOT_RESULT_Z")

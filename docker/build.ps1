@@ -70,7 +70,7 @@ if (-not $CAPLIB_PLUGIN_TAG) {
     }
 }
 $CAPLIB_PLUGIN_ASSET = "caplib-plugin-dolphindb-$CAPLIB_PLUGIN_TAG.tar.gz"
-$EXPECTED_PLUGIN_FUNCTIONS = 180
+$EXPECTED_PLUGIN_FUNCTIONS = 186
 $REQUIRED_PLUGIN_FUNCTIONS = @('createPricingModelSettings', 'createVolatilityCurve', 'createVolatilitySurface')
 $DDB_BASE_IMAGE = if ($env:DDB_BASE_IMAGE) { $env:DDB_BASE_IMAGE } else { 'dolphindb/dolphindb:v3.00.5' }
 
@@ -305,6 +305,10 @@ if ($Mode -eq '--run' -or $Mode -eq '--test') {
 import dolphindb as ddb
 s = ddb.session()
 s.connect('localhost', 8848, 'admin', '123456')
+try:
+    s.run('loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")')
+except Exception:
+    pass
 s.run('run("/data/ddb/test_plugin.dos")')
 print('')
 print('  (test results shown above - DolphinDB relays print output to the client)')

@@ -1,0 +1,42 @@
+// ============================================================================
+// test_buildHistSimIrYieldCurve.dos
+// Signature: buildHistSimIrYieldCurve(simDate DATE, referenceCurve H,
+//            histStart H, histEnd H, curveDates DATE[], handle STRING) -> handle
+// Run: test("test/mr")
+
+simDate = 2020.02.21;
+caplib::createCalendar("CAL_CFETS");
+
+mkIr = def(d, rate, h) {
+    return caplib::createIrYieldCurve(d, [d, d + 365], [rate, rate],
+        "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", h, h, false);
+};
+refCurve   = mkIr(simDate, 0.020, "MR_IR_REF");
+startCurve = mkIr(simDate, 0.019, "MR_IR_START");
+endCurve   = mkIr(simDate, 0.021, "MR_IR_END");
+
+// 用例目的：正常调用，验证返回传入句柄
+@testing:case="buildHistSimIrYieldCurve -> handle"
+h = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
+                                     [simDate, simDate + 365], "MR_IR_RESULT")
+assert 1, h == "MR_IR_RESULT"
+
+// 用例目的：句柄指向的结果对象已入缓存且为 IrYieldCurve
+@testing:case="buildHistSimIrYieldCurve result cached"
+r = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_RESULT")
+assert 1, size(r)==2 && r[0]=="MR_IR_RESULT"
+
+// 用例目的：参考曲线传不存在的句柄，拒绝
+@testing:case="buildHistSimIrYieldCurve rejects bad ref handle", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, "NO_SUCH_IR_REF", startCurve, endCurve,
+                                 [simDate, simDate + 365], "MR_IR_RESULT_X")
+
+// 用例目的：curveDates 传标量，拒绝
+@testing:case="buildHistSimIrYieldCurve rejects scalar dates", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
+                                 simDate, "MR_IR_RESULT_Y")
+
+// 用例目的：少传参数，解析期报错
+@testing:case="buildHistSimIrYieldCurve rejects missing args", syntaxError=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate])

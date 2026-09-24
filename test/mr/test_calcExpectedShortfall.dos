@@ -1,0 +1,37 @@
+// ============================================================================
+// test_calcExpectedShortfall.dos
+// Signature: calcExpectedShortfall(profitLossSamples DOUBLE[], probability
+//            DOUBLE (0..1), antithetic BOOL) -> DOUBLE
+// Run: test("test/mr")
+
+samples = [-100.0, -50.0, 0.0, 50.0, 100.0];
+
+// 用例目的：正常调用，返回有限 DOUBLE
+@testing:case="calcExpectedShortfall -> finite scalar"
+v = caplib::calcExpectedShortfall(samples, 0.95, false)
+assert 1, typestr(v) == "DOUBLE" && !isNull(v)
+
+// 用例目的：antithetic=true 也返回有限值
+@testing:case="calcExpectedShortfall antithetic"
+v = caplib::calcExpectedShortfall(samples, 0.95, true)
+assert 1, !isNull(v)
+
+// 用例目的：概率越界（=1），拒绝
+@testing:case="calcES rejects probability = 1", exception=1
+caplib::calcExpectedShortfall(samples, 1.0, false)
+
+// 用例目的：概率传负数，拒绝
+@testing:case="calcES rejects negative probability", exception=1
+caplib::calcExpectedShortfall(samples, -0.5, false)
+
+// 用例目的：样本含空值元素，拒绝
+@testing:case="calcES rejects null sample element", exception=1
+caplib::calcExpectedShortfall([1.0, double()], 0.95, false)
+
+// 用例目的：样本传字符串向量，拒绝
+@testing:case="calcES rejects non-double samples", exception=1
+caplib::calcExpectedShortfall(["a","b"], 0.95, false)
+
+// 用例目的：少传参数，解析期报错
+@testing:case="calcES rejects missing args", syntaxError=1
+caplib::calcExpectedShortfall(samples, 0.95)

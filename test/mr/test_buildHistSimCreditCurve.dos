@@ -1,0 +1,41 @@
+// ============================================================================
+// test_buildHistSimCreditCurve.dos
+// Signature: buildHistSimCreditCurve(simDate DATE, referenceCurve H,
+//            histStart H, histEnd H, curveDates DATE[], handle STRING) -> handle
+// Run: test("test/mr")
+
+simDate = 2020.02.21;
+caplib::createCalendar("CAL_CFETS");
+
+mkCr = def(d, spread, h) {
+    return caplib::createCreditCurve(d, [d + 30, d + 365], [spread, spread],
+        "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", h, h, false);
+};
+refCurve   = mkCr(simDate, 0.002, "MR_CR_REF");
+startCurve = mkCr(simDate, 0.0018, "MR_CR_START");
+endCurve   = mkCr(simDate, 0.0022, "MR_CR_END");
+
+// 用例目的：正常调用，返回传入句柄
+@testing:case="buildHistSimCreditCurve -> handle"
+h = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
+                                    [simDate + 30, simDate + 365], "MR_CR_RESULT")
+assert 1, h == "MR_CR_RESULT"
+
+// 用例目的：结果对象已入缓存
+@testing:case="buildHistSimCreditCurve result cached"
+r = caplib::getObjectCacheJson("CreditCurve", "MR_CR_RESULT")
+assert 1, size(r)==2 && r[0]=="MR_CR_RESULT"
+
+// 用例目的：参考曲线传不存在句柄，拒绝
+@testing:case="buildHistSimCreditCurve rejects bad ref handle", exception=1
+caplib::buildHistSimCreditCurve(simDate, "NO_SUCH_CR_REF", startCurve, endCurve,
+                                [simDate + 30, simDate + 365], "MR_CR_RESULT_X")
+
+// 用例目的：curveDates 含空值，拒绝
+@testing:case="buildHistSimCreditCurve rejects null date", exception=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
+                                [date()], "MR_CR_RESULT_Y")
+
+// 用例目的：少传参数，解析期报错
+@testing:case="buildHistSimCreditCurve rejects missing args", syntaxError=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate])
