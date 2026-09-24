@@ -27,6 +27,13 @@ CONTEXT="$SCRIPT_DIR/.staging"
 IMAGE_NAME="${IMAGE_NAME:-caplibdolphin}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
+# ─── Colors / helpers (ASCII) ───────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+fail() { echo -e "${RED}FATAL: $*${NC}"; exit 1; }
+info() { echo -e "${GREEN}->${NC} $*"; }
+warn() { echo -e "${YELLOW}WARN:${NC} $*"; }
+
+
 # ─── Release versions ───────────────────────────────────────
 CAPLIB_PLUGIN_REPO="CapRiskTech/caplib-plugin-dolphindb"
 LICENSE_ASSET="dqlibc.lic"
@@ -69,12 +76,6 @@ if [ -n "$MODE" ] && [ "$MODE" != "--run" ] && [ "$MODE" != "--test" ]; then
     echo "Usage: bash docker/build.sh [--run|--test]" >&2
     exit 1
 fi
-
-# ─── Colors / helpers (ASCII) ───────────────────────────────
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
-fail() { echo -e "${RED}FATAL: $*${NC}"; exit 1; }
-info() { echo -e "${GREEN}->${NC} $*"; }
-warn() { echo -e "${YELLOW}WARN:${NC} $*"; }
 
 # Download a release asset. This release is public, so curl.exe/curl works
 # anonymously; --retry + -C - handle flaky networks and resume partials.
