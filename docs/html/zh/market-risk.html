@@ -17,13 +17,8 @@
         <h1>通用</h1>
         <p class="lede">跨资产工具、定价设置、风险设置、情景设置以及共享 protobuf 工具。</p>
       </header>
-      <section id="user-guide" class="panel"><h2>用户指南</h2><p>市场风险：历史模拟情景生成器（IR/信用曲线、FX 即期、FX 波动率）与 VaR / 期望损失（ES）度量。本页包含 6 个函数。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
-
-settings = caplib::createPricingSettings(
-    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0, take(0, 0),
-    &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
-
-json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>市场风险：历史模拟情景生成器（IR/信用曲线、FX 即期、FX 波动率）与 VaR / 期望损失（ES）度量。本页包含 6 个函数。</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
 <section class="api-group"><h2>市场风险</h2>
 <article class="api-card" data-search="buildhistsimiryelcurve 基于历史模拟生成 IR 收益率曲线情景">
   <div class="api-card-head">

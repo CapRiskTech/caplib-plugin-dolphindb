@@ -18,12 +18,7 @@
         <p class="lede">Cross-asset utilities, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</p>
       </header>
       <section id="user-guide" class="panel"><h2>User Guide</h2><p>Market Risk: historical-simulation scenario generators (IR / credit curves, FX spot, FX volatility) and VaR / Expected Shortfall measures. This page contains 6 functions.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
-
-settings = caplib::createPricingSettings(
-    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0, take(0, 0),
-    &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
-
-json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
+vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
 <section class="api-group"><h2>Market Risk</h2>
 <article class="api-card" data-search="build an ir yield-curve historical simulation scenario generator. simdate date referencecurve histstart histend curvedates handle">
   <div class="api-card-head">
