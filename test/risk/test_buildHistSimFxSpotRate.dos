@@ -45,3 +45,23 @@ r1 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
 h2 = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "MR_SPOT_DET")
 r2 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
 assert 1, h1 == "MR_SPOT_DET" && h2 == "MR_SPOT_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_SPOT_DET" && r2[0]=="MR_SPOT_DET"
+
+// 用例目的：simDate 传字符串（需 DATE），拒绝
+@testing:case="buildHistSimFxSpotRate rejects wrong type simDate", exception=1
+caplib::buildHistSimFxSpotRate("2020.02.21", refSpot, startSpot, endSpot, false, "", "PS_FX_X1")
+
+// 用例目的：simDate 传空日期，拒绝
+@testing:case="buildHistSimFxSpotRate rejects null simDate", exception=1
+caplib::buildHistSimFxSpotRate(date(), refSpot, startSpot, endSpot, false, "", "PS_FX_X2")
+
+// 用例目的：referenceSpot 传空句柄，拒绝
+@testing:case="buildHistSimFxSpotRate rejects null ref handle", exception=1
+caplib::buildHistSimFxSpotRate(simDate, string(), startSpot, endSpot, false, "", "PS_FX_X3")
+
+// 用例目的：useTemplate 传向量（需标量 BOOL），拒绝
+@testing:case="buildHistSimFxSpotRate rejects vector useTemplate", exception=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, [false], "", "PS_FX_X4")
+
+// 用例目的：多传参数，解析期报错
+@testing:case="buildHistSimFxSpotRate rejects extra argument", syntaxError=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "PS_FX_X5", 1)

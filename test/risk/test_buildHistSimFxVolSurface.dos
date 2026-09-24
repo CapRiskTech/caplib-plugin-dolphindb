@@ -76,3 +76,23 @@ caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
 caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
                                  volDates, volStrikes, spotRate, spotRate,
                                  forCurve, "", "MR_SURF_RESULT_Z")
+
+// 用例目的：simDate 传字符串（需 DATE），拒绝
+@testing:case="buildHistSimFxVolSurface rejects wrong type simDate", exception=1
+caplib::buildHistSimFxVolSurface("2021.03.30", refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X1")
+
+// 用例目的：simDate 传空日期，拒绝
+@testing:case="buildHistSimFxVolSurface rejects null simDate", exception=1
+caplib::buildHistSimFxVolSurface(date(), refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X2")
+
+// 用例目的：referenceVolSurf 传空句柄，拒绝
+@testing:case="buildHistSimFxVolSurface rejects null ref handle", exception=1
+caplib::buildHistSimFxVolSurface(simDate, string(), startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X3")
+
+// 用例目的：spot 传普通字符串（非句柄），拒绝
+@testing:case="buildHistSimFxVolSurface rejects plain-string spot", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, "badspot", domCurve, forCurve, "", "PF_VOL_X4")
+
+// 用例目的：多传参数，解析期报错
+@testing:case="buildHistSimFxVolSurface rejects extra argument", syntaxError=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X5", 1)

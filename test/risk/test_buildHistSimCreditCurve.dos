@@ -47,3 +47,23 @@ r1 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
 h2 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate + 30, simDate + 365], "MR_CR_DET")
 r2 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
 assert 1, h1 == "MR_CR_DET" && h2 == "MR_CR_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_CR_DET" && r2[0]=="MR_CR_DET"
+
+// 用例目的：simDate 传字符串（需 DATE），拒绝
+@testing:case="buildHistSimCreditCurve rejects wrong type simDate", exception=1
+caplib::buildHistSimCreditCurve("2020.02.21", refCurve, startCurve, endCurve, [simDate+30, simDate+365], "PC_CR_X1")
+
+// 用例目的：simDate 传空日期，拒绝
+@testing:case="buildHistSimCreditCurve rejects null simDate", exception=1
+caplib::buildHistSimCreditCurve(date(), refCurve, startCurve, endCurve, [simDate+30, simDate+365], "PC_CR_X2")
+
+// 用例目的：curveDates 逆序（尾部 < 首部），拒绝
+@testing:case="buildHistSimCreditCurve rejects reversed curveDates", exception=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate+365, simDate+30], "PC_CR_X3")
+
+// 用例目的：referenceCurve 传空句柄，拒绝
+@testing:case="buildHistSimCreditCurve rejects null ref handle", exception=1
+caplib::buildHistSimCreditCurve(simDate, string(), startCurve, endCurve, [simDate+30], "PC_CR_X4")
+
+// 用例目的：多传参数，解析期报错
+@testing:case="buildHistSimCreditCurve rejects extra argument", syntaxError=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate+30, simDate+365], "PC_CR_X5", 1)

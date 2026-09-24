@@ -46,3 +46,30 @@ assert 1, e1 == e2
 @testing:case="calcES known-sample -> non-negative finite"
 v = caplib::calcExpectedShortfall(samples, 0.95, false);
 assert 1, v >= 0.0 && !isNull(v)
+
+// 用例目的：多传参数，解析期报错
+@testing:case="calcES rejects extra argument", syntaxError=1
+caplib::calcExpectedShortfall(samples, 0.95, false, 1)
+
+// 用例目的：概率传向量（需标量），拒绝
+@testing:case="calcES rejects vector probability", exception=1
+caplib::calcExpectedShortfall(samples, [0.95], false)
+
+// 用例目的：antithetic 传非 BOOL，拒绝
+@testing:case="calcES rejects non-bool antithetic", exception=1
+caplib::calcExpectedShortfall(samples, 0.95, 5)
+
+// 用例目的：95% 置信、样本 [-100,-50,0,50,100]，ES 精确 = 0
+@testing:case="calcES exact frozen reference (95%)"
+v = caplib::calcExpectedShortfall([-100.0,-50.0,0.0,50.0,100.0], 0.95, false)
+assert 1, abs(v - 0.0) < 1e-12
+
+// 用例目的：5% 置信、同样本，ES 精确 = -100（最尾部损失均值）
+@testing:case="calcES exact frozen reference (5%)"
+v = caplib::calcExpectedShortfall([-100.0,-50.0,0.0,50.0,100.0], 0.05, false)
+assert 1, abs(v - (-100.0)) < 1e-12
+
+// 用例目的：50% 置信、同样本，ES 精确 = -50（下尾一半损失均值）
+@testing:case="calcES exact frozen reference (50%)"
+v = caplib::calcExpectedShortfall([-100.0,-50.0,0.0,50.0,100.0], 0.50, false)
+assert 1, abs(v - (-50.0)) < 1e-12
