@@ -4,7 +4,8 @@
 // This script is stripped from test/test_fianalytics.dos and shows the main
 // fixed-income curve and bond pricing flow.
 
-loadPlugin("PluginCaplib")
+
+caplib::createCalendar("CAL_CFETS");
 
 asOfDate = 2021.07.22
 currency = "CNY"

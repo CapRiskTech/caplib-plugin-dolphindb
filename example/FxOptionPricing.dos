@@ -1,8 +1,122 @@
+
 // =============================================================================
 // DolphinDB Caplib Plugin Example: FX Option Pricing
 // =============================================================================
-// Run this file from the repository root. The maintained end-to-end example
-// loads the plugin, creates FX curves, spot and volatility data, builds a
-// forward and a European option, prices both instruments, and prints results.
+// Self-contained: loads the plugin, creates FX curves/spot/volatility, builds
+// a volatility surface and FX market data, prices an FX European option, and
+// prints the handle plus the JSON result. Mirrors FxAnalytics.dos.
 
-run("example/FxAnalytics.dos")
+
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
+
+// USD discount curve.
+usdCurve = caplib::createIrYieldCurve(
+    asOfDate,
+    [2021.04.06, 2021.04.13, 2021.04.20, 2021.04.30],
+    [0.00016, 0.00016, 0.00016, 0.00017],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "FOP_USD_CURVE", false)
+
+// EUR discount curve.
+eurCurve = caplib::createIrYieldCurve(
+    asOfDate,
+    [2021.04.06, 2021.04.13, 2021.04.20, 2021.04.30],
+    [-0.00814, -0.00766, -0.00761, -0.00764],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "FOP_EUR_CURVE", false)
+
+// FX spot rate resource.
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "FOP_SPOT_RATE", true)
+
+// Register the FX spot template (needed by the option-quote / vol-surface chain).
+calEuta = "CAL_EUTA";
+caplib::createCalendar(calEuta);
+fxSpotTpl = caplib::createFxSpotTemplate(
+    "EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", ["CAL_EUTA"], "2d", true);
+
+// FX market conventions used by the vol-surface builder.
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "FOP_MKT_CONV", true)
+
+volSurfBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "VOL_BUILD_SETTINGS", true);
+
+// FX volatility surface model.
+volSurfDefinition = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FOP_VOL_DEF", true)
+
+// Analytical BSM pricing settings.
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, [0.0], "FOP_BSM_MODEL", false)
+bsmSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, array(INT, 0), bsmModel, "", "", "FOP_BSM_SETTINGS", false)
+
+// FX risk settings.
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FOP_IR_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FOP_PRICE_RISK", false)
+volRisk = caplib::createVolRiskSettings(
+    1, 1, 1.0e-2, 0, 0, 1.0e-2, 0, "FOP_VOL_RISK", false)
+priceVolRisk = caplib::createPriceVolRiskSettings(
+    1, 1.0e-2, 1.0e-2, 0, 0, 1.0e-2, 1.0e-2, 0, "FOP_PRICE_VOL_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "FOP_THETA_RISK", false)
+fxOptionRisk = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", true);
+
+fxRisk = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "FOP_RISK", true)
+
+// Scenario settings for FX output sweeps.
+priceScn = caplib::createScnSettings(-0.20, 0.20, 11, 1, "FOP_PRICE_SCN", false)
+volScn = caplib::createScnSettings(-0.05, 0.05, 12, 0, "FOP_VOL_SCN", false)
+scnAnalysis = caplib::createScnAnalysisSettings(
+    "PRICE_VOL_SCN_ANALYSIS", priceScn, volScn, 0, "FOP_SCN_ANALYSIS", false)
+
+// FX option quote matrix -> volatility-surface bootstrap.
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"];
+quoteTerms = ["ON", "1W", "2W", "3W", "1M", "2M", "3M", "4M", "6M",
+              "9M", "1Y", "18M", "2Y", "3Y", "4Y", "5Y", "7Y", "10Y"];
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.05730, 0.05870, 0.06115, 0.06105,
+     0.06135, 0.06210, 0.06250, 0.06315, 0.06330, 0.06635,
+     0.06780, 0.07125, 0.07338, 0.07533, 0.07825, 0.08190],
+    [-0.00310, -0.00290, -0.00285, -0.00230, -0.00248, -0.00213,
+     -0.00180, -0.00160, -0.00135, -0.00105, -0.00100, -0.00182,
+     -0.00248, -0.00165, -0.00138, -0.00120, -0.00168, -0.00197],
+    [0.00115, 0.00135, 0.00135, 0.00140, 0.00147, 0.00177,
+     0.00205, 0.00220, 0.00250, 0.00295, 0.00325, 0.00330,
+     0.00333, 0.00345, 0.00350, 0.00350, 0.00322, 0.00307],
+    [-0.00565, -0.00520, -0.00520, -0.00415, -0.00450, -0.00380,
+     -0.00330, -0.00290, -0.00240, -0.00195, -0.00185, -0.00360,
+     -0.00480, -0.00330, -0.00275, -0.00245, -0.00373, -0.00410],
+    [0.00310, 0.00385, 0.00415, 0.00405, 0.00450, 0.00530,
+     0.00625, 0.00678, 0.00815, 0.00995, 0.01120, 0.01100,
+     0.01150, 0.01205, 0.01225, 0.01240, 0.01058, 0.01035]);
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues, "FOP_OPTION_QUOTES", true)
+
+// Build the FX volatility surface.
+volSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0],
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volSurfDefinition[0], volSurfBuildSettings[0], "FOP_BUILT_VOL_SURF", true)
+
+// Assemble FX market data from curves, spot, and the vol surface.
+eurusdMktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], volSurface[0], "", "FOP_MKT", true)
+
+// Create a vanilla FX European option and price it.
+fxEuropean = caplib::createEuropeanOption(
+    "CALL", 1.1761, 2021.09.30, 2021.10.01,
+    1000000.0, "USD", "SPOT", "USD", "EURUSD", "FOP_EUROPEAN", false)
+result = caplib::priceFxEuropeanOption(
+    fxEuropean, asOfDate, eurusdMktData[0], bsmSettings, fxOptionRisk[0], "", "", true)
+print(result)

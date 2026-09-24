@@ -1,8 +1,14 @@
 // ============================================================================
 // test_buildHistSimCreditCurve.dos
+// Per-function test for caplib::buildHistSimCreditCurve (MarketRisk service).
 // Signature: buildHistSimCreditCurve(simDate DATE, referenceCurve H,
 //            histStart H, histEnd H, curveDates DATE[], handle STRING) -> handle
-// Run: test("test/risk")
+// Run: test("test/risk")  |  python run_tests.py
+//
+// Case design follows the plugin test-review checklist (2026-07-10):
+// wrong dtype / scalar-vector form / nulls / arg-count / date ordering /
+// wrong-handle and wrong-TYPE handle / frozen numeric reference / keyword /
+// size 1,1024,65536 / repeat / multithreading (submitJob).
 
 simDate = 2020.02.21;
 caplib::createCalendar("CAL_CFETS");
@@ -15,6 +21,11 @@ refCurve   = mkCr(simDate, 0.002, "MR_CR_REF");
 startCurve = mkCr(simDate, 0.0018, "MR_CR_START");
 endCurve   = mkCr(simDate, 0.0022, "MR_CR_END");
 
+// An IR curve handle used to test wrong-TYPE handles.
+wrongIr = caplib::createIrYieldCurve(simDate, [simDate, simDate+365], [0.02,0.02],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "MR_CR_WRONG_IR", "MR_CR_WRONG_IR", false);
+
 // 用例目的：正常调用，返回传入句柄
 @testing:case="buildHistSimCreditCurve -> handle"
 h = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
@@ -26,27 +37,41 @@ assert 1, h == "MR_CR_RESULT"
 r = caplib::getObjectCacheJson("CreditCurve", "MR_CR_RESULT")
 assert 1, size(r)==2 && r[0]=="MR_CR_RESULT"
 
+// 用例冻结参考：模拟 = 参考 + (histEnd - histStart) = 0.002 + 0.0004 = 0.0024，
+// 365D pillar 为 0.0024（JSON 序列化冻结值；30D pillar 另有短端插值，不参与断言）
+@testing:case="buildHistSimCreditCurve frozen value (0.0024 additive shift)"
+j = caplib::getObjectCacheJson("CreditCurve", "MR_CR_RESULT")[1]
+assert 1, strpos(j, "0.0024000000000000002") > -1
+
 // 用例目的：参考曲线传不存在句柄，拒绝
 @testing:case="buildHistSimCreditCurve rejects bad ref handle", exception=1
 caplib::buildHistSimCreditCurve(simDate, "NO_SUCH_CR_REF", startCurve, endCurve,
                                 [simDate + 30, simDate + 365], "MR_CR_RESULT_X")
 
+// 用例目的：参考曲线传 IrYieldCurve 句柄（错类型句柄），拒绝
+@testing:case="buildHistSimCreditCurve rejects ir-curve handle", exception=1
+caplib::buildHistSimCreditCurve(simDate, wrongIr, startCurve, endCurve,
+                                [simDate + 30, simDate + 365], "MR_CR_BAD_IR")
+
+// 用例目的：curveDates 传标量，拒绝
+@testing:case="buildHistSimCreditCurve rejects scalar dates", exception=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
+                                simDate, "MR_CR_SCALAR")
+
+// 用例目的：curveDates 长度为 0，拒绝
+@testing:case="buildHistSimCreditCurve rejects empty date vector", exception=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
+                                take(date, 0), "MR_CR_EMPTY")
+
+// 用例目的：curveDates 只含一个日期（至少两个），拒绝
+@testing:case="buildHistSimCreditCurve rejects single-date vector", exception=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
+                                [simDate + 30], "MR_CR_SINGLE")
+
 // 用例目的：curveDates 含空值，拒绝
 @testing:case="buildHistSimCreditCurve rejects null date", exception=1
 caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
                                 [date()], "MR_CR_RESULT_Y")
-
-// 用例目的：少传参数，解析期报错
-@testing:case="buildHistSimCreditCurve rejects missing args", syntaxError=1
-caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate])
-
-// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
-@testing:case="buildHistSimCreditCurve deterministic repeat -> both readable"
-h1 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate + 30, simDate + 365], "MR_CR_DET")
-r1 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
-h2 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate + 30, simDate + 365], "MR_CR_DET")
-r2 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
-assert 1, h1 == "MR_CR_DET" && h2 == "MR_CR_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_CR_DET" && r2[0]=="MR_CR_DET"
 
 // 用例目的：simDate 传字符串（需 DATE），拒绝
 @testing:case="buildHistSimCreditCurve rejects wrong type simDate", exception=1
@@ -64,6 +89,59 @@ caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDat
 @testing:case="buildHistSimCreditCurve rejects null ref handle", exception=1
 caplib::buildHistSimCreditCurve(simDate, string(), startCurve, endCurve, [simDate+30], "PC_CR_X4")
 
-// 用例目的：多传参数，解析期报错
+// 用例冻结参考：1024 个 pillar 日期（credit term 必须为正，从 simDate+1 起），正常生成
+@testing:case="buildHistSimCreditCurve size=1024 pillars"
+h1024 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
+                                        (simDate+1)..(simDate+1024), "MR_CR_1024")
+assert 1, h1024 == "MR_CR_1024"
+
+// 用例目的：65536 个 pillar 超过服务端上限，拒绝
+@testing:case="buildHistSimCreditCurve rejects 65536 pillars (server cap)", exception=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
+                                (simDate+1)..(simDate+65536), "MR_CR_65536")
+
+// 用例目的：少传参数，解析期报错
+@testing:case="buildHistSimCreditCurve rejects missing args", syntaxError=1
+caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate])
+
+// 用例目的：多传参数（文档列有可选 returnJson，但当前插件构建未实现），解析期报错
 @testing:case="buildHistSimCreditCurve rejects extra argument", syntaxError=1
 caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate+30, simDate+365], "PC_CR_X5", 1)
+
+// 用例目的：keyword 参数不被插件函数支持，解析期报错
+@testing:case="buildHistSimCreditCurve rejects keyword arguments", syntaxError=1
+caplib::buildHistSimCreditCurve(simDate=simDate, referenceCurve=refCurve,
+    histStart=startCurve, histEnd=endCurve, curveDates=[simDate+30, simDate+365],
+    handle="MR_CR_KW")
+
+// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
+@testing:case="buildHistSimCreditCurve deterministic repeat -> both readable"
+h1 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate+30, simDate+365], "MR_CR_DET")
+r1 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
+h2 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate+30, simDate+365], "MR_CR_DET")
+r2 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
+assert 1, h1 == "MR_CR_DET" && h2 == "MR_CR_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_CR_DET" && r2[0]=="MR_CR_DET"
+
+// 用例目的：submitJob 单 job，job 内自包含建曲线并生成情景，返回冻结数值 JSON
+@testing:case="buildHistSimCreditCurve submitJob -> frozen value"
+mrJobCr = def(d, idx) {
+    sfx = string(idx);
+    a1 = caplib::createCreditCurve(d,[d+30,d+365],[0.002,0.002],"ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","MR_JOB_CR_REF_"+sfx,"MR_JOB_CR_REF_"+sfx,false);
+    a2 = caplib::createCreditCurve(d,[d+30,d+365],[0.0018,0.0018],"ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","MR_JOB_CR_ST_"+sfx,"MR_JOB_CR_ST_"+sfx,false);
+    a3 = caplib::createCreditCurve(d,[d+30,d+365],[0.0022,0.0022],"ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","MR_JOB_CR_EN_"+sfx,"MR_JOB_CR_EN_"+sfx,false);
+    caplib::buildHistSimCreditCurve(d, a1, a2, a3, [d+30,d+365], "MR_JOB_CR_RES_"+sfx);
+    return caplib::getObjectCacheJson("CreditCurve", "MR_JOB_CR_RES_"+sfx)[1];
+}
+jid = submitJob("MR_CR_JOB", "", mrJobCr, simDate, 0)
+jjson = getJobReturn(jid, true)
+assert 1, strpos(jjson, "0.0024000000000000002") > -1
+
+// 用例目的：submitJob 并发 4 job，各自结果均含冻结数值
+@testing:case="buildHistSimCreditCurve submitJob x4 concurrent"
+jids = array(STRING, 0);
+for(i in 0..3)
+    jids.append!(submitJob("MR_CR_JOB_C" + string(i), "", mrJobCr, simDate, i+1))
+ok = true;
+for(i in 0..3)
+    ok = ok && strpos(getJobReturn(jids[i], true), "0.0024000000000000002") > -1
+assert 1, ok

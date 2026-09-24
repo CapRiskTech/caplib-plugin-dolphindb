@@ -2,13 +2,13 @@
 
 Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件。插件通过 CapRiskTech 提供的 `dqlibc` 计算库，覆盖固定收益（Fixed Income，FI）、利率（Interest Rate，IR）、外汇（Foreign Exchange，FX）、权益（Equity，EQ）、商品（Commodity，CM）和信用（Credit，CR）等资产类别，可用于曲线构建、市场数据组装、金融工具创建、定价和风险分析。
 
-当前版本 `0.0.13`，基于 `dqlibdolphin` 的 `release-caplib` 分支构建，提供 186 个对外接口
-（相对 0.0.11 净删 22 个接口：Cap/Floor、Swaption、跨币种曲线构建、部分 calc* 计算器和静态数据 bytes 类接口；
-同时新增 `specificPricingRequests` 暴露）。注意：`createPricingSettings` 自 0.0.13 起仅支持
-9 必填 + 可选 `returnJson` 的 10 参形式，不含 `specificPricingRequests` 的旧形式不再接受（破坏性变更）。
+当前版本 `0.0.14`，基于 `dqlibdolphin` 的 `release-caplib` 分支构建，提供 186 个对外接口。
+本版在 0.0.13（180 接口）基础上新增 6 个市场风险（MarketRisk）接口；同时修复了空盈亏样本向量导致 dqlibc 段错误的问题。
+注意：`createPricingSettings` 自 0.0.13 起仅支持 9 必填 + 可选 `returnJson` 的形式，
+不含 `specificPricingRequests` 的旧形式不再接受（破坏性变更）。
 插件及 C++ 依赖使用 GCC 8.4 / ABI0，
 可使用官方 DolphinDB v3.00.5 镜像自带的 C++ 运行库，无需替换 `libstdc++.so.6`。
-下载 [0.0.13 发行包](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13)，详见 [发行说明](releases/0.0.13.md)。
+下载 [0.0.14 发行包](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.14)，详见 [发行说明](releases/0.0.14.md)。
 完整文档入口：
 
 - [完整中文使用说明](docs/DQLIB_DOCUMENTATION.md)
@@ -62,8 +62,8 @@ loadPlugin("caplib")
 
 ### 使用预编译发行包安装
 
-1. 从本仓库的 [GitHub Releases](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13)
-   下载 `caplib-plugin-dolphindb-0.0.13.tar.gz` 及其 SHA-256 校验文件。
+1. 从本仓库的 [GitHub Releases](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.14)
+   下载 `caplib-plugin-dolphindb-0.0.14.tar.gz` 及其 SHA-256 校验文件。
 2. 将下列文件放在同一插件目录中，并保留 `data` 子目录：
 
    ```text
@@ -262,7 +262,7 @@ bash docker/build.sh --test
 使用本地包或离线构建：
 
 ```bash
-CAPLIB_PLUGIN_ARCHIVE="$PWD/caplib-plugin-dolphindb-0.0.13.tar.gz" bash docker/build.sh
+CAPLIB_PLUGIN_ARCHIVE="$PWD/caplib-plugin-dolphindb-0.0.14.tar.gz" bash docker/build.sh
 ```
 
 Windows 可先设置 `$env:CAPLIB_PLUGIN_ARCHIVE` 再运行 `docker\build.bat`。
@@ -297,7 +297,7 @@ GCC 8 兼容包的符号要求和验证方法见 [升级说明](docs/GCC8_OFFICI
 | 现象 | 原因 | 处理方式 |
 | --- | --- | --- |
 | `Invalid plugin file` | 使用了带 CMake 变量的源模板，或描述文件版本不匹配 | 使用本仓库发行包内的 `PluginCaplib.txt`，并确保版本匹配 |
-| `GLIBCXX_* not found` | 加载了旧的 GCC 13 二进制，或混用了两个版本的动态库 | 同时替换为 0.0.13 GCC 8 包内两个动态库，保留镜像运行库；见 [升级说明](docs/GCC8_OFFICIAL_IMAGE.md) |
+| `GLIBCXX_* not found` | 加载了旧的 GCC 13 二进制，或混用了两个版本的动态库 | 同时替换为 0.0.14 GCC 8 包内两个动态库，保留镜像运行库；见 [升级说明](docs/GCC8_OFFICIAL_IMAGE.md) |
 | `LICENSE_FILE_NOT_FOUND` | 未找到 `dqlibc.lic` | 将许可证放到上述三个位置之一 |
 | 句柄类型错误 | 对象句柄的 protobuf 类型与参数要求不符 | 检查逐接口参数表中 `*Handle` 的来源和类型 |
 | 函数抛出异常 | 服务失败或插件参数校验失败 | 查看异常消息；插件不会返回部分结果 |

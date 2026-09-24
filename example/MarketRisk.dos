@@ -1,0 +1,158 @@
+// =============================================================================
+// DolphinDB caplib Plugin Example: Market Risk
+// =============================================================================
+// This script demonstrates the six MarketRisk service interfaces:
+//   1. buildHistSimIrYieldCurve  - historical-simulation IR curve scenario
+//   2. buildHistSimCreditCurve   - historical-simulation credit curve scenario
+//   3. buildHistSimFxSpotRate    - historical-simulation FX spot scenario
+//   4. buildHistSimFxVolSurface  - historical-simulation FX vol surface scenario
+//   5. calcVaR                   - value-at-risk from P&L samples
+//   6. calcExpectedShortfall     - expected shortfall from P&L samples
+// Stripped from test/risk/*.dos and kept as an executable usage example.
+
+
+caplib::createCalendar("CAL_CFETS");
+
+simDate = 2020.02.21;
+
+// Shared builder: a flat two-point zero-rate IR curve.
+mkIr = def(d, rate, h) {
+    return caplib::createIrYieldCurve(d, [d, d + 365], [rate, rate],
+        "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+        "CONTINUOUS_COMPOUNDING", "CNY", h, h, false);
+};
+
+// Shared builder: a flat two-point credit spread curve.
+mkCr = def(d, spread, h) {
+    return caplib::createCreditCurve(d, [d + 30, d + 365], [spread, spread],
+        "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", h, h, false);
+};
+
+// -----------------------------------------------------------------------------
+// 1. buildHistSimIrYieldCurve
+//    Signature: (simDate DATE, referenceCurve H, histStart H, histEnd H,
+//                curveDates DATE[], handle STRING) -> handle STRING
+//    The simulated curve applies the histStart->histEnd relative move to the
+//    reference curve and caches the result under `handle`.
+// -----------------------------------------------------------------------------
+refIrCurve   = mkIr(simDate, 0.020, "MR_EX_IR_REF");
+startIrCurve = mkIr(simDate, 0.019, "MR_EX_IR_START");
+endIrCurve   = mkIr(simDate, 0.021, "MR_EX_IR_END");
+
+irResultHandle = caplib::buildHistSimIrYieldCurve(
+    simDate, refIrCurve, startIrCurve, endIrCurve,
+    [simDate, simDate + 365], "MR_EX_IR_RESULT");
+print(irResultHandle);
+
+// The generated curve is retrievable from the object cache.
+print(caplib::getObjectCacheJson("IrYieldCurve", "MR_EX_IR_RESULT"));
+
+// -----------------------------------------------------------------------------
+// 2. buildHistSimCreditCurve
+//    Signature: (simDate DATE, referenceCurve H, histStart H, histEnd H,
+//                curveDates DATE[], handle STRING) -> handle STRING
+// -----------------------------------------------------------------------------
+refCrCurve   = mkCr(simDate, 0.002, "MR_EX_CR_REF");
+startCrCurve = mkCr(simDate, 0.0018, "MR_EX_CR_START");
+endCrCurve   = mkCr(simDate, 0.0022, "MR_EX_CR_END");
+
+crResultHandle = caplib::buildHistSimCreditCurve(
+    simDate, refCrCurve, startCrCurve, endCrCurve,
+    [simDate + 30, simDate + 365], "MR_EX_CR_RESULT");
+print(crResultHandle);
+print(caplib::getObjectCacheJson("CreditCurve", "MR_EX_CR_RESULT"));
+
+// -----------------------------------------------------------------------------
+// 3. buildHistSimFxSpotRate
+//    Signature: (simDate DATE, referenceSpot H, histStart H, histEnd H,
+//                useTemplate BOOL, fxSpotTemplate H ('' ok),
+//                handle STRING) -> handle STRING
+// -----------------------------------------------------------------------------
+refSpot   = caplib::createFxSpotRate(7.00, "USD", "CNY", simDate, simDate, "MR_EX_SPOT_REF");
+startSpot = caplib::createFxSpotRate(6.99, "USD", "CNY", simDate, simDate, "MR_EX_SPOT_START");
+endSpot   = caplib::createFxSpotRate(7.01, "USD", "CNY", simDate, simDate, "MR_EX_SPOT_END");
+
+fxResultHandle = caplib::buildHistSimFxSpotRate(
+    simDate, refSpot, startSpot, endSpot,
+    false, "", "MR_EX_SPOT_RESULT");
+print(fxResultHandle);
+print(caplib::getObjectCacheJson("FxSpotRate", "MR_EX_SPOT_RESULT"));
+
+// -----------------------------------------------------------------------------
+// 4. buildHistSimFxVolSurface
+//    Signature: (simDate DATE, referenceVolSurf H, histStart H, histEnd H,
+//                volSurfaceDates DATE[], volSurfaceStrikes (vector of DOUBLE[]),
+//                spot H, domCurve H, forCurve H, settings H ('' ok),
+//                handle STRING) -> handle STRING
+//    NOTE: on current dqlibc server builds the FX vol-surface scenario
+//    generator may not converge and raises an error; the call is wrapped in
+//    try/catch so the example stays executable end to end.
+// -----------------------------------------------------------------------------
+volSimDate = 2021.03.30;
+
+// The historical-simulation builder interpolates surfaces, so each surface
+// must carry at least TWO term points.
+surfDefinition = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
+    1.0e-4, 1.0e4, "MR_EX_SURF_DEF", true);
+fxMktConventions = caplib::createFxMktConventions(
+    "EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "MR_EX_SURF_CONV", true);
+
+termDates = [2021.06.30, 2021.09.30];
+strikes2 = matrix([1.00, 1.00], [1.1761, 1.1761], [1.35, 1.35]);
+volsRef   = matrix([0.06, 0.06], [0.06, 0.06], [0.06, 0.06]);
+volsStart = matrix([0.05, 0.05], [0.05, 0.05], [0.05, 0.05]);
+volsEnd   = matrix([0.07, 0.07], [0.07, 0.07], [0.07, 0.07]);
+
+refSurf   = caplib::createFxVolatilitySurface(volSimDate, "EUR", "USD", termDates, strikes2, volsRef,   surfDefinition[0], fxMktConventions[0], "MR_EX_SURF_REF");
+startSurf = caplib::createFxVolatilitySurface(volSimDate, "EUR", "USD", termDates, strikes2, volsStart, surfDefinition[0], fxMktConventions[0], "MR_EX_SURF_START");
+endSurf   = caplib::createFxVolatilitySurface(volSimDate, "EUR", "USD", termDates, strikes2, volsEnd,   surfDefinition[0], fxMktConventions[0], "MR_EX_SURF_END");
+
+spotRate = caplib::createFxSpotRate(1.1761, "EUR", "USD", volSimDate, volSimDate, "MR_EX_SURF_SPOT");
+domCurve = caplib::createFlatIrYieldCurve(volSimDate, "EUR", 0.020, "MR_EX_SURF_DOM");
+forCurve = caplib::createFlatIrYieldCurve(volSimDate, "USD", 0.010, "MR_EX_SURF_FOR");
+
+volDates = termDates;
+volStrikes = [[1.00, 1.1761, 1.35], [1.00, 1.1761, 1.35]];
+
+try {
+    volResultHandle = caplib::buildHistSimFxVolSurface(
+        volSimDate, refSurf, startSurf, endSurf,
+        volDates, volStrikes, spotRate, domCurve,
+        forCurve, "", "MR_EX_SURF_RESULT");
+    print(volResultHandle);
+    print(caplib::getObjectCacheJson("FxVolatilitySurface", "MR_EX_SURF_RESULT"));
+} catch(ex) {
+    writeLog("buildHistSimFxVolSurface not supported by current server: " + ex);
+}
+
+// -----------------------------------------------------------------------------
+// 5. calcVaR
+//    Signature: (profitLossSamples DOUBLE[], probability DOUBLE (0..1),
+//                antithetic BOOL) -> DOUBLE
+//    Positive output = loss at the given confidence level.
+// -----------------------------------------------------------------------------
+profitLossSamples = [-100.0, -50.0, 0.0, 50.0, 100.0];
+
+var95 = caplib::calcVaR(profitLossSamples, 0.95, false);   // frozen reference: 90
+var50 = caplib::calcVaR(profitLossSamples, 0.50, false);   // frozen reference: 0
+print(var95);
+print(var50);
+
+// antithetic=true runs the symmetric-sample path.
+print(caplib::calcVaR(profitLossSamples, 0.95, true));
+
+// -----------------------------------------------------------------------------
+// 6. calcExpectedShortfall
+//    Signature: (profitLossSamples DOUBLE[], probability DOUBLE (0..1),
+//                antithetic BOOL) -> DOUBLE
+//    Average loss beyond the VaR threshold (conditional tail expectation).
+// -----------------------------------------------------------------------------
+es95 = caplib::calcExpectedShortfall(profitLossSamples, 0.95, false);  // frozen reference: 0
+es50 = caplib::calcExpectedShortfall(profitLossSamples, 0.50, false);  // frozen reference: -50
+print(es95);
+print(es50);
+print(caplib::calcExpectedShortfall(profitLossSamples, 0.95, true));

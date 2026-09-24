@@ -4,7 +4,8 @@
 // This script is stripped from test/test_iranalytics.dos and shows the native
 // IR curve, schedule, instrument, and pricing workflow.
 
-loadPlugin("PluginCaplib")
+
+caplib::createCalendar("CAL_CFETS");
 
 asOfDate = 2022.03.09
 currency = "CNY"

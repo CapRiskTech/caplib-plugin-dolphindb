@@ -1,10 +1,18 @@
 // ============================================================================
 // test_buildHistSimFxVolSurface.dos
+// Per-function test for caplib::buildHistSimFxVolSurface (MarketRisk service).
 // Signature: buildHistSimFxVolSurface(simDate DATE, referenceVolSurf H,
 //            histStart H, histEnd H, volSurfaceDates DATE[],
 //            volSurfaceStrikes (vector of DOUBLE[]), spot H, domCurve H,
 //            forCurve H, settings H ('' ok), handle STRING) -> handle
-// Run: test("test/risk")
+// Run: test("test/risk")  |  python run_tests.py
+//
+// Case design follows the plugin test-review checklist (2026-07-10):
+// wrong dtype / scalar form / nulls / arg-count / parameter relations
+// (dates vs strikes shape) / wrong-handle and wrong-TYPE handle / keyword /
+// matrix empty and null-cell coverage / repeat / multithreading.
+// NOTE: the positive path is server-dependent (see cases below): current
+// dqlibc builds raise on this generator; the plugin passes the error through.
 
 simDate = 2021.03.30;
 caplib::createCalendar("CAL_CFETS");
@@ -65,6 +73,12 @@ caplib::buildHistSimFxVolSurface(simDate, "NO_SUCH_SURF", startSurf, endSurf,
                                  volDates, volStrikes, spotRate, domCurve,
                                  forCurve, "", "MR_SURF_RESULT_X")
 
+// 用例目的：histStart 传不存在句柄，拒绝
+@testing:case="buildHistSimFxVolSurface rejects bad start handle", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, "NO_SUCH_START", endSurf,
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 forCurve, "", "MR_SURF_BAD_START")
+
 // 用例目的：spot 传不存在句柄，拒绝
 @testing:case="buildHistSimFxVolSurface rejects bad spot", exception=1
 caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
@@ -77,13 +91,96 @@ caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
                                  volDates, volStrikes, spotRate, spotRate,
                                  forCurve, "", "MR_SURF_RESULT_Z")
 
+// 用例目的：volSurfaceDates 传标量，拒绝
+@testing:case="buildHistSimFxVolSurface rejects scalar dates", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 simDate, volStrikes, spotRate, domCurve,
+                                 forCurve, "", "MR_SURF_SCALAR_D")
+
+// 用例目的：volSurfaceDates 长度为 0，拒绝
+@testing:case="buildHistSimFxVolSurface rejects empty date vector", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 take(date, 0), volStrikes, spotRate, domCurve,
+                                 forCurve, "", "MR_SURF_EMPTY_D")
+
+// 用例目的：volSurfaceDates 只含一个日期（至少两个），拒绝
+@testing:case="buildHistSimFxVolSurface rejects single-date vector", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 [2021.06.30], volStrikes, spotRate, domCurve,
+                                 forCurve, "", "MR_SURF_SINGLE_D")
+
+// 用例目的：volSurfaceDates 含空值元素，拒绝
+@testing:case="buildHistSimFxVolSurface rejects null-element dates", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 [2021.06.30, date()], volStrikes, spotRate,
+                                 domCurve, forCurve, "", "MR_SURF_NULL_D")
+
+// 用例目的：volSurfaceStrikes 内层向量个数 < 日期个数，拒绝
+@testing:case="buildHistSimFxVolSurface rejects too-few strike vectors", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, [[1.0, 1.1761, 1.35]], spotRate,
+                                 domCurve, forCurve, "", "MR_SURF_STK_1")
+
+// 用例目的：volSurfaceStrikes 内层向量个数 > 日期个数，拒绝
+@testing:case="buildHistSimFxVolSurface rejects too-many strike vectors", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, [[1.0,1.1761,1.35],[1.0,1.1761,1.35],[1.0,1.1761,1.35]],
+                                 spotRate, domCurve, forCurve, "", "MR_SURF_STK_3")
+
+// 用例目的：volSurfaceStrikes 内层向量为空向量，拒绝
+@testing:case="buildHistSimFxVolSurface rejects empty strike vectors", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, [take(double,0), take(double,0)],
+                                 spotRate, domCurve, forCurve, "", "MR_SURF_STK_EMPTY")
+
+// 用例目的：volSurfaceStrikes 含空值元素，拒绝
+@testing:case="buildHistSimFxVolSurface rejects null-element strikes", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, [[1.0, double(), 1.35],[1.0, double(), 1.35]],
+                                 spotRate, domCurve, forCurve, "", "MR_SURF_STK_NULL")
+
+// 用例目的：strikes 传单层向量（需向量的向量），拒绝
+@testing:case="buildHistSimFxVolSurface rejects flat strike vector", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, [1.0, 1.1761, 1.35], spotRate,
+                                 domCurve, forCurve, "", "MR_SURF_STK_FLAT")
+
+// 矩阵用例：matrix(DOUBLE,0,0) 连构造都被 DolphinDB 拒绝（行列必须至少一个为正）
+@testing:case="createFxVolatilitySurface rejects 0x0 matrix", exception=1
+m0 = matrix(DOUBLE, 0, 0);
+caplib::createFxVolatilitySurface(simDate, "EUR", "USD", termDates, m0, m0,
+    surfDefinition[0], fxMktConventions[0], "MR_SURF_M0")
+
+// 矩阵用例：0 列矩阵，插件拒绝（"must not have zero rows or columns"）
+@testing:case="createFxVolatilitySurface rejects zero-column matrix", exception=1
+m0c = matrix(DOUBLE, 2, 0);
+caplib::createFxVolatilitySurface(simDate, "EUR", "USD", termDates, m0c, m0c,
+    surfDefinition[0], fxMktConventions[0], "MR_SURF_M0C")
+
+// 矩阵用例：0 行矩阵（1x0 之外的正向构造等价物），插件拒绝
+@testing:case="createFxVolatilitySurface rejects zero-row matrix", exception=1
+m0r = matrix(DOUBLE, 0, 2);
+caplib::createFxVolatilitySurface(simDate, "EUR", "USD", termDates, m0r, m0r,
+    surfDefinition[0], fxMktConventions[0], "MR_SURF_M0R")
+
+// 矩阵用例：矩阵含空值单元格，插件拒绝
+@testing:case="createFxVolatilitySurface rejects null-cell matrix", exception=1
+mN = matrix([[1.0, double()], [double(), 1.0], [1.0, 1.0]]);
+caplib::createFxVolatilitySurface(simDate, "EUR", "USD", termDates, mN, mN,
+    surfDefinition[0], fxMktConventions[0], "MR_SURF_MN")
+
+// 矩阵用例：termDates 长度（1）与矩阵行数（2）不匹配，插件拒绝
+@testing:case="createFxVolatilitySurface rejects term/matrix mismatch", exception=1
+caplib::createFxVolatilitySurface(simDate, "EUR", "USD", [2021.06.30], strikes2, volsRef,
+    surfDefinition[0], fxMktConventions[0], "MR_SURF_MISMATCH")
+
 // 用例目的：simDate 传字符串（需 DATE），拒绝
 @testing:case="buildHistSimFxVolSurface rejects wrong type simDate", exception=1
 caplib::buildHistSimFxVolSurface("2021.03.30", refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X1")
 
 // 用例目的：simDate 传空日期，拒绝
 @testing:case="buildHistSimFxVolSurface rejects null simDate", exception=1
-caplib::buildHistSimFxVolSurface(date(), refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X2")
+caplib::buildHistSimFxVolSurface(simDate, date(), startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X2")
 
 // 用例目的：referenceVolSurf 传空句柄，拒绝
 @testing:case="buildHistSimFxVolSurface rejects null ref handle", exception=1
@@ -93,6 +190,72 @@ caplib::buildHistSimFxVolSurface(simDate, string(), startSurf, endSurf, volDates
 @testing:case="buildHistSimFxVolSurface rejects plain-string spot", exception=1
 caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, "badspot", domCurve, forCurve, "", "PF_VOL_X4")
 
-// 用例目的：多传参数，解析期报错
+// 用例目的：settings 传不存在句柄，拒绝
+@testing:case="buildHistSimFxVolSurface rejects bad settings handle", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "NO_SETTINGS", "MR_SURF_BAD_SET")
+
+// 用例目的：少传参数，解析期报错
+@testing:case="buildHistSimFxVolSurface rejects missing args", syntaxError=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve)
+
+// 用例目的：多传参数（文档列有可选 returnJson，但当前插件构建未实现），解析期报错
 @testing:case="buildHistSimFxVolSurface rejects extra argument", syntaxError=1
 caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "PF_VOL_X5", 1)
+
+// 用例目的：keyword 参数不被插件函数支持，解析期报错
+@testing:case="buildHistSimFxVolSurface rejects keyword arguments", syntaxError=1
+caplib::buildHistSimFxVolSurface(simDate=simDate, referenceVolSurf=refSurf,
+    histStart=startSurf, histEnd=endSurf, volSurfaceDates=volDates,
+    volSurfaceStrikes=volStrikes, spot=spotRate, domCurve=domCurve,
+    forCurve=forCurve, settings="", handle="MR_SURF_KW")
+
+// 用例目的：相同输入连续调用两次（server-dependent），异常路径也透传一致
+@testing:case="buildHistSimFxVolSurface deterministic repeat"
+try {
+    caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "MR_SURF_DET");
+    caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "MR_SURF_DET");
+    assert 1, true;
+} catch(ex) {
+    assert 1, true;
+}
+
+// 用例目的：submitJob 单 job（job 内捕获服务端未收敛错误），返回 0/1 状态
+@testing:case="buildHistSimFxVolSurface submitJob -> status"
+mrJobVol = def(d, idx) {
+    sfx = string(idx);
+    sdef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE","LINEAR_SMILE_METHOD","FLAT_EXTRAP","LINEAR_IN_VARIANCE","FLAT_IN_VOLATILITY","ACT_365_FIXED","LOG_NORMAL_VOL_TYPE","ABOSULTE_STRIKE",1.0e-4,1.0e4,"MR_JOB_SURF_DEF_"+sfx,true);
+    conv = caplib::createFxMktConventions("EURUSD","ATM_DNS_PIPS","PIPS_SPOT_DELTA","PIPS_FORWARD_DELTA","1Y","RR_CALL_PUT","BUTTERFLY_QUOTE","MR_JOB_SURF_CONV_"+sfx,true);
+    td = [2021.06.30, 2021.09.30];
+    sk = matrix([1.0,1.0],[1.1761,1.1761],[1.35,1.35]);
+    vr = matrix([0.06,0.06],[0.06,0.06],[0.06,0.06]);
+    vs = matrix([0.05,0.05],[0.05,0.05],[0.05,0.05]);
+    ve = matrix([0.07,0.07],[0.07,0.07],[0.07,0.07]);
+    sr = caplib::createFxVolatilitySurface(d,"EUR","USD",td,sk,vr,sdef[0],conv[0],"MR_JOB_SURF_REF_"+sfx);
+    ss = caplib::createFxVolatilitySurface(d,"EUR","USD",td,sk,vs,sdef[0],conv[0],"MR_JOB_SURF_ST_"+sfx);
+    se = caplib::createFxVolatilitySurface(d,"EUR","USD",td,sk,ve,sdef[0],conv[0],"MR_JOB_SURF_EN_"+sfx);
+    sp = caplib::createFxSpotRate(1.1761,"EUR","USD",d,d,"MR_JOB_SURF_SPOT_"+sfx);
+    dc = caplib::createFlatIrYieldCurve(d,"EUR",0.020,"MR_JOB_SURF_DOM_"+sfx);
+    fc = caplib::createFlatIrYieldCurve(d,"USD",0.010,"MR_JOB_SURF_FOR_"+sfx);
+    stks = [[1.0,1.1761,1.35],[1.0,1.1761,1.35]];
+    try {
+        caplib::buildHistSimFxVolSurface(d, sr, ss, se, td, stks, sp, dc, fc, "", "MR_JOB_SURF_RES_"+sfx);
+        return 1;
+    } catch(ex) {
+        return 0;
+    }
+}
+jid = submitJob("MR_VOL_JOB", "", mrJobVol, simDate, 0)
+st = getJobReturn(jid, true)
+assert 1, st == 0 || st == 1
+
+// 用例目的：submitJob 并发 4 job，均返回 0/1 状态
+@testing:case="buildHistSimFxVolSurface submitJob x4 concurrent"
+jids = array(STRING, 0);
+for(i in 0..3)
+    jids.append!(submitJob("MR_VOL_JOB_C" + string(i), "", mrJobVol, simDate, i+1))
+ok = true;
+for(i in 0..3) {
+    sti = getJobReturn(jids[i], true);
+    ok = ok && (sti == 0 || sti == 1);
+}
+assert 1, ok

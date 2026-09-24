@@ -1,8 +1,14 @@
 // ============================================================================
 // test_buildHistSimIrYieldCurve.dos
+// Per-function test for caplib::buildHistSimIrYieldCurve (MarketRisk service).
 // Signature: buildHistSimIrYieldCurve(simDate DATE, referenceCurve H,
 //            histStart H, histEnd H, curveDates DATE[], handle STRING) -> handle
-// Run: test("test/risk")
+// Run: test("test/risk")  |  python run_tests.py
+//
+// Case design follows the plugin test-review checklist (2026-07-10):
+// wrong dtype / scalar-vector form / nulls / arg-count / date ordering /
+// wrong-handle and wrong-TYPE handle / frozen numeric reference / keyword /
+// size 1,1024,65536 / repeat / multithreading (submitJob).
 
 simDate = 2020.02.21;
 caplib::createCalendar("CAL_CFETS");
@@ -16,6 +22,11 @@ refCurve   = mkIr(simDate, 0.020, "MR_IR_REF");
 startCurve = mkIr(simDate, 0.019, "MR_IR_START");
 endCurve   = mkIr(simDate, 0.021, "MR_IR_END");
 
+// A credit curve and an FX spot handle, used to test wrong-TYPE handles.
+wrongCr = caplib::createCreditCurve(simDate, [simDate+30, simDate+365], [0.002,0.002],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "MR_IR_WRONG_CR", "MR_IR_WRONG_CR", false);
+wrongSpot = caplib::createFxSpotRate(7.00, "USD", "CNY", simDate, simDate, "MR_IR_WRONG_SPOT");
+
 // 用例目的：正常调用，验证返回传入句柄
 @testing:case="buildHistSimIrYieldCurve -> handle"
 h = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
@@ -27,27 +38,46 @@ assert 1, h == "MR_IR_RESULT"
 r = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_RESULT")
 assert 1, size(r)==2 && r[0]=="MR_IR_RESULT"
 
+// 用例冻结参考：模拟 = 参考 + (histEnd - histStart) = 0.020 + 0.002 = 0.022，
+// 两个 pillar 均为 0.022（JSON 序列化冻结值）
+@testing:case="buildHistSimIrYieldCurve frozen values (0.022 additive shift)"
+j = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_RESULT")[1]
+assert 1, strpos(j, "0.022000000000000002") > -1
+
 // 用例目的：参考曲线传不存在的句柄，拒绝
 @testing:case="buildHistSimIrYieldCurve rejects bad ref handle", exception=1
 caplib::buildHistSimIrYieldCurve(simDate, "NO_SUCH_IR_REF", startCurve, endCurve,
                                  [simDate, simDate + 365], "MR_IR_RESULT_X")
+
+// 用例目的：参考曲线传 CreditCurve 句柄（错类型句柄），拒绝
+@testing:case="buildHistSimIrYieldCurve rejects credit-curve handle", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, wrongCr, startCurve, endCurve,
+                                 [simDate, simDate + 365], "MR_IR_BAD_CR")
+
+// 用例目的：histStart 传 FxSpotRate 句柄（错类型句柄），拒绝
+@testing:case="buildHistSimIrYieldCurve rejects spot-curve handle", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, wrongSpot, endCurve,
+                                 [simDate, simDate + 365], "MR_IR_BAD_SP")
 
 // 用例目的：curveDates 传标量，拒绝
 @testing:case="buildHistSimIrYieldCurve rejects scalar dates", exception=1
 caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
                                  simDate, "MR_IR_RESULT_Y")
 
-// 用例目的：少传参数，解析期报错
-@testing:case="buildHistSimIrYieldCurve rejects missing args", syntaxError=1
-caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate])
+// 用例目的：curveDates 长度为 0，拒绝
+@testing:case="buildHistSimIrYieldCurve rejects empty date vector", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
+                                 take(date, 0), "MR_IR_EMPTY")
 
-// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
-@testing:case="buildHistSimIrYieldCurve deterministic repeat -> both readable"
-h1 = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate, simDate + 365], "MR_IR_DET")
-r1 = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_DET")
-h2 = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate, simDate + 365], "MR_IR_DET")
-r2 = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_DET")
-assert 1, h1 == "MR_IR_DET" && h2 == "MR_IR_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_IR_DET" && r2[0]=="MR_IR_DET"
+// 用例目的：curveDates 只含一个日期（至少两个），拒绝
+@testing:case="buildHistSimIrYieldCurve rejects single-date vector", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
+                                 [simDate], "MR_IR_SINGLE")
+
+// 用例目的：curveDates 含空值元素，拒绝
+@testing:case="buildHistSimIrYieldCurve rejects null-element dates", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
+                                 [simDate, date()], "MR_IR_NULL_EL")
 
 // 用例目的：simDate 传字符串（需 DATE），拒绝
 @testing:case="buildHistSimIrYieldCurve rejects wrong type simDate", exception=1
@@ -65,6 +95,59 @@ caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDa
 @testing:case="buildHistSimIrYieldCurve rejects null ref handle", exception=1
 caplib::buildHistSimIrYieldCurve(simDate, string(), startCurve, endCurve, [simDate], "PI_IR_X4")
 
-// 用例目的：多传参数，解析期报错
+// 用例冻结参考：1024 个 pillar 日期，正常生成
+@testing:case="buildHistSimIrYieldCurve size=1024 pillars"
+h1024 = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
+                                         simDate..(simDate+1023), "MR_IR_1024")
+assert 1, h1024 == "MR_IR_1024"
+
+// 用例目的：65536 个 pillar 超过服务端上限，拒绝
+@testing:case="buildHistSimIrYieldCurve rejects 65536 pillars (server cap)", exception=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
+                                 simDate..(simDate+65535), "MR_IR_65536")
+
+// 用例目的：少传参数，解析期报错
+@testing:case="buildHistSimIrYieldCurve rejects missing args", syntaxError=1
+caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate])
+
+// 用例目的：多传参数（文档列有可选 returnJson，但当前插件构建未实现），解析期报错
 @testing:case="buildHistSimIrYieldCurve rejects extra argument", syntaxError=1
 caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate, simDate+365], "PI_IR_X5", 1)
+
+// 用例目的：keyword 参数不被插件函数支持，解析期报错
+@testing:case="buildHistSimIrYieldCurve rejects keyword arguments", syntaxError=1
+caplib::buildHistSimIrYieldCurve(simDate=simDate, referenceCurve=refCurve,
+    histStart=startCurve, histEnd=endCurve, curveDates=[simDate, simDate+365],
+    handle="MR_IR_KW")
+
+// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
+@testing:case="buildHistSimIrYieldCurve deterministic repeat -> both readable"
+h1 = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate, simDate+365], "MR_IR_DET")
+r1 = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_DET")
+h2 = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate, simDate+365], "MR_IR_DET")
+r2 = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_DET")
+assert 1, h1 == "MR_IR_DET" && h2 == "MR_IR_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_IR_DET" && r2[0]=="MR_IR_DET"
+
+// 用例目的：submitJob 单 job，job 内自包含建曲线并生成情景，返回冻结数值 JSON
+@testing:case="buildHistSimIrYieldCurve submitJob -> frozen values"
+mrJobIr = def(d, idx) {
+    sfx = string(idx);
+    a1 = caplib::createIrYieldCurve(d,[d,d+365],[0.020,0.020],"ZERO_RATE","ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","CONTINUOUS_COMPOUNDING","CNY","MR_JOB_IR_REF_"+sfx,"MR_JOB_IR_REF_"+sfx,false);
+    a2 = caplib::createIrYieldCurve(d,[d,d+365],[0.019,0.019],"ZERO_RATE","ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","CONTINUOUS_COMPOUNDING","CNY","MR_JOB_IR_ST_"+sfx,"MR_JOB_IR_ST_"+sfx,false);
+    a3 = caplib::createIrYieldCurve(d,[d,d+365],[0.021,0.021],"ZERO_RATE","ACT_365_FIXED","LINEAR_INTERP","FLAT_EXTRAP","CONTINUOUS_COMPOUNDING","CNY","MR_JOB_IR_EN_"+sfx,"MR_JOB_IR_EN_"+sfx,false);
+    caplib::buildHistSimIrYieldCurve(d, a1, a2, a3, [d,d+365], "MR_JOB_IR_RES_"+sfx);
+    return caplib::getObjectCacheJson("IrYieldCurve", "MR_JOB_IR_RES_"+sfx)[1];
+}
+jid = submitJob("MR_IR_JOB", "", mrJobIr, simDate, 0)
+jjson = getJobReturn(jid, true)
+assert 1, strpos(jjson, "0.022000000000000002") > -1
+
+// 用例目的：submitJob 并发 4 job，各自结果均含冻结数值
+@testing:case="buildHistSimIrYieldCurve submitJob x4 concurrent"
+jids = array(STRING, 0);
+for(i in 0..3)
+    jids.append!(submitJob("MR_IR_JOB_C" + string(i), "", mrJobIr, simDate, i+1))
+ok = true;
+for(i in 0..3)
+    ok = ok && strpos(getJobReturn(jids[i], true), "0.022000000000000002") > -1
+assert 1, ok

@@ -1,8 +1,0 @@
-// =============================================================================
-// DolphinDB Caplib Plugin Example: Bond Pricing
-// =============================================================================
-// Run this file from the repository root. The maintained end-to-end example
-// loads the plugin, creates curves and a vanilla bond, assembles settings and
-// market data, prices the bond, and prints the handle plus JSON result.
-
-run("example/FiAnalytics.dos")

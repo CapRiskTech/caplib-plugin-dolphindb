@@ -1,8 +1,14 @@
 // ============================================================================
 // test_calcExpectedShortfall.dos
+// Per-function test for caplib::calcExpectedShortfall (MarketRisk service).
 // Signature: calcExpectedShortfall(profitLossSamples DOUBLE[], probability
 //            DOUBLE (0..1), antithetic BOOL) -> DOUBLE
-// Run: test("test/risk")
+// Run: test("test/risk")  |  python run_tests.py
+//
+// Case design follows the plugin test-review checklist (2026-07-10):
+// wrong dtype / scalar-vector form / nulls / arg-count / enum-boundary /
+// frozen numeric reference / keyword / size 1,1024,65536 / repeat /
+// multithreading (submitJob).
 
 samples = [-100.0, -50.0, 0.0, 50.0, 100.0];
 
@@ -16,40 +22,55 @@ assert 1, typestr(v) == "DOUBLE" && !isNull(v)
 v = caplib::calcExpectedShortfall(samples, 0.95, true)
 assert 1, !isNull(v)
 
+// 用例目的：样本传字符串向量，拒绝
+@testing:case="calcES rejects string-vector samples", exception=1
+caplib::calcExpectedShortfall(["a", "b"], 0.95, false)
+
+// 用例目的：样本传标量，拒绝
+@testing:case="calcES rejects scalar samples", exception=1
+caplib::calcExpectedShortfall(100.0, 0.95, false)
+
+// 用例目的：样本向量含空值元素，拒绝
+@testing:case="calcES rejects null sample element", exception=1
+caplib::calcExpectedShortfall([1.0, double()], 0.95, false)
+
+// 用例目的：样本向量全部为空值，拒绝
+@testing:case="calcES rejects all-null samples", exception=1
+caplib::calcExpectedShortfall([double(), double()], 0.95, false)
+
+// 用例目的：空样本向量（长度0），拒绝（此前会导致 dqlibc 段错误崩溃）
+@testing:case="calcExpectedShortfall rejects empty samples", exception=1
+caplib::calcExpectedShortfall(take(double, 0), 0.95, false)
+
+// 用例目的：样本含非有限值，拒绝
+@testing:case="calcES rejects non-finite samples", exception=1
+caplib::calcExpectedShortfall([1.0, 2.0/0.0], 0.95, false)
+
+// 用例冻结参考：长度为 1 的向量（常量），尾部均值 = 该常量
+@testing:case="calcES size=1 -> the constant"
+assert 1, caplib::calcExpectedShortfall([42.0], 0.95, false) == 42.0
+
+// 用例冻结参考：1024 / 65536 个常量样本，尾部均值 = 常量
+@testing:case="calcES size=1024 -> the constant"
+assert 1, caplib::calcExpectedShortfall(take(1.0, 1024), 0.95, false) == 1.0
+@testing:case="calcES size=65536 -> the constant"
+assert 1, caplib::calcExpectedShortfall(take(1.0, 65536), 0.95, false) == 1.0
+
 // 用例目的：概率越界（=1），拒绝
 @testing:case="calcES rejects probability = 1", exception=1
 caplib::calcExpectedShortfall(samples, 1.0, false)
+
+// 用例目的：概率越界（=0），拒绝
+@testing:case="calcES rejects probability = 0", exception=1
+caplib::calcExpectedShortfall(samples, 0.0, false)
 
 // 用例目的：概率传负数，拒绝
 @testing:case="calcES rejects negative probability", exception=1
 caplib::calcExpectedShortfall(samples, -0.5, false)
 
-// 用例目的：样本含空值元素，拒绝
-@testing:case="calcES rejects null sample element", exception=1
-caplib::calcExpectedShortfall([1.0, double()], 0.95, false)
-
-// 用例目的：样本传字符串向量，拒绝
-@testing:case="calcES rejects non-double samples", exception=1
-caplib::calcExpectedShortfall(["a","b"], 0.95, false)
-
-// 用例目的：少传参数，解析期报错
-@testing:case="calcES rejects missing args", syntaxError=1
-caplib::calcExpectedShortfall(samples, 0.95)
-
-// 用例目的：相同输入连续两次，结果一致
-@testing:case="calcES deterministic repeat -> identical"
-e1 = caplib::calcExpectedShortfall(samples, 0.95, false);
-e2 = caplib::calcExpectedShortfall(samples, 0.95, false);
-assert 1, e1 == e2
-
-// 用例目的：ES 对负样本应非负有限
-@testing:case="calcES known-sample -> non-negative finite"
-v = caplib::calcExpectedShortfall(samples, 0.95, false);
-assert 1, v >= 0.0 && !isNull(v)
-
-// 用例目的：多传参数，解析期报错
-@testing:case="calcES rejects extra argument", syntaxError=1
-caplib::calcExpectedShortfall(samples, 0.95, false, 1)
+// 用例目的：概率传字符串（非 DOUBLE），拒绝
+@testing:case="calcES rejects non-double probability", exception=1
+caplib::calcExpectedShortfall(samples, "0.95", false)
 
 // 用例目的：概率传向量（需标量），拒绝
 @testing:case="calcES rejects vector probability", exception=1
@@ -58,6 +79,23 @@ caplib::calcExpectedShortfall(samples, [0.95], false)
 // 用例目的：antithetic 传非 BOOL，拒绝
 @testing:case="calcES rejects non-bool antithetic", exception=1
 caplib::calcExpectedShortfall(samples, 0.95, 5)
+
+// 用例目的：少传参数，解析期报错
+@testing:case="calcES rejects missing args", syntaxError=1
+caplib::calcExpectedShortfall(samples, 0.95)
+
+// 用例目的：多传参数，解析期报错
+@testing:case="calcES rejects extra argument", syntaxError=1
+caplib::calcExpectedShortfall(samples, 0.95, false, 1)
+
+// 用例目的：keyword 参数不被插件函数支持，解析期报错
+@testing:case="calcES rejects keyword arguments", syntaxError=1
+caplib::calcExpectedShortfall(profitLossSamples=samples, probability=0.95, antithetic=false)
+
+// 用例目的：ES 对负样本应非负有限
+@testing:case="calcES known-sample -> non-negative finite"
+v = caplib::calcExpectedShortfall(samples, 0.95, false);
+assert 1, v >= 0.0 && !isNull(v)
 
 // 用例目的：95% 置信、样本 [-100,-50,0,50,100]，ES 精确 = 0
 @testing:case="calcES exact frozen reference (95%)"
@@ -74,6 +112,27 @@ assert 1, abs(v - (-100.0)) < 1e-12
 v = caplib::calcExpectedShortfall([-100.0,-50.0,0.0,50.0,100.0], 0.50, false)
 assert 1, abs(v - (-50.0)) < 1e-12
 
-// 用例目的：空样本向量应被拒绝（此前会导致 dqlibc 段错误崩溃）
-@testing:case="calcExpectedShortfall rejects empty samples", exception=1
-caplib::calcExpectedShortfall(take(double, 0), 0.95, false)
+// 用例目的：相同输入连续两次，结果一致
+@testing:case="calcES deterministic repeat -> identical"
+e1 = caplib::calcExpectedShortfall(samples, 0.95, false);
+e2 = caplib::calcExpectedShortfall(samples, 0.95, false);
+assert 1, e1 == e2
+
+// 用例目的：submitJob 单 job 异步计算，结果与会话内调用一致
+@testing:case="calcES submitJob -> frozen reference"
+mrJobES = def(vals, p) { return caplib::calcExpectedShortfall(vals, p, false) }
+jid = submitJob("MR_ES_JOB", "", mrJobES, [-100.0,-50.0,0.0,50.0,100.0], 0.50)
+assert 1, getJobReturn(jid, true) == -50.0
+
+// 用例目的：submitJob 并发 4 job，各自结果与会话内调用一致
+@testing:case="calcES submitJob x4 concurrent"
+jids = array(STRING, 0);
+for(i in 0..3)
+    jids.append!(submitJob("MR_ES_JOB_C" + string(i), "", mrJobES,
+                           [-100.0,-50.0,0.0,50.0,100.0], 0.05 + 0.3*i))
+// frozen observed: ES(0.05)=-100, ES(0.35)=-75, ES(0.65)=-50, ES(0.95)=0
+exp = [-100.0, -75.0, -50.0, 0.0];
+ok = true;
+for(i in 0..3)
+    ok = ok && abs(getJobReturn(jids[i], true) - exp[i]) < 1e-12
+assert 1, ok

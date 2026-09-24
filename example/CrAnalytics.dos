@@ -4,7 +4,8 @@
 // This script is stripped from test/test_cranalytics.dos and shows the
 // credit-curve build and CDS pricing flow.
 
-loadPlugin("PluginCaplib")
+
+caplib::createCalendar("CAL_CFETS");
 
 asOfDate = 2020.02.21
 currency = "CNY"
@@ -27,9 +28,9 @@ baseCreditCurve = caplib::createCreditCurve(
 
 // Create the CDS template used to build the sample CDS.
 cdsTemplate = caplib::createCdsTemplate(
-    "CFETS-SHCH-GTJA", 0, "CASH", 1.0,
-    1.0, "SENIOR", 0.4, "FLAT_SPREAD",
-    "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0, false)
+    "CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 1.0,
+    1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD",
+    "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, false)
 
 // Create CDS pricing settings.
 pricingSettings = caplib::createCdsPricingSettings(

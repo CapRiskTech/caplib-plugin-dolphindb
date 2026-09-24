@@ -4,7 +4,6 @@
 // This script is stripped from test/test_eqanalytics.dos and kept as an
 // executable usage example for the main EQ factory and pricing flows.
 
-loadPlugin("PluginCaplib")
 
 currency = "CNY"
 underlying = "50ETF.SSE"
@@ -36,7 +35,7 @@ bsmSettings = caplib::createPricingSettings(
     currency, "ANALYTICAL", 0, 0, array(INT, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
 
 // Enable EQ risk settings so pricing returns a structured result handle.
-eqRisk = caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true)
+eqNoRisk = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_NO_RISK", true)
 
 dailyObsDates = 2020.02.22..2020.08.19;
 dailyObsValues = take(0.0, size(dailyObsDates));
@@ -79,27 +78,42 @@ quoteMatrix = caplib::createEqOptionQuoteMatrix(
 // Build an EQ volatility surface from quotes, curves, and build settings.
 volSurface = caplib::buildEqVolatilitySurface(
     asOfDate, underlying, volDef[0], quoteMatrix[0],
-    [2.958, 2.960, 2.962],
+    [underlyingPrice],
     irCurve, divCurve, volBuildSettings[0], bsmSettings, "EQ_VOL_SURFACE", true)
 
 // Assemble EQ market data from spot, curves, and volatility surface.
+// Zero-rate quanto curves for the EQ market data set (align full pricing path).
+quantoIr = caplib::createIrYieldCurve(
+    asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false);
+quantoFxVol = caplib::createVolatilityCurve(
+    asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    underlying, "QUANTO_FX_VOL", false);
+
 mktData = caplib::createEqMktDataSet(
-    asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], "", "", 0.0, "EQ_MKT", true)
+    asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 
 // Create a European option instrument and price it.
 europeanOption = caplib::createEuropeanOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     1000000.0, currency, "SPOT", currency, underlying, "EQ_EO", false)
 europeanResult = caplib::priceEqEuropeanOption(
-    europeanOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
+    europeanOption, asOfDate, mktData[0], bsmSettings, eqNoRisk[0], "", "", true)
 print(europeanResult)
 
 // Create an Asian option instrument and price it with Monte Carlo settings.
+// Asian (path-dependent) pricing uses a Monte-Carlo model.
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "MC_MODEL", false)
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "MC_SETTINGS", false)
+bsmMcSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0,0), bsmMcModel, "", mcSettings, "BSM_MC", false)
+
 asianOption = caplib::createAsianOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE",
-    1000000.0, "SPOT", currency, underlying, "EQ_ASIAN",
+    1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "EQ_ASIAN_OPT",
     dailyObsDates, dailyObsValues, dailyObsWeights, false)
 asianResult = caplib::priceEqAsianOption(
-    asianOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
+    asianOption, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true)
 print(asianResult)

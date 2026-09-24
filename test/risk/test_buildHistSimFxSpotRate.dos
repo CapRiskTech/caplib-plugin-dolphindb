@@ -1,9 +1,15 @@
 // ============================================================================
 // test_buildHistSimFxSpotRate.dos
+// Per-function test for caplib::buildHistSimFxSpotRate (MarketRisk service).
 // Signature: buildHistSimFxSpotRate(simDate DATE, referenceSpot H, histStart H,
 //            histEnd H, useTemplate BOOL, fxSpotTemplate H ('' ok),
 //            handle STRING) -> handle
-// Run: test("test/risk")
+// Run: test("test/risk")  |  python run_tests.py
+//
+// Case design follows the plugin test-review checklist (2026-07-10):
+// wrong dtype / scalar form / nulls / arg-count / parameter relations
+// (useTemplate vs template) / wrong-handle and wrong-TYPE handle /
+// frozen numeric reference / keyword / repeat / multithreading (submitJob).
 
 simDate = 2020.02.21;
 caplib::createCalendar("CAL_CFETS");
@@ -11,6 +17,16 @@ caplib::createCalendar("CAL_CFETS");
 refSpot   = caplib::createFxSpotRate(7.00, "USD", "CNY", simDate, simDate, "MR_SPOT_REF");
 startSpot = caplib::createFxSpotRate(6.99, "USD", "CNY", simDate, simDate, "MR_SPOT_START");
 endSpot   = caplib::createFxSpotRate(7.01, "USD", "CNY", simDate, simDate, "MR_SPOT_END");
+// fxSpotTemplate must be an FxSpotTemplate (createFxSpotRate objects are rejected):
+// createFxSpotTemplate(instName, currencyPair, spotDayConvention, calendars,
+//                      spotDelay, handle)
+tplSpot   = caplib::createFxSpotTemplate("FX_SPOT_TEMPLATE_USDCNY", "USDCNY",
+                                         "FOLLOWING", ["CAL_CFETS"], 2, "MR_SPOT_TEMPLATE");
+
+// An IR curve handle used to test wrong-TYPE handles.
+wrongIr = caplib::createIrYieldCurve(simDate, [simDate, simDate+365], [0.02,0.02],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "MR_SPOT_WRONG_IR", "MR_SPOT_WRONG_IR", false);
 
 // 用例目的：useTemplate=false，模板句柄传空串，正常调用返回句柄
 @testing:case="buildHistSimFxSpotRate -> handle"
@@ -23,28 +39,57 @@ assert 1, h == "MR_SPOT_RESULT"
 r = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_RESULT")
 assert 1, size(r)==2 && r[0]=="MR_SPOT_RESULT"
 
-// 用例目的：useTemplate=true 但模板句柄为空，拒绝
+// 用例冻结参考：模拟 = 参考 * (histEnd / histStart) = 7.00 * 7.01/6.99
+// = 7.0200286123032907（乘法相对变动，JSON 序列化冻结值）
+@testing:case="buildHistSimFxSpotRate frozen value (multiplicative shift)"
+j = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_RESULT")[1]
+assert 1, strpos(j, "7.0200286123032907") > -1
+
+// 用例目的：useTemplate=false，模板传 STRING 空值（null），按无模板正常生成
+@testing:case="buildHistSimFxSpotRate null template when disabled"
+h = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                                   false, string(), "MR_SPOT_TPL_NULL")
+assert 1, h == "MR_SPOT_TPL_NULL"
+
+// 用例目的：useTemplate=true，模板为空串，拒绝
 @testing:case="buildHistSimFxSpotRate requires template when enabled", exception=1
 caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
                                true, "", "MR_SPOT_RESULT_X")
+
+// 用例目的：useTemplate=true，模板为 STRING 空值，拒绝
+@testing:case="buildHistSimFxSpotRate rejects null template when enabled", exception=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                               true, string(), "MR_SPOT_TPL_TRUE_NULL")
+
+// 用例目的：useTemplate=true 且给出模板句柄，正常生成
+@testing:case="buildHistSimFxSpotRate with template -> handle"
+h = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                                   true, tplSpot, "MR_SPOT_TPL_RESULT")
+assert 1, h == "MR_SPOT_TPL_RESULT"
+
+// 用例目的：模板位置传 FxSpotRate 对象（错类型，需 FxSpotTemplate），拒绝
+@testing:case="buildHistSimFxSpotRate rejects rate-object as template", exception=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                               true, refSpot, "MR_SPOT_TPL_WRONGTYPE")
 
 // 用例目的：参考 spot 传不存在句柄，拒绝
 @testing:case="buildHistSimFxSpotRate rejects bad ref handle", exception=1
 caplib::buildHistSimFxSpotRate(simDate, "NO_SUCH_SPOT", startSpot, endSpot,
                                false, "", "MR_SPOT_RESULT_Y")
 
+// 用例目的：参考 spot 传 IrYieldCurve 句柄（错类型句柄），拒绝
+@testing:case="buildHistSimFxSpotRate rejects ir-curve handle", exception=1
+caplib::buildHistSimFxSpotRate(simDate, wrongIr, startSpot, endSpot,
+                               false, "", "MR_SPOT_BAD_IR")
+
 // 用例目的：useTemplate 传非 BOOL 标量，拒绝
 @testing:case="buildHistSimFxSpotRate rejects non-bool useTemplate", exception=1
 caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
                                5, "", "MR_SPOT_RESULT_Z")
 
-// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
-@testing:case="buildHistSimFxSpotRate deterministic repeat -> both readable"
-h1 = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "MR_SPOT_DET")
-r1 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
-h2 = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "MR_SPOT_DET")
-r2 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
-assert 1, h1 == "MR_SPOT_DET" && h2 == "MR_SPOT_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_SPOT_DET" && r2[0]=="MR_SPOT_DET"
+// 用例目的：useTemplate 传向量（需标量 BOOL），拒绝
+@testing:case="buildHistSimFxSpotRate rejects vector useTemplate", exception=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, [false], "", "PS_FX_X4")
 
 // 用例目的：simDate 传字符串（需 DATE），拒绝
 @testing:case="buildHistSimFxSpotRate rejects wrong type simDate", exception=1
@@ -58,10 +103,48 @@ caplib::buildHistSimFxSpotRate(date(), refSpot, startSpot, endSpot, false, "", "
 @testing:case="buildHistSimFxSpotRate rejects null ref handle", exception=1
 caplib::buildHistSimFxSpotRate(simDate, string(), startSpot, endSpot, false, "", "PS_FX_X3")
 
-// 用例目的：useTemplate 传向量（需标量 BOOL），拒绝
-@testing:case="buildHistSimFxSpotRate rejects vector useTemplate", exception=1
-caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, [false], "", "PS_FX_X4")
+// 用例目的：少传参数，解析期报错
+@testing:case="buildHistSimFxSpotRate rejects missing args", syntaxError=1
+caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false)
 
-// 用例目的：多传参数，解析期报错
+// 用例目的：多传参数（文档列有可选 returnJson，但当前插件构建未实现），解析期报错
 @testing:case="buildHistSimFxSpotRate rejects extra argument", syntaxError=1
 caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "PS_FX_X5", 1)
+
+// 用例目的：keyword 参数不被插件函数支持，解析期报错
+@testing:case="buildHistSimFxSpotRate rejects keyword arguments", syntaxError=1
+caplib::buildHistSimFxSpotRate(simDate=simDate, referenceSpot=refSpot,
+    histStart=startSpot, histEnd=endSpot, useTemplate=false,
+    fxSpotTemplate="", handle="MR_SPOT_KW")
+
+// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
+@testing:case="buildHistSimFxSpotRate deterministic repeat -> both readable"
+h1 = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "MR_SPOT_DET")
+r1 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
+h2 = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "MR_SPOT_DET")
+r2 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
+assert 1, h1 == "MR_SPOT_DET" && h2 == "MR_SPOT_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_SPOT_DET" && r2[0]=="MR_SPOT_DET"
+
+// 用例目的：submitJob 单 job，job 内自包含建 spot 并生成情景，返回冻结数值 JSON
+@testing:case="buildHistSimFxSpotRate submitJob -> frozen value"
+mrJobSpot = def(d, idx) {
+    sfx = string(idx);
+    a1 = caplib::createFxSpotRate(7.00,"USD","CNY",d,d,"MR_JOB_SP_REF_"+sfx);
+    a2 = caplib::createFxSpotRate(6.99,"USD","CNY",d,d,"MR_JOB_SP_ST_"+sfx);
+    a3 = caplib::createFxSpotRate(7.01,"USD","CNY",d,d,"MR_JOB_SP_EN_"+sfx);
+    caplib::buildHistSimFxSpotRate(d, a1, a2, a3, false, "", "MR_JOB_SP_RES_"+sfx);
+    return caplib::getObjectCacheJson("FxSpotRate", "MR_JOB_SP_RES_"+sfx)[1];
+}
+jid = submitJob("MR_SPOT_JOB", "", mrJobSpot, simDate, 0)
+jjson = getJobReturn(jid, true)
+assert 1, strpos(jjson, "7.0200286123032907") > -1
+
+// 用例目的：submitJob 并发 4 job，各自结果均含冻结数值
+@testing:case="buildHistSimFxSpotRate submitJob x4 concurrent"
+jids = array(STRING, 0);
+for(i in 0..3)
+    jids.append!(submitJob("MR_SPOT_JOB_C" + string(i), "", mrJobSpot, simDate, i+1))
+ok = true;
+for(i in 0..3)
+    ok = ok && strpos(getJobReturn(jids[i], true), "7.0200286123032907") > -1
+assert 1, ok

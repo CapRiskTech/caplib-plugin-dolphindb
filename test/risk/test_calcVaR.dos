@@ -3,7 +3,12 @@
 // Per-function test for caplib::calcVaR (MarketRisk service).
 // Signature: calcVaR(profitLossSamples DOUBLE[], probability DOUBLE (0..1),
 //                    antithetic BOOL) -> DOUBLE
-// Run: test("test/risk")  |  python run_tests.py --file mr/test_calcVaR.dos
+// Run: test("test/risk")  |  python run_tests.py
+//
+// Case design follows the plugin test-review checklist (2026-07-10):
+// wrong dtype / scalar-vector form / nulls / arg-count / enum-boundary /
+// wrong-handle / frozen numeric reference / keyword / size 1,1024,65536 /
+// repeat / multithreading (submitJob).
 
 samples = [-100.0, -50.0, 0.0, 50.0, 100.0];
 
@@ -17,6 +22,40 @@ assert 1, typestr(v) == "DOUBLE" && !isNull(v)
 v = caplib::calcVaR(samples, 0.05, false)
 assert 1, !isNull(v)
 
+// 用例目的：样本传字符串向量，拒绝
+@testing:case="calcVaR rejects string-vector samples", exception=1
+caplib::calcVaR(["a", "b"], 0.95, false)
+
+// 用例目的：样本向量含空值元素，拒绝
+@testing:case="calcVaR rejects null-element samples", exception=1
+caplib::calcVaR([1.0, double()], 0.95, false)
+
+// 用例目的：样本向量全部为空值，拒绝
+@testing:case="calcVaR rejects all-null samples", exception=1
+caplib::calcVaR([double(), double()], 0.95, false)
+
+// 用例目的：样本传标量，拒绝
+@testing:case="calcVaR rejects scalar samples", exception=1
+caplib::calcVaR(100.0, 0.95, false)
+
+// 用例目的：空样本向量（长度0），拒绝
+@testing:case="calcVaR rejects empty samples", exception=1
+caplib::calcVaR(take(double, 0), 0.95, false)
+
+// 用例目的：样本含非有限值，拒绝
+@testing:case="calcVaR rejects non-finite samples", exception=1
+caplib::calcVaR([1.0, 2.0/0.0], 0.95, false)
+
+// 用例冻结参考：长度为 1 的向量（常量），任何置信度下分位数 = 该常量
+@testing:case="calcVaR size=1 -> the constant"
+assert 1, caplib::calcVaR([42.0], 0.95, false) == 42.0
+
+// 用例冻结参考：1024 / 65536 个常量样本，分位 VaR = 常量
+@testing:case="calcVaR size=1024 -> the constant"
+assert 1, caplib::calcVaR(take(1.0, 1024), 0.95, false) == 1.0
+@testing:case="calcVaR size=65536 -> the constant"
+assert 1, caplib::calcVaR(take(1.0, 65536), 0.95, false) == 1.0
+
 // 用例目的：概率越界（=1），拒绝
 @testing:case="calcVaR rejects probability = 1", exception=1
 caplib::calcVaR(samples, 1.0, false)
@@ -29,23 +68,29 @@ caplib::calcVaR(samples, 0.0, false)
 @testing:case="calcVaR rejects non-double probability", exception=1
 caplib::calcVaR(samples, "0.95", false)
 
-// 用例目的：样本含非有限值，拒绝
-@testing:case="calcVaR rejects non-finite samples", exception=1
-caplib::calcVaR([1.0, 2.0/0.0], 0.95, false)
+// 用例目的：概率传向量（需标量），拒绝
+@testing:case="calcVaR rejects vector probability", exception=1
+caplib::calcVaR(samples, [0.95], false)
 
-// 用例目的：样本传标量，拒绝
-@testing:case="calcVaR rejects scalar samples", exception=1
-caplib::calcVaR(100.0, 0.95, false)
+// 用例目的：antithetic 传非 BOOL，拒绝
+@testing:case="calcVaR rejects non-bool antithetic", exception=1
+caplib::calcVaR(samples, 0.95, 5)
+
+// 用例目的：antithetic=true 对称路径，返回有限值
+@testing:case="calcVaR antithetic -> finite"
+assert 1, !isNull(caplib::calcVaR(samples, 0.95, true))
 
 // 用例目的：少传参数，解析期报错
 @testing:case="calcVaR rejects missing args", syntaxError=1
 caplib::calcVaR(samples)
 
-// 用例目的：相同输入连续两次调用，验证结果完全一致（计算确定性）
-@testing:case="calcVaR deterministic repeat -> identical"
-v1 = caplib::calcVaR(samples, 0.95, false);
-v2 = caplib::calcVaR(samples, 0.95, false);
-assert 1, v1 == v2
+// 用例目的：多传参数，解析期报错
+@testing:case="calcVaR rejects extra argument", syntaxError=1
+caplib::calcVaR(samples, 0.95, false, 1)
+
+// 用例目的：keyword 参数不被插件函数支持，解析期报错
+@testing:case="calcVaR rejects keyword arguments", syntaxError=1
+caplib::calcVaR(profitLossSamples=samples, probability=0.95, antithetic=false)
 
 // 用例目的：95% 置信、样本最小损失 -100，VaR 应为 (0, 100] 的分位损失
 @testing:case="calcVaR known-sample -> plausible range"
@@ -57,18 +102,6 @@ assert 1, v > 0.0 && v <= 100.0
 v95 = caplib::calcVaR(samples, 0.95, false);
 v50 = caplib::calcVaR(samples, 0.50, false);
 assert 1, v50 <= v95
-
-// 用例目的：多传参数，解析期报错
-@testing:case="calcVaR rejects extra argument", syntaxError=1
-caplib::calcVaR(samples, 0.95, false, 1)
-
-// 用例目的：概率传向量（需标量），拒绝
-@testing:case="calcVaR rejects vector probability", exception=1
-caplib::calcVaR(samples, [0.95], false)
-
-// 用例目的：antithetic 传非 BOOL，拒绝
-@testing:case="calcVaR rejects non-bool antithetic", exception=1
-caplib::calcVaR(samples, 0.95, 5)
 
 // 用例目的：95% 置信、样本 [-100,-50,0,50,100]，分位 VaR 精确 = 90
 @testing:case="calcVaR exact frozen reference (95%)"
@@ -85,6 +118,27 @@ assert 1, abs(v - 0.0) < 1e-12
 v = caplib::calcVaR([-100.0,-50.0,0.0,50.0,100.0], 0.05, false)
 assert 1, abs(v - (-90.0)) < 1e-12
 
-// 用例目的：空样本向量应被拒绝（此前会导致 dqlibc 段错误崩溃）
-@testing:case="calcVaR rejects empty samples", exception=1
-caplib::calcVaR(take(double, 0), 0.95, false)
+// 用例目的：相同输入连续两次调用，验证结果完全一致（计算确定性）
+@testing:case="calcVaR deterministic repeat -> identical"
+v1 = caplib::calcVaR(samples, 0.95, false);
+v2 = caplib::calcVaR(samples, 0.95, false);
+assert 1, v1 == v2
+
+// 用例目的：submitJob 单 job 异步计算，结果与会话内调用一致
+@testing:case="calcVaR submitJob -> frozen reference"
+mrJobVaR = def(vals, p) { return caplib::calcVaR(vals, p, false) }
+jid = submitJob("MR_VAR_JOB", "", mrJobVaR, [-100.0,-50.0,0.0,50.0,100.0], 0.95)
+assert 1, getJobReturn(jid, true) == 90.0
+
+// 用例目的：submitJob 并发 4 job，各自结果与会话内调用一致
+@testing:case="calcVaR submitJob x4 concurrent"
+jids = array(STRING, 0);
+for(i in 0..3)
+    jids.append!(submitJob("MR_VAR_JOB_C" + string(i), "", mrJobVaR,
+                           [-100.0,-50.0,0.0,50.0,100.0], 0.05 + 0.3*i))
+// VaR(p) = -quantile(1-p): quantile indices 3.8/2.6/1.4/0.2 -> P&L 90/30/-30/-90
+exp = [-90.0, -30.0, 30.0, 90.0];
+ok = true;
+for(i in 0..3)
+    ok = ok && abs(getJobReturn(jids[i], true) - exp[i]) < 1e-12
+assert 1, ok

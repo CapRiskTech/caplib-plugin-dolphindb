@@ -2,7 +2,6 @@
 // DolphinDB Caplib Plugin Example: IR Curve Creation and Query
 // =============================================================================
 
-loadPlugin("PluginCaplib")
 
 asOfDate = 2024.01.15
 curve = caplib::createIrYieldCurve(
@@ -12,11 +11,13 @@ curve = caplib::createIrYieldCurve(
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "USD_SOFR_CURVE", false)
 
-zeroRate = caplib::getZeroRate(curve, 2025.07.15)
-discountFactor = caplib::getDiscountFactor(curve, 2025.07.15)
-forwardRate = caplib::getFwdRate(curve, 2025.01.15, 2025.07.15)
+zeroRate = caplib::getZeroRate(curve, [2025.07.15])
+discountFactor = caplib::getDiscountFactor(curve, [2025.07.15])
+forwardRate = caplib::getFwdRate(curve, [2025.01.15], 0.5)
 
 print("Curve handle: " + curve)
 print("Zero rate: " + string(zeroRate))
 print("Discount factor: " + string(discountFactor))
 print("Forward rate: " + string(forwardRate))
+print("Zero rate[0]: " + string(zeroRate[0]))
+print("Discount factor[0]: " + string(discountFactor[0]))
