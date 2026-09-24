@@ -2,7 +2,7 @@
 
 Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件。插件通过 CapRiskTech 提供的 `dqlibc` 计算库，覆盖固定收益（Fixed Income，FI）、利率（Interest Rate，IR）、外汇（Foreign Exchange，FX）、权益（Equity，EQ）、商品（Commodity，CM）和信用（Credit，CR）等资产类别，可用于曲线构建、市场数据组装、金融工具创建、定价和风险分析。
 
-当前版本 `0.0.13`，基于 `dqlibdolphin` 的 `release-caplib` 分支构建，提供 180 个对外接口
+当前版本 `0.0.13`，基于 `dqlibdolphin` 的 `release-caplib` 分支构建，提供 186 个对外接口
 （相对 0.0.11 净删 22 个接口：Cap/Floor、Swaption、跨币种曲线构建、部分 calc* 计算器和静态数据 bytes 类接口；
 同时新增 `specificPricingRequests` 暴露）。注意：`createPricingSettings` 自 0.0.13 起仅支持
 9 必填 + 可选 `returnJson` 的 10 参形式，不含 `specificPricingRequests` 的旧形式不再接受（破坏性变更）。
@@ -26,7 +26,7 @@ Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件�
 | 外汇 | 即期、远期、掉期、NDF 和外汇期权定价；波动率曲面构建 |
 | 权益 | 欧式、美式、亚式、数字、障碍、触碰、雪球等期权定价；股息曲线和波动率曲面构建 |
 | 商品 | 商品及贵金属曲线、波动率曲面和期权定价 |
-| 市场风险 | 价格与波动率敏感度、曲线风险和情景分析 |
+| 市场风险 | 历史模拟曲线/即期情景生成、VaR、期望损失（ES） |
 
 ## 第三方库说明
 

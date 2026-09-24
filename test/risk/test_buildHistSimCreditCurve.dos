@@ -2,7 +2,7 @@
 // test_buildHistSimCreditCurve.dos
 // Signature: buildHistSimCreditCurve(simDate DATE, referenceCurve H,
 //            histStart H, histEnd H, curveDates DATE[], handle STRING) -> handle
-// Run: test("test/mr")
+// Run: test("test/risk")
 
 simDate = 2020.02.21;
 caplib::createCalendar("CAL_CFETS");
@@ -39,3 +39,11 @@ caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve,
 // 用例目的：少传参数，解析期报错
 @testing:case="buildHistSimCreditCurve rejects missing args", syntaxError=1
 caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate])
+
+// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
+@testing:case="buildHistSimCreditCurve deterministic repeat -> both readable"
+h1 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate + 30, simDate + 365], "MR_CR_DET")
+r1 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
+h2 = caplib::buildHistSimCreditCurve(simDate, refCurve, startCurve, endCurve, [simDate + 30, simDate + 365], "MR_CR_DET")
+r2 = caplib::getObjectCacheJson("CreditCurve", "MR_CR_DET")
+assert 1, h1 == "MR_CR_DET" && h2 == "MR_CR_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_CR_DET" && r2[0]=="MR_CR_DET"

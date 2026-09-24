@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>市场风险 | CAPLIB</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="alternate" hreflang="en" href="../shared.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../shared.html">English</a><span class="lang-active">中文</span></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="../shared.html#api-reference">通用 <span>28</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>56</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>35</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a><a class="nav-child active" href="../market-risk.html#api-reference">市场风险 <span>6</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib 插件</p>
+        <h1>通用</h1>
+        <p class="lede">跨资产工具、定价设置、风险设置、情景设置以及共享 protobuf 工具。</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>市场风险：历史模拟情景生成器（IR/信用曲线、FX 即期、FX 波动率）与 VaR / 期望损失（ES）度量。本页包含 6 个函数。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+
+settings = caplib::createPricingSettings(
+    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0, take(0, 0),
+    &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
+
+json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+<section class="api-group"><h2>市场风险</h2>
+<article class="api-card" data-search="buildhistsimiryelcurve 基于历史模拟生成 IR 收益率曲线情景">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimiryelcurve"></a>
+      <h3><code>buildHistSimIrYieldCurve</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::buildHistSimIrYieldCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
+      <p class="api-description">基于历史模拟生成一条 IR 收益率曲线情景（服务 HIST_SIM_IR_YIELD_CURVE_SCN_GENERATOR）：把参考与历史曲线插值到目标曲线日期。</p>
+    </div>
+    <span class="return-pill">IrYieldCurve 句柄</span>
+  </div>
+  <h4 class="api-subheading">返回值</h4>
+  <p class="return-description"><strong>返回：</strong>IrYieldCurve 句柄 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>模拟基准日。</td></tr><tr><td><code>referenceCurve</code></td><td>STRING</td><td>参考 IrYieldCurve 句柄。</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>历史起始 IrYieldCurve 句柄。</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>历史结束 IrYieldCurve 句柄。</td></tr><tr><td><code>curveDates</code></td><td>DATE[]</td><td>输出曲线目标日期，至少两个。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>结果 IrYieldCurve 的缓存键。</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="buildhistsimcreditcurve 基于历史模拟生成信用利差曲线情景">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimcreditcurve"></a>
+      <h3><code>buildHistSimCreditCurve</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::buildHistSimCreditCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
+      <p class="api-description">基于历史模拟生成一条信用利差曲线情景（服务 HIST_SIM_CREDIT_CURVE_SCN_GENERATOR），参数同 buildHistSimIrYieldCurve，曲线类型为 CreditCurve。</p>
+    </div>
+    <span class="return-pill">CreditCurve 句柄</span>
+  </div>
+  <h4 class="api-subheading">返回值</h4>
+  <p class="return-description"><strong>返回：</strong>CreditCurve 句柄 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>模拟基准日。</td></tr><tr><td><code>referenceCurve</code></td><td>STRING</td><td>参考 CreditCurve 句柄。</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>历史起始 CreditCurve 句柄。</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>历史结束 CreditCurve 句柄。</td></tr><tr><td><code>curveDates</code></td><td>DATE[]</td><td>目标日期，至少两个且期限为正。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>结果 CreditCurve 的缓存键。</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="buildhistsimfxspotrate 基于历史模拟生成 FX 即期汇率情景">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimfxspotrate"></a>
+      <h3><code>buildHistSimFxSpotRate</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::buildHistSimFxSpotRate(simDate DATE, referenceSpot STRING, histStart STRING, histEnd STRING, useTemplate BOOL, fxSpotTemplate STRING, handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
+      <p class="api-description">基于历史模拟生成一个 FX 即期汇率情景（服务 HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR），可选应用 FxSpotTemplate。</p>
+    </div>
+    <span class="return-pill">FxSpotRate 句柄</span>
+  </div>
+  <h4 class="api-subheading">返回值</h4>
+  <p class="return-description"><strong>返回：</strong>FxSpotRate 句柄 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>模拟基准日。</td></tr><tr><td><code>referenceSpot</code></td><td>STRING</td><td>参考 FxSpotRate 句柄。</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>历史起始 FxSpotRate 句柄。</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>历史结束 FxSpotRate 句柄。</td></tr><tr><td><code>useTemplate</code></td><td>BOOL</td><td>是否应用 FX 即期模板；为 true 时 fxSpotTemplate 必填。</td></tr><tr><td><code>fxSpotTemplate</code></td><td>STRING</td><td>FxSpotTemplate 句柄；useTemplate=false 传空串。</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>结果 FxSpotRate 的缓存键。</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="buildhistsimfxvolsurface 基于历史模拟生成 FX 波动率曲面情景">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimfxvolsurface"></a>
+      <h3><code>buildHistSimFxVolSurface</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::buildHistSimFxVolSurface(simDate DATE, referenceVolSurf STRING, histStart STRING, histEnd STRING, volSurfaceDates DATE[], volSurfaceStrikes ANY, spot STRING, domCurve STRING, forCurve STRING, settings STRING, handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">详情</h4>
+      <p class="api-description">基于历史模拟生成一个 FX 波动率曲面情景（服务 HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR），需参考/历史曲面、行权价网格、即期及本币/外币贴现曲线。</p>
+    </div>
+    <span class="return-pill">FxVolatilitySurface 句柄</span>
+  </div>
+  <h4 class="api-subheading">返回值</h4>
+  <p class="return-description"><strong>返回：</strong>FxVolatilitySurface 句柄 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>referenceVolSurf / histStart / histEnd</code></td><td>STRING</td><td>参考/历史起始/历史结束 FxVolatilitySurface 句柄。</td></tr><tr><td><code>volSurfaceDates</code></td><td>DATE[]</td><td>目标曲面日期，至少两个。</td></tr><tr><td><code>volSurfaceStrikes</code></td><td>ANY</td><td>每个目标日期一行权价集（DOUBLE[] 的向量）；形状须与日期数匹配。</td></tr><tr><td><code>spot</code></td><td>STRING</td><td>FxSpotRate 句柄。</td></tr><tr><td><code>domCurve</code></td><td>STRING</td><td>本币 IrYieldCurve 句柄。</td></tr><tr><td><code>forCurve</code></td><td>STRING</td><td>外币 IrYieldCurve 句柄。</td></tr><tr><td><code>settings</code></td><td>STRING</td><td>VolatilitySurfaceBuildSettings 句柄，可传空串。</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="calcvar 计算盈亏样本的风险价值 var">
+  <div class="api-card-head">
+    <div>
+      <a id="calcvar"></a>
+      <h3><code>calcVaR</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::calcVaR(profitLossSamples DOUBLE[], probability DOUBLE, antithetic BOOL)</code></p>
+      <h4 class="api-subheading">详情</h4>
+      <p class="api-description">计算盈亏样本的 VaR 风险价值（服务 CALCULATE_VALUE_AT_RISK）。</p>
+    </div>
+    <span class="return-pill">DOUBLE</span>
+  </div>
+  <h4 class="api-subheading">返回值</h4>
+  <p class="return-description"><strong>返回：</strong>DOUBLE 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE[]</td><td>盈亏样本序列。</td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>置信水平，严格在 (0,1) 内。</td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>是否同时计算对偶镜像 VaR。</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="calcexpectedshortfall 计算盈亏样本的期望损失 es">
+  <div class="api-card-head">
+    <div>
+      <a id="calcexpectedshortfall"></a>
+      <h3><code>calcExpectedShortfall</code></h3>
+      <h4 class="api-subheading">语法</h4>
+      <p class="full-signature"><code>caplib::calcExpectedShortfall(profitLossSamples DOUBLE[], probability DOUBLE, antithetic BOOL)</code></p>
+      <h4 class="api-subheading">详情</h4>
+      <p class="api-description">计算盈亏样本的 ES 期望损失（服务 CALCULATE_EXPECTED_SHORT_FALL）。</p>
+    </div>
+    <span class="return-pill">DOUBLE</span>
+  </div>
+  <h4 class="api-subheading">返回值</h4>
+  <p class="return-description"><strong>返回：</strong>DOUBLE 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <details open>
+    <summary>参数</summary>
+    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE[]</td><td>盈亏样本序列。</td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>置信水平，严格在 (0,1) 内。</td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>是否同时计算对偶镜像期望损失。</td></tr></tbody></table>
+  </details>
+
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `显示 ${visible} / ${cards.length} 个函数`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>

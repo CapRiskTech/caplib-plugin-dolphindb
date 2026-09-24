@@ -4,7 +4,7 @@
 //            histStart H, histEnd H, volSurfaceDates DATE[],
 //            volSurfaceStrikes (vector of DOUBLE[]), spot H, domCurve H,
 //            forCurve H, settings H ('' ok), handle STRING) -> handle
-// Run: test("test/mr")
+// Run: test("test/risk")
 
 simDate = 2021.03.30;
 caplib::createCalendar("CAL_CFETS");

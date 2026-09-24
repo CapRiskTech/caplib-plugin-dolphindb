@@ -2,7 +2,7 @@
 // test_calcExpectedShortfall.dos
 // Signature: calcExpectedShortfall(profitLossSamples DOUBLE[], probability
 //            DOUBLE (0..1), antithetic BOOL) -> DOUBLE
-// Run: test("test/mr")
+// Run: test("test/risk")
 
 samples = [-100.0, -50.0, 0.0, 50.0, 100.0];
 
@@ -35,3 +35,14 @@ caplib::calcExpectedShortfall(["a","b"], 0.95, false)
 // 用例目的：少传参数，解析期报错
 @testing:case="calcES rejects missing args", syntaxError=1
 caplib::calcExpectedShortfall(samples, 0.95)
+
+// 用例目的：相同输入连续两次，结果一致
+@testing:case="calcES deterministic repeat -> identical"
+e1 = caplib::calcExpectedShortfall(samples, 0.95, false);
+e2 = caplib::calcExpectedShortfall(samples, 0.95, false);
+assert 1, e1 == e2
+
+// 用例目的：ES 对负样本应非负有限
+@testing:case="calcES known-sample -> non-negative finite"
+v = caplib::calcExpectedShortfall(samples, 0.95, false);
+assert 1, v >= 0.0 && !isNull(v)

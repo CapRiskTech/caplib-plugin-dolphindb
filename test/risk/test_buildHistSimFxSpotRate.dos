@@ -3,7 +3,7 @@
 // Signature: buildHistSimFxSpotRate(simDate DATE, referenceSpot H, histStart H,
 //            histEnd H, useTemplate BOOL, fxSpotTemplate H ('' ok),
 //            handle STRING) -> handle
-// Run: test("test/mr")
+// Run: test("test/risk")
 
 simDate = 2020.02.21;
 caplib::createCalendar("CAL_CFETS");
@@ -37,3 +37,11 @@ caplib::buildHistSimFxSpotRate(simDate, "NO_SUCH_SPOT", startSpot, endSpot,
 @testing:case="buildHistSimFxSpotRate rejects non-bool useTemplate", exception=1
 caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
                                5, "", "MR_SPOT_RESULT_Z")
+
+// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
+@testing:case="buildHistSimFxSpotRate deterministic repeat -> both readable"
+h1 = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "MR_SPOT_DET")
+r1 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
+h2 = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot, false, "", "MR_SPOT_DET")
+r2 = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_DET")
+assert 1, h1 == "MR_SPOT_DET" && h2 == "MR_SPOT_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_SPOT_DET" && r2[0]=="MR_SPOT_DET"

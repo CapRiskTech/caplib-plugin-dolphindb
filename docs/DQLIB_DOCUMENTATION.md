@@ -7411,6 +7411,116 @@ loadPlugin("PluginCaplib")
 caplib::getCreditSpread(flatCreditCurve, curveDates)
 ```
 
+
+### 市场风险
+
+市场风险（MarketRisk）服务：历史模拟情景生成器与 VaR / ES 度量。
+
+#### buildHistSimIrYieldCurve
+
+基于历史模拟生成一条 IR 收益率曲线情景（服务 `HIST_SIM_IR_YIELD_CURVE_SCN_GENERATOR`）。
+
+##### 语法
+
+```dolphindb
+caplib::buildHistSimIrYieldCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])
+```
+
+##### 参数
+
+| 参数 | 类型 / 形状 | 说明 |
+| --- | --- | --- |
+| `simDate` | DATE | 模拟基准日。 |
+| `referenceCurve` | STRING | 参考 IrYieldCurve 句柄。 |
+| `histStart` | STRING | 历史起始 IrYieldCurve 句柄。 |
+| `histEnd` | STRING | 历史结束 IrYieldCurve 句柄。 |
+| `curveDates` | DATE[] | 输出曲线目标日期，至少两个。 |
+| `handle` | STRING | 结果 IrYieldCurve 的缓存键。 |
+
+##### 返回值
+
+结果以 IrYieldCurve 存入 ObjectCache 并返回其句柄（`returnJson=true` 返回 `[handle, json]`）。
+
+#### buildHistSimCreditCurve
+
+基于历史模拟生成信用利差曲线情景（`HIST_SIM_CREDIT_CURVE_SCN_GENERATOR`），参数同 `buildHistSimIrYieldCurve`，曲线类型为 CreditCurve。
+
+##### 语法
+
+```dolphindb
+caplib::buildHistSimCreditCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])
+```
+
+#### buildHistSimFxSpotRate
+
+基于历史模拟生成 FX 即期汇率情景（`HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR`）。
+
+##### 语法
+
+```dolphindb
+caplib::buildHistSimFxSpotRate(simDate DATE, referenceSpot STRING, histStart STRING, histEnd STRING, useTemplate BOOL, fxSpotTemplate STRING, handle STRING[, returnJson BOOL])
+```
+
+##### 参数
+
+| 参数 | 类型 / 形状 | 说明 |
+| --- | --- | --- |
+| `simDate` | DATE | 模拟基准日。 |
+| `referenceSpot` | STRING | 参考 FxSpotRate 句柄。 |
+| `histStart` / `histEnd` | STRING | 历史起始 / 结束 FxSpotRate 句柄。 |
+| `useTemplate` | BOOL | 是否应用 FX 即期模板；为 true 时 fxSpotTemplate 必填。 |
+| `fxSpotTemplate` | STRING | FxSpotTemplate 句柄；useTemplate=false 传空串。 |
+| `handle` | STRING | 结果 FxSpotRate 的缓存键。 |
+
+#### buildHistSimFxVolSurface
+
+基于历史模拟生成 FX 波动率曲面情景（`HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR`），需参考/历史曲面、目标日期与行权价网格、即期汇率及本币/外币贴现曲线。
+
+> **服务端实现说明：** 当前 dqlib 服务端对该生成器（11006）的插值路径未全里程实现，正向调用可能返回空错误。插件透传正确；其余 5 个 MarketRisk 接口可正常使用。
+
+##### 语法
+
+```dolphindb
+caplib::buildHistSimFxVolSurface(simDate DATE, referenceVolSurf STRING, histStart STRING, histEnd STRING, volSurfaceDates DATE[], volSurfaceStrikes ANY, spot STRING, domCurve STRING, forCurve STRING, settings STRING, handle STRING[, returnJson BOOL])
+```
+
+#### calcVaR
+
+计算盈亏样本的 VaR 风险价值（服务 `CALCULATE_VALUE_AT_RISK`）。
+
+##### 语法
+
+```dolphindb
+caplib::calcVaR(profitLossSamples DOUBLE[], probability DOUBLE, antithetic BOOL)
+```
+
+##### 参数
+
+| 参数 | 类型 / 形状 | 说明 |
+| --- | --- | --- |
+| `profitLossSamples` | DOUBLE[] | 盈亏样本序列。 |
+| `probability` | DOUBLE | 置信水平，严格在 (0,1) 内。 |
+| `antithetic` | BOOL | 是否计算对偶样本镜像 VaR。 |
+
+##### 返回值
+
+DOUBLE 标量 VaR 值。
+
+#### calcExpectedShortfall
+
+计算盈亏样本的 ES 期望损失（服务 `CALCULATE_EXPECTED_SHORT_FALL`），参数同 `calcVaR`。
+
+##### 语法
+
+```dolphindb
+caplib::calcExpectedShortfall(profitLossSamples DOUBLE[], probability DOUBLE, antithetic BOOL)
+```
+
+##### 返回值
+
+DOUBLE 标量期望损失值。
+
+
 ## 使用示例
 
 以下示例展示固定收益债券定价的完整流程：加载插件、创建曲线和债券、配置定价与风险设置、组装市场数据、执行定价并输出结果。

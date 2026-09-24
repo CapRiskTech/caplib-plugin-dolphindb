@@ -3,7 +3,7 @@
 // Per-function test for caplib::calcVaR (MarketRisk service).
 // Signature: calcVaR(profitLossSamples DOUBLE[], probability DOUBLE (0..1),
 //                    antithetic BOOL) -> DOUBLE
-// Run: test("test/mr")  |  python run_tests.py --file mr/test_calcVaR.dos
+// Run: test("test/risk")  |  python run_tests.py --file mr/test_calcVaR.dos
 
 samples = [-100.0, -50.0, 0.0, 50.0, 100.0];
 
@@ -40,3 +40,20 @@ caplib::calcVaR(100.0, 0.95, false)
 // 用例目的：少传参数，解析期报错
 @testing:case="calcVaR rejects missing args", syntaxError=1
 caplib::calcVaR(samples)
+
+// 用例目的：相同输入连续两次调用，验证结果完全一致（计算确定性）
+@testing:case="calcVaR deterministic repeat -> identical"
+v1 = caplib::calcVaR(samples, 0.95, false);
+v2 = caplib::calcVaR(samples, 0.95, false);
+assert 1, v1 == v2
+
+// 用例目的：95% 置信、样本最小损失 -100，VaR 应为 (0, 100] 的分位损失
+@testing:case="calcVaR known-sample -> plausible range"
+v = caplib::calcVaR(samples, 0.95, false);
+assert 1, v > 0.0 && v <= 100.0
+
+// 用例目的：更低置信应给更小的 VaR
+@testing:case="calcVaR lower confidence -> not larger"
+v95 = caplib::calcVaR(samples, 0.95, false);
+v50 = caplib::calcVaR(samples, 0.50, false);
+assert 1, v50 <= v95

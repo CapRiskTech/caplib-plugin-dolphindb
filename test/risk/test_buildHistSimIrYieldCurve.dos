@@ -2,7 +2,7 @@
 // test_buildHistSimIrYieldCurve.dos
 // Signature: buildHistSimIrYieldCurve(simDate DATE, referenceCurve H,
 //            histStart H, histEnd H, curveDates DATE[], handle STRING) -> handle
-// Run: test("test/mr")
+// Run: test("test/risk")
 
 simDate = 2020.02.21;
 caplib::createCalendar("CAL_CFETS");
@@ -40,3 +40,11 @@ caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve,
 // 用例目的：少传参数，解析期报错
 @testing:case="buildHistSimIrYieldCurve rejects missing args", syntaxError=1
 caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate])
+
+// 用例目的：相同输入连续调用两次，两次都可读回（可重复性/确定性）
+@testing:case="buildHistSimIrYieldCurve deterministic repeat -> both readable"
+h1 = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate, simDate + 365], "MR_IR_DET")
+r1 = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_DET")
+h2 = caplib::buildHistSimIrYieldCurve(simDate, refCurve, startCurve, endCurve, [simDate, simDate + 365], "MR_IR_DET")
+r2 = caplib::getObjectCacheJson("IrYieldCurve", "MR_IR_DET")
+assert 1, h1 == "MR_IR_DET" && h2 == "MR_IR_DET" && size(r1)==2 && size(r2)==2 && r1[0]=="MR_IR_DET" && r2[0]=="MR_IR_DET"

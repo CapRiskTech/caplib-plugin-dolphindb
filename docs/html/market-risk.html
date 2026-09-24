@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Market Risk | CAPLIB</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="alternate" hreflang="zh-CN" href="zh/market-risk.html">
+</head>
+<body>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">User Guide and API Reference</span><span class="lang-switch"><span class="lang-active">EN</span><a href="zh/market-risk.html">中文</a></span></nav>
+  <div class="shell">
+    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child" href="index.html#user-guide">Introduction</a><a class="nav-child" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child" href="commodity.html#user-guide">Commodity</a><a class="nav-child" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child" href="shared.html#api-reference">Common <span>28</span></a><a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>56</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>35</span></a><a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a><a class="nav-child active" href="market-risk.html#api-reference">Market Risk <span>6</span></a></div></aside>
+    <main class="content">
+      <header class="page-header">
+        <p class="kicker">DolphinDB caplib plugin</p>
+        <h1>Common</h1>
+        <p class="lede">Cross-asset utilities, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</p>
+      </header>
+      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Market Risk: historical-simulation scenario generators (IR / credit curves, FX spot, FX volatility) and VaR / Expected Shortfall measures. This page contains 6 functions.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+
+settings = caplib::createPricingSettings(
+    &quot;USD&quot;, &quot;ANALYTICAL&quot;, 0, 0, take(0, 0),
+    &quot;BSM_MODEL&quot;, &quot;&quot;, &quot;&quot;, &quot;BSM_ANALYTICAL&quot;, false);
+
+json = caplib::getObjectCacheJson(&quot;PricingSettings&quot;, settings);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
+<section class="api-group"><h2>Market Risk</h2>
+<article class="api-card" data-search="build an ir yield-curve historical simulation scenario generator. simdate date referencecurve histstart histend curvedates handle">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimiryelcurve"></a>
+      <h3><code>buildHistSimIrYieldCurve</code></h3>
+      <h4 class="api-subheading">Syntax</h4>
+      <p class="full-signature"><code>caplib::buildHistSimIrYieldCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">Details</h4>
+      <p class="api-description">Build an IR yield-curve scenario by historical simulation (service HIST_SIM_IR_YIELD_CURVE_SCN_GENERATOR): interpolate the reference and historical curves onto the target curve dates.</p>
+    </div>
+    <span class="return-pill">IrYieldCurve handle</span>
+  </div>
+  <h4 class="api-subheading">Return value</h4>
+  <p class="return-description"><strong>Returns:</strong> IrYieldCurve handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>Simulation reference date.</td></tr><tr><td><code>referenceCurve</code></td><td>STRING</td><td>Handle of the reference IrYieldCurve.</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>Handle of the historical-start IrYieldCurve.</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>Handle of the historical-end IrYieldCurve.</td></tr><tr><td><code>curveDates</code></td><td>DATE[]</td><td>Target dates on the output curve; at least two.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key for the result IrYieldCurve.</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="build a credit-spread-curve historical simulation scenario generator. simdate referencecurve histstart histend curvedates handle">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimcreditcurve"></a>
+      <h3><code>buildHistSimCreditCurve</code></h3>
+      <h4 class="api-subheading">Syntax</h4>
+      <p class="full-signature"><code>caplib::buildHistSimCreditCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">Details</h4>
+      <p class="api-description">Build a credit-spread-curve scenario by historical simulation (service HIST_SIM_CREDIT_CURVE_SCN_GENERATOR). Same shape as buildHistSimIrYieldCurve with CreditCurve handles.</p>
+    </div>
+    <span class="return-pill">CreditCurve handle</span>
+  </div>
+  <h4 class="api-subheading">Return value</h4>
+  <p class="return-description"><strong>Returns:</strong> CreditCurve handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>Simulation reference date.</td></tr><tr><td><code>referenceCurve</code></td><td>STRING</td><td>Handle of the reference CreditCurve.</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>Handle of the historical-start CreditCurve.</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>Handle of the historical-end CreditCurve.</td></tr><tr><td><code>curveDates</code></td><td>DATE[]</td><td>Target dates; at least two, with positive tenor.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key for the result CreditCurve.</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="build an fx spot-rate historical simulation scenario generator. simdate referencespot histstart histend usetemplate fxspottemplate handle">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimfxspotrate"></a>
+      <h3><code>buildHistSimFxSpotRate</code></h3>
+      <h4 class="api-subheading">Syntax</h4>
+      <p class="full-signature"><code>caplib::buildHistSimFxSpotRate(simDate DATE, referenceSpot STRING, histStart STRING, histEnd STRING, useTemplate BOOL, fxSpotTemplate STRING, handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">Details</h4>
+      <p class="api-description">Build an FX spot-rate scenario by historical simulation (service HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR). Optionally applies an FxSpotTemplate.</p>
+    </div>
+    <span class="return-pill">FxSpotRate handle</span>
+  </div>
+  <h4 class="api-subheading">Return value</h4>
+  <p class="return-description"><strong>Returns:</strong> FxSpotRate handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>Simulation reference date.</td></tr><tr><td><code>referenceSpot</code></td><td>STRING</td><td>Handle of the reference FxSpotRate.</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>Handle of the historical-start FxSpotRate.</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>Handle of the historical-end FxSpotRate.</td></tr><tr><td><code>useTemplate</code></td><td>BOOL</td><td>Whether to apply an FX spot template; if true, fxSpotTemplate is required.</td></tr><tr><td><code>fxSpotTemplate</code></td><td>STRING</td><td>Handle of the FxSpotTemplate; empty when useTemplate is false.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key for the result FxSpotRate.</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="build an fx volatility-surface historical simulation scenario generator. simdate referencesurface histstart histend dates strikes spot domcurve forcurve settings handle">
+  <div class="api-card-head">
+    <div>
+      <a id="buildhistsimfxvolsurface"></a>
+      <h3><code>buildHistSimFxVolSurface</code></h3>
+      <h4 class="api-subheading">Syntax</h4>
+      <p class="full-signature"><code>caplib::buildHistSimFxVolSurface(simDate DATE, referenceVolSurf STRING, histStart STRING, histEnd STRING, volSurfaceDates DATE[], volSurfaceStrikes ANY, spot STRING, domCurve STRING, forCurve STRING, settings STRING, handle STRING[, returnJson BOOL])</code></p>
+      <h4 class="api-subheading">Details</h4>
+      <p class="api-description">Build an FX volatility-surface scenario by historical simulation (service HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR) from reference and historical surfaces, a strike/target-date grid, spot rate, and domestic/foreign discount curves.</p>
+    </div>
+    <span class="return-pill">FxVolatilitySurface handle</span>
+  </div>
+  <h4 class="api-subheading">Return value</h4>
+  <p class="return-description"><strong>Returns:</strong> FxVolatilitySurface handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>referenceVolSurf / histStart / histEnd</code></td><td>STRING</td><td>Handles of the reference, historical-start and historical-end FxVolatilitySurface.</td></tr><tr><td><code>volSurfaceDates</code></td><td>DATE[]</td><td>Target surface dates; at least two.</td></tr><tr><td><code>volSurfaceStrikes</code></td><td>ANY</td><td>Per-date strike sets (a vector of DOUBLE[]); shape must match the date count.</td></tr><tr><td><code>spot</code></td><td>STRING</td><td>Handle of the FxSpotRate.</td></tr><tr><td><code>domCurve</code></td><td>STRING</td><td>Handle of the domestic IrYieldCurve.</td></tr><tr><td><code>forCurve</code></td><td>STRING</td><td>Handle of the foreign IrYieldCurve.</td></tr><tr><td><code>settings</code></td><td>STRING</td><td>Handle of VolatilitySurfaceBuildSettings; may be empty.</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="compute the value-at-risk var of a profit-and-loss sample series. profitlosssamples probability antithetic">
+  <div class="api-card-head">
+    <div>
+      <a id="calcvar"></a>
+      <h3><code>calcVaR</code></h3>
+      <h4 class="api-subheading">Syntax</h4>
+      <p class="full-signature"><code>caplib::calcVaR(profitLossSamples DOUBLE[], probability DOUBLE, antithetic BOOL)</code></p>
+      <h4 class="api-subheading">Details</h4>
+      <p class="api-description">Compute the Value-at-Risk of a profit-and-loss sample series (service CALCULATE_VALUE_AT_RISK).</p>
+    </div>
+    <span class="return-pill">DOUBLE</span>
+  </div>
+  <h4 class="api-subheading">Return value</h4>
+  <p class="return-description"><strong>Returns:</strong> DOUBLE as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE[]</td><td>Profit/loss sample series.</td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>Confidence level, strictly in (0,1).</td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>Whether to also compute the mirror (antithetic) VaR.</td></tr></tbody></table>
+  </details>
+
+</article>
+<article class="api-card" data-search="compute the expected shortfall es of a profit-and-loss sample series. profitlosssamples probability antithetic">
+  <div class="api-card-head">
+    <div>
+      <a id="calcexpectedshortfall"></a>
+      <h3><code>calcExpectedShortfall</code></h3>
+      <h4 class="api-subheading">Syntax</h4>
+      <p class="full-signature"><code>caplib::calcExpectedShortfall(profitLossSamples DOUBLE[], probability DOUBLE, antithetic BOOL)</code></p>
+      <h4 class="api-subheading">Details</h4>
+      <p class="api-description">Compute the Expected Shortfall of a profit-and-loss sample series (service CALCULATE_EXPECTED_SHORT_FALL).</p>
+    </div>
+    <span class="return-pill">DOUBLE</span>
+  </div>
+  <h4 class="api-subheading">Return value</h4>
+  <p class="return-description"><strong>Returns:</strong> DOUBLE as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <details open>
+    <summary>Parameters</summary>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE[]</td><td>Profit/loss sample series.</td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>Confidence level, strictly in (0,1).</td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>Whether to also compute the mirror (antithetic) Expected Shortfall.</td></tr></tbody></table>
+  </details>
+
+</article>
+</section>
+<script>
+const input = document.getElementById('filter');
+const cards = Array.from(document.querySelectorAll('.api-card'));
+const count = document.getElementById('count');
+function update() {
+  const q = input.value.trim().toLowerCase();
+  let visible = 0;
+  for (const card of cards) {
+    const match = !q || card.dataset.search.includes(q);
+    card.hidden = !match;
+    if (match) visible += 1;
+  }
+  count.textContent = `${visible} of ${cards.length} functions`;
+}
+input.addEventListener('input', update);
+update();
+</script>
+    </main>
+  </div>
+</body>
+</html>
