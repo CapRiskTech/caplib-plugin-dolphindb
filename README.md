@@ -212,16 +212,17 @@ spreadCurve = caplib::createCreditCurve(
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CNY_MTN_AAA", "FI_CREDIT_CURVE", false)
 
-bondLeg = caplib::createBondLegDefinition(
-    "FIXED_COUPON_BOND", 1, currency, "ACT_365_FIXED", "CAL_CFETS",
-    "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG",
-    0, "MODIFIED_FOLLOWING", "", "", "ANNUAL",
-    "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "FI_BOND_LEG", false)
-
 bondTemplate = caplib::createVanillaBondTemplate(
     "CNY_TREAS_CPN_BOND", "FIXED_COUPON_BOND",
     2020.07.22, 1, 2020.07.22, "5Y",
-    0.03, 100.0, 0.4, bondLeg, false)
+    0.03, currency, 100.0,
+    "ACT_365_FIXED", "CAL_CFETS", "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, false)
 vanillaBond = caplib::buildVanillaBond(
     1000000.0, bondTemplate, "", 2020.07.22, "FI_VANILLA_BOND", false)
 
