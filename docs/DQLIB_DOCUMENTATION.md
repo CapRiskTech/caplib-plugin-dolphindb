@@ -9276,17 +9276,19 @@ caplib::getCreditSpread(flatCreditCurve, curveDates)
 
 ### 市场风险
 
-市场风险（MarketRisk）服务：历史模拟情景生成器与 VaR / ES 度量。
+市场风险（MarketRisk）服务：历史模拟情景生成器与 VaR / 期望损失（ES）度量。
 
 #### buildHistSimIrYieldCurve
-
-基于历史模拟生成一条 IR 收益率曲线情景（服务 `HIST_SIM_IR_YIELD_CURVE_SCN_GENERATOR`）。
 
 **语法**
 
 ```dolphindb
-caplib::buildHistSimIrYieldCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE 向量, handle STRING, [returnJson])
+caplib::buildHistSimIrYieldCurve(simDate, referenceCurve, histStart, histEnd, curveDates, handle, [returnJson])
 ```
+
+**详情**
+
+基于历史模拟生成一条 IR 收益率曲线情景（服务 `HIST_SIM_IR_YIELD_CURVE_SCN_GENERATOR`）：把参考曲线与历史起止曲线插值到目标日期。
 
 **参数**
 
@@ -9298,33 +9300,87 @@ histStart STRING 类型。历史起始 IrYieldCurve 句柄。
 
 histEnd STRING 类型。历史结束 IrYieldCurve 句柄。
 
-curveDates DATE 向量 类型。输出曲线目标日期，至少两个。
+curveDates DATE 向量类型。输出曲线上的目标日期，至少两个。
 
 handle STRING 类型。结果 IrYieldCurve 的缓存键。
 
+returnJson BOOL 类型，可选。省略或为 false 时仅返回句柄；为 true 时返回 [handle, protobufJson]。默认为 false。
+
 **返回值**
 
-结果以 IrYieldCurve 存入 ObjectCache 并返回其句柄（`returnJson=true` 返回 `[handle, json]`）。
+结果 IrYieldCurve 句柄，STRING 类型标量。对象存入 ObjectCache。
+
+**示例**
+
+```dolphindb
+loadPlugin("caplib")
+
+asOfDate = 2020.02.21
+refCurve   = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.020, "MR_REF", false)
+startCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.019, "MR_START", false)
+endCurve   = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.021, "MR_END", false)
+
+sim = caplib::buildHistSimIrYieldCurve(asOfDate, refCurve, startCurve, endCurve,
+    [asOfDate, asOfDate + 365], "MR_SIM", false)
+```
 
 #### buildHistSimCreditCurve
-
-基于历史模拟生成信用利差曲线情景（`HIST_SIM_CREDIT_CURVE_SCN_GENERATOR`），参数同 `buildHistSimIrYieldCurve`，曲线类型为 CreditCurve。
 
 **语法**
 
 ```dolphindb
-caplib::buildHistSimCreditCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE 向量, handle STRING, [returnJson])
+caplib::buildHistSimCreditCurve(simDate, referenceCurve, histStart, histEnd, curveDates, handle, [returnJson])
+```
+
+**详情**
+
+基于历史模拟生成一条信用利差曲线情景（服务 `HIST_SIM_CREDIT_CURVE_SCN_GENERATOR`），参数同 `buildHistSimIrYieldCurve`，曲线类型为 CreditCurve。
+
+**参数**
+
+simDate DATE 类型。模拟基准日。
+
+referenceCurve STRING 类型。参考 CreditCurve 句柄。
+
+histStart STRING 类型。历史起始 CreditCurve 句柄。
+
+histEnd STRING 类型。历史结束 CreditCurve 句柄。
+
+curveDates DATE 向量类型。目标日期，至少两个且期限为正。
+
+handle STRING 类型。结果 CreditCurve 的缓存键。
+
+returnJson BOOL 类型，可选。默认为 false。
+
+**返回值**
+
+结果 CreditCurve 句柄，STRING 类型标量。对象存入 ObjectCache。
+
+**示例**
+
+```dolphindb
+loadPlugin("caplib")
+
+asOfDate = 2020.02.21
+refCurve   = caplib::createFlatCreditCurve(asOfDate, 0.0020, "MR_CR_REF", false)
+startCurve = caplib::createFlatCreditCurve(asOfDate, 0.0018, "MR_CR_START", false)
+endCurve   = caplib::createFlatCreditCurve(asOfDate, 0.0022, "MR_CR_END", false)
+
+sim = caplib::buildHistSimCreditCurve(asOfDate, refCurve, startCurve, endCurve,
+    [asOfDate + 30, asOfDate + 365], "MR_CR_SIM", false)
 ```
 
 #### buildHistSimFxSpotRate
 
-基于历史模拟生成 FX 即期汇率情景（`HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR`）。
-
 **语法**
 
 ```dolphindb
-caplib::buildHistSimFxSpotRate(simDate DATE, referenceSpot STRING, histStart STRING, histEnd STRING, useTemplate BOOL, fxSpotTemplate STRING, handle STRING, [returnJson])
+caplib::buildHistSimFxSpotRate(simDate, referenceSpot, histStart, histEnd, useTemplate, fxSpotTemplate, handle, [returnJson])
 ```
+
+**详情**
+
+基于历史模拟生成 FX 即期汇率情景（服务 `HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR`），可选应用 FX 即期模板。
 
 **参数**
 
@@ -9332,62 +9388,171 @@ simDate DATE 类型。模拟基准日。
 
 referenceSpot STRING 类型。参考 FxSpotRate 句柄。
 
-histStart` / `histEnd STRING 类型。历史起始 / 结束 FxSpotRate 句柄。
+histStart STRING 类型。历史起始 FxSpotRate 句柄。
+
+histEnd STRING 类型。历史结束 FxSpotRate 句柄。
 
 useTemplate BOOL 类型。是否应用 FX 即期模板；为 true 时 fxSpotTemplate 必填。
 
-fxSpotTemplate STRING 类型。FxSpotTemplate 句柄；useTemplate=false 传空串。
+fxSpotTemplate STRING 类型。FxSpotTemplate 句柄；useTemplate 为 false 时传空字符串。
 
 handle STRING 类型。结果 FxSpotRate 的缓存键。
 
+returnJson BOOL 类型，可选。默认为 false。
+
+**返回值**
+
+结果 FxSpotRate 句柄，STRING 类型标量。对象存入 ObjectCache。
+
+**示例**
+
+```dolphindb
+loadPlugin("caplib")
+
+asOfDate = 2020.02.21
+refSpot   = caplib::createFxSpotRate(7.00, "USD", "CNY", asOfDate, asOfDate, "MR_SPOT_REF", false)
+startSpot = caplib::createFxSpotRate(6.99, "USD", "CNY", asOfDate, asOfDate, "MR_SPOT_START", false)
+endSpot   = caplib::createFxSpotRate(7.01, "USD", "CNY", asOfDate, asOfDate, "MR_SPOT_END", false)
+
+sim = caplib::buildHistSimFxSpotRate(asOfDate, refSpot, startSpot, endSpot,
+    false, "", "MR_SPOT_SIM", false)
+```
+
 #### buildHistSimFxVolSurface
-
-基于历史模拟生成 FX 波动率曲面情景（`HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR`），需参考/历史曲面、目标日期与行权价网格、即期汇率及本币/外币贴现曲线。
-
-> **服务端实现说明：** 当前 dqlib 服务端对该生成器（11006）的插值路径未全里程实现，正向调用可能返回空错误。插件透传正确；其余 5 个 MarketRisk 接口可正常使用。
 
 **语法**
 
 ```dolphindb
-caplib::buildHistSimFxVolSurface(simDate DATE, referenceVolSurf STRING, histStart STRING, histEnd STRING, volSurfaceDates DATE 向量, volSurfaceStrikes ANY, spot STRING, domCurve STRING, forCurve STRING, settings STRING, handle STRING, [returnJson])
+caplib::buildHistSimFxVolSurface(simDate, referenceVolSurf, histStart, histEnd, volSurfaceDates, volSurfaceStrikes, spot, domCurve, forCurve, settings, handle, [returnJson])
+```
+
+**详情**
+
+基于历史模拟生成一个 FX 波动率曲面情景（服务 `HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR`），需参考/历史曲面、目标日期与行权价网格、即期汇率及本币/外币贴现曲线。
+
+**参数**
+
+simDate DATE 类型。模拟基准日。
+
+referenceVolSurf STRING 类型。参考 FxVolatilitySurface 句柄。
+
+histStart STRING 类型。历史起始 FxVolatilitySurface 句柄。
+
+histEnd STRING 类型。历史结束 FxVolatilitySurface 句柄。
+
+volSurfaceDates DATE 向量类型。目标曲面日期，至少两个。
+
+volSurfaceStrikes 任意向量类型。每个目标日期一行权价集（DOUBLE 向量的向量），形状须与日期数匹配。
+
+spot STRING 类型。FxSpotRate 句柄。
+
+domCurve STRING 类型。本币 IrYieldCurve 句柄。
+
+forCurve STRING 类型。外币 IrYieldCurve 句柄。
+
+settings STRING 类型。VolatilitySurfaceBuildSettings 句柄，可传空字符串。
+
+handle STRING 类型。结果 FxVolatilitySurface 的缓存键。
+
+returnJson BOOL 类型，可选。默认为 false。
+
+**返回值**
+
+结果 FxVolatilitySurface 句柄，STRING 类型标量。服务端支持时对象存入 ObjectCache。
+
+**示例**
+
+```dolphindb
+loadPlugin("caplib")
+
+asOfDate = 2021.03.30
+surfDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED",
+    "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 1.0e-4, 1.0e4, "MR_DEF", false)
+conv = caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA",
+    "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "MR_CONV", false)
+
+terms = [2021.06.30, 2021.09.30]
+strikes = matrix([1.00, 1.00], [1.1761, 1.1761], [1.35, 1.35])
+refSurf = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", terms, strikes,
+    matrix([0.06, 0.06], [0.06, 0.06], [0.06, 0.06]), surfDef[0], conv[0], "MR_SURF_REF", false)
+
+spot = caplib::createFxSpotRate(1.1761, "EUR", "USD", asOfDate, asOfDate, "MR_SURF_SPOT", false)
+dom  = caplib::createFlatIrYieldCurve(asOfDate, "EUR", 0.020, "MR_SURF_DOM", false)
+for_ = caplib::createFlatIrYieldCurve(asOfDate, "USD", 0.010, "MR_SURF_FOR", false)
+
+// 注意：服务端 HIST_SIM_FX_VOL_SURFACE 生成器（11006）对部分输入返回空错误
+sim = caplib::buildHistSimFxVolSurface(asOfDate, refSurf, refSurf, refSurf,
+    terms, [[1.00, 1.1761, 1.35], [1.00, 1.1761, 1.35]], spot, dom, for_, "", "MR_SURF_SIM", false)
 ```
 
 #### calcVaR
 
-计算盈亏样本的 VaR 风险价值（服务 `CALCULATE_VALUE_AT_RISK`）。
-
 **语法**
 
 ```dolphindb
-caplib::calcVaR(profitLossSamples DOUBLE 向量, probability DOUBLE, antithetic BOOL)
+caplib::calcVaR(profitLossSamples, probability, antithetic)
 ```
+
+**详情**
+
+计算盈亏样本的 VaR 风险价值（服务 `CALCULATE_VALUE_AT_RISK`）。
 
 **参数**
 
-profitLossSamples DOUBLE 向量 类型。盈亏样本序列。
+profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。
 
-probability DOUBLE 类型。置信水平，严格在 (0,1) 内。
+probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。
 
-antithetic BOOL 类型。是否计算对偶样本镜像 VaR。
+antithetic BOOL 类型。是否同时计算对偶样本的镜像 VaR。
 
 **返回值**
 
-DOUBLE 标量 VaR 值。
+VaR 值，DOUBLE 类型标量。
+
+**示例**
+
+```dolphindb
+loadPlugin("caplib")
+
+samples = [-100.0, -50.0, 0.0, 50.0, 100.0]
+vaR = caplib::calcVaR(samples, 0.95, false)
+print(vaR)
+```
 
 #### calcExpectedShortfall
-
-计算盈亏样本的 ES 期望损失（服务 `CALCULATE_EXPECTED_SHORT_FALL`），参数同 `calcVaR`。
 
 **语法**
 
 ```dolphindb
-caplib::calcExpectedShortfall(profitLossSamples DOUBLE 向量, probability DOUBLE, antithetic BOOL)
+caplib::calcExpectedShortfall(profitLossSamples, probability, antithetic)
 ```
+
+**详情**
+
+计算盈亏样本的期望损失（服务 `CALCULATE_EXPECTED_SHORT_FALL`），参数同 `calcVaR`。
+
+**参数**
+
+profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。
+
+probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。
+
+antithetic BOOL 类型。是否同时计算对偶样本的镜像期望损失。
 
 **返回值**
 
-DOUBLE 标量期望损失值。
+期望损失值，DOUBLE 类型标量。
 
+**示例**
+
+```dolphindb
+loadPlugin("caplib")
+
+samples = [-100.0, -50.0, 0.0, 50.0, 100.0]
+es = caplib::calcExpectedShortfall(samples, 0.95, false)
+print(es)
+```
 
 ## 使用示例
 
