@@ -17,7 +17,7 @@
         <h1>Fixed Income</h1>
         <p class="lede">Rates, bonds, credit, cross-currency IR, FI market data, and risk settings.</p>
       </header>
-      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Rates, bonds, credit, cross-currency IR, FI market data, and risk settings. This page contains 56 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><p class="validity-guide">📘 完整规范文档（含参数取值、错误行为）见 Markdown 版 <a href="../DQLIB_DOCUMENTATION.md">DQLIB_DOCUMENTATION.md</a>。</p><h2>User Guide</h2><p>Rates, bonds, credit, cross-currency IR, FI market data, and risk settings. This page contains 56 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 asOfDate = 2025.01.02;
 usdCurve = caplib::createIrYieldCurve(

@@ -17,7 +17,7 @@
         <h1>Equity</h1>
         <p class="lede">Equity market data, dividend curves, volatility surfaces, option instruments, and EQ pricing.</p>
       </header>
-      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Equity market data, dividend curves, volatility surfaces, option instruments, and EQ pricing. This page contains 36 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><p class="validity-guide">📘 完整规范文档（含参数取值、错误行为）见 Markdown 版 <a href="../DQLIB_DOCUMENTATION.md">DQLIB_DOCUMENTATION.md</a>。</p><h2>User Guide</h2><p>Equity market data, dividend curves, volatility surfaces, option instruments, and EQ pricing. This page contains 36 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 eqRisk = caplib::createEqRiskSettings(0, 0, 0, 0, &quot;EQ_NO_RISK&quot;, true);
 eqMkt = caplib::createEqMktDataSet(

@@ -17,7 +17,7 @@
         <h1>Commodity</h1>
         <p class="lede">Commodity and precious-metal market data, quote matrices, volatility surfaces, and pricing.</p>
       </header>
-      <section id="user-guide" class="panel"><h2>User Guide</h2><p>Commodity and precious-metal market data, quote matrices, volatility surfaces, and pricing. This page contains 25 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><p class="validity-guide">📘 完整规范文档（含参数取值、错误行为）见 Markdown 版 <a href="../DQLIB_DOCUMENTATION.md">DQLIB_DOCUMENTATION.md</a>。</p><h2>User Guide</h2><p>Commodity and precious-metal market data, quote matrices, volatility surfaces, and pricing. This page contains 25 functions. Use the filter to narrow by function name, return type, parameter, or description.</p><p class="validity-guide"><strong>Argument validity:</strong> Each parameter states exact enum labels, selector codes, ranges, positivity, shape, and cross-argument rules. “Wrapper checks” are immediate plugin validation; “business-valid” rules may instead be enforced downstream.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 
 cmQuoteMatrix = caplib::createCmOptionQuoteMatrix(
     &quot;EUROPEAN&quot;, &quot;FUTURE_UNDERLYING_TYPE&quot;, 2025.01.02,
