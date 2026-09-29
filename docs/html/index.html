@@ -26,7 +26,7 @@
         <a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>56</span></a>
         <a class="nav-child" href="currency.html#api-reference">Currency <span>35</span></a>
         <a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a>
-        <a class="nav-child" href="equity.html#api-reference">Equity <span>36</span><a class="nav-child" href="market-risk.html#api-reference">Market Risk <span>6</span></a></a>
+        <a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a><a class="nav-child" href="market-risk.html#api-reference">Market Risk <span>4</span></a>
       </div>
     </aside>
     <main class="content">
@@ -40,14 +40,14 @@
       <section class="panel">
         <h2>Overview</h2>
         <p>The complete Chinese guide following the standard documentation template is available at <a href="../DQLIB_DOCUMENTATION.md"><code>docs/DQLIB_DOCUMENTATION.md</code></a>.</p>
-        <p>Caplib exposes 186 DolphinDB functions backed by the CapRiskTech `dqlibc` calculation library.</p>
+        <p>Caplib exposes 184 DolphinDB functions backed by the CapRiskTech `dqlibc` calculation library.</p>
         <div class="domain-grid">
           <a class="domain-tile" href="fixed-income.html"><span>Fixed Income, IR, and Credit</span><strong>56</strong><em>Curves, bonds, swaps, CDS, market data, and risk settings.</em></a>
           <a class="domain-tile" href="currency.html"><span>Foreign Exchange</span><strong>35</strong><em>FX calculators, quote matrices, volatility surfaces, cash products, and option pricing.</em></a>
           <a class="domain-tile" href="commodity.html"><span>Commodity</span><strong>25</strong><em>Commodity and precious-metal market data, curves, volatility surfaces, and pricing.</em></a>
           <a class="domain-tile" href="equity.html"><span>Equity</span><strong>36</strong><em>Dividend curves, volatility surfaces, equity instruments, and pricing.</em></a>
           <a class="domain-tile" href="shared.html"><span>Common</span><strong>28</strong><em>Date utilities, common curves, pricing, risk, and scenario settings.</em></a>
-<a class="domain-tile" href="market-risk.html"><span>Market Risk</span><strong>6</strong><em>Historical simulation scenario generators (IR/credit curves, FX spot/vol) and VaR / Expected Shortfall.</em></a>
+<a class="domain-tile" href="market-risk.html"><span>Market Risk</span><strong>4</strong><em>Historical simulation scenario generators (FX spot/vol) and VaR / Expected Shortfall.</em></a>
         </div>
       </section>
 
@@ -73,7 +73,7 @@ listRemotePlugins()
 installPlugin("caplib")
 loadPlugin("caplib")</code></pre>
         <h3>Prebuilt package</h3>
-        <p>Version 0.0.13 is built from the upstream <code>release-caplib</code> branch, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.13">0.0.13 release</a>. See the <a href="../GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and <a href="../../releases/0.0.13.md">release notes</a>. Note: <code>createPricingSettings</code> requires <code>specificPricingRequests</code> (10-argument documented form) since 0.0.13.</p>
+        <p>Version 0.0.15 is built from the upstream <code>release-caplib</code> branch, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.15">0.0.15 release</a>. See the <a href="../GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and the release notes. Note: <code>createPricingSettings</code> requires <code>specificPricingRequests</code> since 0.0.13.</p>
         <p>If `caplib` is not listed remotely, place `libPluginCaplib.so`, the generated `PluginCaplib.txt`, `libdqlibc.so`, and `dqlibc.lic` together, with `calendars.bin` in the `data/` subdirectory:</p>
         <pre><code>loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")</code></pre>
         <p>Stop the server before replacing both native libraries, retain the valid license and calendar data, then restart and load the plugin. Updating mounted files does not reload an already loaded library.</p>

@@ -10,56 +10,18 @@
 <body>
   <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">User Guide and API Reference</span><span class="lang-switch"><span class="lang-active">EN</span><a href="zh/market-risk.html">中文</a></span></nav>
   <div class="shell">
-    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child" href="index.html#user-guide">Introduction</a><a class="nav-child" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child" href="commodity.html#user-guide">Commodity</a><a class="nav-child" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child" href="shared.html#api-reference">Common <span>28</span></a><a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>56</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>35</span></a><a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a><a class="nav-child active" href="market-risk.html#api-reference">Market Risk <span>6</span></a></div></aside>
+    <aside class="side-nav"><div class="side-title">Documentation</div><div class="nav-group"><div class="nav-heading">User Guide</div><a class="nav-child" href="index.html#user-guide">Introduction</a><a class="nav-child" href="fixed-income.html#user-guide">Fixed Income</a><a class="nav-child" href="currency.html#user-guide">Currency</a><a class="nav-child" href="commodity.html#user-guide">Commodity</a><a class="nav-child" href="equity.html#user-guide">Equity</a></div><div class="nav-group"><div class="nav-heading">API Reference</div><a class="nav-child" href="shared.html#api-reference">Common <span>28</span></a><a class="nav-child" href="fixed-income.html#api-reference">Fixed Income <span>56</span></a><a class="nav-child" href="currency.html#api-reference">Currency <span>35</span></a><a class="nav-child" href="commodity.html#api-reference">Commodity <span>25</span></a><a class="nav-child" href="equity.html#api-reference">Equity <span>36</span></a><a class="nav-child active" href="market-risk.html#api-reference">Market Risk <span>4</span></a></div></aside>
     <main class="content">
       <header class="page-header">
         <p class="kicker">DolphinDB caplib plugin</p>
         <h1>Common</h1>
         <p class="lede">Cross-asset utilities, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</p>
       </header>
-      <section id="user-guide" class="panel"><p class="validity-guide">📘 Full standard documentation (parameter values, error behavior) is in the Markdown version <a href="../DQLIB_DOCUMENTATION.md">DQLIB_DOCUMENTATION.md</a>。</p><h2>User Guide</h2><p>Market Risk: historical-simulation scenario generators (IR / credit curves, FX spot, FX volatility) and VaR / Expected Shortfall measures. This page contains 6 functions.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
+      <section id="user-guide" class="panel"><p class="validity-guide">📘 Full standard documentation (parameter values, error behavior) is in the Markdown version <a href="../DQLIB_DOCUMENTATION.md">DQLIB_DOCUMENTATION.md</a>。</p><h2>User Guide</h2><p>Market Risk: historical-simulation scenario generators (FX spot, FX volatility) and VaR / Expected Shortfall measures. This page contains 4 functions.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;PluginCaplib&quot;)
 vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
 <section class="api-group"><h2>Market Risk</h2>
-<article class="api-card" data-search="build an ir yield-curve historical simulation scenario generator. simdate date referencecurve histstart histend curvedates handle">
-  <div class="api-card-head">
-    <div>
-      <a id="buildhistsimiryelcurve"></a>
-      <h3><code>buildHistSimIrYieldCurve</code></h3>
-      <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::buildHistSimIrYieldCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])</code></p>
-      <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Build an IR yield-curve scenario by historical simulation (service HIST_SIM_IR_YIELD_CURVE_SCN_GENERATOR): interpolate the reference and historical curves onto the target curve dates.</p>
-    </div>
-    <span class="return-pill">IrYieldCurve handle</span>
-  </div>
-  <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> IrYieldCurve handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
-  <details open>
-    <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>Simulation reference date.</td></tr><tr><td><code>referenceCurve</code></td><td>STRING</td><td>Handle of the reference IrYieldCurve.</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>Handle of the historical-start IrYieldCurve.</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>Handle of the historical-end IrYieldCurve.</td></tr><tr><td><code>curveDates</code></td><td>DATE[]</td><td>Target dates on the output curve; at least two.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key for the result IrYieldCurve.</td></tr></tbody></table>
-  </details>
 
-</article>
-<article class="api-card" data-search="build a credit-spread-curve historical simulation scenario generator. simdate referencecurve histstart histend curvedates handle">
-  <div class="api-card-head">
-    <div>
-      <a id="buildhistsimcreditcurve"></a>
-      <h3><code>buildHistSimCreditCurve</code></h3>
-      <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::buildHistSimCreditCurve(simDate DATE, referenceCurve STRING, histStart STRING, histEnd STRING, curveDates DATE[], handle STRING[, returnJson BOOL])</code></p>
-      <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Build a credit-spread-curve scenario by historical simulation (service HIST_SIM_CREDIT_CURVE_SCN_GENERATOR). Same shape as buildHistSimIrYieldCurve with CreditCurve handles.</p>
-    </div>
-    <span class="return-pill">CreditCurve handle</span>
-  </div>
-  <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> CreditCurve handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
-  <details open>
-    <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>Simulation reference date.</td></tr><tr><td><code>referenceCurve</code></td><td>STRING</td><td>Handle of the reference CreditCurve.</td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>Handle of the historical-start CreditCurve.</td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>Handle of the historical-end CreditCurve.</td></tr><tr><td><code>curveDates</code></td><td>DATE[]</td><td>Target dates; at least two, with positive tenor.</td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key for the result CreditCurve.</td></tr></tbody></table>
-  </details>
 
-</article>
 <article class="api-card" data-search="build an fx spot-rate historical simulation scenario generator. simdate referencespot histstart histend usetemplate fxspottemplate handle">
   <div class="api-card-head">
     <div>
@@ -113,7 +75,7 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
     <span class="return-pill">DOUBLE</span>
   </div>
   <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> DOUBLE as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <p class="return-description"><strong>Returns:</strong> a length-2 DOUBLE vector [value_at_risk, value_at_risk_mirrored]; v[0]=VaR, v[1]=mirror VaR.</p>
   <details open>
     <summary>Parameters</summary>
     <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE[]</td><td>Profit/loss sample series.</td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>Confidence level, strictly in (0,1).</td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>Whether to also compute the mirror (antithetic) VaR.</td></tr></tbody></table>
@@ -133,7 +95,7 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
     <span class="return-pill">DOUBLE</span>
   </div>
   <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> DOUBLE as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <p class="return-description"><strong>Returns:</strong> a length-2 DOUBLE vector [expected_shortfall, expected_shortfall_mirrored]; e[0]=ES, e[1]=mirror ES.</p>
   <details open>
     <summary>Parameters</summary>
     <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE[]</td><td>Profit/loss sample series.</td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>Confidence level, strictly in (0,1).</td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>Whether to also compute the mirror (antithetic) Expected Shortfall.</td></tr></tbody></table>

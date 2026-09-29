@@ -62,7 +62,7 @@ if [ -z "$CAPLIB_PLUGIN_TAG" ]; then
     fi
 fi
 CAPLIB_PLUGIN_ASSET="caplib-plugin-dolphindb-${CAPLIB_PLUGIN_TAG}.tar.gz"
-EXPECTED_PLUGIN_FUNCTIONS=186
+EXPECTED_PLUGIN_FUNCTIONS=184
 REQUIRED_PLUGIN_FUNCTIONS=(
     "createPricingModelSettings"
     "createVolatilityCurve"

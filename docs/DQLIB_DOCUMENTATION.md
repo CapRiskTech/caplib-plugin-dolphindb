@@ -9278,98 +9278,6 @@ caplib::getCreditSpread(flatCreditCurve, curveDates)
 
 市场风险（MarketRisk）服务：历史模拟情景生成器与 VaR / 期望损失（ES）度量。
 
-#### buildHistSimIrYieldCurve
-
-**语法**
-
-```dolphindb
-caplib::buildHistSimIrYieldCurve(simDate, referenceCurve, histStart, histEnd, curveDates, handle, [returnJson])
-```
-
-**详情**
-
-基于历史模拟生成一条 IR 收益率曲线情景（服务 `HIST_SIM_IR_YIELD_CURVE_SCN_GENERATOR`）：把参考曲线与历史起止曲线插值到目标日期。
-
-**参数**
-
-simDate DATE 类型。模拟基准日。
-
-referenceCurve STRING 类型。参考 IrYieldCurve 句柄。
-
-histStart STRING 类型。历史起始 IrYieldCurve 句柄。
-
-histEnd STRING 类型。历史结束 IrYieldCurve 句柄。
-
-curveDates DATE 向量类型。输出曲线上的目标日期，至少两个。
-
-handle STRING 类型。结果 IrYieldCurve 的缓存键。
-
-returnJson BOOL 类型，可选。省略或为 false 时仅返回句柄；为 true 时返回 [handle, protobufJson]。默认为 false。
-
-**返回值**
-
-结果 IrYieldCurve 句柄，STRING 类型标量。对象存入 ObjectCache。
-
-**示例**
-
-```dolphindb
-loadPlugin("caplib")
-
-asOfDate = 2020.02.21
-refCurve   = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.020, "MR_REF", false)
-startCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.019, "MR_START", false)
-endCurve   = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.021, "MR_END", false)
-
-sim = caplib::buildHistSimIrYieldCurve(asOfDate, refCurve, startCurve, endCurve,
-    [asOfDate, asOfDate + 365], "MR_SIM", false)
-```
-
-#### buildHistSimCreditCurve
-
-**语法**
-
-```dolphindb
-caplib::buildHistSimCreditCurve(simDate, referenceCurve, histStart, histEnd, curveDates, handle, [returnJson])
-```
-
-**详情**
-
-基于历史模拟生成一条信用利差曲线情景（服务 `HIST_SIM_CREDIT_CURVE_SCN_GENERATOR`），参数同 `buildHistSimIrYieldCurve`，曲线类型为 CreditCurve。
-
-**参数**
-
-simDate DATE 类型。模拟基准日。
-
-referenceCurve STRING 类型。参考 CreditCurve 句柄。
-
-histStart STRING 类型。历史起始 CreditCurve 句柄。
-
-histEnd STRING 类型。历史结束 CreditCurve 句柄。
-
-curveDates DATE 向量类型。目标日期，至少两个且期限为正。
-
-handle STRING 类型。结果 CreditCurve 的缓存键。
-
-returnJson BOOL 类型，可选。默认为 false。
-
-**返回值**
-
-结果 CreditCurve 句柄，STRING 类型标量。对象存入 ObjectCache。
-
-**示例**
-
-```dolphindb
-loadPlugin("caplib")
-
-asOfDate = 2020.02.21
-refCurve   = caplib::createFlatCreditCurve(asOfDate, 0.0020, "MR_CR_REF", false)
-startCurve = caplib::createFlatCreditCurve(asOfDate, 0.0018, "MR_CR_START", false)
-endCurve   = caplib::createFlatCreditCurve(asOfDate, 0.0022, "MR_CR_END", false)
-
-sim = caplib::buildHistSimCreditCurve(asOfDate, refCurve, startCurve, endCurve,
-    [asOfDate + 30, asOfDate + 365], "MR_CR_SIM", false)
-```
-
 #### buildHistSimFxSpotRate
 
 **语法**
@@ -9508,7 +9416,7 @@ antithetic BOOL 类型。是否同时计算对偶样本的镜像 VaR。
 
 **返回值**
 
-VaR 值，DOUBLE 类型标量。
+字典，包含两个键：`value_at_risk`（VaR 值）与 `value_at_risk_mirrored`（对偶样本镜像 VaR），值均为 DOUBLE 类型标量。
 
 **示例**
 
@@ -9516,8 +9424,9 @@ VaR 值，DOUBLE 类型标量。
 loadPlugin("caplib")
 
 samples = [-100.0, -50.0, 0.0, 50.0, 100.0]
-vaR = caplib::calcVaR(samples, 0.95, false)
-print(vaR)
+v = caplib::calcVaR(samples, 0.95, false)
+print(v.value_at_risk)          // VaR 值
+print(v.value_at_risk_mirrored) // 镜像 VaR
 ```
 
 #### calcExpectedShortfall
@@ -9542,7 +9451,7 @@ antithetic BOOL 类型。是否同时计算对偶样本的镜像期望损失。
 
 **返回值**
 
-期望损失值，DOUBLE 类型标量。
+字典，包含两个键：`expected_shortfall`（期望损失值）与 `expected_shortfall_mirrored`（对偶样本镜像期望损失），值均为 DOUBLE 类型标量。
 
 **示例**
 
@@ -9550,8 +9459,9 @@ antithetic BOOL 类型。是否同时计算对偶样本的镜像期望损失。
 loadPlugin("caplib")
 
 samples = [-100.0, -50.0, 0.0, 50.0, 100.0]
-es = caplib::calcExpectedShortfall(samples, 0.95, false)
-print(es)
+e = caplib::calcExpectedShortfall(samples, 0.95, false)
+print(e.expected_shortfall)          // 期望损失值
+print(e.expected_shortfall_mirrored) // 镜像期望损失
 ```
 
 ## 使用示例

@@ -2,7 +2,7 @@
 // test_calcVaR.dos
 // Per-function test for caplib::calcVaR (MarketRisk service).
 // Signature: calcVaR(profitLossSamples DOUBLE[], probability DOUBLE (0..1),
-//                    antithetic BOOL) -> DOUBLE
+//                    antithetic BOOL) -> DICTIONARY {value_at_risk, value_at_risk_mirrored} 向量 [value, value_mirrored]
 // Run: test("test/risk")  |  python run_tests.py
 //
 // Case design follows the plugin test-review checklist (2026-07-10):
@@ -15,12 +15,12 @@ samples = [-100.0, -50.0, 0.0, 50.0, 100.0];
 // 用例目的：正常调用，验证返回有限 DOUBLE 标量
 @testing:case="calcVaR -> finite scalar"
 v = caplib::calcVaR(samples, 0.95, false)
-assert 1, typestr(v) == "DOUBLE" && !isNull(v)
+assert 1, !isNull(v.value_at_risk) && !isNull(v.value_at_risk_mirrored)
 
 // 用例目的：概率取边界内小值，验证仍返回有限值
 @testing:case="calcVaR small probability"
 v = caplib::calcVaR(samples, 0.05, false)
-assert 1, !isNull(v)
+assert 1, !isNull(v.value_at_risk) && !isNull(v.value_at_risk_mirrored)
 
 // 用例目的：样本传字符串向量，拒绝
 @testing:case="calcVaR rejects string-vector samples", exception=1
@@ -48,13 +48,13 @@ caplib::calcVaR([1.0, 2.0/0.0], 0.95, false)
 
 // 用例冻结参考：长度为 1 的向量（常量），任何置信度下分位数 = 该常量
 @testing:case="calcVaR size=1 -> the constant"
-assert 1, caplib::calcVaR([42.0], 0.95, false) == 42.0
+assert 1, caplib::calcVaR([42.0], 0.95, false).value_at_risk == 42.0
 
 // 用例冻结参考：1024 / 65536 个常量样本，分位 VaR = 常量
 @testing:case="calcVaR size=1024 -> the constant"
-assert 1, caplib::calcVaR(take(1.0, 1024), 0.95, false) == 1.0
+assert 1, caplib::calcVaR(take(1.0, 1024), 0.95, false).value_at_risk == 1.0
 @testing:case="calcVaR size=65536 -> the constant"
-assert 1, caplib::calcVaR(take(1.0, 65536), 0.95, false) == 1.0
+assert 1, caplib::calcVaR(take(1.0, 65536), 0.95, false).value_at_risk == 1.0
 
 // 用例目的：概率越界（=1），拒绝
 @testing:case="calcVaR rejects probability = 1", exception=1
@@ -78,7 +78,8 @@ caplib::calcVaR(samples, 0.95, 5)
 
 // 用例目的：antithetic=true 对称路径，返回有限值
 @testing:case="calcVaR antithetic -> finite"
-assert 1, !isNull(caplib::calcVaR(samples, 0.95, true))
+v = caplib::calcVaR(samples, 0.95, true)
+assert 1, !isNull(v.value_at_risk) && !isNull(v.value_at_risk_mirrored)
 
 // 用例目的：少传参数，解析期报错
 @testing:case="calcVaR rejects missing args", syntaxError=1
@@ -95,40 +96,40 @@ caplib::calcVaR(profitLossSamples=samples, probability=0.95, antithetic=false)
 // 用例目的：95% 置信、样本最小损失 -100，VaR 应为 (0, 100] 的分位损失
 @testing:case="calcVaR known-sample -> plausible range"
 v = caplib::calcVaR(samples, 0.95, false);
-assert 1, v > 0.0 && v <= 100.0
+assert 1, v.value_at_risk > 0.0 && v.value_at_risk <= 100.0
 
 // 用例目的：更低置信应给更小的 VaR
 @testing:case="calcVaR lower confidence -> not larger"
 v95 = caplib::calcVaR(samples, 0.95, false);
 v50 = caplib::calcVaR(samples, 0.50, false);
-assert 1, v50 <= v95
+assert 1, v50.value_at_risk <= v95.value_at_risk
 
 // 用例目的：95% 置信、样本 [-100,-50,0,50,100]，分位 VaR 精确 = 90
 @testing:case="calcVaR exact frozen reference (95%)"
 v = caplib::calcVaR([-100.0,-50.0,0.0,50.0,100.0], 0.95, false)
-assert 1, abs(v - 90.0) < 1e-12
+assert 1, abs(v.value_at_risk - 90.0) < 1e-12
 
 // 用例目的：50% 置信、同样本，VaR 精确 = 0
 @testing:case="calcVaR exact frozen reference (50%)"
 v = caplib::calcVaR([-100.0,-50.0,0.0,50.0,100.0], 0.50, false)
-assert 1, abs(v - 0.0) < 1e-12
+assert 1, abs(v.value_at_risk - 0.0) < 1e-12
 
 // 用例目的：5% 置信、同样本，VaR 精确 = -90（损失对应尾部）
 @testing:case="calcVaR exact frozen reference (5%)"
 v = caplib::calcVaR([-100.0,-50.0,0.0,50.0,100.0], 0.05, false)
-assert 1, abs(v - (-90.0)) < 1e-12
+assert 1, abs(v.value_at_risk - (-90.0)) < 1e-12
 
 // 用例目的：相同输入连续两次调用，验证结果完全一致（计算确定性）
 @testing:case="calcVaR deterministic repeat -> identical"
 v1 = caplib::calcVaR(samples, 0.95, false);
 v2 = caplib::calcVaR(samples, 0.95, false);
-assert 1, v1 == v2
+assert 1, v1.value_at_risk == v2.value_at_risk && v1.value_at_risk_mirrored == v2.value_at_risk_mirrored
 
 // 用例目的：submitJob 单 job 异步计算，结果与会话内调用一致
 @testing:case="calcVaR submitJob -> frozen reference"
 mrJobVaR = def(vals, p) { return caplib::calcVaR(vals, p, false) }
 jid = submitJob("MR_VAR_JOB", "", mrJobVaR, [-100.0,-50.0,0.0,50.0,100.0], 0.95)
-assert 1, getJobReturn(jid, true) == 90.0
+assert 1, getJobReturn(jid, true).value_at_risk == 90.0
 
 // 用例目的：submitJob 并发 4 job，各自结果与会话内调用一致
 @testing:case="calcVaR submitJob x4 concurrent"
@@ -140,5 +141,5 @@ for(i in 0..3)
 exp = [-90.0, -30.0, 30.0, 90.0];
 ok = true;
 for(i in 0..3)
-    ok = ok && abs(getJobReturn(jids[i], true) - exp[i]) < 1e-12
+    ok = ok && abs(getJobReturn(jids[i], true).value_at_risk - exp[i]) < 1e-12
 assert 1, ok
