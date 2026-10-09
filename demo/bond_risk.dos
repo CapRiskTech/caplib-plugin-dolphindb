@@ -1,0 +1,482 @@
+/**
+ * bond_risk.dos —— 市场风险链路：
+ *
+ *   build_sim_yield_curve(asOfDate, curveCode, scenarioN)
+ *     取 asOfDate 及之前最近 scenarioN+1 条 curveCode 曲线（升序），相邻两条
+ *     两两配对，按「基准日报价 + (后一报价 - 前一报价)」生成 scenarioN 个情景，
+ *     写入 t_bond_yield_sim_curve。情景曲线的参考日 = asOfDate 的下一工作日（sim_date）。
+ *
+ *   simValuationNonStdBonds(simDate, nominal, curveCode)
+ *     以 simDate 的全部情景曲线各作折扣曲线，对当日存活非标债逐一估值，
+ *     写入 t_bond_sim_valuation（幂等删除须在调用前、函数外单独执行）。
+ *
+ *   calcBondVarEs(asOfDate)
+ *     PnL = 情景估值 PV − 当日估值 PV（按 end_date 倒序），用插件
+ *     calcVaR / calcExpectedShortfall 计算 95% / 99% 的 VaR 与 ES，写入 t_bond_var。
+ *
+ * 前置脚本（按序 run）：
+ *   create_calendar -> create_bond_templates -> build_yield_curve
+ *   -> bond_pricing -> bond_risk
+ */
+
+/**
+ * 解析 BondParCurve JSON 的 pillars，返回每个期限的报价
+ *
+ * BondParCurve JSON 形如：
+ *   {"reference_date":{...},"currency":"CNY",
+ *    "pillars":[{"instrument_name":"CN_TREAS_ZERO_1M","quote":0.0211},...],
+ *    "quote_type":"YIELD_TO_MATURITY","name":"CN_TREAS_STD_PAR"}
+ *
+ * 注：DolphinDB 的 parseJsonTable / fromJson 都不支持这种嵌套对象数组
+ * （分别报 "Doesn't support recursive json object yet" / "The data form is not supported"），
+ * 索引路径 jsonExtract(pj,"pillars[0].quote","double") 也返回空，故用 jsonExtract 取
+ * pillars 字符串后手工切分（插件产出的 JSON 是紧凑格式，无空格，结构稳定）。
+ *
+ * parJson STRING  par_curve 字段内容
+ * 返回 TABLE：instrument_name, quote（按 JSON 中的顺序）
+ */
+def parseParCurvePillars(parJson) {
+    res = table(1:0, ["instrument_name", "quote"], [STRING, DOUBLE])
+    if (isNull(parJson) || strlen(parJson) == 0) return res
+    arr = jsonExtract(parJson, "pillars", "string")
+    if (isNull(arr) || strlen(arr) < 2) return res
+    body = substr(arr, 1, strlen(arr) - 2)          // 去掉首尾方括号
+    if (strlen(body) == 0) return res
+    for (it in split(body, "},{")) {
+        p1 = split(it, '"instrument_name":"')
+        if (size(p1) < 2) continue
+        p2 = split(it, '"quote":')
+        if (size(p2) < 2) continue
+        insert into res values(split(p1[1], '"')[0], double(split(p2[1], '}')[0]))
+    }
+    return res
+}
+
+/**
+ * 用 asOfDate 当日的标准债定价结果创建标准债模板（供情景曲线引导）
+ *
+ * 直接复用 t_bond_pricing 里已算好的定价结果，不再自己算 par rate / 重新定价：
+ *   - 票面利率（固息/零息都一样）= 定价结果的到期收益率
+ *     （specific_pricing_results.data[0]）；
+ *   - 固息 FIXED_COUPON_BOND 发行价 = 100；
+ *   - 零息 ZERO_COUPON_BOND 发行价 = 定价结果的 present_value。
+ *
+ * asOfDate  DATE  模板基准日（发行日/起息日），也是取定价结果的日期
+ * 返回字典：total(标准债总数), created(成功创建数), skipped(该日无定价结果而跳过的数量)
+ */
+def createStdBondTemplatesForDate(asOfDate) {
+    ts = nanotimestamp(asOfDate)
+    prT = loadTable("dfs://caplib-bond", "t_bond_pricing")
+    b = select * from loadTable("dfs://caplib-bond", "t_bond_info") where std_flag = true
+    n = b.size()
+    if (n == 0) {                                 // 空表保护：n=0 时 0..(n-1) 是 [0,-1] 而非空向量
+        res = dict(STRING, ANY)
+        res["total"] = 0; res["created"] = 0; res["skipped"] = 0
+        return res
+    }
+    ok = 0
+    skipped = 0
+    for (i in 0..(n - 1)) {
+        bondCode = b["inst_code"][i]
+        prVal = exec pricing from prT where code = bondCode, date = ts
+        if (size(prVal) == 0) {                   // 该日无定价结果（未跑定价），跳过
+            skipped += 1
+            continue
+        }
+        // 注：prVal 是长度 1 的向量，extractPresentValue 对向量入参会返回向量，
+        // 而插件要求 issuePrice 是标量，故统一用 first() 收敛成标量
+        rate = first(extractYtm(prVal))           // 票面利率 = 定价结果的到期收益率（固息/零息都取）
+        if (b["bond_type"][i] == "FIXED_COUPON_BOND") {
+            issuePrice = 100.0
+        } else {
+            issuePrice = first(extractPresentValue(prVal))
+        }
+        createStdBondTemplate(bondCode, asOfDate, b, i, rate, issuePrice)
+        ok += 1
+    }
+    res = dict(STRING, ANY)
+    res["total"] = n
+    res["created"] = ok
+    res["skipped"] = skipped
+    return res
+}
+
+/**
+ * 构建情景收益率曲线
+ *
+ * asOfDate  DATE   基准日
+ * curveCode STRING 标准曲线编码（如 CN_TREAS_STD），默认 CN_TREAS_STD
+ * scenarioN INT    情景数；实际取 scenarioN+1 条 curve_time<=asOfDate 的曲线，
+ *                  相邻配对得到 scenarioN 个情景（可用曲线不足时按实际条数产出）
+ *
+ * 返回字典：asOfDate, simDate, curveCode, curves(取到的曲线条数), scenarios(产出情景数),
+ *           templates(标准债模板数), rows(写入行数), errors(失败明细 TABLE)
+ */
+def build_sim_yield_curve(asOfDate, curveCode="CN_TREAS_STD", scenarioN=10) {
+    cc = curveCode
+    simDate = nextBusinessDay(asOfDate)           // 情景时间 = asOfDate 的下一个工作日
+    simTs = timestamp(simDate)
+    baseTs = nanotimestamp(asOfDate)
+
+    failed = table(1:0, ["start_date", "end_date", "error"], [DATE, DATE, STRING])
+
+    // —— 1) 取 curve_time <= asOfDate 的最近 scenarioN+1 条曲线 ——
+    ycT = loadTable("dfs://caplib-bond", "t_bond_yield_curve")
+    cs = select curve_time, par_curve from ycT
+         where curve_code = cc, curve_time <= baseTs order by curve_time
+    total = cs.size()
+    if (total == 0) throw "build_sim_yield_curve: " + cc + " 在 " + asOfDate + " 及之前没有曲线"
+    if (total < 2) {
+        // 注意：DolphinDB 不允许语句跨行以二元 + 续行，消息先在变量里拼好
+        msg = "build_sim_yield_curve: " + cc + " 在 " + asOfDate + " 及之前只有 " + total + " 条曲线，至少需要 2 条才能构成情景"
+        throw msg
+    }
+    // 取最近 scenarioN+1 条（末条即 asOfDate 对应的基准曲线）
+    // 注：DolphinDB 的 `top` 只接受整型常量，不能用变量，故按行切片
+    k = min(scenarioN + 1, total)
+    cs = cs[(total - k):]
+
+    // —— 2) 基准曲线 = 最新一条（asOfDate 对应的曲线）——
+    base = parseParCurvePillars(cs["par_curve"][k - 1])
+    if (base.size() == 0) {
+        msg = "build_sim_yield_curve: 基准曲线 " + cc + " @ " + cs["curve_time"][k - 1] + " 的 par_curve 解析为空"
+        throw msg
+    }
+    names = base["instrument_name"]
+    baseQ = base["quote"]
+
+    // —— 3) 标准债模板：直接取 asOfDate 当日的定价结果（票面利率=到期收益率）——
+    tpl = createStdBondTemplatesForDate(asOfDate)
+
+    // —— 4) 逐情景：平移报价 -> 平价曲线 -> 收益率曲线 ——
+    cdef = getCurveDef(cc)
+    bs = caplib::createBondYieldCurveBuildSettings(cc, cdef.curve_type[0],
+         cdef.interp_type[0], cdef.extrap_method[0], cc + "_SIM_BS", false)
+    tbl = loadTable("dfs://caplib-bond", "t_bond_yield_sim_curve")
+    // 幂等：先清掉该情景时间已有结果（sim_date 即分区列）
+    delete from tbl where code = cc, sim_date = simTs
+
+    scenarios = 0
+    for (i in 0..(k - 2)) {
+        d1 = cs["curve_time"][i]                  // 相邻对中较早的曲线
+        d2 = cs["curve_time"][i + 1]              // 相邻对中较晚的曲线
+        try {
+            q1 = parseParCurvePillars(cs["par_curve"][i])
+            q2 = parseParCurvePillars(cs["par_curve"][i + 1])
+            m1 = dict(q1["instrument_name"], q1["quote"])
+            m2 = dict(q2["instrument_name"], q2["quote"])
+            // 按基准曲线的期限顺序对齐：情景报价 = 基准 + (后一条 - 前一条)
+            scenQ = array(DOUBLE, 0, 0)
+            for (j in 0..(names.size() - 1)) {
+                nm = names[j]
+                scenQ.append!(baseQ[j] + (m2[nm] - m1[nm]))
+            }
+            // 句柄名带曲线日期，避免与既有 ObjectCache 条目同名
+            tag = temporalFormat(d1, "yyyyMMdd") + "_" + temporalFormat(d2, "yyyyMMdd")
+            par = caplib::createBondParCurve(simDate, "CNY", names, scenQ, "YTM",
+                 cc + "_SIMPAR_" + tag, true)
+            yc = caplib::buildBondYieldCurve(simDate, bs, cc, par[0],
+                 cdef.day_count_convention[0], cdef.compounding_type[0],
+                 cdef.frequency[0], cdef.build_method[0], 0, "",
+                 cc + "_SIM_" + tag, true)
+            tbl.tableInsert(table([cc] as code, [timestamp(asOfDate)] as date,
+                                  [simTs] as sim_date,
+                                  [timestamp(d1)] as start_date,
+                                  [timestamp(d2)] as end_date,
+                                  [par[1]] as par_curve, [yc[1]] as curve))
+            scenarios += 1
+        } catch (ex) {
+            insert into failed values(date(d1), date(d2), ex)
+        }
+    }
+
+    res = dict(STRING, ANY)
+    res["asOfDate"] = asOfDate
+    res["simDate"] = simDate
+    res["curveCode"] = cc
+    res["curves"] = k
+    res["scenarios"] = scenarios
+    res["templates"] = tpl["created"]
+    res["templates_skipped"] = tpl["skipped"]
+    res["rows"] = scenarios
+    res["errors"] = failed
+    return res
+}
+
+// ============================================================================
+// 非标准债情景估值
+// ============================================================================
+
+/**
+ * 确保情景收益率曲线在 ObjectCache 中可用，返回其句柄。
+ *
+ * 情景曲线的句柄名由 build_sim_yield_curve 确定性生成：
+ *   yc  句柄 = curveCode + "_SIM_"    + tag
+ *   par 句柄 = curveCode + "_SIMPAR_" + tag
+ *   bs  句柄 = curveCode + "_SIM_BS"
+ *   tag = yyyyMMdd(start) + "_" + yyyyMMdd(end)
+ *
+ * exists() 检测不到插件 ObjectCache 对象（对真实存在的句柄也返回 0），
+ * 故采用「try 注册、已存在则复用」的幂等方式——同进程内 build_sim_yield_curve
+ * 建过这些对象时直接复用；容器重启后从情景行存储的 par_curve JSON 重新构建。
+ *
+ * simDate   DATE   情景时间（曲线参考日）
+ * curveCode STRING 曲线编码
+ * parJson   STRING 情景行存储的 par_curve JSON
+ * d1/d2     时间   情景的 start/end（仅用于句柄命名）
+ * 返回 STRING：情景收益率曲线句柄
+ */
+def ensureSimYieldCurve(simDate, curveCode, parJson, d1, d2) {
+    tag = temporalFormat(d1, "yyyyMMdd") + "_" + temporalFormat(d2, "yyyyMMdd")
+    cdef = getCurveDef(curveCode)
+    cc = curveCode
+
+    // 1) 构建设置（所有情景共用一个句柄）
+    bsHandle = cc + "_SIM_BS"
+    try {
+        caplib::createBondYieldCurveBuildSettings(cc, cdef.curve_type[0],
+             cdef.interp_type[0], cdef.extrap_method[0], bsHandle, false)
+    } catch (exBs) { }                          // 已存在，复用
+
+    // 2) 情景平价曲线（从存储的 par_curve JSON 还原 pillar）
+    parHandle = cc + "_SIMPAR_" + tag
+    p = parseParCurvePillars(parJson)
+    try {
+        caplib::createBondParCurve(simDate, "CNY", p["instrument_name"], p["quote"],
+             "YTM", parHandle, true)
+    } catch (exPar) { }                         // 已存在，复用
+
+    // 3) 情景收益率曲线
+    ycHandle = cc + "_SIM_" + tag
+    try {
+        caplib::buildBondYieldCurve(simDate, bsHandle, cc, parHandle,
+             cdef.day_count_convention[0], cdef.compounding_type[0],
+             cdef.frequency[0], cdef.build_method[0], 0, "", ycHandle, true)
+    } catch (exYc) { }                          // 已存在，复用
+    return ycHandle
+}
+
+/**
+ * 非标准债情景估值：以【情景时间】为估值日，该时间对应的【全部情景曲线】
+ * 各作为折扣曲线，对情景时间存活的全部非标准债逐一估值，写入 t_bond_sim_valuation。
+ *
+ * asOfDate  DATE   情景时间（即估值日），如 2025.01.27：
+ *               取 t_bond_yield_sim_curve 中 sim_date = asOfDate 的所有情景行
+ * nominal   DOUBLE 面值，默认 100
+ * curveCode STRING 情景曲线编码，默认 CN_TREAS_STD
+ *
+ * 写入字段：code=非标债编码、date=情景行的基准时间(base)、sim_date=情景时间、
+ *           start_date/end_date=情景对日期、currency=CNY、valuation=估值结果 JSON。
+ *
+ * 幂等清理必须在【调用本函数之前、单独执行】：
+ *   delete from loadTable("dfs://caplib-bond","t_bond_sim_valuation") where sim_date = timestamp(asOfDate)
+ * **不能把该 delete 写在本函数内**——DFS delete 之后同函数内的插件 priceVanillaBond
+ * 会全部立即抛 C++ 错误（实测：删除前置 -> 642 只全失败 0.1s；删除移出 -> 全部成功）。
+ *
+ * 返回字典：scenarios(情景数), bonds(每情景债数), ok, failed, errors
+ */
+def simValuationNonStdBonds(asOfDate, nominal=100.0, curveCode="CN_TREAS_STD") {
+    nominalD = double(nominal)                   // 插件要求 DOUBLE 标量（传 INT 会报 nominal 类型错误）；参数常量不可改
+    simTs = timestamp(asOfDate)
+
+    // 1) 该情景时间的全部情景曲线
+    simT = loadTable("dfs://caplib-bond", "t_bond_yield_sim_curve")
+    scs = select * from simT where code = curveCode, sim_date = simTs
+    nScn = scs.size()
+    if (nScn == 0) {
+        msg = "simValuationNonStdBonds: " + curveCode + " 在 " + asOfDate + " 没有情景曲线"
+        throw msg
+    }
+
+    // 2) 情景时间存活的非标债（每个情景相同）；存量债 buildVanillaBond 传真实起息日
+    codes = getAliveNonStdBonds(asOfDate)
+    nBond = codes.size()
+    sdInfo = select inst_code, start_date from loadTable("dfs://caplib-bond", "t_bond_info")
+    sdMap = dict(sdInfo["inst_code"], sdInfo["start_date"])
+
+    // 3) 共享设置（与日常定价共用同一份固定设置；每个情景再用情景曲线自建市场数据集）
+    ctx = buildPricingInstruments(asOfDate, "SV")
+
+    // 4) 逐情景逐债估值（幂等删除在函数外执行，见函数头说明）
+    out = loadTable("dfs://caplib-bond", "t_bond_sim_valuation")
+
+    errors = table(1:0, ["scenario","inst_code","error"], [INT, STRING, STRING])
+    ok = 0
+    // 句柄运行唯一后缀：插件 ObjectCache 同名创建不覆盖——早先失败/半成品运行残留的
+    // SV_FMW3_* 坏句柄会被复用并导致全部价格立即报 C++ 错，故每次运行用新句柄
+    runId = string(now())
+    for (s in 0..(nScn - 1)) {
+        ycHandle = ensureSimYieldCurve(asOfDate, scs["code"][s],
+                   scs["par_curve"][s], scs["start_date"][s], scs["end_date"][s])
+        // 该情景的市场数据集：折扣曲线 = 情景曲线
+        fmw4 = "SV_FMW4_" + runId + "_" + s
+        fmw3 = "SV_FMW3_" + runId + "_" + s
+        fmw = caplib::createFiMktDataSet(asOfDate, ycHandle, ctx["creditCurve"],
+              "", "", "", fmw4, fmw3, true)[0]
+        // 注：不能用 `insert ... values(...)` 逐行插——priceVanillaBond 的 r[1] 在某些
+        // 请求下会被插件展开成向量（present_value 恰好与其他字段同长度），报
+        // "Inconsistent length of values to insert"。改用 STRING[] 收集后一次性建表。
+        vCode = array(STRING, 0, 0); vVal = array(STRING, 0, 0)
+        baseTs = scs["date"][s]
+        sd1 = scs["start_date"][s]; sd2 = scs["end_date"][s]
+        for (b in 0..(nBond - 1)) {
+            c = codes[b]
+            try {
+                sd = sdMap[c]
+                if (isNull(sd)) sd = asOfDate
+                bond = caplib::buildVanillaBond(nominalD, c, "", sd,
+                     "SVB_" + runId + "_" + s + "_" + c, false)
+                r = caplib::priceVanillaBond(bond, asOfDate, fmw,
+                     ctx["pricingSettings"], ctx["fiRisk"], "", "", true)
+                // r[1] 恒为长度 1 的向量，用 first() 收敛成标量
+                vCode.append!(c); vVal.append!(string(first(r[1])))
+            } catch (ex) {
+                // 完整记录错误（ex 可能是向量）；用 concat 拼成一条，不取 first
+                insert into errors values(s, c, concat(ex, " "))
+            }
+        }
+        nb = vCode.size()
+        batch = table(vCode as code,
+                     take(baseTs, nb) as date, take(simTs, nb) as sim_date,
+                     take(sd1, nb) as start_date, take(sd2, nb) as end_date,
+                     take("CNY", nb) as currency, vVal as valuation)
+        out.tableInsert(batch)
+        ok += batch.size()
+    }
+
+    res = dict(STRING, ANY)
+    res["scenarios"] = nScn
+    res["bonds"] = nBond
+    res["expected"] = nScn * nBond
+    res["ok"] = ok
+    res["failed"] = nScn * nBond - ok
+    res["errors"] = errors
+    return res
+}
+
+// ============================================================================
+// VaR / ES（历史模拟法）
+// ============================================================================
+
+/**
+ * 计算单只债券的 VaR 和 ES，直接返回包含全部结果的 JSON（整存用）。
+ *
+ * 直接调用插件，**损益样本不排序、原样传入**（分位数由插件内部处理）：
+ *   caplib::calcVaR(pnl, probability, antithetic)
+ *   caplib::calcExpectedShortfall(pnl, probability, antithetic)
+ *
+ * pnlEndDesc：该债券各情景损益（顺序按 end_date 倒序，插件不依赖该顺序）；
+ * probability：置信水平（0.95 / 0.99），**直接传、不用 1−p 转换**；
+ * antithetic：是否计算对偶样本镜像，**默认 true**。
+ *
+ * 插件更新后返回【字典】（非标量）：
+ *   calcVaR            -> {value_at_risk, value_at_risk_mirrored}
+ *   calcExpectedShortfall -> {expected_shortfall, expected_shortfall_mirrored}
+ * antithetic=false 时 mirrored 恒为 0，true 时填充对偶值。
+ * 返回 JSON 把 4 个值全部整存，不取负、不拆字段：
+ *   {"value_at_risk":..,"value_at_risk_mirrored":..,
+ *    "expected_shortfall":..,"expected_shortfall_mirrored":..}
+ */
+def calcVarEs(pnlEndDesc, probability, antithetic=true) {
+    prob = double(probability)
+    varR = caplib::calcVaR(pnlEndDesc, prob, antithetic)
+    esR = caplib::calcExpectedShortfall(pnlEndDesc, prob, antithetic)
+    // 字符串拼接不跨行（行首 + 会被当一元运算符），单行写完
+    return "{\"value_at_risk\":" + varR[`value_at_risk] + ",\"value_at_risk_mirrored\":" + varR[`value_at_risk_mirrored] + ",\"expected_shortfall\":" + esR[`expected_shortfall] + ",\"expected_shortfall_mirrored\":" + esR[`expected_shortfall_mirrored] + "}"
+}
+
+/**
+ * 计算债券 VaR / ES 并写入 t_bond_var。
+ *
+ * asOfDate DATE 基准日：
+ *   - 情景估值取 t_bond_sim_valuation 中 date = timestamp(asOfDate) 的全部行，
+ *     按 end_date 倒序；
+ *   - 当前估值取 t_bond_valuation 中 date = nanotimestamp(asOfDate) 的行；
+ *   - 每只债券的损益 PnL = 情景估值 present_value − 当前估值 present_value
+ *     （正=盈利、负=亏损），每个情景一个值、按 end_date 倒序。
+ *
+ * 输出（每只【在情景估值中出现且有当前估值】的债券一行）：
+ *   code=债券编码、currency=CNY、date=nanotimestamp(asOfDate)、
+ *   sim_date=情景时间、pnl=损益数据 JSON（按 end_date 倒序，含 end_date 标签）、
+ *   risk_value95={confidence,var,es}、risk_value99={confidence,var,es}。
+ *
+ * VaR/ES 为历史模拟法，口径见 calcVarEs（正数=损失幅度）。
+ * 幂等：先在内存算完全部结果，再删除该 date 的旧行、最后 tableInsert
+ * （本函数不调用插件定价，delete 与 DFS tableInsert 相邻是安全的；
+ *  禁止把 delete 放在插件 price 调用之前，见 simValuationNonStdBonds 说明）。
+ *
+ * 返回字典：bonds(写入债券数), scenarios(每只情景数), simDate, skipped(缺当前估值而跳过数)
+ */
+def calcBondVarEs(asOfDate, currency="CNY") {
+    baseNano = nanotimestamp(asOfDate)
+    baseTs = timestamp(asOfDate)
+
+    // 1) 情景估值（按 end_date 倒序）
+    svT = loadTable("dfs://caplib-bond", "t_bond_sim_valuation")
+    scn = select code, end_date, sim_date, valuation from svT
+          where date = baseTs order by code, end_date desc
+    if (scn.size() == 0) {
+        msg = "calcBondVarEs: t_bond_sim_valuation 在 " + asOfDate + " 没有情景估值"
+        throw msg
+    }
+    simDate = scn["sim_date"][0]
+    nScn = size(exec distinct end_date from scn)
+
+    // 2) 当前估值 present_value，建 code -> pv 映射（extractPresentValue 为纯字符串解析）
+    vvT = loadTable("dfs://caplib-bond", "t_bond_valuation")
+    curRows = select code, valuation from vvT where date = baseNano
+    curT = table(1:0, ["code","pv"], [STRING, DOUBLE])
+    for (i in 0..(curRows.size() - 1)) {
+        insert into curT values(curRows["code"][i],
+                               extractPresentValue(curRows["valuation"][i]))
+    }
+    curMap = dict(curT["code"], curT["pv"])
+
+    // 3) 逐债券：损益（end 倒序）-> pnl JSON -> VaR/ES
+    oCode = array(STRING, 0, 0); oPnl = array(STRING, 0, 0)
+    oR95 = array(STRING, 0, 0); oR99 = array(STRING, 0, 0)
+    skipped = 0
+    codes = exec distinct code from scn
+    for (ci in 0..(codes.size() - 1)) {
+        c = codes[ci]
+        curPv = curMap[c]
+        if (isNull(curPv)) {                      // 该债缺当前估值，无法算损益
+            skipped += 1
+            continue
+        }
+        sub = select * from scn where code = c    // 已按 end_date desc
+        pnl = array(DOUBLE, 0, 0)
+        for (si in 0..(sub.size() - 1)) {
+            scenPv = extractPresentValue(sub["valuation"][si])
+            pnl.append!(scenPv - curPv)
+        }
+        // pnl 直接存损益数值数组（顺序按 end_date 倒序）。
+        // 注：string(向量) 返回逐元素字符串向量，要用 concat 拼成一条
+        pnlJson = "[" + concat(string(pnl), ",") + "]"
+
+        // calcVarEs 直接返回完整 JSON，原样整存（不拆 r[0]/r[1]）
+        r95Json = calcVarEs(pnl, 0.95)
+        r99Json = calcVarEs(pnl, 0.99)
+
+        oCode.append!(c); oPnl.append!(pnlJson)
+        oR95.append!(r95Json); oR99.append!(r99Json)
+    }
+
+    // 4) 组装结果表
+    nb = oCode.size()
+    result = table(oCode as code, take(currency, nb) as currency,
+                   take(baseNano, nb) as date, take(simDate, nb) as sim_date,
+                   oPnl as pnl, oR95 as risk_value95, oR99 as risk_value99)
+
+    // 5) 幂等删除 + 落库（delete 与 DFS insert 相邻，无插件调用，安全）
+    varT = loadTable("dfs://caplib-bond", "t_bond_var")
+    delete from varT where date = baseNano
+    varT.tableInsert(result)
+
+    res = dict(STRING, ANY)
+    res["bonds"] = nb
+    res["scenarios"] = nScn
+    res["simDate"] = date(simDate)
+    res["skipped"] = skipped
+    return res
+}

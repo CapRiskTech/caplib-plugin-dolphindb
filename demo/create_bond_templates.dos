@@ -1,0 +1,175 @@
+/**
+ * create_bond_templates.dos
+ *
+ * 使用非标准债数据（t_bond_info 中 std_flag = false 的记录）批量调用
+ * caplib 插件创建债券模板（放入 ObjectCache，供 buildVanillaBond 等本地引用，
+ * 纯 DolphinDB 定价链路，无需外部序列化字节）。
+ *
+ * caplib::createVanillaBondTemplate 签名（27~29 个业务参数 + 可选 returnJson BOOL）：
+ *   createVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE,
+ *       settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING,
+ *       issuePrice DOUBLE, dayCount STRING, calendar STRING, frequency STRING,
+ *       interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING,
+ *       payDayOffset INT, payDayConvention STRING, refIndex STRING,
+ *       fixingCalendars STRING or STRING[], fixingFreq STRING, fixingDayConvention STRING,
+ *       fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING,
+ *       exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL
+ *       [, notionalType STRING[, recoveryRate DOUBLE]][, returnJson BOOL])
+ *
+ * 注意：
+ *   - 末尾的 BOOL 会被插件优先解析为 returnJson，因此批量调用统一传满 30 参数，
+ *     显式给出 notionalType / recoveryRate / returnJson，避免歧义；
+ *   - 第一参数为模板名（instrument_name），使用债券编码 inst_code；
+ *   - 前置条件：先执行 create_calendar.dos 注册 CFETS 日历（容器重启后插件
+ *     内存中的日历会丢失，需要重建）。
+ *
+ * 数据兜底（t_bond_info 非标准债 1486 条，NULL 分布）：
+ *   rate 空 804 条（零息债无票面利率）  -> 0.0
+ *   issue_price 空 16 条               -> 100.0（面值）
+ *   ref_index / fixing_calendars /
+ *   ex_cpn_calendar 全部为空           -> ""
+ *
+ * 执行方式（DolphinDB 会话内）：
+ *   run "/data/ddb/server/scripts/create_calendar.dos"
+ *   run "/data/ddb/server/scripts/create_bond_templates.dos"
+ */
+
+// 插件由 dolphindb.dos 启动脚本自动加载；此处防御性兜底（重复加载会抛异常，忽略即可）
+try {
+    loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")
+} catch (ex) {
+    // 已加载，忽略
+}
+
+/**
+ * 批量创建非标准债模板
+ *
+ * 返回字典：
+ *   total   INT    非标准债总数
+ *   created INT    成功创建数
+ *   failed  INT    失败数
+ *   errors  TABLE  失败明细（inst_code, error）
+ */
+def createVanillaBondTemplatesFromTable() {
+    bonds = select * from loadTable("dfs://caplib-bond", "t_bond_info") where not std_flag
+    n = bonds.size()
+    // 空表保护：n=0 时 `0..(n-1)` 是 [0,-1] 而非空向量，循环会索引空数组抛异常
+    if (n == 0) {
+        res = dict(STRING, ANY)
+        res["total"] = 0; res["created"] = 0; res["failed"] = 0
+        res["errors"] = table(1:0, ["inst_code", "error"], [STRING, STRING])
+        return res
+    }
+
+    // 取列（行序一致）
+    codes = bonds["inst_code"]
+    bondTypes = bonds["bond_type"]
+    issueDates = bonds["issue_date"]
+    settlementDays = bonds["settlement_days"]
+    startDates = bonds["start_date"]
+    maturities = bonds["maturity"]
+    rates = bonds["rate"]
+    currencies = bonds["currency"]
+    issuePrices = bonds["issue_price"]
+    dayCounts = bonds["day_count"]
+    calendars = bonds["calendar"]
+    frequencies = bonds["frequency"]
+    interestDayConventions = bonds["interest_day_convention"]
+    stubPolicies = bonds["stub_policy"]
+    brokenPeriodTypes = bonds["broken_period_type"]
+    payDayOffsets = bonds["pay_day_offset"]
+    payDayConventions = bonds["pay_day_convention"]
+    refIndexes = bonds["ref_index"]
+    fixingCals = bonds["fixing_calendars"]
+    fixingFreqs = bonds["fixing_freq"]
+    fixingDayConventions = bonds["fixing_day_convention"]
+    fixingModes = bonds["fixing_mode"]
+    fixingDayOffsets = bonds["fixing_day_offset"]
+    exCpnPeriods = bonds["ex_cpn_period"]
+    exCpnCals = bonds["ex_cpn_calendar"]
+    exCpnDayConventions = bonds["ex_cpn_day_convention"]
+    exCpnEoms = bonds["ex_cpn_eom"]
+    notionalTypes = bonds["notional_type"]
+    recoveryRates = bonds["recovery_rate"]
+
+    // NULL 兜底
+    names = codes                                             // 模板名使用债券编码
+    ratesFixed = iif(isNull(rates), 0.0, rates)                // 零息债票面利率 0.0
+    issuePricesFixed = iif(isNull(issuePrices), 100.0, issuePrices)  // 缺发行价格按面值
+    refIndexesFixed = iif(isNull(refIndexes), "", refIndexes)
+    fixingCalsFixed = iif(isNull(fixingCals), "", fixingCals)
+    exCpnCalsFixed = iif(isNull(exCpnCals), "", exCpnCals)
+    notionalTypesFixed = iif(isNull(notionalTypes), "CONST_NOTIONAL", notionalTypes)
+    recoveryRatesFixed = iif(isNull(recoveryRates), 0.0, recoveryRates)
+
+    failed = table(1:0, ["inst_code", "error"], [STRING, STRING])
+    created = 0
+    for (i in 0..(n-1)) {
+        try {
+            caplib::createVanillaBondTemplate(
+                names[i], bondTypes[i], issueDates[i], settlementDays[i], startDates[i],
+                maturities[i], ratesFixed[i], currencies[i], issuePricesFixed[i],
+                dayCounts[i], calendars[i], frequencies[i], interestDayConventions[i],
+                stubPolicies[i], brokenPeriodTypes[i], payDayOffsets[i], payDayConventions[i],
+                refIndexesFixed[i], fixingCalsFixed[i], fixingFreqs[i],
+                fixingDayConventions[i], fixingModes[i], fixingDayOffsets[i],
+                exCpnPeriods[i], exCpnCalsFixed[i], exCpnDayConventions[i], exCpnEoms[i],
+                notionalTypesFixed[i], recoveryRatesFixed[i], false)
+            created += 1
+        } catch (ex) {
+            insert into failed values(codes[i], ex)
+        }
+    }
+
+    res = dict(STRING, ANY)
+    res["total"] = n
+    res["created"] = created
+    res["failed"] = n - created
+    res["errors"] = failed
+    return res
+}
+
+/**
+ * 标准债模板构建公共封装（27 参 createVanillaBondTemplate）
+ * 只需传模板名 / rate / 发行价，其余字段取自债券定义行集 b 的第 i 行
+ * name       STRING 模板名（正式=inst_code；临时=code+"_T"）
+ * asOfDate   DATE   发行/起息日
+ * b          TABLE  标准债定义（t_bond_info where std_flag=true）
+ * i          INT    行索引
+ * rate       DOUBLE 票面利率（固息临时占位1、正式parRate；零息0）
+ * issuePrice DOUBLE 发行价（固息100；零息=定价出的present_value）
+ */
+def createStdBondTemplate(name, asOfDate, b, i, rate, issuePrice) {
+    // startDate 对齐 Java getCapquantBondTradeInfo：标准债 start_date 为 NULL 时兜底 "1901-01-01"
+    return caplib::createVanillaBondTemplate(
+        name, b["bond_type"][i], asOfDate, b["settlement_days"][i], 1901.01.01,
+        b["maturity"][i], rate, b["currency"][i], issuePrice,
+        b["day_count"][i], b["calendar"][i], b["frequency"][i],
+        b["interest_day_convention"][i], b["stub_policy"][i], b["broken_period_type"][i],
+        b["pay_day_offset"][i], b["pay_day_convention"][i], "", "",
+        b["fixing_freq"][i], b["fixing_day_convention"][i], b["fixing_mode"][i],
+        b["fixing_day_offset"][i], b["ex_cpn_period"][i], "",
+        b["ex_cpn_day_convention"][i], b["ex_cpn_eom"][i],
+        b["notional_type"][i], b["recovery_rate"][i], false)
+}
+
+/**
+ * 存活的非标准债编码（已发行未到期）：t_bond_info 中
+ *   not std_flag 且 start_date<=asOfDate 且 maturity_date>asOfDate
+ * 供选债/定价等复用。asOfDate DATE
+ * 返回：STRING[] inst_code
+ */
+def getAliveNonStdBonds(asOfDate) {
+    codes = exec inst_code from loadTable("dfs://caplib-bond", "t_bond_info")
+            where not std_flag, bond_type in ["ZERO_COUPON_BOND", "FIXED_COUPON_BOND"],
+                  start_date <= asOfDate, maturity_date > asOfDate
+    return codes
+}
+
+// 执行：批量创建非标准债模板（放入 ObjectCache，供 buildVanillaBond 等本地引用）
+result = createVanillaBondTemplatesFromTable()
+print("非标准债模板创建完成: total=" + result["total"] + ", created=" + result["created"] + ", failed=" + result["failed"])
+
+// 可按需取用：如获取 2025-12-31 已发行未到期的非标债编码：
+//   codes = getAliveNonStdBonds(2025.12.31); codes.size()
+result

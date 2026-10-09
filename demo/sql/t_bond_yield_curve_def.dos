@@ -1,0 +1,22 @@
+// 数据还原：t_bond_yield_curve_def（2 行）
+// 前置：已执行 00_create_database.dos 建库建表
+
+v_curve_code = ["CN_TREAS_MKT", "CN_TREAS_STD"]
+v_curve_name_cn = ["中国国债收益率曲线（市场）", "中国国债收益率曲线（基准）"]
+v_curve_name_en = ["", ""]
+v_curve_class = ["MKT", "STD"]
+v_currency = ["CNY", "CNY"]
+v_day_count_convention = ["ACT_365_FIXED", "ACT_365_FIXED"]
+v_curve_type = ["ZERO_RATE", "ZERO_RATE"]
+v_interp_type = ["LINEAR_INTERP", "LINEAR_INTERP"]
+v_extrap_method = ["FLAT_EXTRAP", "FLAT_EXTRAP"]
+v_compounding_type = ["CONTINUOUS_COMPOUNDING", "CONTINUOUS_COMPOUNDING"]
+v_frequency = ["ANNUAL", "ANNUAL"]
+v_quote_type = ["CLEAN_PRICE", "YIELD_TO_MATURITY"]
+v_build_method = ["BOOTSTRAPPING_METHOD", "BOOTSTRAPPING_METHOD"]
+v_jacobian = [false, false]
+v_term = ["[{\"bondCode\":null,\"term\":\"1M\"},{\"bondCode\":null,\"term\":\"2M\"},{\"bondCode\":null,\"term\":\"3M\"},{\"bondCode\":null,\"term\":\"6M\"},{\"bondCode\":null,\"term\":\"9M\"},{\"bondCode\":null,\"term\":\"1Y\"},{\"bondCode\":null,\"term\":\"2Y\"},{\"bondCode\":null,\"term\":\"3Y\"},{\"bondCode\":null,\"term\":\"4Y\"},{\"bondCode\":null,\"term\":\"5Y\"},{\"bondCode\":null,\"term\":\"6Y\"},{\"bondCode\":null,\"term\":\"7Y\"},{\"bondCode\":null,\"term\":\"8Y\"},{\"bondCode\":null,\"term\":\"9Y\"},{\"bondCode\":null,\"term\":\"10Y\"},{\"bondCode\":null,\"term\":\"15Y\"},{\"bondCode\":null,\"term\":\"20Y\"},{\"bondCode\":null,\"term\":\"30Y\"},{\"bondCode\":null,\"term\":\"40Y\"},{\"bondCode\":null,\"term\":\"50Y\"}]", "[{\"bondCode\":\"CN_TREAS_ZERO_1M\",\"term\":\"1M\"},{\"bondCode\":\"CN_TREAS_ZERO_2M\",\"term\":\"2M\"},{\"bondCode\":\"CN_TREAS_ZERO_3M\",\"term\":\"3M\"},{\"bondCode\":\"CN_TREAS_ZERO_6M\",\"term\":\"6M\"},{\"bondCode\":\"CN_TREAS_ZERO_9M\",\"term\":\"9M\"},{\"bondCode\":\"CN_TREAS_ZERO_1Y\",\"term\":\"1Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_2Y\",\"term\":\"2Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_3Y\",\"term\":\"3Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_4Y\",\"term\":\"4Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_5Y\",\"term\":\"5Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_6Y\",\"term\":\"6Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_7Y\",\"term\":\"7Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_8Y\",\"term\":\"8Y\"},{\"bondCode\":\"CN_TREAS_CPN_A_9Y\",\"term\":\"9Y\"},{\"bondCode\":\"CN_TREAS_CPN_SA_10Y\",\"term\":\"10Y\"},{\"bondCode\":\"CN_TREAS_CPN_SA_15Y\",\"term\":\"15Y\"},{\"bondCode\":\"CN_TREAS_CPN_SA_20Y\",\"term\":\"20Y\"},{\"bondCode\":\"CN_TREAS_CPN_SA_30Y\",\"term\":\"30Y\"},{\"bondCode\":\"CN_TREAS_CPN_SA_40Y\",\"term\":\"40Y\"},{\"bondCode\":\"CN_TREAS_CPN_SA_50Y\",\"term\":\"50Y\"}]"]
+
+t = table(v_curve_code as curve_code, v_curve_name_cn as curve_name_cn, v_curve_name_en as curve_name_en, v_curve_class as curve_class, v_currency as currency, v_day_count_convention as day_count_convention, v_curve_type as curve_type, v_interp_type as interp_type, v_extrap_method as extrap_method, v_compounding_type as compounding_type, v_frequency as frequency, v_quote_type as quote_type, v_build_method as build_method, v_jacobian as jacobian, v_term as term)
+loadTable("dfs://caplib-bond","t_bond_yield_curve_def").tableInsert(t)
+print("t_bond_yield_curve_def: " + size(t) + " rows loaded")

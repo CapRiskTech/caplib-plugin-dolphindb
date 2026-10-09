@@ -1,0 +1,114 @@
+/**
+ * create_calendar.dos
+ *
+ * 使用日历表 t_calendar（dfs://caplib-bond）的数据创建 caplib 交易日历。
+ *
+ * caplib 插件的 caplib::createCalendar 签名：
+ *   caplib::createCalendar(calName STRING[, holidays DATE[]|INT[][, specialBusinessDays DATE[]|INT[]]])
+ *   - holidays            节假日（休市日）
+ *   - specialBusinessDays 特殊营业日（调休上班的周末）
+ *   - 日期可直接传 DATE，也可传 Excel 序列数字（Excel 1900 日期系统：
+ *     距 1899-12-30 的天数，如 2024-01-01 -> 45292），两者等价
+ *
+ * 日历表结构（见 02_load_mysql.py，数据来自 capdata-system.t_system_calendar）：
+ *   calendar_code STRING  日历编码，如 'CFETS'
+ *   type          STRING  'HOLIDAYS'-节假日 / 'SPECIAL_DAYS'-特殊营业日
+ *   date          DATE    日期
+ *
+ * 执行方式（DolphinDB 会话内）：
+ *   run "/data/ddb/server/scripts/create_calendar.dos"
+ */
+
+// 插件由 dolphindb.dos 启动脚本自动加载；此处防御性兜底（重复加载会抛异常，忽略即可）
+try {
+    loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")
+} catch (ex) {
+    // 已加载，忽略
+}
+
+/**
+ * 从 t_calendar 加载指定日历、指定类型的日期数组（升序，去重）
+ * calName STRING  日历编码，如 "CFETS"
+ * calType STRING  'HOLIDAYS'-节假日 / 'SPECIAL_DAYS'-特殊营业日
+ * 返回：DATE[] 升序
+ */
+def loadCalendarDates(calName, calType) {
+    d = exec date from loadTable("dfs://caplib-bond", "t_calendar")
+        where calendar_code = calName, type = calType
+    return sort(distinct(d))
+}
+
+/**
+ * 从 t_calendar 创建日历
+ *
+ * calName STRING 日历编码（t_calendar.calendar_code，如 "CFETS"）
+ * 返回 BOOL，true 表示创建成功
+ */
+def createCalendarFromTable(calName) {
+    holidays = loadCalendarDates(calName, "HOLIDAYS")
+    specialBusinessDays = loadCalendarDates(calName, "SPECIAL_DAYS")
+    if (size(holidays) == 0) {
+        throw "createCalendarFromTable: 日历 [" + calName + "] 在 t_calendar 中无 HOLIDAYS 数据"
+    }
+    return caplib::createCalendar(calName, holidays, specialBusinessDays)
+}
+
+/**
+ * 用 CFETS 日历（t_calendar：节假日 + 调休）生成 asOfDate 前最近 periods 个交易日
+ * asOfDate DATE   基准日期
+ * periods  INT    交易日数量
+ * 返回：DATE[] 升序的最近 periods 个交易日（不足时返回可用个数）
+ */
+def getCFETSTradeDays(asOfDate, periods) {
+    h  = loadCalendarDates("CFETS", "HOLIDAYS")
+    sp = loadCalendarDates("CFETS", "SPECIAL_DAYS")
+    span = periods * 3 + 10
+    allDays = (asOfDate - span) .. asOfDate
+    isHoli = allDays in h
+    wd = weekday(allDays)
+    isWeekend = (wd == 0) || (wd == 6)
+    isSpec = allDays in sp
+    isTd = !(isHoli || (isWeekend && !isSpec))
+    td = allDays[isTd]
+    n = td.size()
+    k = min(periods, n)
+    return td[(n - k):n]
+}
+
+/**
+ * 判断指定日期是否为工作日（CFETS 日历）
+ * 规则：非节假日；周末若在调休上班日(SPECIAL_DAYS)中也算工作日
+ * d DATE 指定日期
+ * 返回 BOOL
+ */
+def isBusinessDay(d) {
+    h  = loadCalendarDates("CFETS", "HOLIDAYS")
+    sp = loadCalendarDates("CFETS", "SPECIAL_DAYS")
+    isHoli = d in h
+    wd = weekday(d)               // 周日=0 ... 周六=6
+    isWe = (wd == 0) || (wd == 6)
+    isSpec = d in sp
+    return !(isHoli || (isWe && !isSpec))
+}
+
+/**
+ * 获取指定日期之后的下一个工作日（严格大于 d 的第一个工作日，CFETS 日历）
+ * d DATE 指定日期
+ * 返回 DATE
+ */
+def nextBusinessDay(d) {
+    h  = loadCalendarDates("CFETS", "HOLIDAYS")
+    sp = loadCalendarDates("CFETS", "SPECIAL_DAYS")
+    cand = (d + 1) .. (d + 60)    // 60 天足够越过最长假期
+    isHoli = cand in h
+    wd = weekday(cand)
+    isWe = (wd == 0) || (wd == 6)
+    isSpec = cand in sp
+    good = cand[!(isHoli || (isWe && !isSpec))]
+    return good[0]
+}
+
+// 创建 CFETS 日历（中国外汇交易中心，482 个节假日 + 179 个调休营业日）
+result = createCalendarFromTable("CFETS")
+print("caplib::createCalendar(CFETS) => " + result)
+result

@@ -1,0 +1,108 @@
+/**
+ * pricing_batch.dos
+ *
+ * 批量计算指定日期区间内每个 CFETS 交易日的「定价 + 估值」。
+ *
+ * 单日流程（对齐 Java 侧：市场曲线 -> 标准债定价 -> 基准曲线 -> 非标债定价 -> 估值）：
+ *   1) buildBondYieldCurveFromLix(d, periods)  CN_TREAS_MKT 市场曲线（基于 t_bond_day_kline 选债 + YTM）
+ *   2) priceStdBonds(d)                        标准债定价 -> t_bond_pricing
+ *   3) buildStdYieldCurve(d)                   CN_TREAS_STD 基准曲线（pillar = 标准债定价的 YTM）
+ *   4) priceNonStdBonds(d)                     非标债定价 -> t_bond_pricing
+ *   5) valuationStdBonds(d)                    标准债估值 -> t_bond_valuation
+ *   6) valuationNonStdBonds(d)                 非标债估值 -> t_bond_valuation
+ *
+ * 前置脚本必须【先按序 run】（DolphinDB 解析期即校验函数名，顺序不能颠倒）：
+ *   run "/data/ddb/server/scripts/create_calendar.dos"        // CFETS 日历（插件内存，容器重启后需重建）
+ *   run "/data/ddb/server/scripts/create_bond_templates.dos"  // 非标债模板（同上）
+ *   run "/data/ddb/server/scripts/build_yield_curve.dos"      // 曲线构建
+ *   run "/data/ddb/server/scripts/bond_pricing.dos"           // 定价/估值
+ *   run "/data/ddb/server/scripts/pricing_batch.dos"          // 本文件
+ *
+ * 幂等：每天写入前先删除该日期的 t_bond_pricing / t_bond_valuation 行（date 即分区列）。
+ */
+
+/**
+ * 计算单日定价与估值
+ * d       DATE 基准日（需为 CFETS 交易日）
+ * periods INT  LIX 流动性窗口的交易日数（默认 20）
+ * 返回 TABLE：date, mkt_pillars, std_price, nonstd_price, std_curve, std_val, nonstd_val, elapsed_s
+ */
+def computeOneDay(d, periods=20) {
+    ts = nanotimestamp(d)
+    prT = loadTable("dfs://caplib-bond", "t_bond_pricing")
+    vaT = loadTable("dfs://caplib-bond", "t_bond_valuation")
+    // 幂等：先清掉该日已有结果
+    delete from prT where date = ts
+    delete from vaT where date = ts
+
+    t0 = now()
+    // 1) 市场曲线（失败不中断：曲线为空则该日 std 定价会失败，记录在 errors 中）
+    //    注意：不能对字典用 isNull（恒为 true），改用「取 yields 失败即视为 NULL」的判定
+    mktPillars = -1
+    try {
+        mkt = buildBondYieldCurveFromLix(d, periods)
+        mktPillars = mkt["yields"].size()
+    } catch (ex) { mktPillars = -1 }
+
+    // 2) 标准债定价 -> 3) 基准曲线
+    ps = priceStdBonds(d)
+    stdCurveOk = -1
+    try {
+        sc = buildStdYieldCurve(d)
+        stdCurveOk = sc["yields"].size()
+    } catch (ex) { stdCurveOk = -1 }
+
+    // 4) 非标债定价
+    pn = priceNonStdBonds(d)
+
+    // 5) 标准债估值 -> 6) 非标债估值
+    vs = valuationStdBonds(d)
+    vn = valuationNonStdBonds(d)
+
+    return table([d] as date, [mktPillars] as mkt_pillars,
+                 [ps["ok"]] as std_price, [pn["ok"]] as nonstd_price,
+                 [stdCurveOk] as std_curve_pillars,
+                 [vs["ok"]] as std_val, [vn["ok"]] as nonstd_val,
+                 [(now() - t0) \ 1000] as elapsed_s)
+}
+
+/**
+ * 批量：对显式给定的日期列表逐日执行 computeOneDay
+ *
+ * 用于「只重刷库里已有日期」——computeRange 会把区间内所有交易日都算上，
+ * 而库里 2025.02.28 与 2025.12.31 之间本无数据，不能被补算。
+ * dates DATE[] 基准日列表
+ * 返回 TABLE：逐日结果
+ */
+def computeByDates(dates, periods=20) {
+    print("待处理日期数=" + dates.size())
+    res = table(1:0, ["date","mkt_pillars","std_price","nonstd_price",
+                      "std_curve_pillars","std_val","nonstd_val","elapsed_s"],
+                [DATE, INT, INT, INT, INT, INT, INT, INT])
+    failed = array(DATE, 0, 0)
+    for (d in dates) {
+        // 逐日容错：单日异常（含插件 std::exception）不中断整批，记入 failed 后继续
+        try {
+            r = computeOneDay(d, periods)
+            res.append!(r)
+            print(r)
+        } catch (ex) {
+            failed.append!(d)
+            print("!! " + d + " FAILED: " + ex)
+        }
+    }
+    print("完成 " + res.size() + " 天，失败 " + failed.size() + " 天")
+    if (failed.size() > 0) print("失败日期: " + string(failed))
+    return res
+}
+
+/**
+ * 批量：区间 [startD, endD] 内每个 CFETS 交易日执行 computeOneDay
+ * 返回 TABLE：逐日结果
+ */
+def computeRange(startD, endD, periods=20) {
+    days = getCFETSTradeDays(endD, 90)
+    days = days[days >= startD]
+    print("区间 " + startD + " ~ " + endD + " 共 " + days.size() + " 个交易日")
+    return computeByDates(days, periods)
+}
