@@ -6,9 +6,10 @@
  *     两两配对，按「基准日报价 + (后一报价 - 前一报价)」生成 scenarioCount 个情景，
  *     写入 t_bond_yield_sim_curve。情景曲线的参考日 = asOfDate 的下一工作日（sim_date）。
  *
- *   simValuationNonStdBonds(simDate, nominal, curveCode)
- *     以 simDate 的全部情景曲线各作折扣曲线，对当日存活非标债逐一估值，
- *     写入 t_bond_sim_valuation（幂等删除须在调用前、函数外单独执行）。
+ *   simValuationNonStdBonds(asOfDate, nominal, curveCode)
+ *     以基准日 asOfDate 的全部情景曲线各作折扣曲线（情景日取自情景行），
+ *     对基准日持有的非标债逐一估值，写入 t_bond_sim_valuation
+ *     （幂等：函数内先内存计算、后删旧写新，直接调用即可）。
  *
  *   calcBondVarEs(asOfDate)
  *     PnL = 情景估值 PV − 当日估值 PV（按 end_date 倒序），用插件
@@ -257,39 +258,44 @@ def ensureSimYieldCurve(simDate, curveCode, parJson, startTime, endTime) {
 }
 
 /**
- * 非标准债情景估值：以【情景时间】为估值日，该时间对应的【全部情景曲线】
- * 各作为折扣曲线，对情景时间存活的全部非标准债逐一估值，写入 t_bond_sim_valuation。
+ * 非标准债情景估值：以【情景时间】为估值日，该基准日对应的【全部情景曲线】
+ * 各作为折扣曲线，对【基准日持有】的全部非标准债逐一估值，写入 t_bond_sim_valuation。
  *
- * simDate   DATE   情景时间（即估值日），如 2025.02.05：
- *               取 t_bond_yield_sim_curve 中 sim_date = simDate 的所有情景行
+ * asOfDate  DATE   基准日，如 2025.01.27：取 t_bond_yield_sim_curve 中
+ *               date = timestamp(asOfDate) 的所有情景行；情景时间（估值日）=
+ *               情景行的 sim_date，由 buildSimYieldCurve 生成（基准日下一工作日），
+ *               无需调用方传入
  * nominal   DOUBLE 面值，默认 100
  * curveCode STRING 情景曲线编码，默认 CN_TREAS_STD
  *
  * 写入字段：code=非标债编码、date=情景行的基准时间(base)、sim_date=情景时间、
  *           start_date/end_date=情景对日期、currency=CNY、valuation=估值结果 JSON。
  *
- * 幂等清理必须在【调用本函数之前、单独执行】：
- *   delete from loadTable("dfs://caplib-bond","t_bond_sim_valuation") where sim_date = timestamp(simDate)
- * **不能把该 delete 写在本函数内**——DFS delete 之后同函数内的插件 priceVanillaBond
- * 会全部立即抛 C++ 错误（实测：删除前置 -> 642 只全失败 0.1s；删除移出 -> 全部成功）。
+ * 幂等：全部情景估值先在内存算完，最后才删除该 sim_date 的旧行并一次性写入
+ * （同 calcBondVarEs）。**delete 不能放在插件 price 调用之前**——DFS delete 之后
+ * 同函数内紧邻的插件 priceVanillaBond 会全部立即抛 C++ 错误。
  *
  * 返回字典：scenarios(情景数), bonds(每情景债数), ok, failed, errors
  */
-def simValuationNonStdBonds(simDate, nominal=100.0, curveCode="CN_TREAS_STD") {
+def simValuationNonStdBonds(asOfDate, nominal=100.0, curveCode="CN_TREAS_STD") {
     nominalDouble = double(nominal)               // 插件要求 DOUBLE 标量（传 INT 会报 nominal 类型错误）；参数常量不可改
-    simTs = timestamp(simDate)
+    baseTs = timestamp(asOfDate)
 
-    // 1) 该情景时间的全部情景曲线
+    // 1) 该基准日对应的全部情景曲线；情景时间（估值日）取自情景行 sim_date
     simT = loadTable("dfs://caplib-bond", "t_bond_yield_sim_curve")
-    scs = select * from simT where code = curveCode, sim_date = simTs
+    scs = select * from simT where code = curveCode, date = baseTs
     scenarioCount = scs.size()
     if (scenarioCount == 0) {
-        msg = "simValuationNonStdBonds: " + curveCode + " 在 " + simDate + " 没有情景曲线"
+        msg = "simValuationNonStdBonds: " + curveCode + " 在 " + asOfDate + " 没有情景曲线（需先 buildSimYieldCurve）"
         throw msg
     }
+    simTs = scs["sim_date"][0]
+    simDate = date(simTs)
 
-    // 2) 情景时间存活的非标债（每个情景相同）；存量债 buildVanillaBond 传真实起息日
-    codes = getAliveNonStdBonds(simDate)
+    // 2) 待估债券按【基准日】筛选：历史模拟估的是基准日持有的组合，
+    //    不能用 simDate——否则基准日后到期的债会消失、新发行的债会加入。
+    //    存量债 buildVanillaBond 传真实起息日，估值日仍为 simDate。
+    codes = getAliveNonStdBonds(asOfDate)
     bondCount = codes.size()
     sdInfo = select inst_code, start_date from loadTable("dfs://caplib-bond", "t_bond_info")
     sdMap = dict(sdInfo["inst_code"], sdInfo["start_date"])
@@ -297,8 +303,9 @@ def simValuationNonStdBonds(simDate, nominal=100.0, curveCode="CN_TREAS_STD") {
     // 3) 共享设置（与日常定价共用同一份固定设置；每个情景再用情景曲线自建市场数据集）
     context = buildPricingInstruments(simDate, "SV")
 
-    // 4) 逐情景逐债估值（幂等删除在函数外执行，见函数头说明）
-    out = loadTable("dfs://caplib-bond", "t_bond_sim_valuation")
+    // 4) 逐情景逐债估值，结果先收集到内存表，算完后统一落库
+    allRows = table(1:0, ["code","date","sim_date","start_date","end_date","currency","valuation"],
+                        [STRING, TIMESTAMP, TIMESTAMP, TIMESTAMP, TIMESTAMP, STRING, STRING])
 
     errors = table(1:0, ["scenario","inst_code","error"], [INT, STRING, STRING])
     ok = 0
@@ -340,9 +347,15 @@ def simValuationNonStdBonds(simDate, nominal=100.0, curveCode="CN_TREAS_STD") {
                      take(baseTs, insertedCount) as date, take(simTs, insertedCount) as sim_date,
                      take(sd1, insertedCount) as start_date, take(sd2, insertedCount) as end_date,
                      take("CNY", insertedCount) as currency, vVal as valuation)
-        out.tableInsert(batch)
+        allRows.append!(batch)
         ok += batch.size()
     }
+
+    // 5) 幂等落库：内存计算全部完成后再删除该 sim_date 的旧行、写入新结果
+    // （delete 不与插件 price 调用相邻，规避 C++ 报错）
+    out = loadTable("dfs://caplib-bond", "t_bond_sim_valuation")
+    delete from out where sim_date = simTs
+    out.tableInsert(allRows)
 
     res = dict(STRING, ANY)
     res["scenarios"] = scenarioCount

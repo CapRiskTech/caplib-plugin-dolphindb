@@ -143,12 +143,10 @@ computeByDates([2025.01.27, 2025.01.28], 20)      // 显式日期列表
 
 ```text
 // 1) 情景曲线：取基准日及之前的 STD 曲线，相邻日期两两配对，构建 N 个情景
-buildSimYieldCurve(2025.01.27, "CN_TREAS_STD", 3)
+buildSimYieldCurve(2025.01.27, "CN_TREAS_STD", 20)
 
-// 2) 情景估值：幂等删除必须在函数【外】单独执行，然后调用
-delete from loadTable("dfs://caplib-bond","t_bond_sim_valuation")
-  where sim_date = timestamp(2025.02.05)
-simValuationNonStdBonds(2025.02.05, 100, "CN_TREAS_STD")
+// 2) 情景估值（传基准日；情景日由情景行推导。函数自带幂等，直接调用即可）
+simValuationNonStdBonds(2025.01.27, 100, "CN_TREAS_STD")
 
 // 3) VaR / ES
 calcBondVarEs(2025.01.27)
@@ -181,7 +179,7 @@ calcBondVarEs(2025.01.27)
 | `priceStdBonds(date)` / `valuationStdBonds(date)` | 标准债定价 / 估值 |
 | `priceNonStdBonds(date)` / `valuationNonStdBonds(date)` | 非标债定价 / 估值 |
 | `buildSimYieldCurve(date, curveCode, scenarioCount)` | 构建情景收益率曲线 |
-| `simValuationNonStdBonds(simDate, nominal, curveCode)` | 非标债情景估值 |
+| `simValuationNonStdBonds(asOfDate, nominal, curveCode)` | 非标债情景估值（传基准日，情景日自动推导） |
 | `calcBondVarEs(date)` | 计算损益、VaR / ES |
 | `buildBondYieldCurveFromLix(date, periods, curveCode)` | 基于 LIX 选债构建收益率曲线 |
 | `buildStdYieldCurve(date, curveCode)` | 用标准债 YTM 构建基准（STD）曲线 |
