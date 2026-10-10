@@ -23,12 +23,15 @@
 
 /**
  * 计算单日定价与估值
- * d       DATE 基准日（需为 CFETS 交易日）
+ * asOfDate DATE 基准日（需为 CFETS 交易日）
  * periods INT  LIX 流动性窗口的交易日数（默认 20）
- * 返回 TABLE：date, mkt_pillars, std_price, nonstd_price, std_curve, std_val, nonstd_val, elapsed_s
+ * 返回 TABLE：date, mkt_curve_ok, std_price, nonstd_price, std_curve_ok,
+ *             std_val, nonstd_val, elapsed_s
+ * 各步骤严格按依赖短路：MKT 失败则后续全部 -1 直接返回；STD 曲线失败则跳过两种估值。
+ * 计数列为成功只数，-1 表示该步骤失败或因前置失败而未执行。
  */
-def computeOneDay(d, periods=20) {
-    ts = nanotimestamp(d)
+def computeOneDay(asOfDate, periods=20) {
+    ts = nanotimestamp(asOfDate)
     prT = loadTable("dfs://caplib-bond", "t_bond_pricing")
     vaT = loadTable("dfs://caplib-bond", "t_bond_valuation")
     // 幂等：先清掉该日已有结果
@@ -36,33 +39,44 @@ def computeOneDay(d, periods=20) {
     delete from vaT where date = ts
 
     t0 = now()
-    // 1) 市场曲线（失败不中断：曲线为空则该日 std 定价会失败，记录在 errors 中）
-    //    注意：不能对字典用 isNull（恒为 true），改用「取 yields 失败即视为 NULL」的判定
-    mktPillars = -1
+
+    // 结果行（失败/未执行的步骤记 -1）
+    row = dict(STRING, INT)
+    row["mkt_curve_ok"] = -1; row["std_price"] = -1; row["std_curve_ok"] = -1
+    row["nonstd_price"] = -1;  row["std_val"] = -1;   row["nonstd_val"] = -1
+
+    // 1) 市场曲线：整条链路的根，建不出来则后续全部无意义，直接返回
     try {
-        mkt = buildBondYieldCurveFromLix(d, periods)
-        mktPillars = mkt["yields"].size()
-    } catch (ex) { mktPillars = -1 }
+        buildBondYieldCurveFromLix(asOfDate, periods)
+        row["mkt_curve_ok"] = 1
+    } catch (ex) {
+        return table([asOfDate] as date, [row["mkt_curve_ok"]] as mkt_curve_ok,
+                     [row["std_price"]] as std_price, [row["nonstd_price"]] as nonstd_price,
+                     [row["std_curve_ok"]] as std_curve_ok,
+                     [row["std_val"]] as std_val, [row["nonstd_val"]] as nonstd_val,
+                     [(now() - t0) \ 1000] as elapsed_s)
+    }
 
-    // 2) 标准债定价 -> 3) 基准曲线
-    ps = priceStdBonds(d)
-    stdCurveOk = -1
+    // 2) 标准债定价（依赖 MKT）-> 3) 基准曲线（依赖标准债定价）
+    row["std_price"] = priceStdBonds(asOfDate)["ok"]
     try {
-        sc = buildStdYieldCurve(d)
-        stdCurveOk = sc["yields"].size()
-    } catch (ex) { stdCurveOk = -1 }
+        buildStdYieldCurve(asOfDate)
+        row["std_curve_ok"] = 1
+    } catch (ex) { row["std_curve_ok"] = -1 }
 
-    // 4) 非标债定价
-    pn = priceNonStdBonds(d)
+    // 4) 非标债定价：只依赖 MKT，STD 曲线失败仍可执行
+    row["nonstd_price"] = priceNonStdBonds(asOfDate)["ok"]
 
-    // 5) 标准债估值 -> 6) 非标债估值
-    vs = valuationStdBonds(d)
-    vn = valuationNonStdBonds(d)
+    // 5) 6) 估值：依赖 STD 曲线，建不出来则无意义，跳过
+    if (row["std_curve_ok"] == 1) {
+        row["std_val"] = valuationStdBonds(asOfDate)["ok"]
+        row["nonstd_val"] = valuationNonStdBonds(asOfDate)["ok"]
+    }
 
-    return table([d] as date, [mktPillars] as mkt_pillars,
-                 [ps["ok"]] as std_price, [pn["ok"]] as nonstd_price,
-                 [stdCurveOk] as std_curve_pillars,
-                 [vs["ok"]] as std_val, [vn["ok"]] as nonstd_val,
+    return table([asOfDate] as date, [row["mkt_curve_ok"]] as mkt_curve_ok,
+                 [row["std_price"]] as std_price, [row["nonstd_price"]] as nonstd_price,
+                 [row["std_curve_ok"]] as std_curve_ok,
+                 [row["std_val"]] as std_val, [row["nonstd_val"]] as nonstd_val,
                  [(now() - t0) \ 1000] as elapsed_s)
 }
 
@@ -76,19 +90,19 @@ def computeOneDay(d, periods=20) {
  */
 def computeByDates(dates, periods=20) {
     print("待处理日期数=" + dates.size())
-    res = table(1:0, ["date","mkt_pillars","std_price","nonstd_price",
-                      "std_curve_pillars","std_val","nonstd_val","elapsed_s"],
+    res = table(1:0, ["date","mkt_curve_ok","std_price","nonstd_price",
+                      "std_curve_ok","std_val","nonstd_val","elapsed_s"],
                 [DATE, INT, INT, INT, INT, INT, INT, INT])
     failed = array(DATE, 0, 0)
-    for (d in dates) {
+    for (date in dates) {
         // 逐日容错：单日异常（含插件 std::exception）不中断整批，记入 failed 后继续
         try {
-            r = computeOneDay(d, periods)
+            r = computeOneDay(date, periods)
             res.append!(r)
             print(r)
         } catch (ex) {
-            failed.append!(d)
-            print("!! " + d + " FAILED: " + ex)
+            failed.append!(date)
+            print("!! " + date + " FAILED: " + ex)
         }
     }
     print("完成 " + res.size() + " 天，失败 " + failed.size() + " 天")
@@ -97,12 +111,15 @@ def computeByDates(dates, periods=20) {
 }
 
 /**
- * 批量：区间 [startD, endD] 内每个 CFETS 交易日执行 computeOneDay
+ * 批量：区间 [startDate, endDate] 内每个 CFETS 交易日执行 computeOneDay
  * 返回 TABLE：逐日结果
  */
-def computeRange(startD, endD, periods=20) {
-    days = getCFETSTradeDays(endD, 90)
-    days = days[days >= startD]
-    print("区间 " + startD + " ~ " + endD + " 共 " + days.size() + " 个交易日")
+def computeRange(startDate, endDate, periods=20) {
+    // 回溯数量取区间日历天数上界（每个日历日最多一个交易日），
+    // 不能硬编码固定值，否则跨度大的区间会静默丢掉早期交易日
+    lookback = int(endDate - startDate) + 1
+    days = getCFETSTradeDays(endDate, lookback)
+    days = days[days >= startDate]
+    print("区间 " + startDate + " ~ " + endDate + " 共 " + days.size() + " 个交易日")
     return computeByDates(days, periods)
 }

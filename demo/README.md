@@ -12,14 +12,15 @@
 
 ```bash
 python bootstrap.py            # 仅重建库 + 基础数据
-python bootstrap.py --deploy   # 同时把业务脚本部署到容器 scripts 目录
+python bootstrap.py --deploy   # 同时把业务脚本写到服务端 scripts 目录
 ```
 
 默认连接本地 8849，可用 `--host/--port/--user/--pass/--db` 覆盖；
-加 `--keep` 可保留现有库、仅重载数据；`--deploy` 才会部署业务脚本（默认不部署）。
+加 `--keep` 可保留现有库、仅重载数据；`--deploy` 才会部署业务脚本（默认不部署），
+服务端目标目录可用 `--server-scripts` 修改（默认 `/data/ddb/server/scripts`）。
 
 **2) 在 DolphinDB GUI / Web 会话中加载业务脚本**（顺序敏感，必须按此序 run；
-若上一步已 `--deploy`，这些文件即在容器 `scripts` 目录中）：
+若上一步已 `--deploy`，这些文件即在服务端 `scripts` 目录中）：
 
 ```text
 run "/data/ddb/server/scripts/create_calendar.dos"
@@ -76,7 +77,10 @@ caplib-dol/
 - 分区方式：`RANGE`，按自然年分区（边界 2000-01-01 ~ 2040-01-01）
 - 维度表（DIMENSION）：`t_calendar`、`t_bond_yield_curve_def`、`t_bond_info`
 - 事实表（分区表）：K 线、收益率曲线、定价、估值、情景曲线、情景估值、VaR
-- 主键去重：`sortColumns` + `keepDuplicates=LAST`（单键维度表用 `ALL`）
+- 主键去重：`sortColumns` + `keepDuplicates=LAST`；单键维度表受 DolphinDB 限制
+  （LAST/FIRST 要求至少 2 个 sort key）只能用 `ALL`，改由数据脚本插入前清空来保证
+  「数据还原」幂等——因此重复执行 `bootstrap.py --keep` 不会让 `t_bond_info`、
+  `t_bond_yield_curve_def` 累积重复行
 
 ### 表清单
 
@@ -139,7 +143,7 @@ computeByDates([2025.01.27, 2025.01.28], 20)      // 显式日期列表
 
 ```text
 // 1) 情景曲线：取基准日及之前的 STD 曲线，相邻日期两两配对，构建 N 个情景
-build_sim_yield_curve(2025.01.27, "CN_TREAS_STD", 3)
+buildSimYieldCurve(2025.01.27, "CN_TREAS_STD", 3)
 
 // 2) 情景估值：幂等删除必须在函数【外】单独执行，然后调用
 delete from loadTable("dfs://caplib-bond","t_bond_sim_valuation")
@@ -176,7 +180,7 @@ calcBondVarEs(2025.01.27)
 | `computeOneDay / computeRange / computeByDates` | 批量定价估值驱动（单日 / 区间 / 显式日期列表） |
 | `priceStdBonds(date)` / `valuationStdBonds(date)` | 标准债定价 / 估值 |
 | `priceNonStdBonds(date)` / `valuationNonStdBonds(date)` | 非标债定价 / 估值 |
-| `build_sim_yield_curve(date, curveCode, scenarioN)` | 构建情景收益率曲线 |
+| `buildSimYieldCurve(date, curveCode, scenarioCount)` | 构建情景收益率曲线 |
 | `simValuationNonStdBonds(simDate, nominal, curveCode)` | 非标债情景估值 |
 | `calcBondVarEs(date)` | 计算损益、VaR / ES |
 | `buildBondYieldCurveFromLix(date, periods, curveCode)` | 基于 LIX 选债构建收益率曲线 |
@@ -192,4 +196,13 @@ calcBondVarEs(2025.01.27)
 host 127.0.0.1   port 8849   user admin   pass 123456   db dfs://caplib-bond
 ```
 
-业务脚本（`*.dos`）通过 bind mount 部署在容器内 `/data/ddb/server/scripts/`。
+业务脚本（`*.dos`）由 `bootstrap.py --deploy` 通过 DolphinDB 会话直接写到服务端
+`/data/ddb/server/scripts/`（服务端 `mkdir` + `file` 句柄落盘，并做字节数校验），
+无需访问宿主机文件系统——远程服务器只要知道 DolphinDB 地址和账号密码即可部署，
+可用 `--server-scripts` 修改服务端目标目录。例如：
+
+```bash
+python bootstrap.py --deploy --host 10.0.0.1 --port 8848 --user admin --pass xxx
+```
+
+> 前提：登录账号对服务端目标目录有写权限（官方镜像中 `/data/ddb/server/` 默认可写）。

@@ -23,11 +23,11 @@
  *   - 前置条件：先执行 create_calendar.dos 注册 CFETS 日历（容器重启后插件
  *     内存中的日历会丢失，需要重建）。
  *
- * 数据兜底（t_bond_info 非标准债 1486 条，NULL 分布）：
- *   rate 空 804 条（零息债无票面利率）  -> 0.0
- *   issue_price 空 16 条               -> 100.0（面值）
+ * 数据兜底（NULL 值按下列规则处理，与具体条数无关）：
+ *   rate 为空（零息债无票面利率）       -> 0.0
+ *   issue_price 为空                   -> 100.0（面值）
  *   ref_index / fixing_calendars /
- *   ex_cpn_calendar 全部为空           -> ""
+ *   ex_cpn_calendar 为空               -> ""
  *
  * 执行方式（DolphinDB 会话内）：
  *   run "/data/ddb/server/scripts/create_calendar.dos"
@@ -131,26 +131,26 @@ def createVanillaBondTemplatesFromTable() {
 
 /**
  * 标准债模板构建公共封装（27 参 createVanillaBondTemplate）
- * 只需传模板名 / rate / 发行价，其余字段取自债券定义行集 b 的第 i 行
+ * 只需传模板名 / rate / 发行价，其余字段取自债券定义行集 bondInfo 的第 rowIndex 行
  * name       STRING 模板名（正式=inst_code；临时=code+"_T"）
  * asOfDate   DATE   发行/起息日
- * b          TABLE  标准债定义（t_bond_info where std_flag=true）
- * i          INT    行索引
+ * bondInfo   TABLE  标准债定义（t_bond_info where std_flag=true）
+ * rowIndex   INT    行索引
  * rate       DOUBLE 票面利率（固息临时占位1、正式parRate；零息0）
  * issuePrice DOUBLE 发行价（固息100；零息=定价出的present_value）
  */
-def createStdBondTemplate(name, asOfDate, b, i, rate, issuePrice) {
+def createStdBondTemplate(name, asOfDate, bondInfo, rowIndex, rate, issuePrice) {
     // startDate 对齐 Java getCapquantBondTradeInfo：标准债 start_date 为 NULL 时兜底 "1901-01-01"
-    return caplib::createVanillaBondTemplate(
-        name, b["bond_type"][i], asOfDate, b["settlement_days"][i], 1901.01.01,
-        b["maturity"][i], rate, b["currency"][i], issuePrice,
-        b["day_count"][i], b["calendar"][i], b["frequency"][i],
-        b["interest_day_convention"][i], b["stub_policy"][i], b["broken_period_type"][i],
-        b["pay_day_offset"][i], b["pay_day_convention"][i], "", "",
-        b["fixing_freq"][i], b["fixing_day_convention"][i], b["fixing_mode"][i],
-        b["fixing_day_offset"][i], b["ex_cpn_period"][i], "",
-        b["ex_cpn_day_convention"][i], b["ex_cpn_eom"][i],
-        b["notional_type"][i], b["recovery_rate"][i], false)
+    caplib::createVanillaBondTemplate(
+        name, bondInfo["bond_type"][rowIndex], asOfDate, bondInfo["settlement_days"][rowIndex], 1901.01.01,
+        bondInfo["maturity"][rowIndex], rate, bondInfo["currency"][rowIndex], issuePrice,
+        bondInfo["day_count"][rowIndex], bondInfo["calendar"][rowIndex], bondInfo["frequency"][rowIndex],
+        bondInfo["interest_day_convention"][rowIndex], bondInfo["stub_policy"][rowIndex], bondInfo["broken_period_type"][rowIndex],
+        bondInfo["pay_day_offset"][rowIndex], bondInfo["pay_day_convention"][rowIndex], "", "",
+        bondInfo["fixing_freq"][rowIndex], bondInfo["fixing_day_convention"][rowIndex], bondInfo["fixing_mode"][rowIndex],
+        bondInfo["fixing_day_offset"][rowIndex], bondInfo["ex_cpn_period"][rowIndex], "",
+        bondInfo["ex_cpn_day_convention"][rowIndex], bondInfo["ex_cpn_eom"][rowIndex],
+        bondInfo["notional_type"][rowIndex], bondInfo["recovery_rate"][rowIndex], false)
 }
 
 /**

@@ -1,13 +1,13 @@
 /**
- * create_lix.dos
+ * build_yield_curve.dos
  *
- * 债券流动性 LIx + 按期限选债 + 构建/存储收益率曲线（基于 t_bond_day_kline 行情）。
+ * 债券流动性 LIX + 按期限选债 + 构建/存储收益率曲线（基于 t_bond_day_kline 行情）。
  * 公式（weight=1 默认，仅市场冲击项）：
  *   lix = log10(volume * close / (high - low))   当 range>0 且 volume>0，否则 0
  *
  * 依赖 create_calendar.dos（提供 getCFETSTradeDays），需先加载：
  *   run "/data/ddb/server/scripts/create_calendar.dos"
- *   run "/data/ddb/server/scripts/create_lix.dos"
+ *   run "/data/ddb/server/scripts/build_yield_curve.dos"
  *
  * 主流程（一天）：
  *   getBondLix(asOfDate, periods)            // 已发行未到期非标债的流动性 inst_code/close/lix
@@ -28,7 +28,7 @@ def lix(high, low, close, volume) {
 /**
  * 批量计算流动性：日期 + 天数必传
  * - 编码取自 t_bond_info 中「已发行未到期」非标债（start_date<=asOfDate 且 maturity_date>asOfDate）
- * - 用 CFETS 日历生成 asOfDate 往前 periods 个交易日窗口 [startD, endD]
+ * - 用 CFETS 日历生成 asOfDate 往前 periods 个交易日窗口 [startDate, endDate]
  * - volume 均量 = 窗口内成交量和 / periods（缺记录日按 0 计入，分母固定）
  * - high/low/close 取窗口末日（基准日）值
  * 返回 TABLE：inst_code, close, lix（仅 lix>0）
@@ -41,11 +41,11 @@ def getBondLix(asOfDate, periods) {
     }
     win = getCFETSTradeDays(asOfDate, periods)      // 升序交易日窗口
     periodN = win.size()
-    startD = win[0]
-    endD = win[periodN - 1]
+    startDate = win[0]
+    endDate = win[periodN - 1]
     // 一次性取窗口内目标债行情（编码+日期倒序），内存逐债计算
     all = select inst_code, high, low, close, volume from t
-          where inst_code in codes, date_time >= startD, date_time <= endD
+          where inst_code in codes, date_time >= startDate, date_time <= endDate
           order by inst_code, date_time desc
     res = table(1:0, ["inst_code", "close", "lix"], [STRING, DOUBLE, DOUBLE])
     for (c in all["inst_code"].distinct()) {
@@ -75,9 +75,9 @@ def extractCurveTerms(curveCode) {
 }
 
 // 期限字符串 -> 年（参考 Python _term_annualized）
-def termAnnualized(s) {
+def termAnnualized(termStr) {
     // 注意：函数参数为常量不可赋值，用局部变量承接
-    t = s
+    t = termStr
     // 特殊期限：隔夜/次隔夜/当日
     if (t == "ON") t = "1D"
     if (t == "TN") t = "2D"
@@ -89,7 +89,7 @@ def termAnnualized(s) {
     if (u == "M" or u == "MONTHS") return round(double(v) / 12.0, 3)
     if (u == "W") return round(double(v) * 7.0 / 365.0, 3)
     if (u == "D" or u == "DAYS") return round(double(v) / 365.0, 3)
-    throw "termAnnualized: 无法解析期限 " + s
+    throw "termAnnualized: 无法解析期限 " + termStr
 }
 
 /**
@@ -204,7 +204,7 @@ def getCurveDef(curveCode) {
  * 3. 以 YTM 为 quote 建 par curve（createBondParCurve, quoteType=YTM）
  * 4. buildBondYieldCurve 用曲线定义的构建方法（BOOTSTRAPPING_METHOD）构建收益率曲线
  * 5. 结果存 t_bond_yield_curve（par_curve=选债+YTM JSON，yield_curve=IrYieldCurve JSON）
- * 返回字典：parCurveHandle, yieldCurveHandle, yieldJson, yields
+ * 无返回值；选不出债或曲线构建失败时【抛异常】
  */
 def buildBondYieldCurveFromLix(asOfDate, periods, curveCode="CN_TREAS_MKT", nominal=100.0) {
     c = getCurveDef(curveCode)
@@ -216,10 +216,10 @@ def buildBondYieldCurveFromLix(asOfDate, periods, curveCode="CN_TREAS_MKT", nomi
         from bonds l left join (select inst_code, maturity_date, frequency, start_date from loadTable("dfs://caplib-bond", "t_bond_info")) m
         on l.inst_code = m.inst_code order by mat
     n = j.size()
-    // 无可用债（如调休日无行情：全市场 high==low 且 volume==0 -> lix 全为 0）直接返回 NULL。
-    // 注意：不能省这一步——n=0 时 `0..(n-1)` 在 DolphinDB 里是 [0,-1] 而非空向量，
-    // 循环会索引空数组并抛插件级 std::exception。
-    if (n == 0) return NULL
+    // 选不出债（如调休日无行情：全市场 high==low 且 volume==0 -> lix 全为 0）直接抛异常，
+    // 让调用方感知失败，而不是拿到 NULL 继续往下走。
+    if (n == 0)
+        throw "buildBondYieldCurveFromLix: " + curveCode + " 在 " + asOfDate + " 选不出可构建曲线的债券"
     codes = array(STRING, 0, 0); yArr = array(DOUBLE, 0, 0)
     for (i in 0..(n - 1)) {
         code = j["code"][i]
@@ -238,7 +238,8 @@ def buildBondYieldCurveFromLix(asOfDate, periods, curveCode="CN_TREAS_MKT", nomi
              close, "CLEAN_PRICE", freq)
         codes.append!(code); yArr.append!(ytm)
     }
-    if (size(codes) == 0) return NULL
+    if (size(codes) == 0)
+        throw "buildBondYieldCurve: " + curveCode + " 在 " + asOfDate + " 无有效 YTM，曲线构建失败"
     // YTM 为 quote 的 par curve
     par = caplib::createBondParCurve(asOfDate, "CNY", codes, yArr, "YTM", cc + "_PAR", true)
     // 构建设置（curveType/interp/extrap 取自曲线定义）
@@ -253,13 +254,6 @@ def buildBondYieldCurveFromLix(asOfDate, periods, curveCode="CN_TREAS_MKT", nomi
     // par_curve 存 BondParCurve JSON（YTM quote 的平价曲线），yield_curve 存 IrYieldCurve JSON
     tbl.tableInsert(table(take(cc, 1) as curve_code, [ts] as curve_time,
                           [par[1]] as par_curve, [yc[1]] as yield_curve))
-    res = dict(STRING, ANY)
-    res["parCurveHandle"] = par[0]
-    res["yieldCurveHandle"] = yc[0]
-    res["yieldJson"] = yc[1]
-    res["yields"] = yArr
-    res["yield_len"] = strlen(yc[1])
-    return res
 }
 
 /**
@@ -272,15 +266,20 @@ def buildBondYieldCurveFromLix(asOfDate, periods, curveCode="CN_TREAS_MKT", nomi
  *
  * asOfDate  DATE  定价/曲线基准日（需已对标准债完成定价并写入 t_bond_pricing）
  * curveCode STRING 曲线编码，默认 CN_TREAS_STD
- * 返回字典：yieldCurveHandle, yieldJson, yields
- */
-/**
- * 从债券定价结果 JSON 提取到期收益率 specific_pricing_results.data[0]
+ * 无返回值；无有效 pillar 或构建失败时【抛异常】
+ *
+ * extractYtm：从定价结果 JSON 提取到期收益率 specific_pricing_results.data[0]。
  * 独立成函数是为了避开 DolphinDB 函数循环内对嵌套 JSON 数组索引的兼容性问题。
  */
-def extractYtm(prVal) {
-    sp = fromStdJson(jsonExtract(prVal, "specific_pricing_results", "string"))
-    d = sp[0][`data]
+def extractYtm(pricingJson) {
+    sp = fromStdJson(jsonExtract(pricingJson, "specific_pricing_results", "string"))
+    // 兼容标量（sp 为字典，form=5）与向量（sp 为字典向量）两种入参。
+    // 不能用 iif——它会同时求值两个分支，sp[0] 在 STRING 字典上会抛类型错误。
+    if (form(sp) == 5)
+        item = sp
+    else
+        item = sp[0]
+    d = item[`data]
     return d[0]
 }
 
@@ -292,20 +291,24 @@ def buildStdYieldCurve(asOfDate, curveCode="CN_TREAS_STD") {
     defs = parseJsonTable(c.term[0])
     codes = defs["bondCode"]
     n = size(codes)
-    prT = loadTable("dfs://caplib-bond", "t_bond_pricing")
+    // 当日全部定价结果一次查出，建 code -> pricing 映射，避免逐只查 DFS
+    prRows = select code, pricing from loadTable("dfs://caplib-bond", "t_bond_pricing")
+             where date = ts
+    prMap = dict(prRows["code"], prRows["pricing"])
     yArr = array(DOUBLE, 0, 0)
     keptCodes = array(STRING, 0, 0)
     for (i in 0..(n - 1)) {
         bondCode = codes[i]
         if (bondCode == "null" or size(bondCode) == 0) continue
         // 定价结果 -> specific_pricing_results.data[0] = YTM
-        prVal = exec pricing from prT where code = bondCode, date = ts
-        if (size(prVal) == 0) continue
-        ytm = extractYtm(prVal)
+        pricingJson = prMap[bondCode]
+        if (isNull(pricingJson)) continue
+        ytm = extractYtm(pricingJson)
         keptCodes.append!(bondCode); yArr.append!(ytm)
     }
     codes = keptCodes
-    if (size(codes) == 0) return NULL
+    if (size(codes) == 0)
+        throw "buildBondYieldCurve: " + curveCode + " 在 " + asOfDate + " 无有效 YTM，曲线构建失败"
     // YTM 为 quote 的 par curve
     par = caplib::createBondParCurve(asOfDate, "CNY", codes, yArr, "YTM", cc + "_PAR", true)
     bs = caplib::createBondYieldCurveBuildSettings(cc, c.curve_type[0],
@@ -317,10 +320,4 @@ def buildStdYieldCurve(asOfDate, curveCode="CN_TREAS_STD") {
     delete from tbl where curve_code = cc, curve_time = ts
     tbl.tableInsert(table(take(cc, 1) as curve_code, [ts] as curve_time,
                           [par[1]] as par_curve, [yc[1]] as yield_curve))
-    res = dict(STRING, ANY)
-    res["yieldCurveHandle"] = yc[0]
-    res["yieldJson"] = yc[1]
-    res["yields"] = yArr
-    res["yield_len"] = strlen(yc[1])
-    return res
 }

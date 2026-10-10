@@ -1,12 +1,13 @@
 /**
  * bond_pricing.dos
  *
- * 使用 caplib 插件对非标准债定价（参考 FiAnalytics.dos），曲线用 CN_TREAS_MKT，
- * 结果存入 t_bond_pricing(code, date NANOTIMESTAMP, currency, pricing)。
+ * 使用 caplib 插件对标准债 / 非标准债进行定价与估值（参考 FiAnalytics.dos）：
+ * 定价走 CN_TREAS_MKT 曲线、结果存 t_bond_pricing；
+ * 估值走 CN_TREAS_STD 曲线、结果存 t_bond_valuation。
  *
  * 前置依赖（需先 run）：
  *   run "/data/ddb/server/scripts/create_calendar.dos"          // CFETS 日历
- *   run "/data/ddb/server/scripts/build_mkt_yield_curve.dos"    // 构建 CN_TREAS_MKT 曲线
+ *   run "/data/ddb/server/scripts/build_yield_curve.dos"        // 构建 CN_TREAS_MKT 曲线
  *   run "/data/ddb/server/scripts/create_bond_templates.dos"    // 建非标债模板(inst_code)
  *
  * 定价流程（关键：priceVanillaBond 的 scn / mode 传空串 ""）：
@@ -65,7 +66,7 @@ def buildPricingInstruments(asOfDate, tag) {
  * isStd      BOOL    标准债：远期曲线=折扣曲线；非标债不传远期曲线
  * curveCode  STRING  折扣曲线编码（定价=MKT，估值=STD）
  * tag        STRING  句柄命名前缀（默认 "P"）
- * 返回字典：marketCurve, creditCurve, forwardCurve, pricingSettings, fiRisk, fiMkt
+ * 返回字典：marketCurve, creditCurve, pricingSettings, fiRisk, fiMkt
  */
 def buildFiPricingContext(asOfDate, isStd=false, curveCode="CN_TREAS_MKT", tag="P") {
     inst = buildPricingInstruments(asOfDate, tag)
@@ -83,7 +84,6 @@ def buildFiPricingContext(asOfDate, isStd=false, curveCode="CN_TREAS_MKT", tag="
     res = dict(STRING, ANY)
     res["marketCurve"] = marketCurve
     res["creditCurve"] = inst["creditCurve"]
-    res["forwardCurve"] = fwdCurve
     res["pricingSettings"] = inst["pricingSettings"]
     res["fiRisk"] = inst["fiRisk"]
     res["fiMkt"] = fiMkt
@@ -93,22 +93,22 @@ def buildFiPricingContext(asOfDate, isStd=false, curveCode="CN_TREAS_MKT", tag="
 /**
  * 非标准债批量定价/估值公共原语。
  *
- * asOfDate  DATE    基准日
- * curveCode STRING  折扣曲线（定价=CN_TREAS_MKT，估值=CN_TREAS_STD）
- * target    STRING  结果表（t_bond_pricing / t_bond_valuation）
- * resultCol STRING  结果写入列名（pricing / valuation）
- * tag       STRING  build 句柄前缀（"B_" 定价 / "V_" 估值）
- * nominal   DOUBLE  面值，默认 100
- * 返回字典：total, ok, failed, errors
+ * asOfDate    DATE    基准日
+ * curveCode   STRING  折扣曲线（定价=CN_TREAS_MKT，估值=CN_TREAS_STD）
+ * targetTable STRING  结果表（t_bond_pricing / t_bond_valuation）
+ * resultColumn STRING 结果写入列名（pricing / valuation）
+ * tag         STRING  build 句柄前缀（"B_" 定价 / "V_" 估值）
+ * nominal     DOUBLE  面值，默认 100
+ * 返回元组 [total, ok, failed]，由入口包装器经 buildRunResult 组装字典
  */
-def runNonStdBonds(asOfDate, curveCode, target, resultCol, tag, nominal=100.0) {
-    ctx = buildFiPricingContext(asOfDate, false, curveCode, "NS")
+def runNonStdBonds(asOfDate, curveCode, targetTable, resultColumn, tag, nominal=100.0) {
+    context = buildFiPricingContext(asOfDate, false, curveCode, "NS")
     // 存活的非标债（已发行未到期）：start_date<=d 且 maturity_date>d
     codes = getAliveNonStdBonds(asOfDate)
     failed = table(1:0, ["inst_code", "error"], [STRING, STRING])
     ok = 0
     if (codes.size() > 0) {
-        tbl = loadTable("dfs://caplib-bond", target)
+        tbl = loadTable("dfs://caplib-bond", targetTable)
         ts = nanotimestamp(asOfDate)
         sdInfo = select inst_code, start_date from loadTable("dfs://caplib-bond", "t_bond_info")
         sdMap = dict(sdInfo["inst_code"], sdInfo["start_date"])
@@ -120,10 +120,10 @@ def runNonStdBonds(asOfDate, curveCode, target, resultCol, tag, nominal=100.0) {
                 if (isNull(sd)) sd = asOfDate
                 // build 句柄带本次运行唯一后缀，避免 ObjectCache 同名残留
                 bond = caplib::buildVanillaBond(double(nominal), c, "", sd, tag + c + "_" + string(now()), false)
-                r = caplib::priceVanillaBond(bond, asOfDate, ctx["fiMkt"],
-                     ctx["pricingSettings"], ctx["fiRisk"], "", "", true)
+                r = caplib::priceVanillaBond(bond, asOfDate, context["fiMkt"],
+                     context["pricingSettings"], context["fiRisk"], "", "", true)
                 // 结果列名动态写入
-                tb = table([c] as code, [ts] as date, ["CNY"] as currency, [r[1]] as `resultCol)
+                tb = table([c] as code, [ts] as date, ["CNY"] as currency, [r[1]] as `resultColumn)
                 tbl.tableInsert(tb)
                 ok += 1
             } catch (ex) {
@@ -131,24 +131,32 @@ def runNonStdBonds(asOfDate, curveCode, target, resultCol, tag, nominal=100.0) {
             }
         }
     }
+    return [codes.size(), ok, failed]
+}
+
+/**
+ * 入口函数公共封装：把原语返回的 [total, ok, failed] 元组组装成
+ * 含失败明细的结果字典（total / ok / failed / errors）
+ */
+def buildRunResult(runResult) {
     res = dict(STRING, ANY)
-    res["total"] = codes.size()
-    res["ok"] = ok
-    res["failed"] = codes.size() - ok
-    res["errors"] = failed
+    res["total"] = runResult[0]
+    res["ok"] = runResult[1]
+    res["failed"] = runResult[0] - runResult[1]
+    res["errors"] = runResult[2]
     return res
 }
 
 /** 非标债定价：MKT 曲线 -> t_bond_pricing */
 def priceNonStdBonds(asOfDate, nominal=100.0) {
-    return runNonStdBonds(asOfDate, "CN_TREAS_MKT",
-                          "t_bond_pricing", "pricing", "B_", double(nominal))
+    return buildRunResult(runNonStdBonds(asOfDate, "CN_TREAS_MKT",
+                          "t_bond_pricing", "pricing", "B_", double(nominal)))
 }
 
 /** 非标债估值：STD 曲线 -> t_bond_valuation */
 def valuationNonStdBonds(asOfDate, nominal=100.0, curveCode="CN_TREAS_STD") {
-    return runNonStdBonds(asOfDate, curveCode,
-                          "t_bond_valuation", "valuation", "V_", double(nominal))
+    return buildRunResult(runNonStdBonds(asOfDate, curveCode,
+                          "t_bond_valuation", "valuation", "V_", double(nominal)))
 }
 
 // —— 标准债定价 ——
@@ -165,82 +173,74 @@ def extractPresentValue(jsonStr) {
  * 固息 FIXED_COUPON_BOND：占位 rate=1 建临时债，calcFixedCpnBondParRate 算 par 票面利率，发行价=100
  * 零息 ZERO_COUPON_BOND：rate=0 建临时债，定价得 present_value 作为发行价，票面利率=0
  *
- * asOfDate DATE    基准日；ctx DICT 定价上下文（含 marketCurve/creditCurve/fiMkt/...）
- * code/btype STRING 债券编码/类型；b TABLE 债券定义；i INT 行索引；uid STRING 运行唯一后缀
- * 返回字典：rate, issuePrice
+ * asOfDate DATE    基准日；context DICT 定价上下文（含 marketCurve/creditCurve/fiMkt/...）
+ * code/bondType STRING 债券编码/类型；bondInfo TABLE 债券定义；rowIndex INT 行索引；
+ * runId STRING 运行唯一后缀
+ * 返回元组 [rate, issuePrice]
  */
-def resolveStdBond(asOfDate, ctx, code, btype, b, i, uid) {
-    if (btype == "FIXED_COUPON_BOND") {
-        createStdBondTemplate(code, asOfDate, b, i, 1.0, 100.0)
+def resolveStdBond(asOfDate, context, code, bondType, bondInfo, rowIndex, runId) {
+    if (bondType == "FIXED_COUPON_BOND") {
+        createStdBondTemplate(code, asOfDate, bondInfo, rowIndex, 1.0, 100.0)
         // buildVanillaBond 第4参传哨兵 1901-01-01：让引擎按 issueDate+settlementDays
         // 推算结算/起息日（遇假期顺延，如本例 -> 2025-02-05）。
-        tbT = caplib::buildVanillaBond(100.0, code, "", 1901.01.01, "T_" + code + "_" + uid, false)
+        tbT = caplib::buildVanillaBond(100.0, code, "", 1901.01.01, "T_" + code + "_" + runId, false)
         rate = caplib::calcFixedCpnBondParRate(asOfDate, tbT,
-                 ctx["marketCurve"], ctx["creditCurve"])
-        rr = dict(STRING, ANY)
-        rr["rate"] = rate
-        rr["issuePrice"] = 100.0
-        return rr
+                 context["marketCurve"], context["creditCurve"])
+        return [rate, 100.0]
     }
-    createStdBondTemplate(code, asOfDate, b, i, 0.0, 100.0)
-    tbT = caplib::buildVanillaBond(100.0, code, "", 1901.01.01, "T_" + code + "_" + uid, false)
-    r0 = caplib::priceVanillaBond(tbT, asOfDate, ctx["fiMkt"],
-             ctx["pricingSettings"], ctx["fiRisk"], "", "", true)
-    rr = dict(STRING, ANY)
-    rr["rate"] = 0.0
-    rr["issuePrice"] = extractPresentValue(r0[1])
-    return rr
+    createStdBondTemplate(code, asOfDate, bondInfo, rowIndex, 0.0, 100.0)
+    tbT = caplib::buildVanillaBond(100.0, code, "", 1901.01.01, "T_" + code + "_" + runId, false)
+    r0 = caplib::priceVanillaBond(tbT, asOfDate, context["fiMkt"],
+             context["pricingSettings"], context["fiRisk"], "", "", true)
+    return [0.0, extractPresentValue(r0[1])]
 }
 
 /**
  * 标准债批量定价/估值公共原语。
  *
  * asOfDate DATE    基准日；curveCode STRING 折扣曲线（定价 MKT / 估值 STD）
- * target   STRING  结果表（t_bond_pricing / t_bond_valuation）
- * resultCol STRING 结果列名（pricing / valuation）；nominal DOUBLE 面值，默认 100
- * 返回字典：total, ok, failed, errors
+ * targetTable STRING  结果表（t_bond_pricing / t_bond_valuation）
+ * resultColumn STRING 结果列名（pricing / valuation）；nominal DOUBLE 面值，默认 100
+ * 返回元组 [total, ok, failed]，由入口包装器经 buildRunResult 组装字典
  */
-def runStdBonds(asOfDate, curveCode, target, resultCol, nominal=100.0) {
-    ctx = buildFiPricingContext(asOfDate, true, curveCode, "STD")
-    b = select * from loadTable("dfs://caplib-bond", "t_bond_info") where std_flag = true
-    n = size(b["inst_code"])
-    tbl = loadTable("dfs://caplib-bond", target)
+def runStdBonds(asOfDate, curveCode, targetTable, resultColumn, nominal=100.0) {
+    context = buildFiPricingContext(asOfDate, true, curveCode, "STD")
+    bondInfo = select * from loadTable("dfs://caplib-bond", "t_bond_info") where std_flag = true
+    bondCount = size(bondInfo["inst_code"])
+    tbl = loadTable("dfs://caplib-bond", targetTable)
     ts = nanotimestamp(asOfDate)
-    uid = string(now())
+    runId = string(now())
     failed = table(1:0, ["inst_code", "error"], [STRING, STRING])
     ok = 0
-    for (i in 0..(n - 1)) {
-        code = b["inst_code"][i]
-        btype = b["bond_type"][i]
+    for (rowIndex in 0..(bondCount - 1)) {
+        code = bondInfo["inst_code"][rowIndex]
+        bondType = bondInfo["bond_type"][rowIndex]
         try {
             // 1) 算票面利率/发行价 -> 2) 用正式票面利率重建模板 -> build -> 定价
-            rb = resolveStdBond(asOfDate, ctx, code, btype, b, i, uid)
-            createStdBondTemplate(code, asOfDate, b, i, rb["rate"], rb["issuePrice"])
+            resolved = resolveStdBond(asOfDate, context, code, bondType, bondInfo, rowIndex, runId)
+            createStdBondTemplate(code, asOfDate, bondInfo, rowIndex, resolved[0], resolved[1])
             bf = caplib::buildVanillaBond(double(nominal), code, "", 1901.01.01,
-                    "B_" + code + "_" + uid, false)
-            r = caplib::priceVanillaBond(bf, asOfDate, ctx["fiMkt"],
-                 ctx["pricingSettings"], ctx["fiRisk"], "", "", true)
-            tb = table([code] as code, [ts] as date, ["CNY"] as currency, [r[1]] as `resultCol)
+                    "B_" + code + "_" + runId, false)
+            r = caplib::priceVanillaBond(bf, asOfDate, context["fiMkt"],
+                 context["pricingSettings"], context["fiRisk"], "", "", true)
+            tb = table([code] as code, [ts] as date, ["CNY"] as currency, [r[1]] as `resultColumn)
             tbl.tableInsert(tb)
             ok += 1
         } catch (ex) {
             insert into failed values(code, concat(ex, " "))
         }
     }
-    res = dict(STRING, ANY)
-    res["total"] = n
-    res["ok"] = ok
-    res["failed"] = n - ok
-    res["errors"] = failed
-    return res
+    return [bondCount, ok, failed]
 }
 
 /** 标准债定价：MKT 曲线 -> t_bond_pricing */
 def priceStdBonds(asOfDate, nominal=100.0) {
-    return runStdBonds(asOfDate, "CN_TREAS_MKT", "t_bond_pricing", "pricing", double(nominal))
+    return buildRunResult(runStdBonds(asOfDate, "CN_TREAS_MKT",
+                       "t_bond_pricing", "pricing", double(nominal)))
 }
 
 /** 标准债估值：STD 曲线 -> t_bond_valuation */
 def valuationStdBonds(asOfDate, nominal=100.0, curveCode="CN_TREAS_STD") {
-    return runStdBonds(asOfDate, curveCode, "t_bond_valuation", "valuation", double(nominal))
+    return buildRunResult(runStdBonds(asOfDate, curveCode,
+                       "t_bond_valuation", "valuation", double(nominal)))
 }

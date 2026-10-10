@@ -10,7 +10,7 @@
  *   - 日期可直接传 DATE，也可传 Excel 序列数字（Excel 1900 日期系统：
  *     距 1899-12-30 的天数，如 2024-01-01 -> 45292），两者等价
  *
- * 日历表结构（见 02_load_mysql.py，数据来自 capdata-system.t_system_calendar）：
+ * 日历表 t_calendar 结构：
  *   calendar_code STRING  日历编码，如 'CFETS'
  *   type          STRING  'HOLIDAYS'-节假日 / 'SPECIAL_DAYS'-特殊营业日
  *   date          DATE    日期
@@ -78,28 +78,28 @@ def getCFETSTradeDays(asOfDate, periods) {
 /**
  * 判断指定日期是否为工作日（CFETS 日历）
  * 规则：非节假日；周末若在调休上班日(SPECIAL_DAYS)中也算工作日
- * d DATE 指定日期
+ * date DATE 指定日期
  * 返回 BOOL
  */
-def isBusinessDay(d) {
+def isBusinessDay(date) {
     h  = loadCalendarDates("CFETS", "HOLIDAYS")
     sp = loadCalendarDates("CFETS", "SPECIAL_DAYS")
-    isHoli = d in h
-    wd = weekday(d)               // 周日=0 ... 周六=6
+    isHoli = date in h
+    wd = weekday(date)               // 周日=0 ... 周六=6
     isWe = (wd == 0) || (wd == 6)
-    isSpec = d in sp
+    isSpec = date in sp
     return !(isHoli || (isWe && !isSpec))
 }
 
 /**
- * 获取指定日期之后的下一个工作日（严格大于 d 的第一个工作日，CFETS 日历）
- * d DATE 指定日期
+ * 获取指定日期之后的下一个工作日（严格大于 date 的第一个工作日，CFETS 日历）
+ * date DATE 指定日期
  * 返回 DATE
  */
-def nextBusinessDay(d) {
+def nextBusinessDay(date) {
     h  = loadCalendarDates("CFETS", "HOLIDAYS")
     sp = loadCalendarDates("CFETS", "SPECIAL_DAYS")
-    cand = (d + 1) .. (d + 60)    // 60 天足够越过最长假期
+    cand = (date + 1) .. (date + 60)    // 60 天足够越过最长假期
     isHoli = cand in h
     wd = weekday(cand)
     isWe = (wd == 0) || (wd == 6)
@@ -108,7 +108,7 @@ def nextBusinessDay(d) {
     return good[0]
 }
 
-// 创建 CFETS 日历（中国外汇交易中心，482 个节假日 + 179 个调休营业日）
+// 创建 CFETS 日历（中国外汇交易中心：t_calendar 中的节假日 + 调休营业日）
 result = createCalendarFromTable("CFETS")
 print("caplib::createCalendar(CFETS) => " + result)
 result
