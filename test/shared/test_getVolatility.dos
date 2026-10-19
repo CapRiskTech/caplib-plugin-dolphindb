@@ -39,9 +39,10 @@ caplib::getVolatility("X", [2024.01.01])
 @testing:case="getVolatility rejects extra argument", syntaxError=1
 caplib::getVolatility("X", [2024.01.01], [0.02], 1)
 
-// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter termDates must be a vector。
 @testing:case="getVolatility rejects scalar for vector termDates", exception=1
-caplib::getVolatility("X", [2024.01.01], [0.02])
+caplib::getVolatility(flatVolSurface, 2024.01.01, [100.0])
 
 // 用例目的：向量参数 termDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getVolatility rejects partially-null vector termDates", exception=1

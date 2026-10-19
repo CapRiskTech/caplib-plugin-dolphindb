@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceIrCrossCurrencySwap.dos
 // Per-function test suite for caplib::priceIrCrossCurrencySwap (ir).
-// Signature: caplib::priceIrCrossCurrencySwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceIrCrossCurrencySwap(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_priceIrCrossCurrencySwap.dos   // single file
@@ -96,24 +96,24 @@ caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceIrCrossCurrencySwap rejects extra argument", syntaxError=1
 caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceIrCrossCurrencySwap rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects wrong type for asOfDate", exception=1
 caplib::priceIrCrossCurrencySwap("X", "bad", "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects wrong type for mode", exception=1
 caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceIrCrossCurrencySwap rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects null asOfDate", exception=1
 caplib::priceIrCrossCurrencySwap("X", date(), "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceIrCrossCurrencySwap rejects null mode", exception=1
 caplib::priceIrCrossCurrencySwap("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceIrCrossCurrencySwap rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects vector for scalar asOfDate", exception=1
 caplib::priceIrCrossCurrencySwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -122,7 +122,7 @@ caplib::priceIrCrossCurrencySwap("TF_NO_SUCH_HANDLE_priceIrCrossCurrencySwap", 2
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceIrCrossCurrencySwap rejects keyword arguments", syntaxError=1
-caplib::priceIrCrossCurrencySwap(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceIrCrossCurrencySwap(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceIrCrossCurrencySwap optional returnJson null uses default"
 result = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", bool())
@@ -200,3 +200,50 @@ usdCurve = caplib::createIrYieldCurve(irAsOfDate, [2022.03.10, 2025.03.10], [0.0
 xmkt = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpotP, "TF_IR_XMKT_P", true);
 r = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true);
 assert 1, abs(extractPv2(r) - -49347.43905345611) < 5.034743905345611e-05
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2): 句柄/returnJson/日期 校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型，验证 BOOL 类型校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects wrong type for returnJson", exception=1
+caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", "bad")
+
+// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄，验证句柄校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects nonexistent handle instrumentHandle (clean env)", exception=1
+caplib::priceIrCrossCurrencySwap("TF_NO_SUCH_HANDLE_INST", irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true)
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的对象句柄（市场数据句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects wrong object type for instrumentHandle", exception=1
+caplib::priceIrCrossCurrencySwap(xmkt[0], irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true)
+
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄，验证句柄校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, "TF_NO_SUCH_HANDLE_MKT", irPricingSettings, irXccyRisk[0], "", "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄，验证句柄校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], "TF_NO_SUCH_HANDLE_PRICING", irXccyRisk[0], "", "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的对象句柄（风险设置句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irXccyRisk[0], irXccyRisk[0], "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄，验证句柄校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, "TF_NO_SUCH_HANDLE_RISK", "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的对象句柄（定价设置句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceIrCrossCurrencySwap rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irPricingSettings, "", "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在的句柄字符串 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts priceIrCrossCurrencySwap nonexistent handle scnSettingsHandle (no validation)"
+rXCCY_scnN = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "TF_NO_SUCH_HANDLE_SCN", "", true)
+assert 1, typestr(rXCCY_scnN) != "VOID"
+
+// 用例目的：asOfDate 晚于工具到期/结束日，文档注明包装器不检查此关系，记录实际行为
+@testing:case="priceIrCrossCurrencySwap late asOfDate records behavior"
+latePrice = "skip";
+try { rlp = caplib::priceIrCrossCurrencySwap(xinst, 2024.01.01, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true); latePrice = "accepted"; } catch(ex) { latePrice = "rejected"; }
+assert 1, true

@@ -71,3 +71,32 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", labelEnum[i], "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+// 用例目的：可选参数 returnJson 传入非 BOOL（STRING）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createBondYieldCurveBuildSettings non-BOOL returnJson (no validation)"
+rBYCS_rj = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS", "bad")
+assert 1, typestr(rBYCS_rj) != "VOID"
+// 用例目的：枚举参数 interpMethod 传入非法取值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createBondYieldCurveBuildSettings invalid enum for interpMethod (no validation)"
+rBYCS_interp = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "NOT_A_VALID_INTERP_METHOD", "FLAT_EXTRAP", "TF_FI_BBS", false)
+assert 1, typestr(rBYCS_interp) != "VOID"
+// 用例目的：枚举参数 extrapMethod 传入非法取值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createBondYieldCurveBuildSettings invalid enum for extrapMethod (no validation)"
+rBYCS_extrap = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "NOT_A_VALID_EXTRAP_METHOD", "TF_FI_BBS", false)
+assert 1, typestr(rBYCS_extrap) != "VOID"
+// 用例目的：遍历 interpMethod 已确认被接受的合法取值，逐一调用验证均被接受
+// 注：SABR/SVI/LOG_MONEYNESS/SABR_NORMAL 为文档列出的标签，但在构建上下文被 dqlib 拒绝（实测），不纳入遍历
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod enums"
+interpLabels = ["LINEAR_INTERP", "CUBIC_SPLINE_INTERP", "LEFT_CONTINUOUS_FLAT_INTERP"]
+okInterpBS = true;
+for (i in 0..(size(interpLabels)-1)) {
+    try { caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", interpLabels[i], "FLAT_EXTRAP", "TF_FI_BBS", false); } catch(ex) { okInterpBS = false; }
+}
+assert 1, okInterpBS
+// 用例目的：遍历 extrapMethod 已确认被接受的合法取值，逐一调用验证均被接受（NATURAL_EXTRAP 被 dqlib 拒绝，不纳入）
+@testing:case="createBondYieldCurveBuildSettings supports extrapMethod enums"
+extrapLabelsBS = ["FLAT_EXTRAP", "LINEAR_EXTRAP", "ADJ_FLAT_EXTRAP"]
+okExtrapBS = true;
+for (i in 0..(size(extrapLabelsBS)-1)) {
+    try { caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", extrapLabelsBS[i], "TF_FI_BBS", false); } catch(ex) { okExtrapBS = false; }
+}
+assert 1, okExtrapBS

@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createCdsTemplate.dos
 // Per-function test suite for caplib::createCdsTemplate (cr).
-// Signature: caplib::createCdsTemplate(instName STRING, startDelay STRING or INT, settlementType STRING, referencePrice DOUBLE, leverage DOUBLE, creditProtectionType STRING, recoveryRate DOUBLE, creditPremiumType STRING, dayCount STRING, frequency STRING, businessDayConvention STRING, calendars STRING or STRING[], rebateAccrual BOOL or INT[, returnJson BOOL])
+// Signature: caplib::createCdsTemplate(instName STRING, startDelay STRING or INT, settlementType STRING, referencePrice DOUBLE, leverage DOUBLE, creditProtectionType STRING, recoveryRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING or STRING[], rebateAccrual BOOL or INT[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/cr")            // whole domain directory
 //     python run_tests.py --file cr/test_createCdsTemplate.dos   // single file
@@ -73,11 +73,15 @@ caplib::createCdsTemplate(["X"], "X", "X", 0.02, 0.02, "X", 0.02, "X", "X", "X",
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createCdsTemplate rejects keyword arguments", syntaxError=1
-caplib::createCdsTemplate(instName="X", startDelay="X", settlementType="X", referencePrice=0.02, leverage=0.02, creditProtectionType="X", recoveryRate=0.02, creditPremiumType="X", dayCount="X", frequency="X", businessDayConvention="X", calendars="X", rebateAccrual=false, returnJson=false)
+caplib::createCdsTemplate(instName="X", startDelay="X", settlementType="X", referencePrice=0.02, leverage=0.02, creditProtectionType="X", recoveryRate=0.02, creditPremiumType="X", dayCountConvention="X", frequency="X", businessDayConvention="X", calendars="X", rebateAccrual=false, returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createCdsTemplate optional returnJson null uses default"
 result = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects wrong type for returnJson", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, "bad")
 // 用例目的：参数 referencePrice 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects zero referencePrice (lenient validation, does not raise)"
 result = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
@@ -102,3 +106,30 @@ caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
 @testing:case="createCdsTemplate rejects partially-null vector calendars", exception=1
 caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [calCfets, string()], false, true)
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: 枚举非法值
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 creditProtectionType 传入非法值 —— 文档：其他未知值报错，验证枚举校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects invalid enum for creditProtectionType", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "NOT_A_REAL_ENUM", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+// 用例目的：枚举参数 creditPremiumType 传入非法值 —— 文档：其他未知值报错，验证枚举校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects invalid enum for creditPremiumType", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "NOT_A_REAL_ENUM", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+// 用例目的：枚举参数 dayCountConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认日计数，验证回退行为（预期：不抛异常）
+@testing:case="createCdsTemplate accepts invalid enum for dayCountConvention (falls back to default)"
+rCdsTDc = caplib::createCdsTemplate("TF_CDS_TPL_FB_DC", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "NOT_A_REAL_ENUM", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTDc) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认频率，验证回退行为（预期：不抛异常）
+@testing:case="createCdsTemplate accepts invalid enum for frequency (falls back to default)"
+rCdsTFreq = caplib::createCdsTemplate("TF_CDS_TPL_FB_FREQ", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "NOT_A_REAL_ENUM", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTFreq) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认营业日约定，验证回退行为（预期：不抛异常）
+@testing:case="createCdsTemplate accepts invalid enum for businessDayConvention (falls back to default)"
+rCdsTBdc = caplib::createCdsTemplate("TF_CDS_TPL_FB_BDC", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "NOT_A_REAL_ENUM", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTBdc) != "VOID"

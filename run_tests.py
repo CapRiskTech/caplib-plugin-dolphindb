@@ -107,6 +107,15 @@ def run_tests(host, port, user, password, remote_dir, single_file, local_dir):
     s = ddb.session()
     s.connect(host, port, user, password)
 
+    # The test files assume caplib is already loaded on the server. On a fresh
+    # container it is not, so load it here (harmless no-op if already in use,
+    # which raises "already in use" — treat that as success).
+    try:
+        s.run('loadPlugin("caplib")')
+    except Exception as e:
+        if "already in use" not in str(e):
+            raise
+
     if single_file:
         targets = [f"{remote_dir}/{single_file}"]
     else:

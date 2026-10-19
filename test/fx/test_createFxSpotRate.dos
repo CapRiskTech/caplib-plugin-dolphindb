@@ -65,3 +65,21 @@ caplib::createFxSpotRate(value=0.02, baseCurrency="X", targetCurrency="X", refDa
 @testing:case="createFxSpotRate optional returnJson null uses default"
 result = caplib::createFxSpotRate(1.1761, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2: value 数值边界 + returnJson 非 BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 value 传入0 —— 源实现 requireNonNegativeDoubleScalar 要求非负、0 合法，记录实际行为（宽松接受）
+@testing:case="createFxSpotRate accepts zero value (no validation)"
+rSpot_z = caplib::createFxSpotRate(0.0, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT", false)
+assert 1, typestr(rSpot_z) != "VOID"
+
+// 用例目的：参数 value 传入负值 —— 源实现 requireNonNegativeDoubleScalar 要求非负，负值应抛（预期：抛异常）
+@testing:case="createFxSpotRate rejects negative value", exception=1
+caplib::createFxSpotRate(-1.0, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT", false)
+
+// 用例目的：参数 returnJson 传入非 BOOL 字符串 —— 实测被当作多余实参忽略、仍返回句柄（记录实际行为）
+@testing:case="createFxSpotRate accepts non-BOOL returnJson (no validation)"
+rSpot_rj = caplib::createFxSpotRate(1.1761, "EUR", "USD", asOfDate, 2021.04.01, "TF_FXSPOT", "bad")
+assert 1, typestr(rSpot_rj) != "VOID"

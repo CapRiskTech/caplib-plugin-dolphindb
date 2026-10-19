@@ -52,3 +52,11 @@ caplib::getObjectCacheJson(["X"], "TF_getObjectCacheJson_H")
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="getObjectCacheJson rejects keyword arguments", syntaxError=1
 caplib::getObjectCacheJson(protobufType="X", handle="TF_getObjectCacheJson_H")
+
+// 用例目的：句柄参数 handle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="getObjectCacheJson rejects nonexistent handle", exception=1
+caplib::getObjectCacheJson("IrYieldCurve", "TF_NO_SUCH_HANDLE_getObjectCacheJson")
+
+// 用例目的：句柄参数 handle 传入已有但 protobuf 类型不匹配的真实句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="getObjectCacheJson rejects wrong object type for handle", exception=1
+caplib::getObjectCacheJson("VolatilityCurve", "TF_IR")

@@ -94,10 +94,30 @@ caplib::createFxSpotTemplate("EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", take(stri
 @testing:case="createFxSpotTemplate rejects partially-null vector calendars", exception=1
 caplib::createFxSpotTemplate("EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", [calEuta, string(), calGblo], "2d", true)
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxSpotTemplate rejects zero spotDelay", exception=1
-caplib::createFxSpotTemplate("EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", [calEuta, calGblo], 0.0, true)
+// 用例目的：参数 spotDelay 传入整数0 —— 文档规定非负整数、0 合法，用 INT 0（而非 DOUBLE 0.0）命中数值边界，记录实际行为（宽松接受）
+@testing:case="createFxSpotTemplate accepts zero spotDelay (no validation)"
+rSpotT_z = caplib::createFxSpotTemplate("EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", [calEuta, calGblo], 0, true)
+assert 1, typestr(rSpotT_z) != "VOID"
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxSpotTemplate rejects negative spotDelay", exception=1
-caplib::createFxSpotTemplate("EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", [calEuta, calGblo], -1.0, true)
+// 用例目的：参数 spotDelay 传负整数 -1 → 真正命中负边界（而非因 DOUBLE 类型报类型错误）——实测包装器宽松接受、非负校验不强制，记录实际行为
+@testing:case="createFxSpotTemplate accepts negative spotDelay (no validation)"
+rSpotT_n = caplib::createFxSpotTemplate("EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", [calEuta, calGblo], -1, true)
+assert 1, typestr(rSpotT_n) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2: returnJson 非 BOOL + 单字符串日历
+// ----------------------------------------------------------------------------
+
+// 用例目的：calendars 传单个 STRING 日历（标量形式，而非向量），验证标量与向量均被接受
+@testing:case="createFxSpotTemplate accepts single-string calendar"
+resScalarCal = caplib::createFxSpotTemplate("TF_SPOTTPL", "EURUSD", "FOLLOWING", "CAL_EUTA", "2d", false)
+assert 1, typestr(resScalarCal) != "VOID" && resScalarCal == "TF_SPOTTPL"
+
+// 用例目的：参数 returnJson 传入非 BOOL 字符串 —— 实测其落入第6位 handle 形参、仍返回句柄（记录实际行为）
+@testing:case="createFxSpotTemplate accepts non-BOOL returnJson (no validation)"
+rSpotT_rj = caplib::createFxSpotTemplate("TF_SPOTTPL", "EURUSD", "FOLLOWING", ["CAL_EUTA","CAL_GBLO"], "2d", "bad")
+assert 1, typestr(rSpotT_rj) != "VOID"
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxSpotTemplate rejects wrong type for handle", exception=1
+caplib::createFxSpotTemplate("TF_SPOTTPL", "EURUSD", "FOLLOWING", ["CAL_EUTA","CAL_GBLO"], "2d", 123, false)

@@ -22,10 +22,8 @@ print("  caplib Plugin Smoke Test");
 print("═══════════════════════════════════════════");
 
 // ─── Load Plugin ────────────────────────────────────────────
-pluginFile = "/data/ddb/server/plugins/caplib/PluginCaplib.txt";
-
 try {
-    fns = loadPlugin(pluginFile);
+    fns = loadPlugin("caplib");
     ok = t("loadPlugin: " + size(fns) + " functions registered", size(fns) > 0);
     testNum = testNum + 1; passNum = passNum + iif(ok, 1, 0);
     print("  Registered functions: " + size(fns));

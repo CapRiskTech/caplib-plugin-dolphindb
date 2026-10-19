@@ -1,7 +1,7 @@
 // ============================================================================
 // test_buildFxVolatilitySurface.dos
 // Per-function test suite for caplib::buildFxVolatilitySurface (fx).
-// Signature: caplib::buildFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])
+// Signature: caplib::buildFxVolatilitySurface(asOfDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fx")            // whole domain directory
 //     python run_tests.py --file fx/test_buildFxVolatilitySurface.dos   // single file
@@ -104,8 +104,8 @@ caplib::buildFxVolatilitySurface(2024.01.01, "X", "X", "X", "X", 0.02, 2024.01.0
 @testing:case="buildFxVolatilitySurface rejects extra argument", syntaxError=1
 caplib::buildFxVolatilitySurface(2024.01.01, "X", "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="buildFxVolatilitySurface rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong type for asOfDate", exception=1
 caplib::buildFxVolatilitySurface("bad", "X", "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
 
 // 用例目的：参数 leftCcy 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
@@ -116,16 +116,16 @@ caplib::buildFxVolatilitySurface(2024.01.01, 1, "X", "X", "X", 0.02, 2024.01.01,
 @testing:case="buildFxVolatilitySurface rejects wrong type for rightCcy", exception=1
 caplib::buildFxVolatilitySurface(2024.01.01, "X", 1, "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="buildFxVolatilitySurface rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects null asOfDate", exception=1
 caplib::buildFxVolatilitySurface(date(), "X", "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
 
 // 用例目的：参数 leftCcy 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildFxVolatilitySurface rejects null leftCcy", exception=1
 caplib::buildFxVolatilitySurface(2024.01.01, string(), "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="buildFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects vector for scalar asOfDate", exception=1
 caplib::buildFxVolatilitySurface([2024.01.01], "X", "X", "X", "X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", "X", "TF_buildFxVolatilitySurface_H", false)
 
 // 用例目的：句柄参数 marketConventionsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -134,7 +134,7 @@ caplib::buildFxVolatilitySurface(2024.01.01, "X", "X", "TF_NO_SUCH_HANDLE_buildF
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildFxVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::buildFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", marketConventionsHandle="X", quoteMatrixHandle="X", spotRate=0.02, spotRefDate=2024.01.01, spotDate=2024.01.01, domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X", definitionHandle="X", buildSettingsHandle="X", handle="TF_buildFxVolatilitySurface_H", returnJson=false)
+caplib::buildFxVolatilitySurface(asOfDate=2024.01.01, leftCcy="X", rightCcy="X", marketConventionsHandle="X", quoteMatrixHandle="X", spotRate=0.02, spotRefDate=2024.01.01, spotDate=2024.01.01, domesticDiscountCurveHandle="X", foreignDiscountCurveHandle="X", definitionHandle="X", buildSettingsHandle="X", handle="TF_buildFxVolatilitySurface_H", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildFxVolatilitySurface optional returnJson null uses default"
 result = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", bool())
@@ -154,3 +154,55 @@ caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], op
 // 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
 @testing:case="buildFxVolatilitySurface rejects negative spotRate", exception=1
 caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], -1.0, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "EURUSD_BUILT_VOL_SURF", true)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: missing handle validation coverage (类别 A) + returnJson 类型校验 (类别 B)
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 marketConventionsHandle 传入类型不符的对象句柄（optionQuotes），验证句柄类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong object type for marketConventionsHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", optionQuotes[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 quoteMatrixHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects nonexistent handle quoteMatrixHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], "TF_NO_SUCH_HANDLE_buildFxVolatilitySurface_quoteMatrixHandle", eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 domesticDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects nonexistent handle domesticDiscountCurveHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, "TF_NO_SUCH_HANDLE_buildFxVolatilitySurface_domesticDiscountCurveHandle", eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 domesticDiscountCurveHandle 传入类型不符的对象句柄（volSurfDefinition），验证句柄类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong object type for domesticDiscountCurveHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, volSurfDefinition[0], eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 foreignDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects nonexistent handle foreignDiscountCurveHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, "TF_NO_SUCH_HANDLE_buildFxVolatilitySurface_foreignDiscountCurveHandle", volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 foreignDiscountCurveHandle 传入类型不符的对象句柄（fxMktConventions），验证句柄类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong object type for foreignDiscountCurveHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, fxMktConventions[0], volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 definitionHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects nonexistent handle definitionHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, "TF_NO_SUCH_HANDLE_buildFxVolatilitySurface_definitionHandle", volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 definitionHandle 传入类型不符的对象句柄（optionQuotes），验证句柄类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong object type for definitionHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, optionQuotes[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 buildSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects nonexistent handle buildSettingsHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], "TF_NO_SUCH_HANDLE_buildFxVolatilitySurface_buildSettingsHandle", "TF_BUILDFV", false)
+
+// 用例目的：句柄参数 buildSettingsHandle 传入类型不符的对象句柄（usdCurve），验证句柄类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong object type for buildSettingsHandle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], usdCurve, "TF_BUILDFV", false)
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong type for returnJson", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", "bad")
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong type for handle", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], 123, false)

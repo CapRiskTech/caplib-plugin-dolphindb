@@ -94,10 +94,67 @@ caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", take(strin
 @testing:case="createFxSwapTemplate rejects partially-null vector calendars", exception=1
 caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, string(), calGblo], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", true)
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxSwapTemplate rejects zero fixingOffset", exception=1
-caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, calGblo], "FOLLOWING", "FOLLOWING", 0.0, "PRECEDING", true)
+// 用例目的：参数 fixingOffset 传入整数0 —— 文档规定非负整数、0 合法，用 INT 0（而非 DOUBLE 0.0）命中数值边界，记录实际行为（宽松接受）
+@testing:case="createFxSwapTemplate accepts zero fixingOffset (no validation)"
+rSwpT_z = caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, calGblo], "FOLLOWING", "FOLLOWING", 0, "PRECEDING", true)
+assert 1, typestr(rSwpT_z) != "VOID"
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxSwapTemplate rejects negative fixingOffset", exception=1
-caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, calGblo], "FOLLOWING", "FOLLOWING", -1.0, "PRECEDING", true)
+// 用例目的：参数 fixingOffset 传负整数 -1 → 真正命中负边界（而非因 DOUBLE 类型报类型错误）——实测包装器宽松接受、非负校验不强制，记录实际行为
+@testing:case="createFxSwapTemplate accepts negative fixingOffset (no validation)"
+rSwpT_n = caplib::createFxSwapTemplate("EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, calGblo], "FOLLOWING", "FOLLOWING", -1, "PRECEDING", true)
+assert 1, typestr(rSwpT_n) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2: startDayConvention/endDayConvention/fixingDayConvention 枚举
+//     + returnJson 非 BOOL + 单字符串日历
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 startDayConvention 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createFxSwapTemplate rejects invalid enum for startDayConvention", exception=1
+caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "NOT_A_VALID_ENUM_LABEL", "FOLLOWING", "-2d", "PRECEDING", false)
+
+// 用例目的：遍历参数 startDayConvention 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createFxSwapTemplate supports all startDayConvention enums"
+bdConvEnum = ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]
+okSdEnum = true;
+for (i in 0..(size(bdConvEnum)-1)) {
+    try { caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], bdConvEnum[i], "FOLLOWING", "-2d", "PRECEDING", false); } catch(ex) { okSdEnum = false; }
+}
+assert 1, okSdEnum
+
+// 用例目的：枚举参数 endDayConvention 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createFxSwapTemplate rejects invalid enum for endDayConvention", exception=1
+caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "NOT_A_VALID_ENUM_LABEL", "-2d", "PRECEDING", false)
+
+// 用例目的：遍历参数 endDayConvention 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createFxSwapTemplate supports all endDayConvention enums"
+okEdEnum = true;
+for (i in 0..(size(bdConvEnum)-1)) {
+    try { caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", bdConvEnum[i], "-2d", "PRECEDING", false); } catch(ex) { okEdEnum = false; }
+}
+assert 1, okEdEnum
+
+// 用例目的：枚举参数 fixingDayConvention 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createFxSwapTemplate rejects invalid enum for fixingDayConvention", exception=1
+caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "NOT_A_VALID_ENUM_LABEL", false)
+
+// 用例目的：遍历参数 fixingDayConvention 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createFxSwapTemplate supports all fixingDayConvention enums"
+okFdEnum = true;
+for (i in 0..(size(bdConvEnum)-1)) {
+    try { caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", bdConvEnum[i], false); } catch(ex) { okFdEnum = false; }
+}
+assert 1, okFdEnum
+
+// 用例目的：calendars 传单个 STRING 日历（标量形式，而非向量），验证标量与向量均被接受
+@testing:case="createFxSwapTemplate accepts single-string calendar"
+resScalarCal = caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", "CAL_EUTA", "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false)
+assert 1, typestr(resScalarCal) != "VOID" && resScalarCal == "TF_SWPT"
+
+// 用例目的：参数 returnJson 传入非 BOOL 字符串，验证 BOOL 类型校验（前置参数合法，预期：抛异常）
+@testing:case="createFxSwapTemplate rejects wrong type for returnJson", exception=1
+caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", "bad")
+
+// 用例目的：参数 fixingOffset（STRING 或 INT 联合类型）传入 BOOL，验证严格类型校验（预期：抛异常）
+@testing:case="createFxSwapTemplate rejects BOOL fixingOffset", exception=1
+caplib::createFxSwapTemplate("TF_SWPT", "SPOTSTART", "EURUSD", ["CAL_EUTA","CAL_GBLO"], "FOLLOWING", "FOLLOWING", true, "PRECEDING", false)

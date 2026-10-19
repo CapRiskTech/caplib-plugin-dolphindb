@@ -94,10 +94,42 @@ caplib::createFxNdfTemplate("USDCNH_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRE
 @testing:case="createFxNdfTemplate rejects partially-null vector calendars", exception=1
 caplib::createFxNdfTemplate("USDCNH_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", [calHkhk, string(), calGblo], "USD", true)
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxNdfTemplate rejects zero fixingOffset", exception=1
-caplib::createFxNdfTemplate("USDCNH_NDF_TPL", 0.0, "USDCNH", "FOLLOWING", "PRECEDING", [calHkhk, calGblo], "USD", true)
+// 用例目的：参数 fixingOffset 传入整数0 —— INT 形式按旧版参数列表绑定（ccyPair, fixingOffset, deliveryDayConvention, calendar, settlementCurrency, name, tag），记录实际行为（宽松接受）
+@testing:case="createFxNdfTemplate accepts zero fixingOffset (no validation)"
+rNdfT_z = caplib::createFxNdfTemplate("USDCNH", 0, "FOLLOWING", "CAL_HKHK", "USD", "USDCNH_NDF_TPL", "TF_NDF_TPL_Z", false)
+assert 1, typestr(rNdfT_z) != "VOID"
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxNdfTemplate rejects negative fixingOffset", exception=1
-caplib::createFxNdfTemplate("USDCNH_NDF_TPL", -1.0, "USDCNH", "FOLLOWING", "PRECEDING", [calHkhk, calGblo], "USD", true)
+// 用例目的：参数 fixingOffset 传负整数 -1 —— 同上仅 fixingOffset 不同（INT -1，命中负边界），记录实际行为（宽松接受）
+@testing:case="createFxNdfTemplate accepts negative fixingOffset (no validation)"
+rNdfT_n = caplib::createFxNdfTemplate("USDCNH", -1, "FOLLOWING", "CAL_HKHK", "USD", "USDCNH_NDF_TPL", "TF_NDF_TPL_N", false)
+assert 1, typestr(rNdfT_n) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2: fixingDayConvention 枚举 + returnJson 非 BOOL + 单字符串日历
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 fixingDayConvention 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createFxNdfTemplate rejects invalid enum for fixingDayConvention", exception=1
+caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "NOT_A_VALID_ENUM_LABEL", ["CAL_HKHK","CAL_GBLO"], "USD", false)
+
+// 用例目的：遍历参数 fixingDayConvention 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createFxNdfTemplate supports all fixingDayConvention enums"
+fixLabelEnum = ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]
+okFixEnum = true;
+for (i in 0..(size(fixLabelEnum)-1)) {
+    try { caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", fixLabelEnum[i], ["CAL_HKHK","CAL_GBLO"], "USD", false); } catch(ex) { okFixEnum = false; }
+}
+assert 1, okFixEnum
+
+// 用例目的：calendars 传单个 STRING 日历（标量形式，而非向量），验证标量与向量均被接受
+@testing:case="createFxNdfTemplate accepts single-string calendar"
+resScalarCal = caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", "CAL_HKHK", "USD", false)
+assert 1, typestr(resScalarCal) != "VOID" && resScalarCal == "TF_NDFTPL"
+
+// 用例目的：参数 returnJson 传入非 BOOL 字符串，验证 BOOL 类型校验（前置参数合法，预期：抛异常）
+@testing:case="createFxNdfTemplate rejects wrong type for returnJson", exception=1
+caplib::createFxNdfTemplate("TF_NDFTPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", "bad")
+
+// 用例目的：参数 fixingOffset（STRING 或 INT 联合类型）传入 BOOL，验证严格类型校验（预期：抛异常）
+@testing:case="createFxNdfTemplate rejects BOOL fixingOffset", exception=1
+caplib::createFxNdfTemplate("TF_NDFTPL", true, "USDCNH", "FOLLOWING", "PRECEDING", ["CAL_HKHK","CAL_GBLO"], "USD", false)

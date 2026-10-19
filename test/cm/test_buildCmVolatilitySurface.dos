@@ -1,7 +1,7 @@
 // ============================================================================
 // test_buildCmVolatilitySurface.dos
 // Per-function test suite for caplib::buildCmVolatilitySurface (cm).
-// Signature: caplib::buildCmVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE[], discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])
+// Signature: caplib::buildCmVolatilitySurface(asOfDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE[], discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/cm")            // whole domain directory
 //     python run_tests.py --file cm/test_buildCmVolatilitySurface.dos   // single file
@@ -154,29 +154,30 @@ caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X
 @testing:case="buildCmVolatilitySurface rejects extra argument", syntaxError=1
 caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="buildCmVolatilitySurface rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects wrong type for asOfDate", exception=1
 caplib::buildCmVolatilitySurface("bad", "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 // 用例目的：参数 underlying 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects wrong type for underlying", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, 1, "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="buildCmVolatilitySurface rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects null asOfDate", exception=1
 caplib::buildCmVolatilitySurface(date(), "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
 // 用例目的：参数 underlying 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects null underlying", exception=1
 caplib::buildCmVolatilitySurface(2024.01.01, string(), "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="buildCmVolatilitySurface rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects vector for scalar asOfDate", exception=1
 caplib::buildCmVolatilitySurface([2024.01.01], "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
 
-// 用例目的：向量参数 underlyingPrices 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 underlyingPrices 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter underlyingPrices must be a vector。
 @testing:case="buildCmVolatilitySurface rejects scalar for vector underlyingPrices", exception=1
-caplib::buildCmVolatilitySurface(2024.01.01, "X", "X", "X", [0.02], "X", "X", "X", "TF_buildCmVolatilitySurface_H", false)
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], 0.02, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
 
 // 用例目的：向量参数 underlyingPrices 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects partially-null vector underlyingPrices", exception=1
@@ -192,7 +193,7 @@ caplib::buildCmVolatilitySurface(2024.01.01, "X", "TF_NO_SUCH_HANDLE_buildCmVola
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildCmVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::buildCmVolatilitySurface(referenceDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", handle="TF_buildCmVolatilitySurface_H", returnJson=false)
+caplib::buildCmVolatilitySurface(asOfDate=2024.01.01, underlying="X", definitionHandle="X", quoteMatrixHandle="X", underlyingPrices=[0.02], discountCurveHandle="X", fwdCurveHandle="X", buildSettingsHandle="X", handle="TF_buildCmVolatilitySurface_H", returnJson=false)
 // 用例目的：向量参数 underlyingPrices 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects all-null vector underlyingPrices", exception=1
 caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], [double(), double(), double()], irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
@@ -203,6 +204,38 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 quoteMatrixHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects wrong object type for quoteMatrixHandle", exception=1
 caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], volSurfDefinition[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 discountCurveHandle 传入不存在句柄，验证句柄校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects nonexistent discountCurveHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, "TF_NO_SUCH_HANDLE_discountCurveHandle", fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 discountCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects wrong object type for discountCurveHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, volSurfDefinition[0], fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 fwdCurveHandle 传入不存在句柄，验证句柄校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects nonexistent fwdCurveHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, "TF_NO_SUCH_HANDLE_fwdCurveHandle", volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 fwdCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects wrong object type for fwdCurveHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 buildSettingsHandle 传入不存在句柄，验证句柄校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects nonexistent buildSettingsHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, "TF_NO_SUCH_HANDLE_buildSettingsHandle", "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 buildSettingsHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects wrong object type for buildSettingsHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, irCurve, "TF_CM_VOL", true)
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects wrong type for handle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], 99, true)
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects wrong type for returnJson", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", "bad")
 
 // 用例目的：相同输入连续构建两次，经 getter 取值对比，验证构建结果确定性
 @testing:case="buildCmVolatilitySurface deterministic repeat -> identical result"
@@ -215,3 +248,19 @@ assert 1, max(abs(caplib::getVolatility(r1[0], [2021.07.22], [100.0]) - caplib::
 @testing:case="buildCmVolatilitySurface -> frozen getVolatility reference"
 r = caplib::getVolatility(volSurface[0], [2021.07.22], [201.0]);
 assert 1, abs(r[0] - 0.21195227955361473) < 2.1295227955361474e-10
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: underlyingPrices 长度与配对日期数不一致
+// ----------------------------------------------------------------------------
+
+// 用例目的：underlyingPrices 长度与报价矩阵期限数不一致 —— 实测服务层校验并抛异常
+@testing:case="buildCmVolatilitySurface rejects underlyingPrices length mismatch with quote matrix (service-level)", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices join 66380.00, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 quoteMatrixHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects nonexistent handle quoteMatrixHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], "TF_NO_SUCH_HANDLE_buildCmVolatilitySurface_quoteMatrixHandle", underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// 用例目的：句柄参数 definitionHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="buildCmVolatilitySurface rejects wrong object type for definitionHandle", exception=1
+caplib::buildCmVolatilitySurface(asOfDate, underlying, cmOptionQuotes[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)

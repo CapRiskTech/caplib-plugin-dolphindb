@@ -56,9 +56,10 @@ caplib::createDoubleBarrierOption("X", double(), 2024.01.01, 2024.01.01, "X", 0.
 @testing:case="createDoubleBarrierOption rejects vector for scalar payoffType", exception=1
 caplib::createDoubleBarrierOption(["X"], 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "TF_createDoubleBarrierOption_H", [2024.01.01], [0.02], [0.02], false)
 
-// 用例目的：向量参数 fixingDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：长形式（含 fixingDates/fixingValues/fixingWeights）下 fixingDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter fixingDates must be a non-empty vector。
 @testing:case="createDoubleBarrierOption rejects scalar for vector fixingDates", exception=1
-caplib::createDoubleBarrierOption("X", 0.02, 2024.01.01, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", 0.02, 0.02, 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "TF_createDoubleBarrierOption_H", [2024.01.01], [0.02], [0.02], false)
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB", 2024.01.01, [underlyingPrice], [1.0], false)
 
 // 用例目的：向量参数 fixingDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createDoubleBarrierOption rejects partially-null vector fixingDates", exception=1
@@ -95,3 +96,136 @@ caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.2
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
 @testing:case="createDoubleBarrierOption rejects negative lowerBarrierValue", exception=1
 caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", -1.0, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB", false)
+
+// 用例目的：upperBarrierValue 传 0，验证边界校验（同组 lowerBarrierValue 已有 exception 先例）
+@testing:case="createDoubleBarrierOption rejects zero upperBarrierValue", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", 0.0, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB", false)
+
+// 用例目的：upperBarrierValue 传负值，验证边界校验（同组 lowerBarrierValue 已有 exception 先例）
+@testing:case="createDoubleBarrierOption rejects negative upperBarrierValue", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", -1.0, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB", false)
+
+// ----------------------------------------------------------------------------
+// Review round-2 additions: returnJson non-BOOL / enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（字符串 "true"），验证类型校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects non-bool returnJson", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_rj", "true")
+
+// 用例目的：payoffType 传非法枚举值 CALLS（仅接受精确拼写），验证枚举校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects invalid payoffType enum", exception=1
+caplib::createDoubleBarrierOption("CALLS", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_pt", false)
+
+// 用例目的：lowerBarrierType 传非法枚举值 CIRCLE（仅接受精确拼写），验证枚举校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects invalid lowerBarrierType enum", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "CIRCLE", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_lbt", false)
+
+// 用例目的：upperBarrierType 传非法枚举值 CIRCLE（仅接受精确拼写），验证枚举校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects invalid upperBarrierType enum", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "CIRCLE", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_ubt", false)
+
+// 用例目的：barrierObsType 传非法枚举值 HOURLY（仅接受精确拼写），验证枚举校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects invalid barrierObsType enum", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "HOURLY", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_bot", false)
+
+// 用例目的：paymentType 传非法枚举值 PAY_IN_ADVANCE（仅接受精确拼写），验证枚举校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects invalid paymentType enum", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_IN_ADVANCE", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_pmt", false)
+
+// 用例目的：underlyingType 传非法枚举值 INDEX（仅接受 SPOT/FUTURE/FORWARD），验证枚举校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects invalid underlyingType enum", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "INDEX", "CNY", "50ETF.SSE", "f_DB_ut", false)
+
+// 用例目的：遍历 payoffType 全部合法值，验证全部被接受
+@testing:case="createDoubleBarrierOption accepts all payoffType enums"
+payoffTypes = ["CALL", "call", "PUT", "put"]
+for (i in 0:size(payoffTypes)) {
+    caplib::createDoubleBarrierOption(payoffTypes[i], underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_DB_enum_payoff_" + string(i), false)
+}
+assert 1, true
+
+// 用例目的：遍历 lowerBarrierType+upperBarrierType 全部合法值，验证全部被接受
+@testing:case="createDoubleBarrierOption accepts all barrierType enums"
+barrierTypes = ["DOWN_IN", "UAI", "DOWN_AND_IN", "UP_IN", "DAO", "UP_AND_IN", "DOWN_OUT", "DAI", "DOWN_AND_OUT", "UP_OUT", "UAO", "UP_AND_OUT"]
+for (i in 0:size(barrierTypes)) {
+    caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, barrierTypes[i], underlyingPrice*0.95, barrierTypes[i], underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_DB_enum_bt_" + string(i), false)
+}
+assert 1, true
+
+// 用例目的：遍历 barrierObsType 全部合法值，验证全部被接受
+@testing:case="createDoubleBarrierOption accepts all barrierObsType enums"
+barrierObsTypes = ["", "CONTINUOUS", "CONTINUOUS_OBSERVATION_TYPE", "DISCRETE", "DISCRETE_OBSERVATION_TYPE"]
+for (i in 0:size(barrierObsTypes)) {
+    caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, barrierObsTypes[i], "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_DB_enum_bot_" + string(i), false)
+}
+assert 1, true
+
+// 用例目的：遍历 paymentType 全部合法值，验证全部被接受
+@testing:case="createDoubleBarrierOption accepts all paymentType enums"
+paymentTypes = ["", "PAY_AT_HIT", "PAH", "PAY_AT_MATURITY", "PAM"]
+for (i in 0:size(paymentTypes)) {
+    caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", paymentTypes[i], 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_DB_enum_pmt_" + string(i), false)
+}
+assert 1, true
+
+// 用例目的：遍历 underlyingType 全部合法值，验证全部被接受
+@testing:case="createDoubleBarrierOption accepts all underlyingType enums"
+underlyingTypes = ["SPOT", "FUTURE", "FORWARD"]
+for (i in 0:size(underlyingTypes)) {
+    caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", underlyingTypes[i], "CNY", "50ETF.SSE", "t_DB_enum_ut_" + string(i), false)
+}
+assert 1, true
+
+// ----------------------------------------------------------------------------
+// Review round-2 additions: numeric boundary (0 / negative) coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 nominal 传入 0，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createDoubleBarrierOption rejects zero nominal", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 0.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_nom0", false)
+
+// 用例目的：参数 nominal 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createDoubleBarrierOption rejects negative nominal", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_nomN", false)
+
+// 用例目的：lowerCashRebate 传 0，记录插件实际行为
+@testing:case="createDoubleBarrierOption accepts zero lowerCashRebate"
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_lcr0", false)
+assert 1, true
+
+// 用例目的：参数 lowerCashRebate 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createDoubleBarrierOption rejects negative lowerCashRebate", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", -1.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_lcrN", false)
+
+// 用例目的：lowerAssetRebate 传负值，记录插件实际行为
+@testing:case="createDoubleBarrierOption accepts negative lowerAssetRebate"
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, -1.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_larN", false)
+assert 1, true
+
+// 用例目的：参数 upperCashRebate 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createDoubleBarrierOption rejects negative upperCashRebate", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, -1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_ucrN", false)
+
+// 用例目的：upperAssetRebate 传负值，记录插件实际行为
+@testing:case="createDoubleBarrierOption accepts negative upperAssetRebate"
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, -1.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_uarN", false)
+assert 1, true
+
+// 用例目的：settlementDays 传 0，记录插件实际行为
+@testing:case="createDoubleBarrierOption accepts zero settlementDays"
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_sd0", false)
+assert 1, true
+
+// 用例目的：settlementDays 传负值（INT -1），记录插件实际行为
+@testing:case="createDoubleBarrierOption accepts negative settlementDays"
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, -1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_sdN", false)
+assert 1, true
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects wrong type for handle", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, false)
+
+// 用例目的：参数 settlementDays 传 BOOL 值 true（该传 INT），验证类型严格校验（预期：抛异常）
+@testing:case="createDoubleBarrierOption rejects BOOL settlementDays", exception=1
+caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice*0.95, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DB_bool_sd", false)

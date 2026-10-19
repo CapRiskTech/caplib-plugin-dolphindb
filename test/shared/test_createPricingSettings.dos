@@ -79,3 +79,47 @@ caplib::createPricingSettings(currency="X", pricingMethod="X", incCurrent=false,
 @testing:case="createPricingSettings optional returnJson null uses default"
 result = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "TF_PRICING", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：句柄参数 pdeHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createPricingSettings rejects nonexistent handle pdeHandle", exception=1
+caplib::createPricingSettings("X", "X", false, false, take(0, 0), "", "TF_NO_SUCH_HANDLE_createPricingSettings_pde", "", "TF_createPricingSettings_H", false)
+
+// 用例目的：句柄参数 mcHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createPricingSettings rejects nonexistent handle mcHandle", exception=1
+caplib::createPricingSettings("X", "X", false, false, take(0, 0), "", "", "TF_NO_SUCH_HANDLE_createPricingSettings_mc", "TF_createPricingSettings_H", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createPricingSettings rejects non-BOOL returnJson", exception=1
+caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "TF_PRICING", 1)
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle-type / enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 modelHandle 传入类型不符的对象句柄（情景设置），验证句柄类型校验（预期：抛异常）
+@testing:case="createPricingSettings rejects wrong object type for modelHandle", exception=1
+wrongObjM = caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_PRICING_WRONGTYPE_MODEL", false)
+caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), wrongObjM, "", "", "TF_PRICING", false)
+
+// 用例目的：句柄参数 pdeHandle 传入类型不符的对象句柄（情景设置），验证句柄类型校验（预期：抛异常）
+@testing:case="createPricingSettings rejects wrong object type for pdeHandle", exception=1
+wrongObjP = caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_PRICING_WRONGTYPE_PDE", false)
+caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", wrongObjP, "", "TF_PRICING", false)
+
+// 用例目的：句柄参数 mcHandle 传入类型不符的对象句柄（情景设置），验证句柄类型校验（预期：抛异常）
+@testing:case="createPricingSettings rejects wrong object type for mcHandle", exception=1
+wrongObjC = caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_PRICING_WRONGTYPE_MC", false)
+caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", wrongObjC, "TF_PRICING", false)
+
+// 用例目的：参数 handle 传入整数 123 —— 实测插件未对该参数做 STRING 判型，宽松接受并把 123 当作句柄 "123" 返回，记录实际行为
+@testing:case="createPricingSettings accepts INT handle (no strict type check)"
+rH = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", 123, false)
+assert 1, typestr(rH) != "VOID" && rH == "123"
+
+// 用例目的：枚举参数 pricingMethod 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createPricingSettings rejects invalid enum for pricingMethod", exception=1
+caplib::createPricingSettings("CNY", "NOT_A_REAL_ENUM", 0, 0, take(0, 0), "", "", "", "TF_PRICING", false)
+
+// 用例目的：向量参数 specificPricingRequests 传入 BOOL 向量，验证 INT 严格判型（预期：抛异常）
+@testing:case="createPricingSettings rejects BOOL vector for specificPricingRequests", exception=1
+caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, [true, false], "", "", "", "TF_PRICING", false)

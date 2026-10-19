@@ -71,7 +71,29 @@ caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", [string(), strin
 result = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", bool())
 assert 1, typestr(result) != "VOID"
 
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects wrong type for returnJson", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", "bad")
+
 // ----------------------------------------------------------------------------
 // 用例目的：两个成对数组参数长度不一致（instrumentTypes 多一个元素），验证参数间关系校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects instrumentTypes length mismatch", exception=1
 caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP", "EXTRA"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false);
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle 类型校验 / 枚举非法值
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects wrong type for handle", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], 123, false)
+
+// 用例目的：枚举向量参数 instrumentTypes 某元素传入非法标签 —— 包装层将未知标签回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createCreditParCurve accepts invalid enum for instrumentTypes (falls back to default)"
+rCpcIt = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["NOT_A_REAL_ENUM","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_FB_IT", false)
+assert 1, typestr(rCpcIt) != "VOID"
+
+// 用例目的：枚举向量参数 startConventions 某元素传入非法标签 —— 包装层将未知标签回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createCreditParCurve accepts invalid enum for startConventions (falls back to default)"
+rCpcSc = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","NOT_A_REAL_ENUM","SPOTSTART"], "TF_CPC_FB_SC", false)
+assert 1, typestr(rCpcSc) != "VOID"

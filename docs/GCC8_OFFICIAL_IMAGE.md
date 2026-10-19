@@ -52,7 +52,7 @@ caplib/
 动态库已经加载后，不会因为挂载目录里的文件改变而自动重载。
 
 ```dolphindb
-loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")
+loadPlugin("caplib")
 ```
 
 `docker/` 和 `docker-compose/` 都通过启动脚本显式加载插件。

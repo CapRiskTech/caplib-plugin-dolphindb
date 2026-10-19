@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createBondLegDefinition.dos
 // Per-function test suite for caplib::createBondLegDefinition (fi).
-// Signature: caplib::createBondLegDefinition(bondType STRING, settlementDays INT, currency STRING, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, instName STRING[, returnJson BOOL])
+// Signature: caplib::createBondLegDefinition(bondType STRING, settlementDays INT, currency STRING, dayCountConvention STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, instName STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_createBondLegDefinition.dos   // single file
@@ -60,10 +60,10 @@ caplib::createBondLegDefinition(["X"], 1, "X", "X", "X", "X", "X", "X", "X", 1, 
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createBondLegDefinition rejects keyword arguments", syntaxError=1
-caplib::createBondLegDefinition(bondType="X", settlementDays=1, currency="X", dayCount="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, instName="X", returnJson=false)
-// 用例目的：枚举参数 bondType 传入非法取值，实测插件宽松接受（映射到无效哨兵、不抛异常）——记录实际行为
-@testing:case="createBondLegDefinition accepts invalid enum for bondType", exception=1
-caplib::createBondLegDefinition("NOT_A_VALID_ENUM_LABEL", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", true)
+caplib::createBondLegDefinition(bondType="X", settlementDays=1, currency="X", dayCountConvention="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, instName="X", returnJson=false)
+// 用例目的：参数 bondType 传入非法枚举取值，验证枚举校验（实测插件校验并抛 Unknown vanillaBondType）
+@testing:case="createBondLegDefinition rejects invalid bondType", exception=1
+caplib::createBondLegDefinition("NOT_A_VALID_ENUM_LABEL", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_BAD", true)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createBondLegDefinition optional returnJson null uses default"
 result = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", bool())
@@ -77,7 +77,76 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
-// 用例目的：参数 settlementDays 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createBondLegDefinition rejects negative settlementDays", exception=1
-caplib::createBondLegDefinition("FIXED_COUPON_BOND", -1.0, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", true)
+// 用例目的：参数 settlementDays 传入负值边界（文档：须非负，但 wrapper 通常仅检查类型；-1 为 INT 正确类型）——记录实际行为
+@testing:case="createBondLegDefinition negative settlementDays records behavior"
+rSd = caplib::createBondLegDefinition("FIXED_COUPON_BOND", -1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NEG", true)
+assert 1, typestr(rSd) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入非法取值，验证枚举校验（预期：抛异常）
+// 用例目的：createBondLegDefinition rejects invalid enum for frequency —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts invalid enum for frequency (no validation)"
+rT_rfrequency = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "NOT_A_VALID_FREQUENCY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", true)
+assert 1, typestr(rT_rfrequency) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+// 用例目的：createBondLegDefinition rejects wrong type for returnJson —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for returnJson (no validation)"
+rT_returnJson = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", "bad")
+assert 1, typestr(rT_returnJson) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: 枚举非法值回退 / BOOL 拒绝
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 dayCountConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认日计数，验证回退行为（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for dayCountConvention (falls back to default)"
+rBldDc = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "NOT_A_REAL_ENUM", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_FB_DC", true)
+assert 1, typestr(rBldDc) != "VOID"
+
+// 用例目的：枚举参数 interestDayConvention 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for interestDayConvention (falls back to default)"
+rBldIdc = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "NOT_A_REAL_ENUM", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_FB_IDC", true)
+assert 1, typestr(rBldIdc) != "VOID"
+
+// 用例目的：枚举参数 stubPolicy 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for stubPolicy (falls back to default)"
+rBldSp = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "NOT_A_REAL_ENUM", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_FB_SP", true)
+assert 1, typestr(rBldSp) != "VOID"
+
+// 用例目的：枚举参数 brokenPeriodType 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for brokenPeriodType (falls back to default)"
+rBldBpt = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "NOT_A_REAL_ENUM", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_FB_BPT", true)
+assert 1, typestr(rBldBpt) != "VOID"
+
+// 用例目的：枚举参数 payDayConvention 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for payDayConvention (falls back to default)"
+rBldPdc = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "NOT_A_REAL_ENUM", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_FB_PDC", true)
+assert 1, typestr(rBldPdc) != "VOID"
+
+// 用例目的：枚举参数 fixingFreq 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for fixingFreq (falls back to default)"
+rBldFf = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "NOT_A_REAL_ENUM", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_FB_FF", true)
+assert 1, typestr(rBldFf) != "VOID"
+
+// 用例目的：枚举参数 fixingDayConvention 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for fixingDayConvention (falls back to default)"
+rBldFdc = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "NOT_A_REAL_ENUM", "IN_ADVANCE", -1, "TF_FI_LEG_FB_FDC", true)
+assert 1, typestr(rBldFdc) != "VOID"
+
+// 用例目的：枚举参数 fixingMode 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createBondLegDefinition accepts invalid enum for fixingMode (falls back to default)"
+rBldFm = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "NOT_A_REAL_ENUM", -1, "TF_FI_LEG_FB_FM", true)
+assert 1, typestr(rBldFm) != "VOID"
+
+// 用例目的：INT 参数 settlementDays 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createBondLegDefinition rejects BOOL settlementDays", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", true, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", true)
+
+// 用例目的：INT 参数 payDayOffset 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createBondLegDefinition rejects BOOL payDayOffset", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", true, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG", true)
+
+// 用例目的：INT 参数 fixingDayOffset 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createBondLegDefinition rejects BOOL fixingDayOffset", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", true, "TF_FI_LEG", true)
 

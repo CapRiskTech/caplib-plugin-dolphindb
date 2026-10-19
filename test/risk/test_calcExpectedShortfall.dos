@@ -68,6 +68,10 @@ caplib::calcExpectedShortfall(samples, 0.0, false)
 @testing:case="calcES rejects negative probability", exception=1
 caplib::calcExpectedShortfall(samples, -0.5, false)
 
+// 用例目的：概率越界（>1，文档要求严格在 (0,1) 内），拒绝
+@testing:case="calcES rejects probability > 1", exception=1
+caplib::calcExpectedShortfall(samples, 1.5, false)
+
 // 用例目的：概率传字符串（非 DOUBLE），拒绝
 @testing:case="calcES rejects non-double probability", exception=1
 caplib::calcExpectedShortfall(samples, "0.95", false)

@@ -6,7 +6,7 @@
 
 // Load the caplib plugin
 try {
-    fns = loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt");
+    fns = loadPlugin("caplib");
     print("caplib plugin loaded: " + size(fns) + " functions registered");
 } catch(ex) {
     print("Failed to load caplib plugin: " + ex);

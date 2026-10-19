@@ -19,6 +19,7 @@
         <a class="nav-child" href="#concepts">Core concepts</a>
         <a class="nav-child" href="#data-conversion">Type conversion</a>
         <a class="nav-child" href="#example">Example</a>
+        <a class="nav-child" href="#error-behavior">Error behavior</a>
         <a class="nav-child" href="#appendix">Appendix</a>
       </div>
       <div class="nav-group"><div class="nav-heading">API Reference</div>
@@ -74,8 +75,8 @@ installPlugin("caplib")
 loadPlugin("caplib")</code></pre>
         <h3>Prebuilt package</h3>
         <p>Version 0.0.15 is built from the upstream <code>release-caplib</code> branch, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.15">0.0.15 release</a>. See the <a href="../GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and the release notes. Note: <code>createPricingSettings</code> requires <code>specificPricingRequests</code> since 0.0.13.</p>
-        <p>If `caplib` is not listed remotely, place `libPluginCaplib.so`, the generated `PluginCaplib.txt`, `libdqlibc.so`, and `dqlibc.lic` together, with `calendars.bin` in the `data/` subdirectory:</p>
-        <pre><code>loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")</code></pre>
+        <p>If `caplib` is not listed remotely, place `libPluginCaplib.so`, the generated `PluginCaplib.txt`, `libdqlibc.so`, and `dqlibc.lic` together under the server's `plugins/caplib/` directory, with `calendars.bin` in the `data/` subdirectory, then load:</p>
+        <pre><code>loadPlugin("caplib")</code></pre>
         <p>Stop the server before replacing both native libraries, retain the valid license and calendar data, then restart and load the plugin. Updating mounted files does not reload an already loaded library.</p>
         <p>Use the configured <code>PluginCaplib.txt</code> from the release archive (or <code>build/PluginCaplib.txt</code> from a source build); do not deploy the template containing CMake variables.</p>
       </section>
@@ -89,7 +90,7 @@ loadPlugin("caplib")</code></pre>
           <article class="workflow-card"><h3>3. Price consistently</h3><p>Pricing calls take instrument, pricing date, market data, pricing settings, risk settings, scenario settings, and mode.</p></article>
           <article class="workflow-card"><h3>4. Inspect JSON</h3><p>Optional `returnJson=true` returns `[handle, protobufJson]`; omission or `false` returns the handle only.</p></article>
         </div>
-        <p>Square brackets in a signature indicate optional parameters. `asOfDate` is a market-data reference date, `pricingDate` is a valuation date, and `calculationDate` is the date of a standalone calculation.</p>
+        <p>Square brackets in a signature indicate optional parameters. `asOfDate` is the unified name (in backticked signatures) for the anchor / valuation date; the legacy spellings `referenceDate`, `pricingDate` and `calculationDate` are all folded into `asOfDate`.</p>
       </section>
 
       <section id="data-conversion" class="panel">
@@ -107,7 +108,7 @@ loadPlugin("caplib")</code></pre>
       <section id="example" class="panel example">
         <h2>Example</h2>
         <p>This runnable example loads the plugin, creates a curve, and queries it. See <a href="../../example/FiAnalytics.dos">`example/FiAnalytics.dos`</a> for an end-to-end bond pricing workflow.</p>
-        <pre><code>loadPlugin("PluginCaplib")
+        <pre><code>loadPlugin("caplib")
 
 curve = caplib::createIrYieldCurve(
     2025.01.02,
@@ -118,6 +119,19 @@ curve = caplib::createIrYieldCurve(
 
 zeroRate = caplib::getZeroRate(curve, 2026.07.02)
 print(zeroRate)</code></pre>
+      </section>
+
+      
+      <section id="error-behavior" class="panel">
+        <h2>Error behavior</h2>
+        <p>Every interface throws a DolphinDB <code>RuntimeException</code> on failure and never returns a fallback scalar or partial object:</p>
+        <ul>
+          <li><strong>Service call failures</strong>: a <code>success=false</code> response writes its <code>err_msg</code> into the exception message.</li>
+          <li><strong>Parameter validation failures</strong>: type, shape, null, range, or cross-parameter constraints not met.</li>
+          <li><strong>Cache-class / handle errors</strong>: the handle does not exist, or its protobuf type does not match the interface.</li>
+          <li><strong>Parsing / serialization failures</strong>: protobuf parsing or serialization failed.</li>
+        </ul>
+        <p>Wrapper-only operations expose no status scalar; every error is observed as an exception. Exception messages carry the <code>[PLUGIN::CAPLIB]</code> prefix.</p>
       </section>
 
       <section id="appendix" class="panel">

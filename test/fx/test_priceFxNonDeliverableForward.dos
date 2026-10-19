@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceFxNonDeliverableForward.dos
 // Per-function test suite for caplib::priceFxNonDeliverableForward (fx).
-// Signature: caplib::priceFxNonDeliverableForward(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceFxNonDeliverableForward(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fx")            // whole domain directory
 //     python run_tests.py --file fx/test_priceFxNonDeliverableForward.dos   // single file
@@ -120,24 +120,24 @@ caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceFxNonDeliverableForward rejects extra argument", syntaxError=1
 caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceFxNonDeliverableForward rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects wrong type for asOfDate", exception=1
 caplib::priceFxNonDeliverableForward("X", "bad", "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceFxNonDeliverableForward rejects wrong type for mode", exception=1
 caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceFxNonDeliverableForward rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects null asOfDate", exception=1
 caplib::priceFxNonDeliverableForward("X", date(), "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceFxNonDeliverableForward rejects null mode", exception=1
 caplib::priceFxNonDeliverableForward("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceFxNonDeliverableForward rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects vector for scalar asOfDate", exception=1
 caplib::priceFxNonDeliverableForward("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -146,7 +146,7 @@ caplib::priceFxNonDeliverableForward("TF_NO_SUCH_HANDLE_priceFxNonDeliverableFor
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceFxNonDeliverableForward rejects keyword arguments", syntaxError=1
-caplib::priceFxNonDeliverableForward(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceFxNonDeliverableForward(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceFxNonDeliverableForward optional returnJson null uses default"
 result = caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", bool())
@@ -154,6 +154,33 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceFxNonDeliverableForward rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxNonDeliverableForward(tndf, asOfDate, tndf, cashAnalyticalSettings, fxRisk[0], "", "", true)
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], "TF_NO_SUCH_HANDLE_priceFxNonDeliverableForward_PS", fxRisk[0], "", "", true)
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], tndf, fxRisk[0], "", "", true)
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, "TF_NO_SUCH_HANDLE_priceFxNonDeliverableForward_RS", "", "", true)
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, tndf, "", "", true)
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在的句柄字符串 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts priceFxNonDeliverableForward nonexistent handle scnSettingsHandle (no validation)"
+rPNDF_scnN = caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "TF_NO_SUCH_HANDLE_priceFxNonDeliverableForward_SS", "", true)
+assert 1, typestr(rPNDF_scnN) != "VOID"
+// 用例目的：句柄参数 scnSettingsHandle 传入类型不符的对象句柄 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts priceFxNonDeliverableForward wrong object type for scnSettingsHandle (no validation)"
+rPNDF_scnT = caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], tndf, "", true)
+assert 1, typestr(rPNDF_scnT) != "VOID"
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型（如整数 1），验证类型校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects non-bool returnJson", exception=1
+caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", 1)
+// 用例目的：asOfDate 晚于到期日（插件层不校验 date>maturity，记录其实际行为且不崩服务）
+@testing:case="priceFxNonDeliverableForward asOfDate after maturity (no validation)"
+rLate = caplib::priceFxNonDeliverableForward(tndf, 2023.08.19, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
+assert 1, true
 // 用例目的：同一合约名义金额放大 2 倍，验证现值精确翻倍（现值对名义的线性性质）
 @testing:case="priceFxNonDeliverableForward notional scaling -> 2x notional, 2x present value"
 tndf_2X = caplib::createFxNonDeliverableForward("USD", (10000.0) * 2, "CNH", (66916.0) * 2, "USD", 2021.07.01, 2021.06.30, "TF_PNDF_2X", false);
@@ -166,3 +193,11 @@ assert 1, abs(presentValue(p2) - 2.0 * presentValue(p1)) <= abs(presentValue(p1)
 r1 = caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
 r2 = caplib::priceFxNonDeliverableForward(tndf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true);
 assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
+
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceFxNonDeliverableForward(tndf, asOfDate, "TF_NO_SUCH_HANDLE_priceFxNonDeliverableForward_mktDataHandle", cashAnalyticalSettings, fxRisk[0], "", "", true)
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的对象句柄（定价设置句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceFxNonDeliverableForward rejects wrong object type for instrumentHandle", exception=1
+caplib::priceFxNonDeliverableForward(cashAnalyticalSettings, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)

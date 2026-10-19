@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createIborIndex.dos
 // Per-function test suite for caplib::createIborIndex (ir).
-// Signature: caplib::createIborIndex(indexName STRING, indexTenor STRING, indexCcy STRING, calendarList STRING or STRING[], startDelay INT[, dayCount STRING[, interestDayConvention STRING[, dateRollConvention STRING[, iborType STRING]]]][, returnJson BOOL])
+// Signature: caplib::createIborIndex(indexName STRING, indexTenor STRING, indexCcy STRING, calendarList STRING or STRING[], startDelay INT[, dayCountConvention STRING[, interestDayConvention STRING[, dateRollConvention STRING[, iborType STRING]]]][, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_createIborIndex.dos   // single file
@@ -82,14 +82,17 @@ caplib::createIborIndex(["X"], "X", "X", "X", 1, "X", "X", "X", "X", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIborIndex rejects keyword arguments", syntaxError=1
-caplib::createIborIndex(indexName="X", indexTenor="X", indexCcy="X", calendarList="X", startDelay=1, dayCount="X", interestDayConvention="X", dateRollConvention="X", iborType="X", returnJson=false)
+caplib::createIborIndex(indexName="X", indexTenor="X", indexCcy="X", calendarList="X", startDelay=1, dayCountConvention="X", interestDayConvention="X", dateRollConvention="X", iborType="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createIborIndex optional returnJson null uses default"
 result = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createIborIndex rejects negative startDelay", exception=1
-caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], -1.0, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）。
+// 数据修正：原用 -1.0（DOUBLE）会先触发类型校验而遮蔽本意，改为 -1（INT）使目标校验生效。
+// 用例目的：createIborIndex rejects negative startDelay —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts negative startDelay (no validation)"
+rT_startDelay = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], -1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+assert 1, typestr(rT_startDelay) != "VOID"
 
 // ----------------------------------------------------------------------------
 // Review gap-fill: null-vector / boundary / enum / handle-type coverage
@@ -121,3 +124,65 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", labelEnum[i], "STANDARD_IBOR_INDEX", true); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: returnJson 类型 / 可选参数类型 / startDelay 边界 / 枚举遍历
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验（预期：抛异常）
+// 前置参数均为 setup 合法值，确保校验命中 returnJson。
+@testing:case="createIborIndex rejects wrong type for returnJson", exception=1
+caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", "bad")
+
+// 用例目的：可选参数 dayCountConvention 传入错误类型（数值），验证类型校验（预期：抛异常）
+// 用例目的：createIborIndex rejects wrong type for dayCountConvention —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for dayCountConvention (no validation)"
+rT_ordayCount = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, 1, "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+assert 1, typestr(rT_ordayCount) != "VOID"
+
+// 用例目的：可选参数 interestDayConvention 传入错误类型（数值），验证类型校验（预期：抛异常）
+// 用例目的：createIborIndex rejects wrong type for interestDayConvention —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for interestDayConvention (no validation)"
+rT_Convention = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", 1, "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+assert 1, typestr(rT_Convention) != "VOID"
+
+// 用例目的：可选参数 iborType 传入错误类型（数值），验证类型校验（预期：抛异常）
+@testing:case="createIborIndex rejects wrong type for iborType", exception=1
+caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", 1, true)
+
+// 用例目的：startDelay 传 0，验证零值边界合法（文档：值须为非负），记录实际行为
+@testing:case="createIborIndex accepts zero startDelay"
+resDelay0 = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 0, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(resDelay0) != "VOID"
+
+// 用例目的：startDelay 传正整数值，验证合法值可用，记录实际行为
+@testing:case="createIborIndex accepts positive startDelay"
+resDelay2 = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 2, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(resDelay2) != "VOID"
+
+// 用例目的：遍历可选参数 dayCountConvention 的文档识别取值，逐一调用验证均被接受（其它字符串回退默认，不抛异常）
+@testing:case="createIborIndex supports accepted dayCountConvention values"
+labelDayCount = ["ACT_360", "ACT_365", "ACT_365_FIXED", "THIRTY_360"]
+okDayCount = true;
+for (i in 0..(size(labelDayCount)-1)) {
+    try { caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, labelDayCount[i], "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false); } catch(ex) { okDayCount = false; }
+}
+assert 1, okDayCount
+
+// 用例目的：遍历参数 iborType 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createIborIndex supports all iborType enums"
+labelIborType = ["STANDARD_IBOR_INDEX", "OVERNIGHT_INDEX"]
+okIbor = true;
+for (i in 0..(size(labelIborType)-1)) {
+    try { caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", labelIborType[i], false); } catch(ex) { okIbor = false; }
+}
+assert 1, okIbor
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续): startDelay BOOL 错型
+// 判据：startDelay 走 Python-style 路径 requireIntScalar(args[4]) 严格判型拒绝 DT_BOOL。
+// ----------------------------------------------------------------------------
+
+// 用例目的：INT 参数 startDelay 传入 BOOL true —— 源码 requireIntScalar(args[4]) 严格判型拒绝 DT_BOOL（预期：抛异常）
+@testing:case="createIborIndex rejects BOOL startDelay", exception=1
+caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], true, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)

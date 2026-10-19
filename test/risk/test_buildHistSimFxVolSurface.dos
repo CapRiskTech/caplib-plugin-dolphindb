@@ -22,7 +22,7 @@ caplib::createCalendar("CAL_CFETS");
 surfDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
-    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE",
     1.0e-4, 1.0e4, "MR_SURF_DEF", true);
 fxMktConventions = caplib::createFxMktConventions(
     "EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
@@ -194,6 +194,60 @@ caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates,
 @testing:case="buildHistSimFxVolSurface rejects bad settings handle", exception=1
 caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "NO_SETTINGS", "MR_SURF_BAD_SET")
 
+// 用例目的：referenceVolSurf 传 FxSpotRate 句柄（错类型句柄，需曲面），拒绝
+@testing:case="buildHistSimFxVolSurface rejects wrong-type ref surf", exception=1
+caplib::buildHistSimFxVolSurface(simDate, spotRate, startSurf, endSurf,
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 forCurve, "", "PF_VOL_REF1")
+
+// 用例目的：histStart 传 FxSpotRate 句柄（错类型句柄，需曲面），拒绝
+@testing:case="buildHistSimFxVolSurface rejects wrong-type start surf", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, spotRate, endSurf,
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 forCurve, "", "PF_VOL_ST1")
+
+// 用例目的：histEnd 传不存在句柄，拒绝
+@testing:case="buildHistSimFxVolSurface rejects bad end handle", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, "NO_SUCH_END",
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 forCurve, "", "MR_SURF_BAD_END")
+
+// 用例目的：histEnd 传 FxSpotRate 句柄（错类型句柄，需曲面），拒绝
+@testing:case="buildHistSimFxVolSurface rejects wrong-type end surf", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, spotRate,
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 forCurve, "", "PF_VOL_END1")
+
+// 用例目的：spot 传 IrYieldCurve 句柄（错类型句柄，需 FxSpotRate），拒绝
+@testing:case="buildHistSimFxVolSurface rejects wrong-type spot", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, volStrikes, domCurve, domCurve,
+                                 forCurve, "", "PF_VOL_SPOT1")
+
+// 用例目的：domCurve 传不存在句柄，拒绝
+@testing:case="buildHistSimFxVolSurface rejects bad domCurve handle", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, volStrikes, spotRate, "NO_DOM",
+                                 forCurve, "", "MR_SURF_BAD_DOM")
+
+// 用例目的：forCurve 传不存在句柄，拒绝
+@testing:case="buildHistSimFxVolSurface rejects bad forCurve handle", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 "NO_FOR", "", "MR_SURF_BAD_FOR")
+
+// 用例目的：forCurve 传 FxSpotRate 句柄（错类型句柄，需曲线），拒绝
+@testing:case="buildHistSimFxVolSurface rejects wrong-type forCurve", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 spotRate, "", "PF_VOL_FOR1")
+
+// 用例目的：settings 传错类型句柄（FxSpotRate，需 BuildSettings），拒绝
+@testing:case="buildHistSimFxVolSurface rejects wrong-type settings", exception=1
+caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                 volDates, volStrikes, spotRate, domCurve,
+                                 forCurve, spotRate, "PF_VOL_SET1")
+
 // 用例目的：少传参数，解析期报错
 @testing:case="buildHistSimFxVolSurface rejects missing args", syntaxError=1
 caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve)
@@ -223,7 +277,7 @@ try {
 @testing:case="buildHistSimFxVolSurface submitJob -> status"
 mrJobVol = def(d, idx) {
     sfx = string(idx);
-    sdef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE","LINEAR_SMILE_METHOD","FLAT_EXTRAP","LINEAR_IN_VARIANCE","FLAT_IN_VOLATILITY","ACT_365_FIXED","LOG_NORMAL_VOL_TYPE","ABOSULTE_STRIKE",1.0e-4,1.0e4,"MR_JOB_SURF_DEF_"+sfx,true);
+    sdef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE","LINEAR_SMILE_METHOD","FLAT_EXTRAP","LINEAR_IN_VARIANCE","FLAT_IN_VOLATILITY","ACT_365_FIXED","LOG_NORMAL_VOL_TYPE","ABSOLUTE_STRIKE",1.0e-4,1.0e4,"MR_JOB_SURF_DEF_"+sfx,true);
     conv = caplib::createFxMktConventions("EURUSD","ATM_DNS_PIPS","PIPS_SPOT_DELTA","PIPS_FORWARD_DELTA","1Y","RR_CALL_PUT","BUTTERFLY_QUOTE","MR_JOB_SURF_CONV_"+sfx,true);
     td = [2021.06.30, 2021.09.30];
     sk = matrix([1.0,1.0],[1.1761,1.1761],[1.35,1.35]);

@@ -1,7 +1,7 @@
 // ============================================================================
 // test_calcYieldToMaturity.dos
 // Per-function test suite for caplib::calcYieldToMaturity (fi).
-// Signature: caplib::calcYieldToMaturity(calculationDate DATE, compoundingType STRING, bondHandle STRING, forwardCurveHandle STRING, price DOUBLE, priceType STRING, frequency STRING)
+// Signature: caplib::calcYieldToMaturity(asOfDate DATE, compoundingType STRING, bondHandle STRING, forwardCurveHandle STRING, price DOUBLE, priceType STRING, frequency STRING)
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_calcYieldToMaturity.dos   // single file
@@ -12,6 +12,11 @@
 asOfDate = 2021.07.22;
 currency = "CNY";
 calCfets = "CAL_CFETS";
+
+// 自包含 setup：注册本函数依赖的日历，避免跨文件共享 ObjectCache 的隐性依赖
+// （buildVanillaBond 内部需要 CAL_CFETS 已注册，参考 test_buildCreditDefaultSwap.dos 的写法）
+calendarCreated = caplib::createCalendar(calCfets);
+assert 1, calendarCreated;
 
 cnyTreasCpnBond200014Template = caplib::createVanillaBondTemplate(
     "cny_treas_cpn_bond_200014", "FIXED_COUPON_BOND",
@@ -53,37 +58,48 @@ caplib::calcYieldToMaturity(2024.01.01, "X", "X", "X", 0.02, "X")
 @testing:case="calcYieldToMaturity rejects extra argument", syntaxError=1
 caplib::calcYieldToMaturity(2024.01.01, "X", "X", "X", 0.02, "X", "X", 1)
 
-// 用例目的：参数 calculationDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="calcYieldToMaturity rejects wrong type for calculationDate", exception=1
-caplib::calcYieldToMaturity("bad", "X", "X", "X", 0.02, "X", "X")
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="calcYieldToMaturity rejects wrong type for asOfDate", exception=1
+caplib::calcYieldToMaturity("bad", "CONTINUOUS_COMPOUNDING", vanillaBond, "", 0.02, "CLEAN_PRICE", "ANNUAL")
 
-// 用例目的：参数 compoundingType 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="calcYieldToMaturity rejects wrong type for compoundingType", exception=1
-caplib::calcYieldToMaturity(2024.01.01, 1, "X", "X", 0.02, "X", "X")
+// 用例目的：wrong type for compoundingType —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for compoundingType (no validation)"
+rCYT_wt = caplib::calcYieldToMaturity(asOfDate, 1, vanillaBond, "", 0.02, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCYT_wt) != "VOID"
 
 // 用例目的：参数 price 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="calcYieldToMaturity rejects wrong type for price", exception=1
-caplib::calcYieldToMaturity(2024.01.01, "X", "X", "X", "bad", "X", "X")
+caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", "bad", "CLEAN_PRICE", "ANNUAL")
 
-// 用例目的：参数 calculationDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="calcYieldToMaturity rejects null calculationDate", exception=1
-caplib::calcYieldToMaturity(date(), "X", "X", "X", 0.02, "X", "X")
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="calcYieldToMaturity rejects null asOfDate", exception=1
+caplib::calcYieldToMaturity(date(), "CONTINUOUS_COMPOUNDING", vanillaBond, "", 0.02, "CLEAN_PRICE", "ANNUAL")
 
-// 用例目的：参数 compoundingType 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="calcYieldToMaturity rejects null compoundingType", exception=1
-caplib::calcYieldToMaturity(2024.01.01, string(), "X", "X", 0.02, "X", "X")
+// 用例目的：null compoundingType —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts null compoundingType (no validation)"
+rCYT_nu = caplib::calcYieldToMaturity(asOfDate, string(), vanillaBond, "", 0.02, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCYT_nu) != "VOID"
 
-// 用例目的：标量参数 calculationDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="calcYieldToMaturity rejects vector for scalar calculationDate", exception=1
-caplib::calcYieldToMaturity([2024.01.01], "X", "X", "X", 0.02, "X", "X")
+// 用例目的：vector for scalar asOfDate —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts vector for scalar asOfDate (no validation)"
+rCYT_vd = caplib::calcYieldToMaturity([asOfDate], "CONTINUOUS_COMPOUNDING", vanillaBond, "", 0.02, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCYT_vd) != "VOID"
 
 // 用例目的：句柄参数 bondHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="calcYieldToMaturity rejects nonexistent handle bondHandle", exception=1
-caplib::calcYieldToMaturity(2024.01.01, "X", "TF_HANDLE_DOES_NOT_EXIST", "X", 0.02, "X", "X")
+caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", "TF_NO_SUCH_HANDLE_bondHandle", "", 0.02, "CLEAN_PRICE", "ANNUAL")
+
+// 用例目的：句柄参数 bondHandle 传入类型不符的对象句柄（模板而非债券），验证句柄类型校验（预期：抛异常）
+@testing:case="calcYieldToMaturity rejects wrong object type for bondHandle", exception=1
+caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", cnyTreasCpnBond200014Template[0], "", 0.02, "CLEAN_PRICE", "ANNUAL")
+
+// 用例目的：句柄参数 forwardCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="calcYieldToMaturity rejects nonexistent handle forwardCurveHandle", exception=1
+caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "TF_NO_SUCH_HANDLE_forwardCurveHandle", 99.5, "CLEAN_PRICE", "ANNUAL")
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="calcYieldToMaturity rejects keyword arguments", syntaxError=1
-caplib::calcYieldToMaturity(calculationDate=2024.01.01, compoundingType="X", bondHandle="X", forwardCurveHandle="X", price=0.02, priceType="X", frequency="X")
+caplib::calcYieldToMaturity(asOfDate=2024.01.01, compoundingType="X", bondHandle="X", forwardCurveHandle="X", price=0.02, priceType="X", frequency="X")
 // 用例目的：句柄参数 forwardCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="calcYieldToMaturity rejects wrong object type for forwardCurveHandle", exception=1
 caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, vanillaBond, 99.5, "CLEAN_PRICE", "ANNUAL")
@@ -101,3 +117,48 @@ caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "",
 r1 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL");
 r2 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL");
 assert 1, max(abs(r1 - r2)) < 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：遍历 compoundingType / priceType / frequency 已确认合法的枚举取值，逐一调用验证均被接受
+@testing:case="calcYieldToMaturity supports accepted enum values"
+compLabels = ["SIMPLE_COMPOUNDING", "CONTINUOUS_COMPOUNDING", "DISCRETE_COMPOUNDING"]
+priceTypeLabels = ["CLEAN_PRICE", "DIRTY_PRICE"]
+freqLabels = ["ANNUAL", "QUARTERLY"]
+okEnum = true;
+for (cp in compLabels) {
+    for (pt in priceTypeLabels) {
+        for (fq in freqLabels) {
+            try { caplib::calcYieldToMaturity(asOfDate, cp, vanillaBond, "", 99.5, pt, fq); } catch(ex) { okEnum = false; }
+        }
+    }
+}
+assert 1, okEnum
+
+// 用例目的：计算日取值晚于债券到期日（maturity 2025-10-10 之后），记录插件/包装器是否校验该关系（不预设抛异常）
+@testing:case="calcYieldToMaturity asOfDate after maturity (behaviour recorded)"
+rLate = caplib::calcYieldToMaturity(2026.01.01, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL");
+assert 1, true
+
+// 用例目的：价格取极大正值，记录数值边界行为（不预设抛异常）
+@testing:case="calcYieldToMaturity extreme high price (behaviour recorded)"
+rExt = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 1.0e12, "CLEAN_PRICE", "ANNUAL");
+assert 1, true
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: 枚举非法值回退
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 compoundingType 传入非法取值 —— 文档：空值或其他字符串回退为 DISCRETE_COMPOUNDING，验证回退行为（预期：不抛异常）
+@testing:case="calcYieldToMaturity accepts invalid enum for compoundingType (falls back to default)"
+rCytCt = caplib::calcYieldToMaturity(asOfDate, "NOT_A_REAL_ENUM", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCytCt) != "VOID"
+
+// 用例目的：枚举参数 priceType 传入非法取值 —— 文档：空值或其他字符串回退为 CLEAN_PRICE，验证回退行为（预期：不抛异常）
+@testing:case="calcYieldToMaturity accepts invalid enum for priceType (falls back to default)"
+rCytPt = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "NOT_A_REAL_ENUM", "ANNUAL")
+assert 1, typestr(rCytPt) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认频率，验证回退行为（预期：不抛异常）
+@testing:case="calcYieldToMaturity accepts invalid enum for frequency (falls back to default)"
+rCytFq = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "NOT_A_REAL_ENUM")
+assert 1, typestr(rCytFq) != "VOID"

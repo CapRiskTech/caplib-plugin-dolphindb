@@ -71,3 +71,12 @@ caplib::createFxSwap("EUR", 0.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD"
 @testing:case="createFxSwap rejects negative nearBuyAmount", exception=1
 caplib::createFxSwap("EUR", -1.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
 
+// ----------------------------------------------------------------------------
+// Review round-2: returnJson 非 BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 returnJson 传入非 BOOL 字符串 —— 实测被当作多余实参忽略、仍返回句柄（记录实际行为）
+@testing:case="createFxSwap accepts non-BOOL returnJson (no validation)"
+rSwp_rj = caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", "bad")
+assert 1, typestr(rSwp_rj) != "VOID"
+

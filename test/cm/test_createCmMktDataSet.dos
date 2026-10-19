@@ -216,3 +216,92 @@ caplib::createCmMktDataSet(asOfDate, underlying, 0.0, irCurve, fwdCurve, volSurf
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
 @testing:case="createCmMktDataSet rejects negative underlyingPrice", exception=1
 caplib::createCmMktDataSet(asOfDate, underlying, -1.0, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "CM_MKT", true)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2): handle-type params + quantoCorrelation parity/bounds
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 discountCurve 传入未创建句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects nonexistent discountCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, "NONEXISTENT_DISCOUNT", fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_DC_NX", true)
+
+// 用例目的：参数 discountCurve 传入错误类型，验证句柄类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for discountCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, 123, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_DC_T", true)
+
+// 用例目的：参数 dividendCurve 传入未创建句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects nonexistent dividendCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, "NONEXISTENT_DIVIDEND", volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_DIV_NX", true)
+
+// 用例目的：参数 dividendCurve 传入错误类型，验证句柄类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for dividendCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, 123, volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_DIV_T", true)
+
+// 用例目的：参数 volSurface 传入未创建句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects nonexistent volSurface", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, "NONEXISTENT_VOL", quantoIr, quantoFxVol, 0.0, "TF_VOL_NX", true)
+
+// 用例目的：参数 volSurface 传入错误类型，验证句柄类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for volSurface", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, 123, quantoIr, quantoFxVol, 0.0, "TF_VOL_T", true)
+
+// 用例目的：参数 quantoDiscountCurve 传入未创建句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects nonexistent quantoDiscountCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], "NONEXISTENT_QTO_DC", quantoFxVol, 0.0, "TF_QDC_NX", true)
+
+// 用例目的：参数 quantoDiscountCurve 传入错误类型，验证句柄类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for quantoDiscountCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], 123, quantoFxVol, 0.0, "TF_QDC_T", true)
+
+// 用例目的：参数 quantoFxVolCurve 传入未创建句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects nonexistent quantoFxVolCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, "NONEXISTENT_QTO_FXV", 0.0, "TF_QFXV_NX", true)
+
+// 用例目的：参数 quantoFxVolCurve 传入错误类型，验证句柄类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for quantoFxVolCurve", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, 123, 0.0, "TF_QFXV_T", true)
+
+// 用例目的：参数 handle 传入错误类型，验证输出句柄类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for handle", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, 123, true)
+
+// 用例目的：参数 handle 传入空值，实测插件不校验（ObjectCache::Store("") 不抛错），记录实际行为
+@testing:case="createCmMktDataSet accepts null handle (no validation)"
+resMktNullH = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, string(), true)
+assert 1, typestr(resMktNullH) != "VOID"
+
+// 用例目的：参数 returnJson 传入错误类型，验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for returnJson", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "TF_RJ_T", "bad")
+
+// 用例目的：参数 quantoCorrelation 传入错误类型（字符串），验证 DOUBLE 类型校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects wrong type for quantoCorrelation", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, "bad", "TF_QC_T", true)
+
+// 用例目的：参数 quantoCorrelation 传入空值（double()），验证空值校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects null quantoCorrelation", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, double(), "TF_QC_N", true)
+
+// 用例目的：标量参数 quantoCorrelation 传入向量 [0.3]，验证数据形式校验（预期：抛异常）
+@testing:case="createCmMktDataSet rejects vector for scalar quantoCorrelation", exception=1
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, [0.3], "TF_QC_V", true)
+
+// 用例目的：参数 quantoCorrelation 取 -1.5（业务下界之外），实测插件不校验范围、宽松接受，记录实际行为
+@testing:case="createCmMktDataSet accepts quantoCorrelation below -1 (no range validation)"
+resMktQC_LT = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, -1.5, "TF_QC_LT", true)
+assert 1, typestr(resMktQC_LT) != "VOID"
+
+// 用例目的：参数 quantoCorrelation 取 1.5（业务上界之外），实测插件不校验范围、宽松接受，记录实际行为
+@testing:case="createCmMktDataSet accepts quantoCorrelation above 1 (no range validation)"
+resMktQC_GT = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 1.5, "TF_QC_GT", true)
+assert 1, typestr(resMktQC_GT) != "VOID"
+
+// 用例目的：quantoCorrelation 取合法下界 -1，验证边界为合法值（不抛异常、返回非 VOID）
+@testing:case="createCmMktDataSet accepts quantoCorrelation at lower boundary -1"
+resMktNeg = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, -1.0, "TF_QC_LB", true)
+assert 1, typestr(resMktNeg) != "VOID"
+
+// 用例目的：quantoCorrelation 取合法上界 1，验证边界为合法值（不抛异常、返回非 VOID）
+@testing:case="createCmMktDataSet accepts quantoCorrelation at upper boundary 1"
+resMktPos = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], quantoIr, quantoFxVol, 1.0, "TF_QC_UB", true)
+assert 1, typestr(resMktPos) != "VOID"

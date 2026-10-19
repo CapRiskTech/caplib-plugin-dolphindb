@@ -42,9 +42,10 @@ caplib::getCreditSpread("X")
 @testing:case="getCreditSpread rejects extra argument", syntaxError=1
 caplib::getCreditSpread("X", [2024.01.01], 1)
 
-// 用例目的：向量参数 dates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 dates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter dates must be a vector。
 @testing:case="getCreditSpread rejects scalar for vector dates", exception=1
-caplib::getCreditSpread("X", [2024.01.01])
+caplib::getCreditSpread(flatCreditCurve, 2024.01.01)
 
 // 用例目的：向量参数 dates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="getCreditSpread rejects partially-null vector dates", exception=1

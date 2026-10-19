@@ -53,6 +53,10 @@ caplib::createCreditCurveRiskSettings(delta=false, gamma=false, shift=0.02, meth
 @testing:case="createCreditCurveRiskSettings optional returnJson null uses default"
 result = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createCreditCurveRiskSettings rejects wrong type for returnJson", exception=1
+caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", "bad")
 // 用例目的：参数 scaling 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createCreditCurveRiskSettings rejects zero scaling", exception=1
 caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 0.0, 0, "TF_CCR", false)
@@ -65,3 +69,40 @@ caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, -1.0, 0, "TF_CCR", fal
 // 用例目的：标量参数 delta 传入单元素向量，实测插件宽松接受——记录实际行为
 @testing:case="createCreditCurveRiskSettings vector for scalar delta", exception=1
 caplib::createCreditCurveRiskSettings([true], 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", false);
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle 类型校验 / BOOL 拒绝 / 标志取值
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入整数 123 —— 实测插件未对该参数做 STRING 判型，宽松接受不抛异常，记录实际行为
+@testing:case="createCreditCurveRiskSettings accepts INT handle (no strict type check)"
+rCCR_h = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, 123, false)
+assert 1, typestr(rCCR_h) != "VOID"
+
+// 用例目的：INT 参数 method 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCreditCurveRiskSettings rejects BOOL method", exception=1
+caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, true, 1, 1.0e-4, 0, "TF_CCR", false)
+
+// 用例目的：INT 参数 granularity 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCreditCurveRiskSettings rejects BOOL granularity", exception=1
+caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, true, 1.0e-4, 0, "TF_CCR", false)
+
+// 用例目的：INT 参数 threading 传 BOOL 值 —— 实测插件未对该参数做 INT 判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createCreditCurveRiskSettings accepts BOOL threading (no strict type check)"
+rCCR_t = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, true, "TF_CCR", false)
+assert 1, typestr(rCCR_t) != "VOID"
+
+// 用例目的：method/granularity/threading 全取 0（映射为默认模式），验证零值合法且返回句柄
+@testing:case="createCreditCurveRiskSettings accepts zero flags returns handle"
+resZero = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 0, 1.0e-4, 0, "TF_CCR_ZERO", false)
+assert 1, typestr(resZero) != "VOID" && resZero == "TF_CCR_ZERO"
+
+// 用例目的：method/granularity/threading 传非零 INT 2（映射为对应模式），验证不抛异常并返回句柄
+@testing:case="createCreditCurveRiskSettings accepts nonzero INT flags"
+resTwo = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 2, 2, 1.0e-4, 2, "TF_CCR_NZ_TWO", false)
+assert 1, typestr(resTwo) != "VOID" && resTwo == "TF_CCR_NZ_TWO"
+
+// 用例目的：method/granularity/threading 传负非零 INT -1（映射为对应模式），验证不抛异常并返回句柄
+@testing:case="createCreditCurveRiskSettings accepts negative nonzero INT flags"
+resNeg = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, -1, -1, 1.0e-4, -1, "TF_CCR_NZ_NEG", false)
+assert 1, typestr(resNeg) != "VOID" && resNeg == "TF_CCR_NZ_NEG"

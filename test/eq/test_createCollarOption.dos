@@ -71,3 +71,47 @@ caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPric
 @testing:case="createCollarOption rejects negative nominal", exception=1
 caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL", false)
 
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: enum / returnJson / numeric-boundary coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 的字符串 "true"，验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createCollarOption rejects non-BOOL returnJson", exception=1
+caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_rb", "true")
+
+// 用例目的：枚举参数 payoffType 传入非法拼写，验证枚举校验（预期：抛异常）
+@testing:case="createCollarOption rejects illegal payoffType", exception=1
+caplib::createCollarOption("MANGO", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_bad", false)
+
+// 用例目的：枚举参数 underlyingType 传入非法拼写，验证枚举校验（预期：抛异常）
+@testing:case="createCollarOption rejects illegal underlyingType", exception=1
+caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "BAD_TYPE", "CNY", "50ETF.SSE", "f_CL_badut", false)
+
+// 用例目的：遍历 payoffType 全部合法枚举值，验证均被接受（各建独立句柄）
+@testing:case="createCollarOption accepts all legal payoffType values"
+for (payoffVal in ["CALL", "call", "PUT", "put"]) {
+    tmpH = caplib::createCollarOption(payoffVal, 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_" + payoffVal, false);
+}
+assert 1, true
+
+// 用例目的：遍历 underlyingType 全部合法枚举值，验证均被接受
+@testing:case="createCollarOption accepts all legal underlyingType values"
+for (utVal in ["SPOT", "FUTURE", "FORWARD"]) {
+    tmpH = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", utVal, "CNY", "50ETF.SSE", "f_CL_" + utVal, false);
+}
+assert 1, true
+
+// 用例目的：参数 lowerStrike 传入负值，记录实际行为（文档注包装器仅检查类型，故用普通用例）
+@testing:case="createCollarOption negative lowerStrike"
+observeResult = caplib::createCollarOption("CALL", 0.9, 1.1, -0.1, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_nls", false)
+assert 1, true
+
+// 用例目的：参数 upperStrike 传入负值，记录实际行为（文档注包装器仅检查类型，故用普通用例）
+@testing:case="createCollarOption negative upperStrike"
+observeResult = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, -0.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_nus", false)
+assert 1, true
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCollarOption rejects wrong type for handle", exception=1
+caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, false)
+

@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createVanillaBondTemplate.dos
 // Per-function test suite for caplib::createVanillaBondTemplate (fi).
-// Signature: caplib::createVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE, settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING, issuePrice DOUBLE, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING or STRING[], fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING, exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL[, notionalType STRING[, recoveryRate DOUBLE]][, returnJson BOOL])
+// Signature: caplib::createVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE, settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING, issuePrice DOUBLE, dayCountConvention STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING or STRING[], fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING, exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL[, notionalType STRING[, recoveryRate DOUBLE]][, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_createVanillaBondTemplate.dos   // single file
@@ -75,7 +75,7 @@ caplib::createVanillaBondTemplate("X", 1, 2024.01.01, 1, 2024.01.01, "X", 0.02, 
 
 // 用例目的：参数 issueDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createVanillaBondTemplate rejects wrong type for issueDate", exception=1
-caplib::createVanillaBondTemplate("X", "X", "bad", 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false)
+caplib::createVanillaBondTemplate("X", "FIXED_COUPON_BOND", "bad", 1, 2024.01.01, "X", 0.02, "X", 0.02, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", "X", "X", "X", 1, "X", "X", "X", false, "X", 0.02, false)
 
 // 用例目的：参数 instName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createVanillaBondTemplate rejects null instName", exception=1
@@ -91,7 +91,7 @@ caplib::createVanillaBondTemplate(["X"], "X", 2024.01.01, 1, 2024.01.01, "X", 0.
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createVanillaBondTemplate rejects keyword arguments", syntaxError=1
-caplib::createVanillaBondTemplate(instName="X", vanillaBondType="X", issueDate=2024.01.01, settlementDays=1, startDate=2024.01.01, maturity="X", rate=0.02, currency="X", issuePrice=0.02, dayCount="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, exCouponPeriod="X", exCouponCalendar="X", exCouponDayConvention="X", exCouponEndOfMonth=false, notionalType="X", recoveryRate=0.02, returnJson=false)
+caplib::createVanillaBondTemplate(instName="X", vanillaBondType="X", issueDate=2024.01.01, settlementDays=1, startDate=2024.01.01, maturity="X", rate=0.02, currency="X", issuePrice=0.02, dayCountConvention="X", calendar="X", frequency="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", refIndex="X", fixingCalendars="X", fixingFreq="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, exCouponPeriod="X", exCouponCalendar="X", exCouponDayConvention="X", exCouponEndOfMonth=false, notionalType="X", recoveryRate=0.02, returnJson=false)
 // 用例目的：枚举参数 vanillaBondType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createVanillaBondTemplate rejects invalid enum for vanillaBondType", exception=1
 caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "NOT_A_VALID_ENUM_LABEL", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
@@ -108,18 +108,94 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
-// 用例目的：参数 settlementDays 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createVanillaBondTemplate rejects negative settlementDays", exception=1
-caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, -1.0, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+// 用例目的：参数 settlementDays 传入负值边界（文档：须非负，但 wrapper 通常仅检查类型；-1 为 INT 正确类型）——记录实际行为
+@testing:case="createVanillaBondTemplate negative settlementDays records behavior"
+rSd = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_NEG", "FIXED_COUPON_BOND", asOfDate, -1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rSd) != "VOID"
+
+// 用例目的：参数 issuePrice 传入 0 的数值边界（文档：严格为正，但 wrapper 通常仅检查类型）——记录实际行为
+@testing:case="createVanillaBondTemplate zero issuePrice records behavior"
+rIp = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_IP", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 0.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rIp) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createVanillaBondTemplate rejects wrong type for returnJson", exception=1
+caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, "bad")
 
 // ----------------------------------------------------------------------------
 // Review gap-fill: null-vector / boundary / enum / handle-type coverage
 // ----------------------------------------------------------------------------
 
-// 用例目的：参数 fixingCalendars 传入全部元素为空值的向量，实测插件宽松接受、不抛异常——记录实际行为
+// 用例目的：参数 fixingCalendars 传入全部元素为空值的向量，验证向量空值校验（实测插件校验并抛 must not contain null values）
 @testing:case="createVanillaBondTemplate rejects all-null vector fixingCalendars", exception=1
-caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", [string(), string(), string()], "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FN", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", [string(), string(), string()], "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
 
 // 用例目的：参数 fixingCalendars 传入长度为 0 的空向量，验证向量空值校验（预期：抛异常）
 @testing:case="createVanillaBondTemplate rejects empty vector fixingCalendars", exception=1
 caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", take(string, 0), "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: 枚举非法值回退 / BOOL 拒绝
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 dayCountConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认日计数，验证回退行为（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for dayCountConvention (falls back to default)"
+rVbtDc = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_DC", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "NOT_A_REAL_ENUM", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtDc) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for frequency (falls back to default)"
+rVbtFq = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_FQ", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "NOT_A_REAL_ENUM", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtFq) != "VOID"
+
+// 用例目的：枚举参数 interestDayConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认营业日约定，验证回退行为（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for interestDayConvention (falls back to default)"
+rVbtIdc = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_IDC", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "NOT_A_REAL_ENUM", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtIdc) != "VOID"
+
+// 用例目的：枚举参数 stubPolicy 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for stubPolicy (falls back to default)"
+rVbtSp = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_SP", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "NOT_A_REAL_ENUM", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtSp) != "VOID"
+
+// 用例目的：枚举参数 brokenPeriodType 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for brokenPeriodType (falls back to default)"
+rVbtBpt = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_BPT", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "NOT_A_REAL_ENUM", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtBpt) != "VOID"
+
+// 用例目的：枚举参数 payDayConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认营业日约定，验证回退行为（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for payDayConvention (falls back to default)"
+rVbtPdc = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_PDC", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "NOT_A_REAL_ENUM", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtPdc) != "VOID"
+
+// 用例目的：枚举参数 fixingFreq 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for fixingFreq (falls back to default)"
+rVbtFf = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_FF", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "NOT_A_REAL_ENUM", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtFf) != "VOID"
+
+// 用例目的：枚举参数 fixingDayConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认营业日约定，验证回退行为（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for fixingDayConvention (falls back to default)"
+rVbtFdc = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_FDC", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "NOT_A_REAL_ENUM", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtFdc) != "VOID"
+
+// 用例目的：枚举参数 fixingMode 传入非法取值 —— 包装层将未知值回退（源码解析回退、不报错），验证宽松接受（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for fixingMode (falls back to default)"
+rVbtFm = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_FM", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "NOT_A_REAL_ENUM", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtFm) != "VOID"
+
+// 用例目的：枚举参数 exCouponDayConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认营业日约定，验证回退行为（预期：不抛异常）
+@testing:case="createVanillaBondTemplate accepts invalid enum for exCouponDayConvention (falls back to default)"
+rVbtEdc = caplib::createVanillaBondTemplate("TF_FI_BOND_TPL_FB_EDC", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "NOT_A_REAL_ENUM", false, "CONST_NOTIONAL", 0.0, true)
+assert 1, typestr(rVbtEdc) != "VOID"
+
+// 用例目的：INT 参数 settlementDays 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createVanillaBondTemplate rejects BOOL settlementDays", exception=1
+caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, true, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+
+// 用例目的：INT 参数 payDayOffset 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createVanillaBondTemplate rejects BOOL payDayOffset", exception=1
+caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", true, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", -1, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)
+
+// 用例目的：INT 参数 fixingDayOffset 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createVanillaBondTemplate rejects BOOL fixingDayOffset", exception=1
+caplib::createVanillaBondTemplate("TF_FI_BOND_TPL", "FIXED_COUPON_BOND", asOfDate, 1, asOfDate, "1Y", 0.0, currency, 100.0, "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION", "INVALID_DATE_GENERATION_MODE", true, "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false, "CONST_NOTIONAL", 0.0, true)

@@ -60,9 +60,10 @@ caplib::createSingleSharkFinOption("X", double(), 2024.01.01, 2024.01.01, 0.02, 
 @testing:case="createSingleSharkFinOption rejects vector for scalar payoffType", exception=1
 caplib::createSingleSharkFinOption(["X"], 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "TF_createSingleSharkFinOption_H", [2024.01.01], [0.02], [0.02], false)
 
-// 用例目的：向量参数 fixingDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 fixingDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter fixingDates must be a vector。
 @testing:case="createSingleSharkFinOption rejects scalar for vector fixingDates", exception=1
-caplib::createSingleSharkFinOption("X", 0.02, 2024.01.01, 2024.01.01, 0.02, "X", "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "TF_createSingleSharkFinOption_H", [2024.01.01], [0.02], [0.02], false)
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", 2024.01.01, dailyObsValues, dailyObsWeights, false)
 
 // 用例目的：向量参数 fixingDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createSingleSharkFinOption rejects partially-null vector fixingDates", exception=1
@@ -90,3 +91,48 @@ caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.
 // 用例目的：两个数组参数长度不一致（fixingDates 多一个元素），实测插件宽松接受——记录实际行为
 @testing:case="createSingleSharkFinOption fixingDates length mismatch", exception=1
 caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", join(dailyObsDates, dailyObsDates[0]), dailyObsValues, dailyObsWeights, false);
+
+// 用例目的：枚举参数 payoffType 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects invalid enum for payoffType", exception=1
+caplib::createSingleSharkFinOption("OTM", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：枚举参数 barrierType 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects invalid enum for barrierType", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "BAD_BARRIER", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：枚举参数 performanceType 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects invalid enum for performanceType", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "BAD_PERFORM", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：遍历枚举参数 underlyingType 的文档合法取值，逐一调用验证均被接受
+@testing:case="createSingleSharkFinOption supports all underlyingType enums"
+utEnum = ["SPOT", "FUTURE", "FORWARD"]
+okType = true;
+for (i in 0..(size(utEnum)-1)) {
+    try { caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", utEnum[i], "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false); } catch(ex) { okType = false; }
+}
+assert 1, okType
+
+// 用例目的：参数 returnJson 传入非 BOOL 值（该传逻辑值却传字符串），验证类型校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects non-bool returnJson", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, "true")
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects wrong type for handle", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：枚举参数 barrierObsType 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects invalid enum for barrierObsType", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "NOT_A_REAL_ENUM", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：枚举参数 paymentType 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects invalid enum for paymentType", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "NOT_A_REAL_ENUM", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：枚举参数 underlyingType 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects invalid enum for underlyingType", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "NOT_A_REAL_ENUM", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：INT 参数 settlementDays 传入 BOOL 值，验证类型校验（预期：抛异常）
+@testing:case="createSingleSharkFinOption rejects BOOL settlementDays", exception=1
+caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false)

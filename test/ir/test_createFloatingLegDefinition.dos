@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createFloatingLegDefinition.dos
 // Per-function test suite for caplib::createFloatingLegDefinition (fi).
-// Signature: caplib::createFloatingLegDefinition(currency STRING, refIndex STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING, fixingFreq STRING, dayCount STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, spread BOOL, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT[, notionalExchange STRING], tag STRING[, returnJson BOOL])
+// Signature: caplib::createFloatingLegDefinition(currency STRING, refIndex STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING, fixingFreq STRING, dayCountConvention STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, spread BOOL, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT[, notionalExchange STRING], tag STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_createFloatingLegDefinition.dos   // single file
@@ -88,7 +88,7 @@ caplib::createFloatingLegDefinition(["X"], "X", "X", "X", "X", "X", "X", "X", "X
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFloatingLegDefinition rejects keyword arguments", syntaxError=1
-caplib::createFloatingLegDefinition(currency="X", refIndex="X", calendar="X", fixingCalendars="X", freq="X", fixingFreq="X", dayCount="X", paymentDiscountMethod="X", rateCalcMethod="X", spread=false, interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, notionalExchange="X", tag="TF_createFloatingLegDefinition_H", returnJson=false)
+caplib::createFloatingLegDefinition(currency="X", refIndex="X", calendar="X", fixingCalendars="X", freq="X", fixingFreq="X", dayCountConvention="X", paymentDiscountMethod="X", rateCalcMethod="X", spread=false, interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingMode="X", fixingDayOffset=1, notionalExchange="X", tag="TF_createFloatingLegDefinition_H", returnJson=false)
 // 用例目的：枚举参数 paymentDiscountMethod 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects invalid enum for paymentDiscountMethod", exception=1
 caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NOT_A_VALID_ENUM_LABEL", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
@@ -144,3 +144,105 @@ caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFET
 @testing:case="createFloatingLegDefinition fixingCalendars length mismatch (lenient validation, does not raise)"
 result = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS", "EXTRA"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true);
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// 第二轮 DDB review 修正：returnJson 类型校验 / refIndex 句柄宽松实测 / 严格枚举遍历
+// ----------------------------------------------------------------------------
+
+// 用例目的：returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects wrong type for returnJson", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG_RJ", "bad")
+
+// 用例目的：refIndex 传入未创建句柄字符串，实测文档所述「包装器不校验句柄成员资格」、宽松接受——记录实际行为
+@testing:case="createFloatingLegDefinition accepts nonexistent refIndex handle (no membership validation)"
+nrR = caplib::createFloatingLegDefinition("CNY", "NONEXISTENT_IBOR_HANDLE", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+assert 1, typestr(nrR) != "VOID"
+
+// 用例目的：遍历参数 rateCalcMethod 的文档合法子集，逐一调用验证均被接受
+@testing:case="createFloatingLegDefinition supports all rateCalcMethod enums"
+labelRC = ["STANDARD", "COMPOUND_AVERAGE", "ARITHMETIC_AVERAGE"]
+okRC = true;
+for (i in 0..(size(labelRC)-1)) {
+    try { caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", labelRC[i], false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true); } catch(ex) { okRC = false; }
+}
+assert 1, okRC
+
+// 用例目的：遍历参数 fixingMode 的文档合法子集，逐一调用验证均被接受
+@testing:case="createFloatingLegDefinition supports all fixingMode enums"
+labelFM = ["IN_ADVANCE", "IN_ARREAR"]
+okFM = true;
+for (i in 0..(size(labelFM)-1)) {
+    try { caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", labelFM[i], -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true); } catch(ex) { okFM = false; }
+}
+assert 1, okFM
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续)： 枚举非法值 / BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 freq 传入非法取值 —— 源码 parseFrequencyOrDefault 对无法识别的
+// 取值回退默认值（不抛异常），实测宽松接受，记录实际行为
+@testing:case="accepts createFloatingLegDefinition invalid enum for freq (falls back to default)"
+r2_flleg_freq = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "NOT_A_REAL_ENUM", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r2_flleg_freq) != "VOID"
+
+// 用例目的：枚举参数 fixingFreq 传入非法取值 —— parseFrequencyOrDefault 回退默认值，
+// 实测宽松接受，记录实际行为
+@testing:case="accepts createFloatingLegDefinition invalid enum for fixingFreq (falls back to default)"
+r2_flleg_ffreq = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "NOT_A_REAL_ENUM", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r2_flleg_ffreq) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入非法取值 —— parseDayCountConventionOrDefault 回退默认值，
+// 实测宽松接受，记录实际行为
+@testing:case="accepts createFloatingLegDefinition invalid enum for dayCountConvention (falls back to default)"
+r2_flleg_dcc = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "NOT_A_REAL_ENUM", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r2_flleg_dcc) != "VOID"
+
+// 用例目的：枚举参数 rateCalcMethod 传入非法取值 —— 源码 parseEnumOrDefault 对无法识别的
+// 非空取值抛 IllegalArgumentException，验证枚举校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects invalid enum for rateCalcMethod", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "NOT_A_REAL_ENUM", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+// 用例目的：枚举参数 interestDayConvention 传入非法取值 —— parseBusinessDayConventionOrDefault
+// 回退默认值，实测宽松接受，记录实际行为
+@testing:case="accepts createFloatingLegDefinition invalid enum for interestDayConvention (falls back to default)"
+r2_flleg_idc = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "NOT_A_REAL_ENUM", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r2_flleg_idc) != "VOID"
+
+// 用例目的：枚举参数 stubPolicy 传入非法取值 —— parseEnumOrDefault 严格校验，验证枚举校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects invalid enum for stubPolicy", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "NOT_A_REAL_ENUM", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+// 用例目的：枚举参数 brokenPeriodType 传入非法取值 —— parseEnumOrDefault 严格校验，验证枚举校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects invalid enum for brokenPeriodType", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "NOT_A_REAL_ENUM", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+// 用例目的：枚举参数 payDayConvention 传入非法取值 —— parseBusinessDayConventionOrDefault
+// 回退默认值，实测宽松接受，记录实际行为
+@testing:case="accepts createFloatingLegDefinition invalid enum for payDayConvention (falls back to default)"
+r2_flleg_pdc = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "NOT_A_REAL_ENUM", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r2_flleg_pdc) != "VOID"
+
+// 用例目的：枚举参数 fixingDayConvention 传入非法取值 —— parseBusinessDayConventionOrDefault
+// 回退默认值，实测宽松接受，记录实际行为
+@testing:case="accepts createFloatingLegDefinition invalid enum for fixingDayConvention (falls back to default)"
+r2_flleg_fdc = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "NOT_A_REAL_ENUM", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r2_flleg_fdc) != "VOID"
+
+// 用例目的：枚举参数 fixingMode 传入非法取值 —— parseEnumOrDefault 严格校验，验证枚举校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects invalid enum for fixingMode", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "NOT_A_REAL_ENUM", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+// 用例目的：INT 参数 payDayOffset 传入 BOOL true —— 源码 requireIntScalar 拒绝 DT_BOOL，
+// 验证类型校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects BOOL payDayOffset", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", true, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续): fixingDayOffset BOOL 错型
+// 判据：fixingDayOffset 走 requireIntScalar(args[17]) 严格判型拒绝 DT_BOOL。
+// ----------------------------------------------------------------------------
+
+// 用例目的：INT 参数 fixingDayOffset 传入 BOOL true —— 源码 requireIntScalar(args[17]) 严格判型拒绝 DT_BOOL（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects BOOL fixingDayOffset", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", true, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)

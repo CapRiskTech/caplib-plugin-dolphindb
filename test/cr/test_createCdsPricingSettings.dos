@@ -65,6 +65,12 @@ caplib::createCdsPricingSettings(currency, 0, 1, 0, "NOT_A_VALID_ENUM_LABEL", "H
 @testing:case="createCdsPricingSettings optional returnJson null uses default"
 result = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
+// 用例目的：returnJson 传非 BOOL —— 实测插件不校验类型、宽松接受，记录实际行为
+@testing:case="accepts non-BOOL returnJson (no type validation)"
+rR_PS = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", "bad")
+assert 1, typestr(rR_PS) != "VOID"
 // 用例目的：遍历参数 numericalFix 的全部文档枚举取值，逐一调用验证均被接受
 @testing:case="createCdsPricingSettings supports all numericalFix enums"
 labelEnum = ["NONE_FIX", "TAYLOR"]
@@ -75,4 +81,28 @@ for (i in 0..(size(labelEnum)-1)) {
 assert 1, okEnum
 // all documented labels were rejected by the plugin in scalar form
 // (sweep removed 2026-09-16 after per-label probing)
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: 枚举非法值 / BOOL 拒绝
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 accrualBias 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createCdsPricingSettings rejects invalid enum for accrualBias", exception=1
+caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "NOT_A_REAL_ENUM", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
+
+// 用例目的：枚举参数 fwdsInCpnPeriod 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createCdsPricingSettings rejects invalid enum for fwdsInCpnPeriod", exception=1
+caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "NOT_A_REAL_ENUM", "TF_CDSPS", "TF_CDSPS", false)
+
+// 用例目的：INT 参数 includeCurrentFlow 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCdsPricingSettings rejects BOOL includeCurrentFlow", exception=1
+caplib::createCdsPricingSettings(currency, true, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
+
+// 用例目的：INT 参数 cashFlows 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCdsPricingSettings rejects BOOL cashFlows", exception=1
+caplib::createCdsPricingSettings(currency, 0, true, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
+
+// 用例目的：INT 参数 includeSettlementFlow 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCdsPricingSettings rejects BOOL includeSettlementFlow", exception=1
+caplib::createCdsPricingSettings(currency, 0, 1, true, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
 

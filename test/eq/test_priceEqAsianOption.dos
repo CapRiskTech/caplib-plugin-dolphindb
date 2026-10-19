@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceEqAsianOption.dos
 // Per-function test suite for caplib::priceEqAsianOption (eq).
-// Signature: caplib::priceEqAsianOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceEqAsianOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/eq")            // whole domain directory
 //     python run_tests.py --file eq/test_priceEqAsianOption.dos   // single file
@@ -151,24 +151,24 @@ caplib::priceEqAsianOption("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceEqAsianOption rejects extra argument", syntaxError=1
 caplib::priceEqAsianOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceEqAsianOption rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects wrong type for asOfDate", exception=1
 caplib::priceEqAsianOption("X", "bad", "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceEqAsianOption rejects wrong type for mode", exception=1
 caplib::priceEqAsianOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceEqAsianOption rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects null asOfDate", exception=1
 caplib::priceEqAsianOption("X", date(), "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceEqAsianOption rejects null mode", exception=1
 caplib::priceEqAsianOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceEqAsianOption rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects vector for scalar asOfDate", exception=1
 caplib::priceEqAsianOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -177,7 +177,7 @@ caplib::priceEqAsianOption("TF_NO_SUCH_HANDLE_priceEqAsianOption", 2024.01.01, "
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceEqAsianOption rejects keyword arguments", syntaxError=1
-caplib::priceEqAsianOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceEqAsianOption(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceEqAsianOption optional returnJson null uses default"
 result = caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", bool())
@@ -197,3 +197,48 @@ assert 1, abs(presentValue(p2) - 2.0 * presentValue(p1)) <= abs(presentValue(p1)
 r1 = caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true);
 r2 = caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true);
 assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
+
+// ----------------------------------------------------------------------------
+// 第二轮 review 修正补充用例
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（字符串 "true"），验证类型校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects non-BOOL returnJson", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", "true")
+
+// 用例目的：asOfDate 晚于到期日（2027.01.01），记录实际行为（包装器不检查日期先后）
+@testing:case="priceEqAsianOption asOfDate after expiry behavior record"
+r = caplib::priceEqAsianOption(xinst, 2027.01.01, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true)
+assert 1, true
+
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, "TF_NO_SUCH_HANDLE_priceEqAsianOption_mktDataHandle", bsmMcSettings, eqNoRisk[0], "", "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], "TF_NO_SUCH_HANDLE_priceEqAsianOption_pricingSettingsHandle", eqNoRisk[0], "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, "TF_NO_SUCH_HANDLE_priceEqAsianOption_riskSettingsHandle", "", "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects nonexistent handle scnSettingsHandle", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "TF_NO_SUCH_HANDLE_priceEqAsianOption_scnSettingsHandle", "", true)
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的对象句柄（定价设置句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects wrong object type for instrumentHandle", exception=1
+caplib::priceEqAsianOption(bsmMcSettings, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的对象句柄（工具句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], xinst, eqNoRisk[0], "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的对象句柄（工具句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, xinst, "", "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入类型不符的对象句柄（工具句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqAsianOption rejects wrong object type for scnSettingsHandle", exception=1
+caplib::priceEqAsianOption(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], xinst, "", true)

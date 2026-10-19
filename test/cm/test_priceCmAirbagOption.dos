@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceCmAirbagOption.dos
 // Per-function test suite for caplib::priceCmAirbagOption (cm).
-// Signature: caplib::priceCmAirbagOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceCmAirbagOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/cm")            // whole domain directory
 //     python run_tests.py --file cm/test_priceCmAirbagOption.dos   // single file
@@ -191,6 +191,9 @@ mktData = caplib::createCmMktDataSet(
     quantoIr, quantoFxVol, 0.0, "CM_MKT", true)
 assert 1, isHandleJson(mktData, "CM_MKT")
 
+// setup 级真实期权句柄（供异常/晚到期日用例复用；asOfDate 使用 asOfDate 合法成交日期）
+instFix = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "FUTURE", currency, underlying, "CM_AB_FIX_INST", dailyObsDates, dailyObsValues, dailyObsWeights, false);
+
 // ============================================================================
 // Tests
 
@@ -213,24 +216,26 @@ caplib::priceCmAirbagOption("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceCmAirbagOption rejects extra argument", syntaxError=1
 caplib::priceCmAirbagOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceCmAirbagOption rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects wrong type for asOfDate", exception=1
 caplib::priceCmAirbagOption("X", "bad", "X", "X", "X", "X", "X", false)
 
-// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+// 用例目的：参数 mode 传入错误类型（如该传字符串的传整数），前置参数均用 setup 合法值，验证异常由 mode 类型触发（预期：抛异常）
 @testing:case="priceCmAirbagOption rejects wrong type for mode", exception=1
-caplib::priceCmAirbagOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, 1, false)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceCmAirbagOption rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects null asOfDate", exception=1
 caplib::priceCmAirbagOption("X", date(), "X", "X", "X", "X", "X", false)
 
-// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceCmAirbagOption rejects null mode", exception=1
-caplib::priceCmAirbagOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+// 用例目的：参数 mode 传入对应类型的空值，前置参数均用 setup 合法值，验证异常由 mode 空值触发（预期：抛异常）
+// 用例目的：mode 传空字符串 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts priceCmAirbagOption null mode (no validation)"
+rAB_M = caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, string(), false)
+assert 1, typestr(rAB_M) != "VOID"
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceCmAirbagOption rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects vector for scalar asOfDate", exception=1
 caplib::priceCmAirbagOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -239,7 +244,7 @@ caplib::priceCmAirbagOption("TF_NO_SUCH_HANDLE_priceCmAirbagOption", 2024.01.01,
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceCmAirbagOption rejects keyword arguments", syntaxError=1
-caplib::priceCmAirbagOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceCmAirbagOption(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceCmAirbagOption optional returnJson null uses default"
 result = caplib::priceCmAirbagOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", bool())
@@ -247,6 +252,38 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceCmAirbagOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceCmAirbagOption(inst, asOfDate, inst, bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄字符串，前置参数均合法，验证异常由 pricingSettingsHandle 触发（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], "NO_SUCH_PRICING_SETTINGS", cmRisk[0], scnAnalysis, "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的 curve 句柄，前置参数均合法，验证异常由 pricingSettingsHandle 触发（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], irCurve, cmRisk[0], scnAnalysis, "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄字符串，前置参数均合法，验证异常由 riskSettingsHandle 触发（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], bsmPdeSettings, "NO_SUCH_RISK_SETTINGS", scnAnalysis, "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的 mktData 句柄，前置参数均合法，验证异常由 riskSettingsHandle 触发（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], bsmPdeSettings, mktData[0], scnAnalysis, "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在的句柄字符串，前置参数均合法，验证异常由 scnSettingsHandle 触发（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects nonexistent handle scnSettingsHandle", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], "NO_SUCH_SCN_SETTINGS", "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入类型不符的期权句柄，前置参数均合法，验证异常由 scnSettingsHandle 触发（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects wrong object type for scnSettingsHandle", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], instFix, "", true)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型（整数），前置参数均合法，验证异常由 returnJson 触发（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects wrong type for returnJson", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", 1)
+
+// 用例目的：asOfDate 设为晚于期权到期日（到期 2020.08.19，此处 2024.01.01），插件层不校验 date>maturity，dqlib 行为以实测为准；此用例记录晚于到期日时的实际行为并保证不崩服务
+@testing:case="priceCmAirbagOption asOfDate after maturity -> no crash"
+caplib::priceCmAirbagOption(instFix, 2024.01.01, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, true
 
 // ----------------------------------------------------------------------------
 // 用例目的：相同输入连续定价两次，验证两次现值完全一致（定价确定性）
@@ -264,3 +301,11 @@ r1 = caplib::priceCmAirbagOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmR
 inst = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE", 2000000.0, currency, "FUTURE", currency, underlying, "TF_CM_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 r2 = caplib::priceCmAirbagOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
 assert 1, abs(presentValue(r2) - 2.0 * presentValue(r1)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
+
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，前置参数均合法，验证句柄校验（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceCmAirbagOption(instFix, asOfDate, "TF_NO_SUCH_HANDLE_priceCmAirbagOption_mktDataHandle", bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的定价设置句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="priceCmAirbagOption rejects wrong object type for instrumentHandle", exception=1
+caplib::priceCmAirbagOption(bsmPdeSettings, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)

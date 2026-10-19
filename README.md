@@ -2,16 +2,15 @@
 
 Caplib 是面向 DolphinDB 用户的金融衍生品定价与风险分析插件。插件通过 CapRiskTech 提供的 `dqlibc` 计算库，覆盖固定收益（Fixed Income，FI）、利率（Interest Rate，IR）、外汇（Foreign Exchange，FX）、权益（Equity，EQ）、商品（Commodity，CM）和信用（Credit，CR）等资产类别，可用于曲线构建、市场数据组装、金融工具创建、定价和风险分析。
 
-当前版本 `0.0.15`，基于 `dqlibdolphin` 的 `release-caplib` 分支构建，提供 184 个对外接口。
-本版在 0.0.14（186 接口）基础上移除 `buildHistSimIrYieldCurve` 和 `buildHistSimCreditCurve` 两个市场风险接口；
-`calcVaR` / `calcExpectedShortfall` 返回值从 DOUBLE 标量改为字典（`value_at_risk` / `expected_shortfall` 及对应 `_mirrored` 键）；
-波动率翼部行权价枚举拼写修正 `ABOSULTE_STRIKE` → `ABSOLUTE_STRIKE`（旧拼写仍被识别）。
-注意：`createPricingSettings` 自 0.0.13 起仅支持 9 必填 + 可选 `returnJson` 的形式，
-不含 `specificPricingRequests` 的旧形式不再接受（破坏性变更）。
-插件及 C++ 依赖使用 GCC 8.4 / ABI0，
-可使用官方 DolphinDB v3.00.5 镜像自带的 C++ 运行库，无需替换 `libstdc++.so.6`。
-下载 [0.0.15 发行包](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.15)，详见 [发行说明](releases/0.0.15.md)。
-完整文档入口：
+当前版本 **`3.00.5.1`**，适配 DolphinDB Server `3.00.5`（Linux x86-64 / ABI0），基于 `dqlibdolphin` 的 `release-caplib` 分支构建，提供 184 个对外接口（另有框架元数据接口 `pluginInfo()`）。本插件为**开源 + 免费**（`openSource/isFree/isFreeForCommercial` 均 `true`），随发行包附带通用的 `dqlibc.lic`，详见 [License 说明](#license-说明)。
+版本说明（自 0.0.15 基线延续）：
+- 0.0.15 在 0.0.14（186 接口）基础上移除 `buildHistSimIrYieldCurve` 和 `buildHistSimCreditCurve` 两个市场风险接口；
+- `calcVaR` / `calcExpectedShortfall` 返回值从 DOUBLE 标量改为字典（`value_at_risk` / `expected_shortfall` 及对应 `_mirrored` 键）；
+- 波动率翼部行权价枚举拼写修正 `ABOSULTE_STRIKE` → `ABSOLUTE_STRIKE`（旧拼写仍被识别）；
+- 注意：`createPricingSettings` 自 0.0.13 起仅支持 9 必填 + 可选 `returnJson` 的形式，不含 `specificPricingRequests` 的旧形式不再接受（破坏性变更）；
+- 插件及 C++ 依赖使用 GCC 8.4 / ABI0，可使用官方 DolphinDB v3.00.5 镜像自带的 C++ 运行库，无需替换 `libstdc++.so.6`。
+
+下载 [3.00.5.1 市场发行说明](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/3.00.5.1)（版本发布后链接生效）。完整文档入口：
 
 - [完整中文使用说明](docs/DQLIB_DOCUMENTATION.md)
 - [官方镜像兼容性与升级说明](docs/GCC8_OFFICIAL_IMAGE.md)
@@ -64,8 +63,8 @@ loadPlugin("caplib")
 
 ### 使用预编译发行包安装
 
-1. 从本仓库的 [GitHub Releases](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.15)
-   下载 `caplib-plugin-dolphindb-0.0.15.tar.gz` 及其 SHA-256 校验文件。
+1. 从本仓库的 [GitHub Releases](https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/3.00.5.1)
+   下载 `caplib-plugin-dolphindb-3.00.5.1.tar.gz` 及其 SHA-256 校验文件。
 2. 将下列文件放在同一插件目录中，并保留 `data` 子目录：
 
    ```text
@@ -78,10 +77,10 @@ loadPlugin("caplib")
        └── calendars.bin
    ```
 
-3. 加载生成后的插件描述文件：
+3. 加载插件：
 
    ```dolphindb
-   loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")
+   loadPlugin("caplib")
    ```
 
 > `PluginCaplib.txt` 是 CMake 生成物。请使用发行包内已经配置好的文件，
@@ -266,7 +265,7 @@ bash docker/build.sh --test
 使用本地包或离线构建：
 
 ```bash
-CAPLIB_PLUGIN_ARCHIVE="$PWD/caplib-plugin-dolphindb-0.0.15.tar.gz" bash docker/build.sh
+CAPLIB_PLUGIN_ARCHIVE="$PWD/caplib-plugin-dolphindb-3.00.5.1.tar.gz" bash docker/build.sh
 ```
 
 Windows 可先设置 `$env:CAPLIB_PLUGIN_ARCHIVE` 再运行 `docker\build.bat`。
@@ -288,7 +287,7 @@ GCC 8 兼容包的符号要求和验证方法见 [升级说明](docs/GCC8_OFFICI
 
 ### License 说明
 
-请通过 [caprisktech.com](https://caprisktech.com) 申请许可证。`dqlibc.lic` 可放在：
+本插件为**开源 + 免费**（`openSource/isFree/isFreeForCommercial` 均 `true`）。`dqlibc` 底层库为 CapRiskTech 专有软件，随发行包附带不绑定机器的通用 `dqlibc.lic`（签名 + 有效期校验，非机器绑定）以启用计算；企业批量/定制许可请通过 [caprisktech.com](https://caprisktech.com) 联系。`dqlibc.lic` 可放在：
 
 1. `~/.dqlib/dqlibc.lic`
 2. 与 `libdqlibc.so` 相同的目录

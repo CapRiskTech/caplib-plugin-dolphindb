@@ -1,7 +1,7 @@
 // ============================================================================
 // test_buildBondCreditSpreadCurve.dos
 // Per-function test suite for caplib::buildBondCreditSpreadCurve (cr).
-// Signature: caplib::buildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian INT, handle STRING[, returnJson BOOL])
+// Signature: caplib::buildBondCreditSpreadCurve(asOfDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian INT, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/cr")            // whole domain directory
 //     python run_tests.py --file cr/test_buildBondCreditSpreadCurve.dos   // single file
@@ -156,8 +156,8 @@ caplib::buildBondCreditSpreadCurve(2024.01.01, "X", "X", "X", "X", "X", false)
 @testing:case="buildBondCreditSpreadCurve rejects extra argument", syntaxError=1
 caplib::buildBondCreditSpreadCurve(2024.01.01, "X", "X", "X", "X", "X", false, "TF_buildBondCreditSpreadCurve_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="buildBondCreditSpreadCurve rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects wrong type for asOfDate", exception=1
 caplib::buildBondCreditSpreadCurve("bad", "X", "X", "X", "X", "X", false, "TF_buildBondCreditSpreadCurve_H", false)
 
 // 用例目的：参数 curveName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
@@ -168,16 +168,16 @@ caplib::buildBondCreditSpreadCurve(2024.01.01, 1, "X", "X", "X", "X", false, "TF
 @testing:case="buildBondCreditSpreadCurve rejects wrong type for buildingMethod", exception=1
 caplib::buildBondCreditSpreadCurve(2024.01.01, "X", "X", "X", "X", 1, false, "TF_buildBondCreditSpreadCurve_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="buildBondCreditSpreadCurve rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects null asOfDate", exception=1
 caplib::buildBondCreditSpreadCurve(date(), "X", "X", "X", "X", "X", false, "TF_buildBondCreditSpreadCurve_H", false)
 
 // 用例目的：参数 curveName 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="buildBondCreditSpreadCurve rejects null curveName", exception=1
 caplib::buildBondCreditSpreadCurve(2024.01.01, string(), "X", "X", "X", "X", false, "TF_buildBondCreditSpreadCurve_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="buildBondCreditSpreadCurve rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects vector for scalar asOfDate", exception=1
 caplib::buildBondCreditSpreadCurve([2024.01.01], "X", "X", "X", "X", "X", false, "TF_buildBondCreditSpreadCurve_H", false)
 
 // 用例目的：句柄参数 parCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -186,7 +186,7 @@ caplib::buildBondCreditSpreadCurve(2024.01.01, "X", "TF_NO_SUCH_HANDLE_buildBond
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildBondCreditSpreadCurve rejects keyword arguments", syntaxError=1
-caplib::buildBondCreditSpreadCurve(referenceDate=2024.01.01, curveName="X", parCurveHandle="X", discountCurveHandle="X", forwardCurveHandle="X", buildingMethod="X", calcJacobian=false, handle="TF_buildBondCreditSpreadCurve_H", returnJson=false)
+caplib::buildBondCreditSpreadCurve(asOfDate=2024.01.01, curveName="X", parCurveHandle="X", discountCurveHandle="X", forwardCurveHandle="X", buildingMethod="X", calcJacobian=false, handle="TF_buildBondCreditSpreadCurve_H", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildBondCreditSpreadCurve optional returnJson null uses default"
 result = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", bool())
@@ -194,6 +194,26 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 discountCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildBondCreditSpreadCurve rejects wrong object type for discountCurveHandle", exception=1
 caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], parCnyMtnAaaSprdStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true)
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects wrong type for returnJson", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", "bad")
+
+// 用例目的：句柄参数 parCurveHandle 传入类型不符的对象句柄（bondYieldCurve），验证句柄类型校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects wrong object type for parCurveHandle", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", cnyTreasStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true)
+
+// 用例目的：句柄参数 discountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects nonexistent handle discountCurveHandle", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], "TF_NO_SUCH_HANDLE_buildBondCreditSpreadCurve", "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true)
+
+// 用例目的：句柄参数 forwardCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects nonexistent handle forwardCurveHandle", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_NO_SUCH_HANDLE_buildBondCreditSpreadCurve", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true)
+
+// 用例目的：句柄参数 forwardCurveHandle 传入类型不符的对象句柄（parCurve），验证句柄类型校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects wrong object type for forwardCurveHandle", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], parCnyMtnAaaSprdStdCfets[0], "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD", true)
 // 用例目的：正常调用，与独立来源的冻结参考值逐位对比，验证计算正确性
 @testing:case="buildBondCreditSpreadCurve -> frozen curve reference"
 csRef = caplib::getCreditSpread(cnyMtnAaaSprdStdCfets[0], [2026.07.22]);
@@ -236,3 +256,20 @@ cnyMtnAaaSprdStdCfets = caplib::buildBondCreditSpreadCurve(
     "CNY_MTN_AAA_SPRD_STD_CFETS", true);
 r2 = caplib::getCreditSpread(cnyMtnAaaSprdStdCfets[0], [(asOfDate + 30)]);
 assert 1, max(abs(r1 - r2)) > 1.0e-12
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle 类型校验 / buildingMethod 枚举 / calcJacobian BOOL
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects wrong type for handle", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, 123, true)
+
+// 用例目的：枚举参数 buildingMethod 传入非法取值 —— 文档：空值或其他字符串回退为 BOOTSTRAPPING_METHOD，验证回退行为（预期：不抛异常）
+@testing:case="buildBondCreditSpreadCurve accepts invalid enum for buildingMethod (falls back to default)"
+rBscsBm = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "NOT_A_REAL_ENUM", 0, "TF_FI_SPRD_FB_BM", true)
+assert 1, typestr(rBscsBm) != "VOID"
+
+// 用例目的：INT 参数 calcJacobian 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="buildBondCreditSpreadCurve rejects BOOL calcJacobian", exception=1
+caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", true, "TF_FI_SPRD", true)

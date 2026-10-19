@@ -75,3 +75,16 @@ assert 1, max(abs(r1 - r2)) < 1.0e-12
 r1 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
 r2 = caplib::calcYearFraction(2025.01.01, (2025.12.31 + 30), "ACTUAL_360");
 assert 1, abs(r1 - r2) > 0.0
+
+// 用例目的：dayCountConvention 传入非法约定，验证枚举校验（预期：抛异常）
+@testing:case="calcYearFraction rejects invalid dayCountConvention", exception=1
+yf = caplib::calcYearFraction(2025.01.01, 2025.12.31, "BOGUS_DCC")
+
+// 用例目的：遍历参数 dayCountConvention 的合法取值，逐一调用验证均被接受
+@testing:case="calcYearFraction supports dayCountConvention enums"
+labelEnum = ["ACTUAL_360", "ACT_365_FIXED"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::calcYearFraction(2025.01.01, 2025.12.31, labelEnum[i]); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum

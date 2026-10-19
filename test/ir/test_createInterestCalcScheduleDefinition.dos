@@ -73,3 +73,74 @@ caplib::createInterestCalcScheduleDefinition(string(), "X", "X", "X", "X", "X", 
 // 用例目的：参数传入错误类型/空值（实测插件宽松接受、不抛异常——记录实际行为）
 @testing:case="createInterestCalcScheduleDefinition rejects null frequency", exception=1
 caplib::createInterestCalcScheduleDefinition("X", string(), "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: returnJson 类型 / 剩余 STRING 参数类型 / 枚举遍历
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（STRING）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createInterestCalcScheduleDefinition non-BOOL returnJson (no validation)"
+rICS_rj = caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", "bad")
+assert 1, typestr(rICS_rj) != "VOID"
+
+// 用例目的：参数 stubPolicy 传入错误类型（数值），验证类型校验（预期：抛异常）
+@testing:case="createInterestCalcScheduleDefinition rejects wrong type for stubPolicy", exception=1
+caplib::createInterestCalcScheduleDefinition("X", "X", "X", 1, "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+
+// 用例目的：参数 brokenPeriodType 传入错误类型（数值），验证类型校验（预期：抛异常）
+@testing:case="createInterestCalcScheduleDefinition rejects wrong type for brokenPeriodType", exception=1
+caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", 1, "X", "TF_createInterestCalcScheduleDefinition_H", false)
+
+// 用例目的：参数 dateRollConvention 传入错误类型（数值），验证类型校验（预期：抛异常）
+@testing:case="createInterestCalcScheduleDefinition rejects wrong type for dateRollConvention", exception=1
+caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", 1, "TF_createInterestCalcScheduleDefinition_H", false)
+
+// 用例目的：输出句柄 tag 传入错误类型（数值），验证 STRING 类型校验（预期：抛异常）
+@testing:case="createInterestCalcScheduleDefinition rejects wrong type for tag", exception=1
+caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", "X", 123, false)
+
+// 用例目的：遍历参数 brokenPeriodType 的文档枚举取值（不含 INVALID 哨兵），逐一调用验证均被接受
+@testing:case="createInterestCalcScheduleDefinition supports accepted brokenPeriodType enums"
+labelBroken = ["SHORT", "LONG"]
+okBroken = true;
+for (i in 0..(size(labelBroken)-1)) {
+    try { caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", labelBroken[i], "X", "TF_createInterestCalcScheduleDefinition_H", false); } catch(ex) { okBroken = false; }
+}
+assert 1, okBroken
+
+// 用例目的：遍历参数 dateRollConvention 的文档枚举取值（不含 INVALID 哨兵），逐一调用验证均被接受
+@testing:case="createInterestCalcScheduleDefinition supports accepted dateRollConvention enums"
+labelRoll = ["EOM", "FRN", "IMM", "IMM_CAD", "IMM_AUD", "IMM_NZD", "SFE", "NONE", "TBILL"]
+okRoll = true;
+for (i in 0..(size(labelRoll)-1)) {
+    try { caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", labelRoll[i], "TF_createInterestCalcScheduleDefinition_H", false); } catch(ex) { okRoll = false; }
+}
+assert 1, okRoll
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续)： 枚举非法值实测行为
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 frequency 传入非法取值 —— 源码 parseFrequencyOrDefault 对无法识别的
+// 取值回退默认值（不抛异常），实测宽松接受，记录实际行为
+@testing:case="accepts createInterestCalcScheduleDefinition invalid enum for frequency (falls back to default)"
+r2_ics_freq = caplib::createInterestCalcScheduleDefinition("X", "NOT_A_REAL_ENUM", "X", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+assert 1, typestr(r2_ics_freq) != "VOID"
+
+// 用例目的：枚举参数 interestDayConvention 传入非法取值 —— parseBusinessDayConventionOrDefault
+// 回退默认值，实测宽松接受，记录实际行为
+@testing:case="accepts createInterestCalcScheduleDefinition invalid enum for interestDayConvention (falls back to default)"
+r2_ics_idc = caplib::createInterestCalcScheduleDefinition("X", "X", "NOT_A_REAL_ENUM", "X", "X", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+assert 1, typestr(r2_ics_idc) != "VOID"
+
+// 用例目的：枚举参数 brokenPeriodType 传入非法取值 —— 源码内联 if/else 对未识别取值
+// 回退 LONG（不抛异常），实测宽松接受，记录实际行为
+@testing:case="accepts createInterestCalcScheduleDefinition invalid enum for brokenPeriodType (falls back to default)"
+r2_ics_bpt = caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "NOT_A_REAL_ENUM", "X", "TF_createInterestCalcScheduleDefinition_H", false)
+assert 1, typestr(r2_ics_bpt) != "VOID"
+
+// 用例目的：枚举参数 dateRollConvention 传入非法取值 —— 源码完全不读取该参数
+// （date_roll_convention 固定设为 NONE），实测宽松接受，记录实际行为
+@testing:case="accepts createInterestCalcScheduleDefinition invalid enum for dateRollConvention (parameter ignored)"
+r2_ics_drc = caplib::createInterestCalcScheduleDefinition("X", "X", "X", "X", "X", "NOT_A_REAL_ENUM", "TF_createInterestCalcScheduleDefinition_H", false)
+assert 1, typestr(r2_ics_drc) != "VOID"

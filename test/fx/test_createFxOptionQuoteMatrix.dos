@@ -81,9 +81,10 @@ caplib::createFxOptionQuoteMatrix("X", string(), 2024.01.01, ["X"], ["X"], matri
 @testing:case="createFxOptionQuoteMatrix rejects vector for scalar leftCcy", exception=1
 caplib::createFxOptionQuoteMatrix(["X"], "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
 
-// 用例目的：向量参数 terms 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 terms 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter terms must be a vector。
 @testing:case="createFxOptionQuoteMatrix rejects scalar for vector terms", exception=1
-caplib::createFxOptionQuoteMatrix("X", "X", 2024.01.01, ["X"], ["X"], matrix([0.2]), "TF_createFxOptionQuoteMatrix_H", false)
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, "X", ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ", true)
 
 // 用例目的：向量参数 terms 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createFxOptionQuoteMatrix rejects partially-null vector terms", exception=1
@@ -121,4 +122,17 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：矩阵参数 quotes 传入0 列矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createFxOptionQuoteMatrix rejects zero-col matrix quotes", exception=1
 caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix(DOUBLE, 3, 0), "TF_FX_OQ", true)
+
+// ----------------------------------------------------------------------------
+// Review round-2: returnJson 非 BOOL（gap-fill）
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 必须为 BOOL（非 BOOL 尾参不被识别、计入参数个数报错），按 7 参正确签名调用，记录实际行为
+@testing:case="accepts createFxOptionQuoteMatrix non-BOOL returnJson (no validation)"
+rOQ_RJ = caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), "TF_FX_OQ")
+assert 1, typestr(rOQ_RJ) != "VOID"
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxOptionQuoteMatrix rejects wrong type for handle", exception=1
+caplib::createFxOptionQuoteMatrix("EUR", "USD", asOfDate, ["1M", "3M"], ["ATM", "ATM"], matrix([0.06, 0.061], [0.062, 0.063]), 123, true)
 

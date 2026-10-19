@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createFxVolatilitySurface.dos
 // Per-function test suite for caplib::createFxVolatilitySurface (fx).
-// Signature: caplib::createFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE[], strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING[, returnJson BOOL])
+// Signature: caplib::createFxVolatilitySurface(asOfDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE[], strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fx")            // whole domain directory
 //     python run_tests.py --file fx/test_createFxVolatilitySurface.dos   // single file
@@ -16,7 +16,7 @@ eurusdSpot = 1.1761;
 linearVolSurfDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
-    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE",
     1.0e-4, 1.0e4, "FX_LINEAR_VOL_SURF_DEF", true);
 fxMktConventions = caplib::createFxMktConventions(
     underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
@@ -47,8 +47,8 @@ caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.
 @testing:case="createFxVolatilitySurface rejects extra argument", syntaxError=1
 caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="createFxVolatilitySurface rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects wrong type for asOfDate", exception=1
 caplib::createFxVolatilitySurface("bad", "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 // 用例目的：参数 leftCcy 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
@@ -59,21 +59,22 @@ caplib::createFxVolatilitySurface(2024.01.01, 1, "X", [2024.01.01], matrix([0.2]
 @testing:case="createFxVolatilitySurface rejects wrong type for rightCcy", exception=1
 caplib::createFxVolatilitySurface(2024.01.01, "X", 1, [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="createFxVolatilitySurface rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects null asOfDate", exception=1
 caplib::createFxVolatilitySurface(date(), "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
 // 用例目的：参数 leftCcy 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFxVolatilitySurface rejects null leftCcy", exception=1
 caplib::createFxVolatilitySurface(2024.01.01, string(), "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="createFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects vector for scalar asOfDate", exception=1
 caplib::createFxVolatilitySurface([2024.01.01], "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
 
-// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter termDates must be a vector。
 @testing:case="createFxVolatilitySurface rejects scalar for vector termDates", exception=1
-caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.2]), matrix([0.2]), "X", "X", "TF_createFxVolatilitySurface_H", false)
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", 2024.01.01, formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
 
 // 用例目的：向量参数 termDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createFxVolatilitySurface rejects partially-null vector termDates", exception=1
@@ -89,7 +90,7 @@ caplib::createFxVolatilitySurface(2024.01.01, "X", "X", [2024.01.01], matrix([0.
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFxVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::createFxVolatilitySurface(referenceDate=2024.01.01, leftCcy="X", rightCcy="X", termDates=[2024.01.01], strikes=matrix([0.2]), volatilities=matrix([0.2]), definitionHandle="X", marketConventionsHandle="X", handle="TF_createFxVolatilitySurface_H", returnJson=false)
+caplib::createFxVolatilitySurface(asOfDate=2024.01.01, leftCcy="X", rightCcy="X", termDates=[2024.01.01], strikes=matrix([0.2]), volatilities=matrix([0.2]), definitionHandle="X", marketConventionsHandle="X", handle="TF_createFxVolatilitySurface_H", returnJson=false)
 // 用例目的：向量参数 termDates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createFxVolatilitySurface rejects all-null vector termDates", exception=1
 caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [date(), date(), date()], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false)
@@ -141,3 +142,35 @@ caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], matrix(D
 // 用例目的：两个成对数组参数长度不一致（termDates 多一个元素），验证参数间关系校验（预期：抛异常）
 @testing:case="createFxVolatilitySurface rejects termDates length mismatch", exception=1
 caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30, 2021.08.20], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false);
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: missing handle validation coverage (类别 A) + returnJson 类型校验 (类别 B)
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 definitionHandle 传入类型不符的对象句柄（fxMktConventions），验证句柄类型校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects wrong object type for definitionHandle", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, fxMktConventions[0], fxMktConventions[0], "TF_FXVS", false);
+
+// 用例目的：句柄参数 marketConventionsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects nonexistent handle marketConventionsHandle", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], "TF_NO_SUCH_HANDLE_createFxVolatilitySurface_marketConventionsHandle", "TF_FXVS", false);
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects wrong type for returnJson", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", "bad");
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects wrong type for handle", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], 123, false);
+
+// 用例目的：矩阵参数 volatilities 传入0 行矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects zero-row matrix volatilities", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, matrix(DOUBLE, 0, 3), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false);
+
+// 用例目的：矩阵参数 volatilities 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects all-null matrix volatilities", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, matrix([double(), double()], [double(), double()]), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false);
+
+// 用例目的：矩阵参数 volatilities 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createFxVolatilitySurface rejects partially-null matrix volatilities", exception=1
+caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, matrix([0.2, double()], [double(), 0.2]), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false);

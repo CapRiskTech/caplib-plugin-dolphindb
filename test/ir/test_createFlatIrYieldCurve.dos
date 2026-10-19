@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createFlatIrYieldCurve.dos
 // Per-function test suite for caplib::createFlatIrYieldCurve (ir).
-// Signature: caplib::createFlatIrYieldCurve(referenceDate DATE, currency STRING, rate DOUBLE, handle STRING[, returnJson BOOL])
+// Signature: caplib::createFlatIrYieldCurve(asOfDate DATE, currency STRING, rate DOUBLE, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_createFlatIrYieldCurve.dos   // single file
@@ -35,8 +35,8 @@ caplib::createFlatIrYieldCurve(2024.01.01, "X", 0.02)
 @testing:case="createFlatIrYieldCurve rejects extra argument", syntaxError=1
 caplib::createFlatIrYieldCurve(2024.01.01, "X", 0.02, "TF_createFlatIrYieldCurve_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="createFlatIrYieldCurve rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFlatIrYieldCurve rejects wrong type for asOfDate", exception=1
 caplib::createFlatIrYieldCurve("bad", "X", 0.02, "TF_createFlatIrYieldCurve_H", false)
 
 // 用例目的：参数 currency 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
@@ -47,22 +47,50 @@ caplib::createFlatIrYieldCurve(2024.01.01, 1, 0.02, "TF_createFlatIrYieldCurve_H
 @testing:case="createFlatIrYieldCurve rejects wrong type for rate", exception=1
 caplib::createFlatIrYieldCurve(2024.01.01, "X", "bad", "TF_createFlatIrYieldCurve_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="createFlatIrYieldCurve rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFlatIrYieldCurve rejects null asOfDate", exception=1
 caplib::createFlatIrYieldCurve(date(), "X", 0.02, "TF_createFlatIrYieldCurve_H", false)
 
 // 用例目的：参数 rate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFlatIrYieldCurve rejects null rate", exception=1
 caplib::createFlatIrYieldCurve(2024.01.01, "X", double(), "TF_createFlatIrYieldCurve_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="createFlatIrYieldCurve rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="createFlatIrYieldCurve rejects vector for scalar asOfDate", exception=1
 caplib::createFlatIrYieldCurve([2024.01.01], "X", 0.02, "TF_createFlatIrYieldCurve_H", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFlatIrYieldCurve rejects keyword arguments", syntaxError=1
-caplib::createFlatIrYieldCurve(referenceDate=2024.01.01, currency="X", rate=0.02, handle="TF_createFlatIrYieldCurve_H", returnJson=false)
+caplib::createFlatIrYieldCurve(asOfDate=2024.01.01, currency="X", rate=0.02, handle="TF_createFlatIrYieldCurve_H", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFlatIrYieldCurve optional returnJson null uses default"
 result = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_FIR", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: returnJson 类型 / handle 类型 / 数值边界 / 日期场景
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验（预期：抛异常）
+// 前置 asOfDate/currency/rate/handle 均为 setup 合法值，确保校验命中 returnJson。
+@testing:case="createFlatIrYieldCurve rejects wrong type for returnJson", exception=1
+caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_FIR_RJ", "bad")
+
+// 用例目的：输出句柄 handle 传入错误类型（数值），验证 STRING 类型校验（预期：抛异常）
+@testing:case="createFlatIrYieldCurve rejects wrong type for handle", exception=1
+caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, 123, false)
+
+// 用例目的：rate 传 0，验证零利率合法（文档：可为负、零或正，包装器不拒绝 NaN/无穷），记录实际行为
+@testing:case="createFlatIrYieldCurve accepts zero rate"
+resRateZero = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.0, "TF_FIR_RATE_ZERO", false)
+assert 1, typestr(resRateZero) != "VOID" && resRateZero == "TF_FIR_RATE_ZERO"
+
+// 用例目的：rate 传负值，验证负利率合法（文档：可为负、零或正），记录实际行为
+@testing:case="createFlatIrYieldCurve accepts negative rate"
+resRateNeg = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", -1.0, "TF_FIR_RATE_NEG", false)
+assert 1, typestr(resRateNeg) != "VOID" && resRateNeg == "TF_FIR_RATE_NEG"
+
+// 用例目的：asOfDate 传晚于到期/结束日的日期（文档：不得晚于相关到期/结束日，但包装器不检查此关系），记录实际行为
+@testing:case="createFlatIrYieldCurve accepts asOfDate after maturity (no check)"
+resLate = caplib::createFlatIrYieldCurve(2030.12.31, "CNY", 0.02, "TF_FIR_LATE", false)
+assert 1, true

@@ -92,7 +92,7 @@ print(r)  # 1.011111
 插件已由 `dolphindb.dos` 自动加载；如需手动加载：
 
 ```python
-s.run('loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")')
+s.run('loadPlugin("caplib")')
 ```
 
 ## 注意事项

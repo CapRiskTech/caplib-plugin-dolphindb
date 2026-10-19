@@ -153,3 +153,34 @@ caplib::createEqMktDataSet(asOfDate, underlying, 0.0, irCurve, divCurve, volSurf
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
 @testing:case="createEqMktDataSet rejects negative underlyingPrice", exception=1
 caplib::createEqMktDataSet(asOfDate, underlying, -1.0, irCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
+// 用例目的：句柄参数 dcHandle 传入类型不符的对象句柄（用股息曲线顶替利率曲线），验证句柄类型校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects wrong object type for dcHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, divCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "f_eqmkt", false)
+// 用例目的：句柄参数 volHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects nonexistent handle volHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, "TF_NO_SUCH_VOL", divCurve, "TF_NO_SUCH_VOL", quantoIr, quantoFxVol, 0.0, "f_eqmkt", false)
+// 用例目的：句柄参数 volHandle 传入类型不符的对象句柄（用利率曲线顶替波动率曲面），验证句柄类型校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects wrong object type for volHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, irCurve, quantoIr, quantoFxVol, 0.0, "f_eqmkt", false)
+// 用例目的：句柄参数 quantoDcHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects nonexistent handle quantoDcHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], "TF_NO_SUCH_QUANTO_DC", quantoFxVol, 0.0, "f_eqmkt", false)
+// 用例目的：句柄参数 quantoDcHandle 传入类型不符的对象句柄（用股息曲线顶替）验证句柄类型校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects wrong object type for quantoDcHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], divCurve, quantoFxVol, 0.0, "f_eqmkt", false)
+// 用例目的：句柄参数 quantoFxVolHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects nonexistent handle quantoFxVolHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, "TF_NO_SUCH_QUANTO_FXVOL", 0.0, "f_eqmkt", false)
+// 用例目的：句柄参数 quantoFxVolHandle 传入类型不符的对象句柄（用利率曲线顶替波动率曲线），验证句柄类型校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects wrong object type for quantoFxVolHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, irCurve, 0.0, "f_eqmkt", false)
+// 用例目的：句柄参数 divHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects nonexistent handle divHandle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, "TF_NO_SUCH_DIV", volSurface[0], quantoIr, quantoFxVol, 0.0, "f_eqmkt", false)
+// 用例目的：参数 returnJson 传入非 BOOL 值（该传逻辑值却传字符串），验证类型校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects non-bool returnJson", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, "f_eqmkt", "true")
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createEqMktDataSet rejects wrong type for handle", exception=1
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], quantoIr, quantoFxVol, 0.0, 123, false)

@@ -56,9 +56,10 @@ caplib::createOneTouchOption(2024.01.01, date(), "X", 0.02, "X", "X", 0.02, 0.02
 @testing:case="createOneTouchOption rejects vector for scalar expiry", exception=1
 caplib::createOneTouchOption([2024.01.01], 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "TF_createOneTouchOption_H", [2024.01.01], [0.02], [0.02], false)
 
-// 用例目的：向量参数 fixingDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：长形式（含 fixingDates/fixingValues/fixingWeights）下 fixingDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter fixingDates must be a non-empty vector。
 @testing:case="createOneTouchOption rejects scalar for vector fixingDates", exception=1
-caplib::createOneTouchOption(2024.01.01, 2024.01.01, "X", 0.02, "X", "X", 0.02, 0.02, 1, 0.02, "X", "X", "X", "X", "TF_createOneTouchOption_H", [2024.01.01], [0.02], [0.02], false)
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT", 2024.01.01, [underlyingPrice], [1.0], false)
 
 // 用例目的：向量参数 fixingDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createOneTouchOption rejects partially-null vector fixingDates", exception=1
@@ -87,3 +88,66 @@ caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", 0.0, "CONTINUOUS_O
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
 @testing:case="createOneTouchOption rejects negative barrierValue", exception=1
 caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", -1.0, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT", false)
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: enum / returnJson / numeric-boundary coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 的字符串 "true"，验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects non-BOOL returnJson", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_rb", "true")
+
+// 用例目的：枚举参数 barrierType 传入非法拼写，验证枚举校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects illegal barrierType", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "BAD", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_badt", false)
+
+// 用例目的：枚举参数 barrierObsType 传入非法拼写，验证枚举校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects illegal barrierObsType", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "BAD", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_badobs", false)
+
+// 用例目的：枚举参数 paymentType 传入非法拼写，验证枚举校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects illegal paymentType", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "BAD", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_badpay", false)
+
+// 用例目的：枚举参数 underlyingType 传入非法拼写，验证枚举校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects illegal underlyingType", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "BAD_TYPE", "CNY", "50ETF.SSE", "f_OT_badut", false)
+
+// 用例目的：遍历 barrierType 全部合法方向枚举值，验证均被接受
+@testing:case="createOneTouchOption accepts all legal barrierType values"
+barTypesArr = ["DOWN_IN", "UAI", "DOWN_AND_IN", "UP_IN", "DAO", "UP_AND_IN", "DOWN_OUT", "DAI", "DOWN_AND_OUT", "UP_OUT", "UAO", "UP_AND_OUT"]
+for (btVal in barTypesArr) {
+    tmpH = caplib::createOneTouchOption(2020.08.19, 2020.08.20, btVal, underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "fOT_" + btVal, false);
+}
+assert 1, true
+
+// 用例目的：遍历 paymentType 全部合法非空枚举值，验证均被接受
+@testing:case="createOneTouchOption accepts all legal paymentType values"
+payTypesArr = ["PAY_AT_HIT", "PAH", "PAY_AT_MATURITY", "PAM"]
+for (ptVal in payTypesArr) {
+    tmpH = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", ptVal, 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "fOTpay_" + ptVal, false);
+}
+assert 1, true
+
+// 用例目的：遍历 underlyingType 全部合法枚举值，验证均被接受
+@testing:case="createOneTouchOption accepts all legal underlyingType values"
+for (utVal in ["SPOT", "FUTURE", "FORWARD"]) {
+    tmpH = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", utVal, "CNY", "50ETF.SSE", "fOTut_" + utVal, false);
+}
+assert 1, true
+
+// 用例目的：参数 nominal 传入0，验证数值边界校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects zero nominal", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 0.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_nom0", false)
+
+// 用例目的：参数 nominal 传入负值，验证数值边界校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects negative nominal", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_nomn", false)
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects wrong type for handle", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, false)
+
+// 用例目的：参数 settlementDays 传 BOOL 值 true（该传 INT），验证类型严格校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects BOOL settlementDays", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_bool_sd", false)

@@ -61,9 +61,10 @@ caplib::createPmOptionQuoteMatrix("X", date(), ["X"], matrix([0.2]), matrix([0.2
 @testing:case="createPmOptionQuoteMatrix rejects vector for scalar underlying", exception=1
 caplib::createPmOptionQuoteMatrix(["X"], 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
 
-// 用例目的：向量参数 terms 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 terms 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter terms must be a vector。
 @testing:case="createPmOptionQuoteMatrix rejects scalar for vector terms", exception=1
-caplib::createPmOptionQuoteMatrix("X", 2024.01.01, ["X"], matrix([0.2]), matrix([0.2]), matrix([0.2]), "TF_createPmOptionQuoteMatrix_H", false)
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, "X", ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true)
 
 // 用例目的：向量参数 terms 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects partially-null vector terms", exception=1
@@ -103,3 +104,70 @@ caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], matrix(STRING, 
 // 用例目的：两个成对数组参数长度不一致（terms 多一个元素），验证参数间关系校验（预期：抛异常）
 @testing:case="createPmOptionQuoteMatrix rejects terms length mismatch", exception=1
 caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M", "EXTRA"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", true);
+
+// ----------------------------------------------------------------------------
+// Review round-2: handle/enum validation + quantity/null/matrix coverage (gap-fill)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入错误类型，验证类型校验（前置参数合法，预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects wrong type for handle", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), 1, true)
+
+// 用例目的：参数 handle 传入空字符串，验证非空校验（前置参数合法，预期：抛异常）
+// 用例目的：输出句柄传空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createPmOptionQuoteMatrix empty handle (no validation)"
+rOQ_H = caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), string(), true)
+assert 1, typestr(rOQ_H) != "VOID"
+
+// 用例目的：参数 returnJson 传入非 BOOL 类型，验证类型校验（前置参数合法，预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects non-BOOL returnJson", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0]), "TF_PM_OQ", "yes")
+
+// 用例目的：枚举参数 payoffTypes 传入非法取值，验证枚举校验（前置参数合法，预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects invalid enum for payoffTypes", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["NOT_A_VALID_PAYOFF"], [0.10], matrix([450.0]), "TF_PM_OQ", true)
+
+// 用例目的：遍历参数 payoffTypes 的全部文档合法枚举取值，逐一调用验证均被接受
+@testing:case="createPmOptionQuoteMatrix supports all payoffTypes enums"
+labelEnum = ["CALL", "PUT", "STRADDLE", "STRANGLE", "RISK_REVERSAL", "BUTTERFLY", "ATM_STRADDLE"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], [labelEnum[i]], [0.10], matrix([450.0]), "TF_PM_OQ", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// 用例目的：向量参数 deltas 传入全部空值，验证向量空值校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects all-null deltas", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [double()], matrix([450.0]), "TF_PM_OQ", true)
+
+// 用例目的：矩阵参数 deltas 传入0 行矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects zero-row matrix deltas", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], matrix(DOUBLE, 0, 1), matrix([450.0]), "TF_PM_OQ", true)
+
+// 用例目的：向量参数 deltas 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects empty deltas", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], take(double,0), matrix([450.0]), "TF_PM_OQ", true)
+
+// 用例目的：矩阵参数 quotes 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects all-null matrix quotes", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([double(), double()], [double(), double()]), "TF_PM_OQ", true)
+
+// 用例目的：矩阵参数 quotes 传入0 行矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects zero-row matrix quotes", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix(DOUBLE, 0, 1), "TF_PM_OQ", true)
+
+// 用例目的：成对参数 deltas 与 quotes 数量不一致（deltas 1 个、quotes 2 个），验证参数间关系校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects deltas/quotes size mismatch", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0, 460.0]), "TF_PM_OQ", true)
+
+// 用例目的：成对参数 payoffTypes 与 deltas 数量不一致（payoffTypes 2 个、deltas 1 个），验证参数间关系校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects payoffTypes/deltas size mismatch", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL","PUT"], [0.10], matrix([450.0]), "TF_PM_OQ", true)
+
+// 用例目的：矩阵参数 deltas 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects partially-null matrix deltas", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], matrix([0.10, double()], [double(), 0.10]), matrix([450.0]), "TF_PM_OQ", true)
+
+// 用例目的：矩阵参数 quotes 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createPmOptionQuoteMatrix rejects partially-null matrix quotes", exception=1
+caplib::createPmOptionQuoteMatrix("AU.SHFE", 2022.03.09, ["1M"], ["CALL"], [0.10], matrix([450.0, double()], [double(), 450.0]), "TF_PM_OQ", true)

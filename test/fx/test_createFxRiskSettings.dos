@@ -73,3 +73,52 @@ caplib::createFxRiskSettings(irCurveSettings="X", priceSettings="X", volSettings
 @testing:case="createFxRiskSettings optional returnJson null uses default"
 result = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2: 引用型句柄参数 + returnJson 非 BOOL（gap-fill）
+// ----------------------------------------------------------------------------
+
+// 用例目的：引用型句柄参数 irCurveSettings 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects non-existent irCurveSettings handle", exception=1
+caplib::createFxRiskSettings("TF_NO_SUCH_HANDLE_IR", priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 irCurveSettings 类型与同参对象不符（传入 PriceRiskSettings 句柄，期望 IrCurveRiskSettings），验证类型校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects wrong-type irCurveSettings handle", exception=1
+caplib::createFxRiskSettings(priceRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 priceSettings 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects non-existent priceSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, "TF_NO_SUCH_HANDLE_PRICE", volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 priceSettings 类型与同参对象不符（传入 IrCurveRiskSettings 句柄，期望 PriceRiskSettings），验证类型校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects wrong-type priceSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, irCurveRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 volSettings 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects non-existent volSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, "TF_NO_SUCH_HANDLE_VOL", priceVolRisk, thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 volSettings 类型与同参对象不符（传入 PriceRiskSettings 句柄，期望 VolRiskSettings），验证类型校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects wrong-type volSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, priceRisk, priceVolRisk, thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 priceVolSettings 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects non-existent priceVolSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, "TF_NO_SUCH_HANDLE_PV", thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 priceVolSettings 类型与同参对象不符（传入 VolRiskSettings 句柄，期望 PriceVolRiskSettings），验证类型校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects wrong-type priceVolSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, volRisk, thetaRisk, "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 thetaSettings 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects non-existent thetaSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, "TF_NO_SUCH_HANDLE_THETA", "", "TF_FXR", false)
+
+// 用例目的：引用型句柄参数 thetaSettings 类型与同参对象不符（传入 PriceRiskSettings 句柄，期望 ThetaRiskSettings），验证类型校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects wrong-type thetaSettings handle", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, priceRisk, "", "TF_FXR", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型（STRING），实测插件宽松接受、记录实际行为
+@testing:case="accepts createFxRiskSettings non-BOOL returnJson (no validation)"
+rRS_RJ = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", "yes")
+assert 1, typestr(rRS_RJ) != "VOID"

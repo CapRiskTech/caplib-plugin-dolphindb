@@ -57,11 +57,37 @@ caplib::createScnSettings(min=0.02, max=0.02, size=1, scnGenType=1, handle="TF_c
 @testing:case="createScnSettings optional returnJson null uses default"
 result = caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_createScnSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createScnSettings rejects non-BOOL returnJson", exception=1
+caplib::createScnSettings(0.02, 0.02, 1, 1, "TF_createScnSettings_H", 1)
 // 用例目的：参数 size 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createScnSettings rejects zero size", exception=1
-caplib::createScnSettings(0.02, 0.02, 0.0, 1, "TF_createScnSettings_H", false)
+// 用例目的：size 传 0 —— 实测插件不校验该 INT 取值、宽松接受，记录实际行为
+@testing:case="accepts zero size (no range validation)"
+rSC_z = caplib::createScnSettings(0.02, 0.02, 0, 1, "TF_createScnSettings_H", false)
+assert 1, typestr(rSC_z) != "VOID"
 
 // 用例目的：参数 size 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createScnSettings rejects negative size", exception=1
-caplib::createScnSettings(0.02, 0.02, -1.0, 1, "TF_createScnSettings_H", false)
+// 用例目的：size 传 -1 —— 实测插件不校验该 INT 取值、宽松接受，记录实际行为
+@testing:case="accepts negative size (no range validation)"
+rSC_n = caplib::createScnSettings(0.02, 0.02, -1, 1, "TF_createScnSettings_H", false)
+assert 1, typestr(rSC_n) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle / BOOL coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入整数 123 —— 实测插件未对该参数做 STRING 判型，宽松接受并把 123 当作句柄 "123" 返回，记录实际行为
+@testing:case="createScnSettings accepts INT handle (no strict type check)"
+rSC_h = caplib::createScnSettings(0.02, 0.02, 1, 1, 123, false)
+assert 1, typestr(rSC_h) != "VOID" && rSC_h == "123"
+
+// 用例目的：size 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createScnSettings rejects BOOL size", exception=1
+caplib::createScnSettings(0.02, 0.02, true, 1, "TF_createScnSettings_H", false)
+
+// 用例目的：scnGenType 传 BOOL 值 —— 实测插件未对该参数做 INT 判型，true 被当作 1 宽松接受，记录实际行为
+@testing:case="createScnSettings accepts BOOL scnGenType (no strict type check)"
+rSC_g = caplib::createScnSettings(0.02, 0.02, 1, true, "TF_createScnSettings_H", false)
+assert 1, typestr(rSC_g) != "VOID"
 

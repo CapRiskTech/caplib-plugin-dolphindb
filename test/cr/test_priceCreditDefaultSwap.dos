@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceCreditDefaultSwap.dos
 // Per-function test suite for caplib::priceCreditDefaultSwap (cr).
-// Signature: caplib::priceCreditDefaultSwap(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceCreditDefaultSwap(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/cr")            // whole domain directory
 //     python run_tests.py --file cr/test_priceCreditDefaultSwap.dos   // single file
@@ -116,24 +116,24 @@ caplib::priceCreditDefaultSwap("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceCreditDefaultSwap rejects extra argument", syntaxError=1
 caplib::priceCreditDefaultSwap("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceCreditDefaultSwap rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects wrong type for asOfDate", exception=1
 caplib::priceCreditDefaultSwap("X", "bad", "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceCreditDefaultSwap rejects wrong type for mode", exception=1
 caplib::priceCreditDefaultSwap("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceCreditDefaultSwap rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects null asOfDate", exception=1
 caplib::priceCreditDefaultSwap("X", date(), "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceCreditDefaultSwap rejects null mode", exception=1
 caplib::priceCreditDefaultSwap("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceCreditDefaultSwap rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects vector for scalar asOfDate", exception=1
 caplib::priceCreditDefaultSwap("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -142,7 +142,7 @@ caplib::priceCreditDefaultSwap("TF_NO_SUCH_HANDLE_priceCreditDefaultSwap", 2024.
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceCreditDefaultSwap rejects keyword arguments", syntaxError=1
-caplib::priceCreditDefaultSwap(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceCreditDefaultSwap(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceCreditDefaultSwap optional returnJson null uses default"
 result = caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", bool())
@@ -150,6 +150,19 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceCreditDefaultSwap rejects wrong object type for mktDataHandle", exception=1
 caplib::priceCreditDefaultSwap(cds, asOfDate, cds, pricingSettings[0], crRisk[0], "", "", true)
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects wrong type for returnJson", exception=1
+caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", "bad")
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的对象句柄（cds 工具），验证句柄类型校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], cds, crRisk[0], "", "", true)
+
+// 用例目的：定价日 asOfDate 晚于 CDS 到期日（2024.06.20），实测插件行为（记录实际行为）
+@testing:case="priceCreditDefaultSwap asOfDate after maturity behavior"
+r = caplib::priceCreditDefaultSwap(cds, 2025.06.20, mktData[0], pricingSettings[0], crRisk[0], "", "", true);
+assert 1, true
 
 // 用例目的：相同输入连续定价两次，验证两次现值完全一致（定价确定性）
 @testing:case="priceCreditDefaultSwap deterministic repeat -> identical result"
@@ -170,3 +183,37 @@ cds2X = caplib::buildCreditDefaultSwap(
     "CR_CDS_NAME", "CR_CDS", false);
 r2 = caplib::priceCreditDefaultSwap(cds2X, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true);
 assert 1, abs(presentValue(r2) - 2.0 * presentValue(r1)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: 不存在句柄 / 句柄对象类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceCreditDefaultSwap(cds, asOfDate, "TF_NO_SUCH_HANDLE_priceCreditDefaultSwap_mktDataHandle", pricingSettings[0], crRisk[0], "", "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], "TF_NO_SUCH_HANDLE_priceCreditDefaultSwap_pricingSettingsHandle", crRisk[0], "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], "TF_NO_SUCH_HANDLE_priceCreditDefaultSwap_riskSettingsHandle", "", "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在的句柄字符串 —— 包装层不检索该句柄（源码未使用该参数），宽松接受并完成定价，记录实际行为（预期：不抛异常）
+@testing:case="accepts priceCreditDefaultSwap nonexistent scnSettingsHandle (no handle validation)"
+rPcdsScnNh = caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "TF_NO_SUCH_HANDLE_priceCreditDefaultSwap_scnSettingsHandle", "", true)
+assert 1, typestr(rPcdsScnNh) != "VOID"
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的对象句柄（市场数据而非 CDS 工具），验证句柄类型校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects wrong object type for instrumentHandle", exception=1
+caplib::priceCreditDefaultSwap(mktData[0], asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的对象句柄（市场数据而非风险设置），验证句柄类型校验（预期：抛异常）
+@testing:case="priceCreditDefaultSwap rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], mktData[0], "", "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入类型不符的对象句柄 —— 包装层不检索该句柄（源码未使用该参数），宽松接受并完成定价，记录实际行为（预期：不抛异常）
+@testing:case="accepts priceCreditDefaultSwap wrong object type for scnSettingsHandle (no type validation)"
+rPcdsScnWt = caplib::priceCreditDefaultSwap(cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], mktData[0], "", true)
+assert 1, typestr(rPcdsScnWt) != "VOID"

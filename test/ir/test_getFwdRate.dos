@@ -48,29 +48,35 @@ caplib::getFwdRate("X", [2024.01.01])
 @testing:case="getFwdRate rejects extra argument", syntaxError=1
 caplib::getFwdRate("X", [2024.01.01], 0.02, 1)
 
-// 用例目的：参数 tenor 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+// 用例目的：参数 tenor 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）。
+// 前置 irCurveHandle/dates 用 setup 合法值，只让 tenor 非法，确保校验命中 tenor。
 @testing:case="getFwdRate rejects wrong type for tenor", exception=1
-caplib::getFwdRate("X", [2024.01.01], "bad")
+caplib::getFwdRate(irCurve, [2024.01.01], "bad")
 
-// 用例目的：参数 tenor 传入对应类型的空值，验证空值校验（预期：抛异常）
+// 用例目的：参数 tenor 传入对应类型的空值，验证空值校验（预期：抛异常）。
+// 前置 irCurveHandle/dates 用 setup 合法值，只让 tenor 为空，确保校验命中 tenor。
 @testing:case="getFwdRate rejects null tenor", exception=1
-caplib::getFwdRate("X", [2024.01.01], double())
+caplib::getFwdRate(irCurve, [2024.01.01], double())
 
-// 用例目的：标量参数 tenor 传入向量，验证数据形式校验（预期：抛异常）
+// 用例目的：标量参数 tenor 传入向量，验证数据形式校验（预期：抛异常）。
+// 前置 irCurveHandle/dates 用 setup 合法值，只让 tenor 向量化，确保校验命中 tenor。
 @testing:case="getFwdRate rejects vector for scalar tenor", exception=1
-caplib::getFwdRate("X", [2024.01.01], [0.02])
+caplib::getFwdRate(irCurve, [2024.01.01], [0.02])
 
-// 用例目的：向量参数 dates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 dates 传入标量（文档称不接受 DATE 标量），验证数据形式校验（预期：抛异常）。
+// 前置 irCurveHandle/tenor 用 setup 合法值，只让 dates 标量化，确保校验命中 dates。
 @testing:case="getFwdRate rejects scalar for vector dates", exception=1
-caplib::getFwdRate("X", [2024.01.01], 0.02)
+caplib::getFwdRate(irCurve, 2024.01.01, 0.25)
 
-// 用例目的：向量参数 dates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
+// 用例目的：向量参数 dates 传入部分空值的向量，验证向量空值校验（预期：抛异常）。
+// 前置 irCurveHandle/tenor 用 setup 合法值，只让 dates 含空值，确保校验命中 dates。
 @testing:case="getFwdRate rejects partially-null vector dates", exception=1
-caplib::getFwdRate("X", [2024.01.01, date()], 0.02)
+caplib::getFwdRate(irCurve, [2024.01.01, date()], 0.25)
 
-// 用例目的：向量参数 dates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
+// 用例目的：向量参数 dates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）。
+// 前置 irCurveHandle/tenor 用 setup 合法值，只让 dates 空向量化，确保校验命中 dates。
 @testing:case="getFwdRate rejects empty vector dates", exception=1
-caplib::getFwdRate("X", take(date, 0), 0.02)
+caplib::getFwdRate(irCurve, take(date, 0), 0.25)
 
 // 用例目的：句柄参数 irCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="getFwdRate rejects nonexistent handle irCurveHandle", exception=1
@@ -88,11 +94,11 @@ caplib::getFwdRate(irCurve, [date(), date(), date()], 0.25)
 flatIrRef = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", 0.02, "TF_REF_FIR", false);
 frr = caplib::getFwdRate(flatIrRef, [2023.03.09, 2024.03.09], 1.0);
 assert 1, abs(frr[0] - 0.02) < 1.0e-12
-// 用例目的：参数 tenor 传入0，验证数值边界校验（预期：抛异常）
+// 用例目的：参数 tenor 传入 0，验证边界校验（实测服务端校验 tenor must be positive 并抛异常）
 @testing:case="getFwdRate rejects zero tenor", exception=1
 caplib::getFwdRate(irCurve, [2025.03.10], 0.0)
 
-// 用例目的：参数 tenor 传入负值，验证数值边界校验（预期：抛异常）
+// 用例目的：参数 tenor 传入负值，验证边界校验（实测服务端校验 tenor must be positive 并抛异常）
 @testing:case="getFwdRate rejects negative tenor", exception=1
 caplib::getFwdRate(irCurve, [2025.03.10], -1.0)
 

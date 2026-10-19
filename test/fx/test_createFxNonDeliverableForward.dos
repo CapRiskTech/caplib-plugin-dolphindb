@@ -71,3 +71,12 @@ caplib::createFxNonDeliverableForward("X", 0.0, "X", 0.02, "X", 2024.01.01, 2024
 @testing:case="createFxNonDeliverableForward rejects negative buyAmount", exception=1
 caplib::createFxNonDeliverableForward("X", -1.0, "X", 0.02, "X", 2024.01.01, 2024.01.01, "TF_createFxNonDeliverableForward_H", false)
 
+// ----------------------------------------------------------------------------
+// Review round-2: returnJson 非 BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 returnJson 传入非 BOOL 字符串 —— 实测被当作多余实参忽略、仍返回句柄（记录实际行为）
+@testing:case="createFxNonDeliverableForward accepts non-BOOL returnJson (no validation)"
+rNdf_rj = caplib::createFxNonDeliverableForward("X", 0.02, "X", 0.02, "X", 2024.01.01, 2024.01.01, "TF_createFxNonDeliverableForward_H", "bad")
+assert 1, typestr(rNdf_rj) != "VOID"
+

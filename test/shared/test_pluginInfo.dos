@@ -1,0 +1,51 @@
+// ============================================================================
+// test_pluginInfo.dos
+// Meta test suite for caplib::pluginInfo — the marketplace-required entry
+// point. pluginInfo is NOT listed in PluginCaplib.txt; the server resolves
+// the exported symbol automatically when the plugin namespace is loaded.
+//
+// NOTE: this is the 185th test file on top of the 184 per-interface suites —
+// pluginInfo is a framework entry point, not one of the 184 documented
+// functions. Uses the native DolphinDB testing framework:
+//     test("test/shared")
+//     python run_tests.py --file shared/test_pluginInfo.dos
+// ============================================================================
+
+// 用例目的：pluginInfo() 返回字典，10 个必需字段齐全（预期：全部非空）
+@testing:case="pluginInfo returns all ten required keys"
+info = caplib::pluginInfo();
+assert 1, !isNull(info.pluginName)
+assert 2, !isNull(info.openSource)
+assert 3, !isNull(info.repositoryUrl)
+assert 4, !isNull(info.isFree)
+assert 5, !isNull(info.isFreeForCommercial)
+assert 6, !isNull(info.pluginVersion)
+assert 7, !isNull(info.serverVersion)
+assert 8, !isNull(info.architecture)
+assert 9, !isNull(info.platform)
+assert 10, !isNull(info.feature)
+
+// 用例目的：字段值与市场页面注册信息一致（预期：开源免费 Linux x86 ABI 包）
+@testing:case="pluginInfo field values match the marketplace registration"
+assert 1, info.pluginName == "caplib"
+assert 2, info.openSource == true
+assert 3, info.isFree == true
+assert 4, info.isFreeForCommercial == true
+assert 5, info.pluginVersion == "3.00.5.1"
+assert 6, info.serverVersion == "3.00.5"
+assert 7, info.architecture == "x86"
+assert 8, info.platform == "Linux"
+assert 9, info.feature == "ABI"
+assert 10, !isNull(info.repositoryUrl) && strlen(info.repositoryUrl) > 0
+
+// 用例目的：相同输入连续调用两次，验证返回结果完全一致（计算确定性）
+@testing:case="pluginInfo deterministic repeat -> identical result"
+i1 = caplib::pluginInfo();
+i2 = caplib::pluginInfo();
+assert 1, i1.pluginVersion == i2.pluginVersion
+assert 2, i1.pluginName == i2.pluginName
+assert 3, i1.feature == i2.feature
+
+// 用例目的：多传参数调用，验证参数个数上限校验（预期：解析期报参数个数错误）
+@testing:case="pluginInfo rejects extra argument", syntaxError=1
+caplib::pluginInfo(1)

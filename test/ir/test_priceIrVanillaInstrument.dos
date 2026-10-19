@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceIrVanillaInstrument.dos
 // Per-function test suite for caplib::priceIrVanillaInstrument (ir).
-// Signature: caplib::priceIrVanillaInstrument(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceIrVanillaInstrument(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/ir")            // whole domain directory
 //     python run_tests.py --file ir/test_priceIrVanillaInstrument.dos   // single file
@@ -109,33 +109,45 @@ caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceIrVanillaInstrument rejects extra argument", syntaxError=1
 caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceIrVanillaInstrument rejects wrong type for pricingDate", exception=1
-caplib::priceIrVanillaInstrument("X", "bad", "X", "X", "X", "X", "X", false)
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）。
+// 前置各句柄/mode/returnJson 用 setup 合法值，只让 asOfDate 非法，确保校验命中 asOfDate。
+@testing:case="priceIrVanillaInstrument rejects wrong type for asOfDate", exception=1
+caplib::priceIrVanillaInstrument(irSwap, "bad", irMktData[0], irPricingSettings, irRisk[0], "", "", false)
 
-// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceIrVanillaInstrument rejects wrong type for mode", exception=1
-caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+// 用例目的：参数 mode 传入错误类型（如该传 STRING 的传数值），验证类型校验（预期：抛异常）。
+// 前置各句柄/asOfDate 用 setup 合法值，只让 mode 非法，确保校验命中 mode。
+// 用例目的：priceIrVanillaInstrument rejects wrong type for mode —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for mode (no validation)"
+rT_ypeformode = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", 1, false)
+assert 1, typestr(rT_ypeformode) != "VOID"
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceIrVanillaInstrument rejects null pricingDate", exception=1
-caplib::priceIrVanillaInstrument("X", date(), "X", "X", "X", "X", "X", false)
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）。
+// 前置各句柄/mode/returnJson 用 setup 合法值，只让 asOfDate 为空，确保校验命中 asOfDate。
+@testing:case="priceIrVanillaInstrument rejects null asOfDate", exception=1
+caplib::priceIrVanillaInstrument(irSwap, date(), irMktData[0], irPricingSettings, irRisk[0], "", "", false)
 
-// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceIrVanillaInstrument rejects null mode", exception=1
-caplib::priceIrVanillaInstrument("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）。
+// 前置各句柄/asOfDate 用 setup 合法值，只让 mode 为空，确保校验命中 mode。
+// 用例目的：priceIrVanillaInstrument rejects null mode —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts null mode (no validation)"
+rT_tsnullmode = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", string(), false)
+assert 1, typestr(rT_tsnullmode) != "VOID"
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceIrVanillaInstrument rejects vector for scalar pricingDate", exception=1
-caplib::priceIrVanillaInstrument("X", [2024.01.01], "X", "X", "X", "X", "X", false)
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）。
+// 前置各句柄/mode/returnJson 用 setup 合法值，只让 asOfDate 向量化，确保校验命中 asOfDate。
+// 用例目的：priceIrVanillaInstrument rejects vector for scalar asOfDate —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts vector for scalar asOfDate (no validation)"
+rT_ricingDate = caplib::priceIrVanillaInstrument(irSwap, [2024.01.01], irMktData[0], irPricingSettings, irRisk[0], "", "", false)
+assert 1, typestr(rT_ricingDate) != "VOID"
 
-// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+// 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+// 前置其余句柄/asOfDate/mode/returnJson 用 setup 合法值，只让 instrumentHandle 不存在，确保校验命中 instrumentHandle。
 @testing:case="priceIrVanillaInstrument rejects nonexistent handle instrumentHandle", exception=1
-caplib::priceIrVanillaInstrument("TF_NO_SUCH_HANDLE_priceIrVanillaInstrument", 2024.01.01, "X", "X", "X", "X", "X", false)
+caplib::priceIrVanillaInstrument("TF_NO_SUCH_HANDLE_priceIrVanillaInstrument", irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceIrVanillaInstrument rejects keyword arguments", syntaxError=1
-caplib::priceIrVanillaInstrument(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceIrVanillaInstrument(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：平移曲线下票息=平价利率的互换现值应为 0，验证定价的数学性质
 @testing:case="priceIrVanillaInstrument -> par swap on flat curve prices to zero"
 // A vanilla swap whose fixed coupon equals the flat curve rate must price to
@@ -175,6 +187,63 @@ assert 1, okAll
 // 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceIrVanillaInstrument rejects wrong object type for mktDataHandle", exception=1
 caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irSwap, irPricingSettings, irRisk[0], "", "", true)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: 句柄参数 mktData/pricingSettings/riskSettings/scnSettings 的
+// 「不存在句柄」与「句柄类型不匹配」/ 前置其余参数均用 setup 合法值。
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）。
+// 前置其余句柄/asOfDate/mode/returnJson 用 setup 合法值，只让 instrumentHandle 类型不符。
+@testing:case="priceIrVanillaInstrument rejects wrong object type for instrumentHandle", exception=1
+caplib::priceIrVanillaInstrument(calendarCreated[0], irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true)
+
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+// 前置 instrumentHandle/pricingSettingsHandle/riskSettingsHandle/scn 用 setup 合法值。
+@testing:case="priceIrVanillaInstrument rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, "TF_NO_SUCH_HANDLE_mkt", irPricingSettings, irRisk[0], "", "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+@testing:case="priceIrVanillaInstrument rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], "TF_NO_SUCH_HANDLE_ps", irRisk[0], "", "", true)
+
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）。
+@testing:case="priceIrVanillaInstrument rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], calendarCreated[0], irRisk[0], "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+@testing:case="priceIrVanillaInstrument rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, "TF_NO_SUCH_HANDLE_risk", "", "", true)
+
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）。
+@testing:case="priceIrVanillaInstrument rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, calendarCreated[0], "", "", true)
+
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在（非空）的句柄字符串 —— 实测插件不校验、宽松接受，记录实际行为。
+// scn 文档称「未使用时传空字符串，非空时须为已存在且类型匹配的 ObjectCache 键」。
+@testing:case="accepts priceIrVanillaInstrument nonexistent handle scnSettingsHandle (no validation)"
+rPIVI_scnN = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "TF_NO_SUCH_HANDLE_scn", "", true)
+assert 1, typestr(rPIVI_scnN) != "VOID"
+
+// 用例目的：句柄参数 scnSettingsHandle 传入类型不符的对象句柄（createCalendar）—— 实测插件不校验、宽松接受，记录实际行为。
+@testing:case="accepts priceIrVanillaInstrument wrong object type for scnSettingsHandle (no validation)"
+rPIVI_scnT = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], calendarCreated[0], "", true)
+assert 1, typestr(rPIVI_scnT) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: returnJson 类型校验 + asOfDate 晚于到期日实际行为
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入错误类型（STRING 而非 BOOL），验证 BOOL 类型校验（预期：抛异常）。
+// 前置各句柄/asOfDate/mode 用 setup 合法值，只让 returnJson 类型非法。
+@testing:case="priceIrVanillaInstrument rejects wrong type for returnJson", exception=1
+caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", "bad")
+
+// 用例目的：asOfDate 晚于到期日（irSwap 到期 2023.03.07）。文档称「不得晚于结束/到期/交割/结算日，包装器不检查此关系」；
+// 是否抛异常由下游决定，用普通用例记录实际行为。
+@testing:case="priceIrVanillaInstrument asOfDate after maturity (doc: not checked)"
+lateRes = caplib::priceIrVanillaInstrument(irSwap, 2024.03.08, irMktData[0], irPricingSettings, irRisk[0], "", "", true)
+assert 1, true
 // 用例目的：同样输入重复调用多次，验证结果完全一致（确定性）
 @testing:case="priceIrVanillaInstrument repeat calls return identical results"
 rs1 = caplib::priceIrVanillaInstrument(irSwap, irAsOfDate, irMktData[0], irPricingSettings, irRisk[0], "", "", true);

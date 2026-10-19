@@ -32,7 +32,7 @@ print(caplib::getObjectCacheJson("FxSpotRate", "MR_EX_SPOT_RESULT"));
 // -----------------------------------------------------------------------------
 // 2. buildHistSimFxVolSurface
 //    Signature: (simDate DATE, referenceVolSurf H, histStart H, histEnd H,
-//                volSurfaceDates DATE[], volSurfaceStrikes (vector of DOUBLE[]),
+//                volSurfaceDates DATE 向量, volSurfaceStrikes (vector of DOUBLE[]),
 //                spot H, domCurve H, forCurve H, settings H ('' ok),
 //                handle STRING) -> handle STRING
 //    NOTE: on current dqlibc server builds the FX vol-surface scenario
@@ -82,7 +82,7 @@ try {
 
 // -----------------------------------------------------------------------------
 // 3. calcVaR
-//    Signature: (profitLossSamples DOUBLE[], probability DOUBLE (0..1),
+//    Signature: (profitLossSamples DOUBLE 向量, probability DOUBLE (0..1),
 //                antithetic BOOL) -> DICTIONARY {value_at_risk, value_at_risk_mirrored}
 //    Positive output = loss at the given confidence level.
 // -----------------------------------------------------------------------------
@@ -99,7 +99,7 @@ print(caplib::calcVaR(profitLossSamples, 0.95, true).value_at_risk_mirrored);
 
 // -----------------------------------------------------------------------------
 // 4. calcExpectedShortfall
-//    Signature: (profitLossSamples DOUBLE[], probability DOUBLE (0..1),
+//    Signature: (profitLossSamples DOUBLE 向量, probability DOUBLE (0..1),
 //                antithetic BOOL) -> DICTIONARY {expected_shortfall, expected_shortfall_mirrored}
 //    Average loss beyond the VaR threshold (conditional tail expectation).
 // -----------------------------------------------------------------------------

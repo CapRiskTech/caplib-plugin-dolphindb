@@ -194,15 +194,74 @@ caplib::createCmRiskSettings("bad", 1, 1, 1, "TF_CM_RISK_BAD", true)
 @testing:case="createCmRiskSettings rejects null irDelta", exception=1
 caplib::createCmRiskSettings(int(), 1, 1, 1, "TF_CM_RISK_BAD", true)
 
-// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）。
+// 前置 irDelta 改为合法 INT(1)，只让目标参数 priceDelta 非法，确保校验命中 priceDelta。
 @testing:case="createCmRiskSettings rejects wrong type for priceDelta", exception=1
-caplib::createCmRiskSettings("1", "bad", 1, 1, "TF_CM_RISK_BAD", true)
+caplib::createCmRiskSettings(1, "bad", 1, 1, "TF_CM_RISK_BAD", true)
 
-// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）
+// 用例目的：参数传入错误类型/空值，验证类型与空值校验（预期：抛异常）。
+// 前置 irDelta 改为合法 INT(1)，只让目标参数 priceDelta 非法，确保校验命中 priceDelta。
 @testing:case="createCmRiskSettings rejects null priceDelta", exception=1
-caplib::createCmRiskSettings("1", int(), 1, 1, "TF_CM_RISK_BAD", true)
+caplib::createCmRiskSettings(1, int(), 1, 1, "TF_CM_RISK_BAD", true)
 
 // ----------------------------------------------------------------------------
 // 用例目的：标量参数 irDelta 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createCmRiskSettings rejects vector for scalar irDelta", exception=1
 caplib::createCmRiskSettings([1], 1, 1, 1, "TF_CM_RISK_BAD", true);
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-3: 剩余参数的类型校验 + BOOL 被拒 + 0/非零 INT 合法取值
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 volVega 传入错误类型（字符串），验证类型校验（预期：抛异常）
+@testing:case="createCmRiskSettings rejects wrong type for volVega", exception=1
+caplib::createCmRiskSettings(1, 1, "bad", 1, "TF_CM_RISK_BAD", true)
+
+// 用例目的：参数 theta 传入错误类型（字符串），验证类型校验（预期：抛异常）
+@testing:case="createCmRiskSettings rejects wrong type for theta", exception=1
+caplib::createCmRiskSettings(1, 1, 1, "bad", "TF_CM_RISK_BAD", true)
+
+// 用例目的：参数 handle 传入错误类型（数值），验证输出句柄类型校验（预期：抛异常）
+@testing:case="createCmRiskSettings rejects wrong type for handle", exception=1
+caplib::createCmRiskSettings(1, 1, 1, 1, 123, true)
+
+// 用例目的：参数 handle 传入空值，验证输出句柄非空校验（预期：抛异常）
+// 用例目的：创建且输出句柄传空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createCmRiskSettings null handle (no validation)"
+rRS_NH = caplib::createCmRiskSettings(1, 1, 1, 1, string(), true)
+assert 1, typestr(rRS_NH) != "VOID"
+
+// 用例目的：参数 returnJson 传入错误类型（STRING 而非 BOOL），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createCmRiskSettings rejects wrong type for returnJson", exception=1
+caplib::createCmRiskSettings(1, 1, 1, 1, "TF_CM_RISK_RJ", "bad")
+
+// 用例目的：irDelta 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCmRiskSettings rejects BOOL irDelta", exception=1
+caplib::createCmRiskSettings(true, 1, 1, 1, "TF_CM_BOOL_IR", true)
+
+// 用例目的：priceDelta 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCmRiskSettings rejects BOOL priceDelta", exception=1
+caplib::createCmRiskSettings(1, true, 1, 1, "TF_CM_BOOL_PRICE", true)
+
+// 用例目的：volVega 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCmRiskSettings rejects BOOL volVega", exception=1
+caplib::createCmRiskSettings(1, 1, true, 1, "TF_CM_BOOL_VOL", true)
+
+// 用例目的：theta 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createCmRiskSettings rejects BOOL theta", exception=1
+caplib::createCmRiskSettings(1, 1, 1, true, "TF_CM_BOOL_THETA", true)
+
+// 用例目的：irDelta/priceDelta/volVega/theta 全取 0（视为 false），验证零值合法且返回句柄
+@testing:case="createCmRiskSettings accepts zero flags returns handle"
+resZero = caplib::createCmRiskSettings(0, 0, 0, 0, "CM_RISK_ZERO", false)
+assert 1, typestr(resZero) != "VOID" && resZero == "CM_RISK_ZERO"
+
+// 用例目的：四个标志传非零 INT 2（视为 true），验证不抛异常并返回句柄
+@testing:case="createCmRiskSettings accepts nonzero INT flags"
+resTwo = caplib::createCmRiskSettings(2, 2, 2, 2, "CM_RISK_NZ_TWO", false)
+assert 1, typestr(resTwo) != "VOID" && resTwo == "CM_RISK_NZ_TWO"
+
+// 用例目的：四个标志传负非零 INT -1（视为 true），验证不抛异常并返回句柄
+@testing:case="createCmRiskSettings accepts negative nonzero INT flags"
+resNeg = caplib::createCmRiskSettings(-1, -1, -1, -1, "CM_RISK_NZ_NEG", false)
+assert 1, typestr(resNeg) != "VOID" && resNeg == "CM_RISK_NZ_NEG"

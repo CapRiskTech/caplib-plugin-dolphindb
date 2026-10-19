@@ -7,11 +7,62 @@
 //     python run_tests.py --file fi/test_buildVanillaBond.dos   // single file
 
 // ============================================================================
+// Helper functions（前置依赖模板的构造，取自 test_buildBondYieldCurve.dos 的可用写法）
+
+def createStdFixedBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::createVanillaBondTemplate(
+        instName, "FIXED_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
+def createStdZeroBondTemplate(instName, maturity, currency, calendarName, asOfDate) {
+    return caplib::createVanillaBondTemplate(
+        instName, "ZERO_COUPON_BOND",
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
+
+// ============================================================================
 // Setup: fixtures (plain script, executed before the test cases)
 
 asOfDate = 2021.07.22;
 currency = "CNY";
 calCfets = "CAL_CFETS";
+
+// Precondition: register the CFETS calendar used by the bond templates
+calCfetsCreated = caplib::createCalendar(calCfets);
+
+// Precondition: create the 13 benchmark bond templates referenced by the par
+// curve names (createBondParCurve looks them up in the object cache), copied
+// from test_buildBondYieldCurve.dos which runs successfully.
+cnyTreasZero1m = createStdZeroBondTemplate("CNY_TREAS_ZERO_1M", "1M", currency, calCfets, asOfDate);
+cnyTreasCpnA3m = createStdFixedBondTemplate("CNY_TREAS_CPN_A_3M", "3M", currency, calCfets, asOfDate);
+cnyTreasCpnA6m = createStdFixedBondTemplate("CNY_TREAS_CPN_A_6M", "6M", currency, calCfets, asOfDate);
+cnyTreasCpnA9m = createStdFixedBondTemplate("CNY_TREAS_CPN_A_9M", "9M", currency, calCfets, asOfDate);
+cnyTreasCpnA1y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_1Y", "1Y", currency, calCfets, asOfDate);
+cnyTreasCpnA2y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_2Y", "2Y", currency, calCfets, asOfDate);
+cnyTreasCpnA3y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_3Y", "3Y", currency, calCfets, asOfDate);
+cnyTreasCpnA5y = createStdFixedBondTemplate("CNY_TREAS_CPN_A_5Y", "5Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa7y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_7Y", "7Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa10y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_10Y", "10Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa15y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_15Y", "15Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa20y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_20Y", "20Y", currency, calCfets, asOfDate);
+cnyTreasCpnSa30y = createStdFixedBondTemplate("CNY_TREAS_CPN_SA_30Y", "30Y", currency, calCfets, asOfDate);
 
 cnyTreasCpnBond200014Template = caplib::createVanillaBondTemplate(
     "cny_treas_cpn_bond_200014", "FIXED_COUPON_BOND",
@@ -111,11 +162,24 @@ caplib::buildVanillaBond(nominal=0.02, instTemplate="X", fixings="X", startDate=
 @testing:case="buildVanillaBond optional returnJson null uses default"
 result = caplib::buildVanillaBond(1000000.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：参数 nominal 传入0，验证数值边界校验（预期：抛异常）
+// 用例目的：参数 nominal 传入 0，验证正数校验（实测插件校验并抛 IllegalArgumentException）
 @testing:case="buildVanillaBond rejects zero nominal", exception=1
-caplib::buildVanillaBond(0.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", false)
+caplib::buildVanillaBond(0.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND_ZERO", false)
 
-// 用例目的：参数 nominal 传入负值，验证数值边界校验（预期：抛异常）
+// 用例目的：参数 nominal 传入负值，验证正数校验（实测插件校验并抛 IllegalArgumentException）
 @testing:case="buildVanillaBond rejects negative nominal", exception=1
-caplib::buildVanillaBond(-1.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", false)
+caplib::buildVanillaBond(-1.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND_NEG", false)
+
+// 用例目的：句柄参数 instTemplate 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildVanillaBond rejects nonexistent instTemplate handle", exception=1
+caplib::buildVanillaBond(1000000.0, "TF_NO_SUCH_TEMPLATE_buildVanillaBond", "", 2020.10.10, "TF_FI_BOND_BAD", false)
+
+// 用例目的：句柄参数 fixings 传入不存在的句柄字符串，验证句柄校验（实测抛异常）
+@testing:case="buildVanillaBond rejects nonexistent fixings", exception=1
+caplib::buildVanillaBond(1000000.0, cnyTreasCpnBond200014Template[0], "TF_NO_SUCH_FIXINGS", 2020.10.10, "TF_FI_BOND_BAD", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL —— 实测插件不校验类型、宽松接受，记录实际行为
+@testing:case="accepts buildVanillaBond non-BOOL returnJson (no validation)"
+rVB_RJ = caplib::buildVanillaBond(1000000.0, cnyTreasCpnBond200014Template[0], "", 2020.10.10, "TF_FI_BOND", "bad")
+assert 1, typestr(rVB_RJ) != "VOID"
 

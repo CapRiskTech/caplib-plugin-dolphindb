@@ -49,6 +49,10 @@ caplib::createThetaRiskSettings(theta=false, shift=1, scaling=0.02, handle="TF_c
 @testing:case="createThetaRiskSettings optional returnJson null uses default"
 result = caplib::createThetaRiskSettings(false, 1, 0.02, "TF_createThetaRiskSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createThetaRiskSettings rejects non-BOOL returnJson", exception=1
+caplib::createThetaRiskSettings(false, 1, 0.02, "TF_createThetaRiskSettings_H", 1)
 // 用例目的：参数 scaling 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createThetaRiskSettings rejects zero scaling", exception=1
 caplib::createThetaRiskSettings(false, 1, 0.0, "TF_createThetaRiskSettings_H", false)
@@ -56,4 +60,32 @@ caplib::createThetaRiskSettings(false, 1, 0.0, "TF_createThetaRiskSettings_H", f
 // 用例目的：参数 scaling 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createThetaRiskSettings rejects negative scaling", exception=1
 caplib::createThetaRiskSettings(false, 1, -1.0, "TF_createThetaRiskSettings_H", false)
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle / BOOL / flags coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入整数 123 —— 实测插件未对该参数做 STRING 判型，宽松接受并把 123 当作句柄 "123" 返回，记录实际行为
+@testing:case="createThetaRiskSettings accepts INT handle (no strict type check)"
+rTR_h = caplib::createThetaRiskSettings(false, 1, 0.02, 123, false)
+assert 1, typestr(rTR_h) != "VOID" && rTR_h == "123"
+
+// 用例目的：shift 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createThetaRiskSettings rejects BOOL shift", exception=1
+caplib::createThetaRiskSettings(false, true, 0.02, "TF_createThetaRiskSettings_H", false)
+
+// 用例目的：shift 传 0（文档：扰动大小可为负、零或正），验证零值合法且返回句柄
+@testing:case="createThetaRiskSettings accepts zero flags returns handle"
+resZero = caplib::createThetaRiskSettings(false, 0, 0.02, "TF_THETA_RISK_ZERO", false)
+assert 1, typestr(resZero) != "VOID" && resZero == "TF_THETA_RISK_ZERO"
+
+// 用例目的：shift 传非零 INT 2，验证不抛异常并返回句柄
+@testing:case="createThetaRiskSettings accepts nonzero INT flags"
+resTwo = caplib::createThetaRiskSettings(false, 2, 0.02, "TF_THETA_RISK_TWO", false)
+assert 1, typestr(resTwo) != "VOID" && resTwo == "TF_THETA_RISK_TWO"
+
+// 用例目的：shift 传负非零 INT -1，验证不抛异常并返回句柄
+@testing:case="createThetaRiskSettings accepts negative nonzero INT flags"
+resNeg = caplib::createThetaRiskSettings(false, -1, 0.02, "TF_THETA_RISK_NEG", false)
+assert 1, typestr(resNeg) != "VOID" && resNeg == "TF_THETA_RISK_NEG"
 

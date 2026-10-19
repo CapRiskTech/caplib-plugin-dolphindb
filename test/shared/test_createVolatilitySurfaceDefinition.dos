@@ -11,7 +11,7 @@
 
 // 用例目的：正常调用，验证返回句柄（returnJson=true 时连同 json 结构一起返回）
 @testing:case="createVolatilitySurfaceDefinition -> handle"
-result = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+result = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
 assert 1, result == "TF_VSDEF"
 
 // ----------------------------------------------------------------------------
@@ -55,12 +55,61 @@ caplib::createVolatilitySurfaceDefinition(["X"], "X", "X", "X", "X", "X", "X", "
 caplib::createVolatilitySurfaceDefinition(volSmileType="X", smileMethod="X", smileExtrapMethod="X", timeInterpMethod="X", timeExtrapMethod="X", dayCountConvention="X", volType="X", wingStrikeType="X", lower=0.02, upper=0.02, handle="TF_createVolatilitySurfaceDefinition_H", returnJson=false)
 // 用例目的：上下界参数 lower = upper 的非法组合，验证边界校验（预期：抛异常）
 @testing:case="createVolatilitySurfaceDefinition rejects lower >= upper (equal)", exception=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.0001, 0.0001, "TF_VSDEF", false)
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 0.0001, 0.0001, "TF_VSDEF", false)
 
 // 用例目的：上下界参数 lower > upper 的非法组合，验证边界校验（预期：抛异常）
 @testing:case="createVolatilitySurfaceDefinition rejects lower >= upper (reversed)", exception=1
-caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 0.001, -0.001, "TF_VSDEF", false)
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 0.001, -0.001, "TF_VSDEF", false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createVolatilitySurfaceDefinition optional returnJson null uses default"
-result = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VSDEF", bool())
+result = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects non-BOOL returnJson", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", 1)
+
+// 用例目的：遍历参数 volSmileType 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createVolatilitySurfaceDefinition supports all volSmileType enums"
+labelEnum = ["STRIKE", "STRIKE_VOL_SMILE", "DELTA", "DELTA_VOL_SMILE", "LOG_STRIKE", "LOG_STRIKE_VOL_SMILE"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createVolatilitySurfaceDefinition(labelEnum[i], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle / enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects wrong type for handle", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, 123, false)
+
+// 用例目的：枚举参数 volSmileType 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects invalid enum for volSmileType", exception=1
+caplib::createVolatilitySurfaceDefinition("NOT_A_REAL_ENUM", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+
+// 用例目的：枚举参数 smileMethod 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects invalid enum for smileMethod", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "NOT_A_REAL_ENUM", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+
+// 用例目的：枚举参数 smileExtrapMethod 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects invalid enum for smileExtrapMethod", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "NOT_A_REAL_ENUM", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+
+// 用例目的：枚举参数 timeInterpMethod 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects invalid enum for timeInterpMethod", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "NOT_A_REAL_ENUM", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+
+// 用例目的：枚举参数 dayCountConvention 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects invalid enum for dayCountConvention", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "NOT_A_REAL_ENUM", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+
+// 用例目的：枚举参数 volType 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects invalid enum for volType", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "NOT_A_REAL_ENUM", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSDEF", false)
+
+// 用例目的：枚举参数 wingStrikeType 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createVolatilitySurfaceDefinition rejects invalid enum for wingStrikeType", exception=1
+caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "NOT_A_REAL_ENUM", 90.0, 110.0, "TF_VSDEF", false)

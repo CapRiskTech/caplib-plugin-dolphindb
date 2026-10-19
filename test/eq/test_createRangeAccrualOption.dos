@@ -62,7 +62,7 @@ caplib::createRangeAccrualOption([2024.01.01], 2024.01.01, 0.02, 0.02, 0.02, 0.0
 
 // 用例目的：向量参数 fixingDates 传入标量，验证数据形式校验（预期：抛异常）
 @testing:case="createRangeAccrualOption rejects scalar for vector fixingDates", exception=1
-caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "TF_createRangeAccrualOption_H", [2024.01.01], [0.02], [0.02], false)
+caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 0.02, "X", "X", "X", "X", "TF_createRangeAccrualOption_H", 2024.01.01, [0.02], [0.02], false)
 
 // 用例目的：向量参数 fixingDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createRangeAccrualOption rejects partially-null vector fixingDates", exception=1
@@ -75,7 +75,7 @@ caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02,
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createRangeAccrualOption rejects keyword arguments", syntaxError=1
 caplib::createRangeAccrualOption(expiry=2024.01.01, delivery=2024.01.01, asset=0.02, cash=0.02, lowerBarrier=0.02, upperBarrier=0.02, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createRangeAccrualOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
+// 用例目的：向量 fixingDates 传入全空值，验证向量空值校验（预期：抛异常）
 @testing:case="createRangeAccrualOption accepts all-null vector fixingDates", exception=1
 caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
@@ -89,9 +89,51 @@ assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 asset 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createRangeAccrualOption rejects negative asset", exception=1
-caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, -1.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, -1, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：两个数组参数长度不一致（fixingDates 多一个元素），实测插件宽松接受——记录实际行为
 @testing:case="createRangeAccrualOption fixingDates length mismatch", exception=1
 caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", join(dailyObsDates, dailyObsDates[0]), dailyObsValues, dailyObsWeights, false);
+
+// 用例目的：可选参数 returnJson 传入字符串 "true"，验证 BOOL 类型校验收紧（预期：抛异常）
+@testing:case="createRangeAccrualOption rejects non-BOOL returnJson", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_JB", dailyObsDates, dailyObsValues, dailyObsWeights, "true")
+
+// 用例目的：underlyingType 传入与文档不符的非法拼写（非大写别名），验证枚举校验（预期：抛异常）
+@testing:case="createRangeAccrualOption rejects invalid underlyingType", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOTX", "CNY", "50ETF.SSE", "f_RA_E1", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：遍历 underlyingType 文档列出的全部合法值，全部接受
+@testing:case="createRangeAccrualOption underlyingType legal-value iteration"
+i = 0
+for (v in ["SPOT", "FUTURE", "FORWARD"]) {
+    h = "f_RA_UT_" + i
+    caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", v, "CNY", "50ETF.SSE", h, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+    i += 1
+}
+assert 1, true
+
+// 用例目的：参数 nominal 传入 0，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createRangeAccrualOption rejects zero nominal", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 0.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_N0", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：参数 nominal 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createRangeAccrualOption rejects negative nominal", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_NN", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：参数 lowerBarrier 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createRangeAccrualOption rejects negative lowerBarrier", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, -1.0, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_LBN", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：参数 upperBarrier 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createRangeAccrualOption rejects negative upperBarrier", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, -1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_UBN", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：参数 lowerBarrier 传入 0，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createRangeAccrualOption rejects zero lowerBarrier", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, 0.0, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_LB0", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createRangeAccrualOption rejects wrong type for handle", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, dailyObsDates, dailyObsValues, dailyObsWeights, false)

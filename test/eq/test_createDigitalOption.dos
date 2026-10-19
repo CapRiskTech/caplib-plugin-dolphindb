@@ -71,3 +71,64 @@ caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0
 @testing:case="createDigitalOption rejects negative asset", exception=1
 caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, -1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG", false)
 
+// 用例目的：参数 nominal 传入0，验证数值边界校验（参照同组 createEuropeanOption 先例，预期：抛异常）
+@testing:case="createDigitalOption rejects zero nominal", exception=1
+caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 0.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG", false)
+
+// 用例目的：参数 nominal 传入负值，验证数值边界校验（参照同组 createEuropeanOption 先例，预期：抛异常）
+@testing:case="createDigitalOption rejects negative nominal", exception=1
+caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（如字符串 "true"），验证类型校验（预期：抛异常）
+@testing:case="createDigitalOption rejects non-bool returnJson", exception=1
+caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_rj", "true")
+
+// 用例目的：枚举 payoffType 传入非法拼写 "OTM"，验证仅接受精确拼写的枚举校验（预期：抛异常）
+@testing:case="createDigitalOption rejects illegal payoffType enum", exception=1
+caplib::createDigitalOption("OTM", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_pt", false)
+
+// 用例目的：遍历 payoffType 全部合法值（CALL/call/PUT/put），全部应构造成功
+@testing:case="createDigitalOption accepts all legal payoffType values"
+ok = true;
+for (pt in ["CALL", "call", "PUT", "put"]) {
+    h = caplib::createDigitalOption(pt, underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_pt_" + pt, false)
+    if (typestr(h) == "VOID") { ok = false; }
+}
+assert 1, ok
+
+// 用例目的：枚举 underlyingType 传入带尾随空格的 "SPOT "，验证仅接受精确大写拼写的枚举校验（预期：抛异常）
+@testing:case="createDigitalOption rejects illegal underlyingType enum", exception=1
+caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT ", "CNY", "50ETF.SSE", "f_DG_ut", false)
+
+// 用例目的：遍历 underlyingType 全部合法值（SPOT/FUTURE/FORWARD），全部应构造成功
+@testing:case="createDigitalOption accepts all legal underlyingType values"
+ok = true;
+for (ut in ["SPOT", "FUTURE", "FORWARD"]) {
+    h = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", ut, "CNY", "50ETF.SSE", "f_DG_ut_" + ut, false)
+    if (typestr(h) == "VOID") { ok = false; }
+}
+assert 1, ok
+
+// 用例目的：参数 cash 传入0，记录实际行为（文档：cash 可为负、零或正）
+@testing:case="createDigitalOption cash zero boundary"
+result = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_cash0", false)
+assert 1, true
+
+// 用例目的：参数 cash 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
+@testing:case="createDigitalOption rejects negative cash", exception=1
+caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, -1.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_cash_neg", false)
+
+// 用例目的：参数 strike 传入0，记录实际行为（文档：strike 非负；包装器通常仅检查类型）
+@testing:case="createDigitalOption strike zero boundary"
+result = caplib::createDigitalOption("CALL", 0.0, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_strike0", false)
+assert 1, true
+
+// 用例目的：参数 strike 传入负值，记录实际行为（文档未明确 wrapper 是否拒绝负值）
+@testing:case="createDigitalOption strike negative boundary"
+result = caplib::createDigitalOption("CALL", -1.0, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_strike_neg", false)
+assert 1, true
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createDigitalOption rejects wrong type for handle", exception=1
+caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, false)
+

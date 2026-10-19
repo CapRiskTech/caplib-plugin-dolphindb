@@ -244,7 +244,7 @@ if [ "$MODE" = "--run" ] || [ "$MODE" = "--test" ]; then
     echo "    import dolphindb as ddb"
     echo "    s = ddb.session()"
     echo "    s.connect('localhost', 8848, 'admin', '123456')"
-    echo "    s.run('loadPlugin(\"/data/ddb/server/plugins/caplib/PluginCaplib.txt\")')"
+    echo "    s.run('loadPlugin(\"caplib\")')"
     echo ""
 
     if [ "$MODE" = "--test" ]; then
@@ -281,7 +281,7 @@ s = ddb.session()
 s.connect('localhost', 8848, 'admin', '123456')
 # the container does not preload the plugin — load it before running the script
 try:
-    s.run('loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")')
+    s.run('loadPlugin("caplib")')
 except Exception:
     pass  # already loaded in this server process
 s.run('run("/data/ddb/test_plugin.dos")')

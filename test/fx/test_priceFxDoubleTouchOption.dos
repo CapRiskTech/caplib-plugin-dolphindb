@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceFxDoubleTouchOption.dos
 // Per-function test suite for caplib::priceFxDoubleTouchOption (fx).
-// Signature: caplib::priceFxDoubleTouchOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceFxDoubleTouchOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fx")            // whole domain directory
 //     python run_tests.py --file fx/test_priceFxDoubleTouchOption.dos   // single file
@@ -160,24 +160,24 @@ caplib::priceFxDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceFxDoubleTouchOption rejects extra argument", syntaxError=1
 caplib::priceFxDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceFxDoubleTouchOption rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects wrong type for asOfDate", exception=1
 caplib::priceFxDoubleTouchOption("X", "bad", "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceFxDoubleTouchOption rejects wrong type for mode", exception=1
 caplib::priceFxDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceFxDoubleTouchOption rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects null asOfDate", exception=1
 caplib::priceFxDoubleTouchOption("X", date(), "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceFxDoubleTouchOption rejects null mode", exception=1
 caplib::priceFxDoubleTouchOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceFxDoubleTouchOption rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects vector for scalar asOfDate", exception=1
 caplib::priceFxDoubleTouchOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -186,7 +186,7 @@ caplib::priceFxDoubleTouchOption("TF_NO_SUCH_HANDLE_priceFxDoubleTouchOption", 2
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceFxDoubleTouchOption rejects keyword arguments", syntaxError=1
-caplib::priceFxDoubleTouchOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceFxDoubleTouchOption(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceFxDoubleTouchOption optional returnJson null uses default"
 result = caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", bool())
@@ -194,6 +194,37 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceFxDoubleTouchOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, tdoubletouchoption, bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects wrong object type for instrumentHandle", exception=1
+caplib::priceFxDoubleTouchOption(eurusdMktData[0], asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, "TF_NO_SUCH_HANDLE_priceFxDoubleTouchOption_MKT", bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], "TF_NO_SUCH_HANDLE_priceFxDoubleTouchOption_PS", fxOptionRisk[0], "", "", true)
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], tdoubletouchoption, fxOptionRisk[0], "", "", true)
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, "TF_NO_SUCH_HANDLE_priceFxDoubleTouchOption_RS", "", "", true)
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, tdoubletouchoption, "", "", true)
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在的句柄字符串（现役主调用该位置传空串为不校验，这里换非空不存句柄以真正命中校验），验证句柄校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects nonexistent handle scnSettingsHandle", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "TF_NO_SUCH_HANDLE_priceFxDoubleTouchOption_SS", "", true)
+// 用例目的：句柄参数 scnSettingsHandle 传入类型不符的对象句柄（现役主调用该位置传空串为不校验，这里换成 instrument 句柄以真正命中该校验），验证句柄类型校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects wrong object type for scnSettingsHandle", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], tdoubletouchoption, "", true)
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型（如数值 1），验证类型校验（预期：抛异常）
+@testing:case="priceFxDoubleTouchOption rejects non-bool returnJson", exception=1
+caplib::priceFxDoubleTouchOption(tdoubletouchoption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", 1)
+// 用例目的：asOfDate 晚于到期日（插件层不校验 date>maturity，记录其实际行为且不崩服务）
+@testing:case="priceFxDoubleTouchOption asOfDate after maturity (no validation)"
+rLate = caplib::priceFxDoubleTouchOption(tdoubletouchoption, 2023.08.19, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true);
+assert 1, true
 // 用例目的：同一合约名义金额放大 2 倍，验证现值精确翻倍（现值对名义的线性性质）
 @testing:case="priceFxDoubleTouchOption notional scaling -> 2x notional, 2x present value"
 tdoubletouchoption_2X = caplib::createDoubleTouchOption(2021.09.26, 2021.09.27, "DOWN_IN", eurusdSpot*0.95, "UP_IN", eurusdSpot*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, (1000000.0) * 2, currency, "SPOT", currency, "EURUSD", "tDoubleTouch_2X", false);

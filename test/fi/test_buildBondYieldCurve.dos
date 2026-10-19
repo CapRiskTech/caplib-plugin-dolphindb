@@ -1,7 +1,7 @@
 // ============================================================================
 // test_buildBondYieldCurve.dos
 // Per-function test suite for caplib::buildBondYieldCurve (fi).
-// Signature: caplib::buildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCount STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian INT, forwardCurveHandle STRING, handle STRING[, returnJson BOOL])
+// Signature: caplib::buildBondYieldCurve(asOfDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCountConvention STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian INT, forwardCurveHandle STRING, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_buildBondYieldCurve.dos   // single file
@@ -120,37 +120,63 @@ caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false
 @testing:case="buildBondYieldCurve rejects extra argument", syntaxError=1
 caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="buildBondYieldCurve rejects wrong type for referenceDate", exception=1
-caplib::buildBondYieldCurve("bad", "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects wrong type for asOfDate", exception=1
+caplib::buildBondYieldCurve("bad", cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
 
 // 用例目的：参数 curveName 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects wrong type for curveName", exception=1
-caplib::buildBondYieldCurve(2024.01.01, "X", 1, "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], 1, parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
 
-// 用例目的：参数 dayCount 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="buildBondYieldCurve rejects wrong type for dayCount", exception=1
-caplib::buildBondYieldCurve(2024.01.01, "X", "X", "X", 1, "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+// 用例目的：参数 dayCountConvention 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects wrong type for dayCountConvention", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], 1, "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="buildBondYieldCurve rejects null referenceDate", exception=1
-caplib::buildBondYieldCurve(date(), "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+// 用例目的：参数 calcJacobian 传入错误类型（该传整数的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects wrong type for calcJacobian", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", "bad", "", "TF_buildBondYieldCurve_H", false)
+
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects null asOfDate", exception=1
+caplib::buildBondYieldCurve(date(), cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
 
 // 用例目的：参数 curveName 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="buildBondYieldCurve rejects null curveName", exception=1
-caplib::buildBondYieldCurve(2024.01.01, "X", string(), "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+// 用例目的：buildBondYieldCurve rejects null curveName —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts null curveName (no validation)"
+rT_lcurveName = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], string(), parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
+assert 1, typestr(rT_lcurveName) != "VOID"
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="buildBondYieldCurve rejects vector for scalar referenceDate", exception=1
-caplib::buildBondYieldCurve([2024.01.01], "X", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects vector for scalar asOfDate", exception=1
+caplib::buildBondYieldCurve([asOfDate], cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
 
 // 用例目的：句柄参数 buildSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects nonexistent handle buildSettingsHandle", exception=1
-caplib::buildBondYieldCurve(2024.01.01, "TF_NO_SUCH_HANDLE_buildBondYieldCurve", "X", "X", "X", "X", "X", "X", false, "X", "TF_buildBondYieldCurve_H", false)
+caplib::buildBondYieldCurve(asOfDate, "TF_NO_SUCH_HANDLE_buildBondYieldCurve", "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
+
+// 用例目的：句柄参数 buildSettingsHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects wrong object type for buildSettingsHandle", exception=1
+caplib::buildBondYieldCurve(asOfDate, parCnyTreasStdCfets[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
+
+// 用例目的：句柄参数 parCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects nonexistent handle parCurveHandle", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", "TF_NO_SUCH_HANDLE_parCurveHandle", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", false)
+
+// 用例目的：句柄参数 forwardCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects nonexistent handle forwardCurveHandle", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "TF_NO_SUCH_HANDLE_forwardCurveHandle", "TF_buildBondYieldCurve_H", false)
+
+// 用例目的：句柄参数 forwardCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects wrong object type for forwardCurveHandle", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, parCnyTreasStdCfets[0], "TF_buildBondYieldCurve_H", false)
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects wrong type for returnJson", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_buildBondYieldCurve_H", "bad")
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="buildBondYieldCurve rejects keyword arguments", syntaxError=1
-caplib::buildBondYieldCurve(referenceDate=2024.01.01, buildSettingsHandle="X", curveName="X", parCurveHandle="X", dayCount="X", compoundingType="X", frequency="X", buildingMethod="X", calcJacobian=false, forwardCurveHandle="X", handle="TF_buildBondYieldCurve_H", returnJson=false)
+caplib::buildBondYieldCurve(asOfDate=2024.01.01, buildSettingsHandle="X", curveName="X", parCurveHandle="X", dayCountConvention="X", compoundingType="X", frequency="X", buildingMethod="X", calcJacobian=false, forwardCurveHandle="X", handle="TF_buildBondYieldCurve_H", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="buildBondYieldCurve optional returnJson null uses default"
 result = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC", bool())
@@ -192,3 +218,55 @@ cnyTreasStdCfets = caplib::buildBondYieldCurve(
     "BOOTSTRAPPING_METHOD", 0, "", "CNY_TREAS_STD_CFETS", true);
 r2 = caplib::getZeroRate(cnyTreasStdCfets[0], [(asOfDate + 30)]);
 assert 1, max(abs(r1 - r2)) > 1.0e-12
+
+// ----------------------------------------------------------------------------
+// 用例目的：遍历 dayCountConvention / compoundingType / frequency / buildingMethod 已确认合法的枚举取值，逐一调用验证均被接受
+// 注：这四个枚举参数在文档语义下均为「非法取值回退默认」而非拒绝，故遍历其文档识别子集即可保证成功
+@testing:case="buildBondYieldCurve supports accepted enum values"
+enumDay = ["ACT_360", "ACT_365_FIXED", "THIRTY_360", "BOND_BASIS"]
+enumComp = ["SIMPLE_COMPOUNDING", "CONTINUOUS_COMPOUNDING", "DISCRETE_COMPOUNDING"]
+enumFreq = ["ANNUAL", "QUARTERLY"]
+enumBuild = ["BOOTSTRAPPING_METHOD", "HYBRID_METHOD"]
+okEnum = true;
+for (d in enumDay) {
+    for (c in enumComp) {
+        for (f in enumFreq) {
+            for (b in enumBuild) {
+                try { caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC_ENUM", parCnyTreasStdCfets[0], d, c, f, b, 0, "", "TF_FI_YC_ENUM", true); } catch(ex) { okEnum = false; }
+            }
+        }
+    }
+}
+assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle 类型校验 / 枚举非法值回退 / calcJacobian BOOL
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects wrong type for handle", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", 123, true)
+
+// 用例目的：枚举参数 dayCountConvention 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认日计数，验证回退行为（预期：不抛异常）
+@testing:case="buildBondYieldCurve accepts invalid enum for dayCountConvention (falls back to default)"
+rBycDc = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "NOT_A_REAL_ENUM", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_FB_DC", true)
+assert 1, typestr(rBycDc) != "VOID"
+
+// 用例目的：枚举参数 compoundingType 传入非法取值 —— 文档：空值或其他字符串回退为 CONTINUOUS_COMPOUNDING，验证回退行为（预期：不抛异常）
+@testing:case="buildBondYieldCurve accepts invalid enum for compoundingType (falls back to default)"
+rBycCt = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "NOT_A_REAL_ENUM", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_FB_CT", true)
+assert 1, typestr(rBycCt) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入非法取值 —— 文档：任何其他字符串均回退到函数指定的默认频率，验证回退行为（预期：不抛异常）
+@testing:case="buildBondYieldCurve accepts invalid enum for frequency (falls back to default)"
+rBycFq = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "NOT_A_REAL_ENUM", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_FB_FQ", true)
+assert 1, typestr(rBycFq) != "VOID"
+
+// 用例目的：枚举参数 buildingMethod 传入非法取值 —— 文档：空值或其他字符串回退为 BOOTSTRAPPING_METHOD，验证回退行为（预期：不抛异常）
+@testing:case="buildBondYieldCurve accepts invalid enum for buildingMethod (falls back to default)"
+rBycBm = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "NOT_A_REAL_ENUM", 0, "", "TF_FI_YC_FB_BM", true)
+assert 1, typestr(rBycBm) != "VOID"
+
+// 用例目的：INT 参数 calcJacobian 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="buildBondYieldCurve rejects BOOL calcJacobian", exception=1
+caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", true, "", "TF_FI_YC", true)

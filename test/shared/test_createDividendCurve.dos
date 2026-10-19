@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createDividendCurve.dos
 // Per-function test suite for caplib::createDividendCurve (shared).
-// Signature: caplib::createDividendCurve(referenceDate DATE, pillarDates DATE[], pillarValues DOUBLE[], yieldStartDate DATE, dividendType STRING, dcc STRING, interp STRING, extrap STRING, compounding STRING, name STRING, handle STRING[, returnJson BOOL])
+// Signature: caplib::createDividendCurve(asOfDate DATE, pillarDates DATE[], pillarValues DOUBLE[], yieldStartDate DATE, dividendType STRING, dayCountConvention STRING, interp STRING, extrap STRING, compounding STRING, name STRING, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createDividendCurve.dos   // single file
@@ -32,8 +32,8 @@ caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, "X", "
 @testing:case="createDividendCurve rejects extra argument", syntaxError=1
 caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="createDividendCurve rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createDividendCurve rejects wrong type for asOfDate", exception=1
 caplib::createDividendCurve("bad", [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 // 用例目的：参数 yieldStartDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
@@ -44,21 +44,22 @@ caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], "bad", "X", "X", "
 @testing:case="createDividendCurve rejects wrong type for dividendType", exception=1
 caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, 1, "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="createDividendCurve rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createDividendCurve rejects null asOfDate", exception=1
 caplib::createDividendCurve(date(), [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 // 用例目的：参数 yieldStartDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createDividendCurve rejects null yieldStartDate", exception=1
 caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], date(), "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="createDividendCurve rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="createDividendCurve rejects vector for scalar asOfDate", exception=1
 caplib::createDividendCurve([2024.01.01], [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
-// 用例目的：向量参数 pillarDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 pillarDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter pillarDates must be a vector。
 @testing:case="createDividendCurve rejects scalar for vector pillarDates", exception=1
-caplib::createDividendCurve(2024.01.01, [2024.01.01], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
+caplib::createDividendCurve(asOfDate, 2024.01.01, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
 
 // 用例目的：向量参数 pillarDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createDividendCurve rejects partially-null vector pillarDates", exception=1
@@ -70,7 +71,7 @@ caplib::createDividendCurve(2024.01.01, take(date, 0), [0.02], 2024.01.01, "X", 
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createDividendCurve rejects keyword arguments", syntaxError=1
-caplib::createDividendCurve(referenceDate=2024.01.01, pillarDates=[2024.01.01], pillarValues=[0.02], yieldStartDate=2024.01.01, dividendType="X", dcc="X", interp="X", extrap="X", compounding="X", name="TF_createDividendCurve_H", handle="TF_createDividendCurve_H", returnJson=false)
+caplib::createDividendCurve(asOfDate=2024.01.01, pillarDates=[2024.01.01], pillarValues=[0.02], yieldStartDate=2024.01.01, dividendType="X", dayCountConvention="X", interp="X", extrap="X", compounding="X", name="TF_createDividendCurve_H", handle="TF_createDividendCurve_H", returnJson=false)
 // 用例目的：向量参数 pillarDates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createDividendCurve rejects all-null vector pillarDates", exception=1
 caplib::createDividendCurve(asOfDate, [date(), date(), date()], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
@@ -79,7 +80,44 @@ caplib::createDividendCurve(asOfDate, [date(), date(), date()], [0.01, 0.01], as
 result = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", bool())
 assert 1, typestr(result) != "VOID"
 
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createDividendCurve rejects non-BOOL returnJson", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", 1)
+
+// 用例目的：遍历参数 dividendType 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createDividendCurve supports all dividendType enums"
+labelEnum = ["DISCRETE", "CONTINUOUS"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, labelEnum[i], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
 // ----------------------------------------------------------------------------
 // 用例目的：两个成对数组参数长度不一致（pillarValues 多一个元素），验证参数间关系校验（预期：抛异常）
 @testing:case="createDividendCurve rejects pillarValues length mismatch", exception=1
 caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01, 0.03], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false);
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createDividendCurve rejects wrong type for handle", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", 123, false)
+
+// 用例目的：枚举参数 dividendType 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createDividendCurve rejects invalid enum for dividendType", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "NOT_A_REAL_ENUM", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
+
+// 用例目的：枚举参数 dayCountConvention 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createDividendCurve rejects invalid enum for dayCountConvention", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "NOT_A_REAL_ENUM", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
+
+// 用例目的：枚举参数 interp 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createDividendCurve rejects invalid enum for interp", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "NOT_A_REAL_ENUM", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
+
+// 用例目的：枚举参数 extrap 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createDividendCurve rejects invalid enum for extrap", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "NOT_A_REAL_ENUM", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
+
+// 用例目的：枚举参数 compounding 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createDividendCurve rejects invalid enum for compounding", exception=1
+caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "NOT_A_REAL_ENUM", "TF_DIV", "TF_DIV", false)

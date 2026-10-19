@@ -49,7 +49,7 @@ eurusdSpotRate = caplib::createFxSpotRate(
 linearVolSurfDefinition = caplib::createVolatilitySurfaceDefinition(
     "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD",
     "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
-    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE",
     1.0e-4, 1.0e4, "FX_LINEAR_VOL_SURF_DEF", true);
 fxMktConventions = caplib::createFxMktConventions(
     underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
@@ -119,3 +119,44 @@ caplib::createFxMktDataSet(asOfDate=2024.01.01, domDiscountCurve="X", forDiscoun
 @testing:case="createFxMktDataSet optional returnJson null uses default"
 result = caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2: 引用型句柄参数 + returnJson 非 BOOL（gap-fill）
+// ----------------------------------------------------------------------------
+
+// 用例目的：引用型句柄参数 domDiscountCurve 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects non-existent domDiscountCurve handle", exception=1
+caplib::createFxMktDataSet(asOfDate, "TF_NO_SUCH_HANDLE_DOM", eurCurve, eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", false)
+
+// 用例目的：引用型句柄参数 domDiscountCurve 类型与同参对象不符（传入 FxSpotRate 句柄，期望 IrYieldCurve），验证类型校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects wrong-type domDiscountCurve handle", exception=1
+caplib::createFxMktDataSet(asOfDate, eurusdSpotRate[0], eurCurve, eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", false)
+
+// 用例目的：引用型句柄参数 forDiscountCurve 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects non-existent forDiscountCurve handle", exception=1
+caplib::createFxMktDataSet(asOfDate, usdCurve, "TF_NO_SUCH_HANDLE_FOR", eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", false)
+
+// 用例目的：引用型句柄参数 forDiscountCurve 类型与同参对象不符（传入 FxSpotRate 句柄，期望 IrYieldCurve），验证类型校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects wrong-type forDiscountCurve handle", exception=1
+caplib::createFxMktDataSet(asOfDate, usdCurve, eurusdSpotRate[0], eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", false)
+
+// 用例目的：引用型句柄参数 spot 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects non-existent spot handle", exception=1
+caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, "TF_NO_SUCH_HANDLE_SPOT", flatFxVolSurface[0], "", "TF_FXMKT", false)
+
+// 用例目的：引用型句柄参数 spot 类型与同参对象不符（传入 IrYieldCurve 句柄，期望 FxSpotRate），验证类型校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects wrong-type spot handle", exception=1
+caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, usdCurve, flatFxVolSurface[0], "", "TF_FXMKT", false)
+
+// 用例目的：引用型句柄参数 volSurface 传入不存在的句柄，验证句柄解析校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects non-existent volSurface handle", exception=1
+caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], "TF_NO_SUCH_HANDLE_VOL", "", "TF_FXMKT", false)
+
+// 用例目的：引用型句柄参数 volSurface 类型与同参对象不符（传入 IrYieldCurve 句柄，期望 FxVolSurface），验证类型校验（预期：抛异常）
+@testing:case="createFxMktDataSet rejects wrong-type volSurface handle", exception=1
+caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], usdCurve, "", "TF_FXMKT", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型（STRING），实测插件宽松接受、记录实际行为
+@testing:case="accepts createFxMktDataSet non-BOOL returnJson (no validation)"
+rMD_RJ = caplib::createFxMktDataSet(asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], flatFxVolSurface[0], "", "TF_FXMKT", "yes")
+assert 1, typestr(rMD_RJ) != "VOID"

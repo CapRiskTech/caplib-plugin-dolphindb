@@ -272,7 +272,7 @@ if ($Mode -eq '--run' -or $Mode -eq '--test') {
     Write-Host '    import dolphindb as ddb'
     Write-Host '    s = ddb.session()'
     Write-Host "    s.connect('localhost', 8848, 'admin', '123456')"
-    Write-Host "    s.run('loadPlugin(`"/data/ddb/server/plugins/caplib/PluginCaplib.txt`")')"
+    Write-Host "    s.run('loadPlugin(`"caplib`")')"
     Write-Host ''
 
     if ($Mode -eq '--test') {
@@ -306,7 +306,7 @@ import dolphindb as ddb
 s = ddb.session()
 s.connect('localhost', 8848, 'admin', '123456')
 try:
-    s.run('loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")')
+    s.run('loadPlugin("caplib")')
 except Exception:
     pass
 s.run('run("/data/ddb/test_plugin.dos")')

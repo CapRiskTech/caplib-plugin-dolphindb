@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceEqSnowballAutoCallableNote.dos
 // Per-function test suite for caplib::priceEqSnowballAutoCallableNote (eq).
-// Signature: caplib::priceEqSnowballAutoCallableNote(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceEqSnowballAutoCallableNote(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/eq")            // whole domain directory
 //     python run_tests.py --file eq/test_priceEqSnowballAutoCallableNote.dos   // single file
@@ -155,24 +155,24 @@ caplib::priceEqSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceEqSnowballAutoCallableNote rejects extra argument", syntaxError=1
 caplib::priceEqSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceEqSnowballAutoCallableNote rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects wrong type for asOfDate", exception=1
 caplib::priceEqSnowballAutoCallableNote("X", "bad", "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="priceEqSnowballAutoCallableNote rejects wrong type for mode", exception=1
 caplib::priceEqSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", 1, false)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceEqSnowballAutoCallableNote rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects null asOfDate", exception=1
 caplib::priceEqSnowballAutoCallableNote("X", date(), "X", "X", "X", "X", "X", false)
 
 // 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="priceEqSnowballAutoCallableNote rejects null mode", exception=1
 caplib::priceEqSnowballAutoCallableNote("X", 2024.01.01, "X", "X", "X", "X", string(), false)
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceEqSnowballAutoCallableNote rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects vector for scalar asOfDate", exception=1
 caplib::priceEqSnowballAutoCallableNote("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -181,7 +181,7 @@ caplib::priceEqSnowballAutoCallableNote("TF_NO_SUCH_HANDLE_priceEqSnowballAutoCa
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceEqSnowballAutoCallableNote rejects keyword arguments", syntaxError=1
-caplib::priceEqSnowballAutoCallableNote(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceEqSnowballAutoCallableNote(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceEqSnowballAutoCallableNote optional returnJson null uses default"
 result = caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", bool())
@@ -189,6 +189,34 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceEqSnowballAutoCallableNote rejects wrong object type for mktDataHandle", exception=1
 caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, xinst, bsmMcSettings, eqNoRisk[0], "", "", true)
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, "TF_NO_SUCH_MKT", bsmMcSettings, eqNoRisk[0], "", "", true)
+// 用例目的：句柄参数 pricingSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], "TF_NO_SUCH_PRICING", eqNoRisk[0], "", "", true)
+// 用例目的：句柄参数 pricingSettingsHandle 传入类型不符的对象句柄（用市场数据顶替定价设置），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], mktData[0], eqNoRisk[0], "", "", true)
+// 用例目的：句柄参数 riskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, "TF_NO_SUCH_RISK", "", "", true)
+// 用例目的：句柄参数 riskSettingsHandle 传入类型不符的对象句柄（用市场数据顶替风险设置），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, mktData[0], "", "", true)
+// 用例目的：句柄参数 scnSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects nonexistent handle scnSettingsHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "TF_NO_SUCH_SCN", "", true)
+// 用例目的：句柄参数 scnSettingsHandle 传入类型不符的对象句柄（用市场数据顶替情景设置），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects wrong object type for scnSettingsHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], mktData[0], "", true)
+// 用例目的：参数 returnJson 传入非 BOOL 值（该传逻辑值却传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects non-bool returnJson", exception=1
+caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", "true")
+// 用例目的：asOfDate 晚于到期日（2027.01.01 > 2020.08.19），记录插件实际行为（不强制断言是否抛异常）
+@testing:case="priceEqSnowballAutoCallableNote asOfDate after expiry (record behavior)"
+rlate = caplib::priceEqSnowballAutoCallableNote(xinst, 2027.01.01, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true)
+assert 1, true
 // 用例目的：同一合约名义金额放大 2 倍，验证现值精确翻倍（现值对名义的线性性质）
 @testing:case="priceEqSnowballAutoCallableNote notional scaling -> 2x notional, 2x present value"
 xinst_2X = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED", "UP_OUT", underlyingPrice*1.05, "DOWN_IN", underlyingPrice*0.8, "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.19, 2020.08.20, 1, (1e6) * 2, "CNY", "SPOT", "CNY", "50ETF.SSE", "h15_2X", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
@@ -201,3 +229,7 @@ assert 1, abs(presentValue(p2) - 2.0 * presentValue(p1)) <= abs(presentValue(p1)
 r1 = caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true);
 r2 = caplib::priceEqSnowballAutoCallableNote(xinst, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true);
 assert 1, abs(presentValue(r1) - presentValue(r2)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的对象句柄（定价设置句柄），验证句柄类型校验（预期：抛异常）
+@testing:case="priceEqSnowballAutoCallableNote rejects wrong object type for instrumentHandle", exception=1
+caplib::priceEqSnowballAutoCallableNote(bsmMcSettings, asOfDate, mktData[0], bsmMcSettings, eqNoRisk[0], "", "", true)

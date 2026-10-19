@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createFlatFxVolatilitySurface.dos
 // Per-function test suite for caplib::createFlatFxVolatilitySurface (fx).
-// Signature: caplib::createFlatFxVolatilitySurface(referenceDate DATE, currencyPair STRING, vol DOUBLE, tag STRING[, returnJson BOOL])
+// Signature: caplib::createFlatFxVolatilitySurface(asOfDate DATE, currencyPair STRING, vol DOUBLE, tag STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fx")            // whole domain directory
 //     python run_tests.py --file fx/test_createFlatFxVolatilitySurface.dos   // single file
@@ -34,8 +34,8 @@ caplib::createFlatFxVolatilitySurface(2024.01.01, "X", 0.02)
 @testing:case="createFlatFxVolatilitySurface rejects extra argument", syntaxError=1
 caplib::createFlatFxVolatilitySurface(2024.01.01, "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="createFlatFxVolatilitySurface rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFlatFxVolatilitySurface rejects wrong type for asOfDate", exception=1
 caplib::createFlatFxVolatilitySurface("bad", "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false)
 
 // 用例目的：参数 currencyPair 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
@@ -46,21 +46,21 @@ caplib::createFlatFxVolatilitySurface(2024.01.01, 1, 0.02, "TF_createFlatFxVolat
 @testing:case="createFlatFxVolatilitySurface rejects wrong type for vol", exception=1
 caplib::createFlatFxVolatilitySurface(2024.01.01, "X", "bad", "TF_createFlatFxVolatilitySurface_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="createFlatFxVolatilitySurface rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFlatFxVolatilitySurface rejects null asOfDate", exception=1
 caplib::createFlatFxVolatilitySurface(date(), "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false)
 
 // 用例目的：参数 vol 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createFlatFxVolatilitySurface rejects null vol", exception=1
 caplib::createFlatFxVolatilitySurface(2024.01.01, "X", double(), "TF_createFlatFxVolatilitySurface_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="createFlatFxVolatilitySurface rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="createFlatFxVolatilitySurface rejects vector for scalar asOfDate", exception=1
 caplib::createFlatFxVolatilitySurface([2024.01.01], "X", 0.02, "TF_createFlatFxVolatilitySurface_H", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFlatFxVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::createFlatFxVolatilitySurface(referenceDate=2024.01.01, currencyPair="X", vol=0.02, tag="TF_createFlatFxVolatilitySurface_H", returnJson=false)
+caplib::createFlatFxVolatilitySurface(asOfDate=2024.01.01, currencyPair="X", vol=0.02, tag="TF_createFlatFxVolatilitySurface_H", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFlatFxVolatilitySurface optional returnJson null uses default"
 result = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.06, "TF_FLATFV", bool())
@@ -68,4 +68,14 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：参数 vol 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createFlatFxVolatilitySurface rejects negative vol", exception=1
 caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", -1.0, "TF_FLATFV", false)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: returnJson 类型校验 (类别 B)
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+// 用例目的：createFlatFxVolatilitySurface rejects wrong type for returnJson —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for returnJson (no validation)"
+rT_returnJson = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.06, "TF_FLATFV", "bad")
+assert 1, typestr(rT_returnJson) != "VOID"
 

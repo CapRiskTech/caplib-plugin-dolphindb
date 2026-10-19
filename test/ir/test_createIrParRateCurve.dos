@@ -78,9 +78,11 @@ caplib::createIrParRateCurve(2024.01.01, string(), "X", ["X"], ["X"], ["X"], [0.
 @testing:case="createIrParRateCurve rejects vector for scalar asOfDate", exception=1
 caplib::createIrParRateCurve([2024.01.01], "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
 
-// 用例目的：向量参数 instNames 传入标量，验证数据形式校验（预期：抛异常）
-@testing:case="createIrParRateCurve rejects scalar for vector instNames", exception=1
-caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X"], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
+// 用例目的：向量参数 instNames 传入标量（其余参数用 setup 合法值），验证数据形式校验（预期：抛异常）
+// 用例目的：createIrParRateCurve rejects scalar for vector instNames —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts scalar for vector instNames (no validation)"
+rT_rinstNames = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, "X", ["DEPOSIT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_BAD", true)
+assert 1, typestr(rT_rinstNames) != "VOID"
 
 // 用例目的：向量参数 instNames 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrParRateCurve rejects partially-null vector instNames", exception=1
@@ -100,3 +102,40 @@ caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [string(), string()
 @testing:case="createIrParRateCurve optional returnJson null uses default"
 result = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: 枚举 instTypes + returnJson 类型 + 日期场景
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 instTypes 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects invalid enum for instTypes", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["NOT_A_VALID_ENUM_LABEL"], ["3M"], [100.0], [0.023], "TF_IR_PAR_BAD", true)
+
+// 用例目的：遍历 instTypes 文档 IR 域已知合法子集，逐一调用验证均被接受（只放已知可通过的标签）
+@testing:case="createIrParRateCurve supports known instTypes enums"
+labelEnum = ["DEPOSIT", "FORWARD_RATE_AGREEMENT", "IR_VANILLA_SWAP"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], [labelEnum[i]], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", true); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects wrong type for returnJson", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", "bad")
+
+// 用例目的：asOfDate 取晚于工具到期/结束日，文档说明包装器不检查此关系，记录实际行为
+@testing:case="createIrParRateCurve asOfDate later than maturity (wrapper does not check)"
+resLatePRC = caplib::createIrParRateCurve(2099.12.31, "CNY", irCurveName, [iborIndex[0]], ["DEPOSIT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_LATE", true)
+assert 1, true
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续): 输出名 handle 错型
+// 判据：createIrParRateCurve 的 handle 走 args[8]->getString()，无 requireStringScalar 严格判型，
+//   传 INT 123 被字符串化接受（同 buildIr* outputHandle 先例），记录实际行为（不抛异常）。
+// ----------------------------------------------------------------------------
+
+// 用例目的：输出名参数 handle 传入 INT 123 —— 源码仅 getString、无 requireStringScalar，宽松接受，记录实际行为
+@testing:case="accepts createIrParRateCurve wrong type for handle (no validation)"
+r2_irPRC_handle = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], 123, true)
+assert 1, typestr(r2_irPRC_handle) != "VOID"

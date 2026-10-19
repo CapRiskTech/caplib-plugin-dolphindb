@@ -180,3 +180,31 @@ assert 1, max(abs(r1 - r2)) < 1.0e-12
 r1 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 r2 = caplib::calcFxAtmStrike("ATM_DNS_PIPS", (2021.09.26 + 7), builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
 assert 1, abs(r1 - r2) > 0.0
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: missing handle validation coverage (类别 A)
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 volSurfaceHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）
+@testing:case="calcFxAtmStrike rejects wrong object type for volSurfaceHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, calEutaCreated, eurusdSpotRate[0], usdCurve, eurCurve);
+
+// 用例目的：句柄参数 fxSpotRateHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="calcFxAtmStrike rejects nonexistent handle fxSpotRateHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], "TF_NO_SUCH_HANDLE_calcFxAtmStrike_fxSpotRateHandle", usdCurve, eurCurve);
+
+// 用例目的：句柄参数 domesticDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="calcFxAtmStrike rejects nonexistent handle domesticDiscountCurveHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], "TF_NO_SUCH_HANDLE_calcFxAtmStrike_domesticDiscountCurveHandle", eurCurve);
+
+// 用例目的：句柄参数 domesticDiscountCurveHandle 传入类型不符的对象句柄（fxMktConventions），验证句柄类型校验（预期：抛异常）
+@testing:case="calcFxAtmStrike rejects wrong object type for domesticDiscountCurveHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], fxMktConventions[0], eurCurve);
+
+// 用例目的：句柄参数 foreignDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="calcFxAtmStrike rejects nonexistent handle foreignDiscountCurveHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, "TF_NO_SUCH_HANDLE_calcFxAtmStrike_foreignDiscountCurveHandle");
+
+// 用例目的：句柄参数 foreignDiscountCurveHandle 传入类型不符的对象句柄（volSurfDefinition），验证句柄类型校验（预期：抛异常）
+@testing:case="calcFxAtmStrike rejects wrong object type for foreignDiscountCurveHandle", exception=1
+caplib::calcFxAtmStrike("ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, volSurfDefinition[0]);

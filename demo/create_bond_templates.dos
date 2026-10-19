@@ -36,7 +36,7 @@
 
 // 插件由 dolphindb.dos 启动脚本自动加载；此处防御性兜底（重复加载会抛异常，忽略即可）
 try {
-    loadPlugin("/data/ddb/server/plugins/caplib/PluginCaplib.txt")
+    loadPlugin("caplib")
 } catch (ex) {
     // 已加载，忽略
 }

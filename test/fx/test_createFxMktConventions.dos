@@ -74,3 +74,79 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createFxMktConventions("EURUSD", labelEnum[i], "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review round-2: returnJson 非 BOOL + 其余枚举参数非法值/合法值遍历（gap-fill）
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型（STRING），实测插件宽松接受、记录实际行为
+@testing:case="accepts createFxMktConventions non-BOOL returnJson (no validation)"
+rMC_RJ = caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", "yes")
+assert 1, typestr(rMC_RJ) != "VOID"
+
+// 用例目的：参数 shortDeltaType 传入非法枚举取值，验证枚举校验（实测插件校验并抛 Unknown shortDeltaType）
+@testing:case="createFxMktConventions rejects invalid enum for shortDeltaType", exception=1
+caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "NOT_A_VALID_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false)
+
+// 用例目的：遍历参数 shortDeltaType 的全部文档合法枚举取值，逐一调用验证均被接受
+@testing:case="createFxMktConventions supports all shortDeltaType enums"
+labelEnum = ["PIPS_SPOT_DELTA", "PERCENTAGE_SPOT_DELTA", "PIPS_FORWARD_DELTA", "PERCENTAGE_FORWARD_DELTA", "SIMPLE_DELTA"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", labelEnum[i], "PIPS_FORWARD_DELTA", "SIMPLE_DELTA", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// 用例目的：参数 longDeltaType 传入非法枚举取值，验证枚举校验（实测插件校验并抛 Unknown longDeltaType）
+@testing:case="createFxMktConventions rejects invalid enum for longDeltaType", exception=1
+caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "NOT_A_VALID_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false)
+
+// 用例目的：遍历参数 longDeltaType 的全部文档合法枚举取值，逐一调用验证均被接受
+@testing:case="createFxMktConventions supports all longDeltaType enums"
+labelEnum = ["PIPS_SPOT_DELTA", "PERCENTAGE_SPOT_DELTA", "PIPS_FORWARD_DELTA", "PERCENTAGE_FORWARD_DELTA", "SIMPLE_DELTA"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", labelEnum[i], "SIMPLE_DELTA", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// 用例目的：枚举参数 deltaCutoff 传入非法取值，验证枚举校验（前置参数合法）
+// 用例目的：deltaCutoff 传非法枚举标签 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createFxMktConventions invalid enum for deltaCutoff (no validation)"
+rMC_DC = caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "NOT_A_VALID_ENUM", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false)
+assert 1, typestr(rMC_DC) != "VOID"
+
+// 用例目的：遍历参数 deltaCutoff 的全部文档合法枚举取值，逐一调用验证均被接受
+@testing:case="createFxMktConventions supports all deltaCutoff enums"
+labelEnum = ["PIPS_SPOT_DELTA", "PERCENTAGE_SPOT_DELTA", "PIPS_FORWARD_DELTA", "PERCENTAGE_FORWARD_DELTA", "SIMPLE_DELTA"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", labelEnum[i], "RR_CALL_PUT", "BUTTERFLY_QUOTE", "TF_FXMC", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// 用例目的：参数 riskReversal 传入非法枚举取值，验证枚举校验（实测插件校验并抛 Unknown riskReversal）
+@testing:case="createFxMktConventions rejects invalid enum for riskReversal", exception=1
+caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "SIMPLE_DELTA", "NOT_A_VALID_RR", "BUTTERFLY_QUOTE", "TF_FXMC", false)
+
+// 用例目的：遍历参数 riskReversal 的全部文档合法枚举取值，逐一调用验证均被接受
+@testing:case="createFxMktConventions supports all riskReversal enums"
+labelEnum = ["RR_CALL_PUT", "RR_PUT_CALL"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "SIMPLE_DELTA", labelEnum[i], "BUTTERFLY_QUOTE", "TF_FXMC", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum
+
+// 用例目的：参数 smileQuoteType 传入非法枚举取值，验证枚举校验（实测插件校验并抛 Unknown smileQuoteType）
+@testing:case="createFxMktConventions rejects invalid enum for smileQuoteType", exception=1
+caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "SIMPLE_DELTA", "RR_CALL_PUT", "NOT_A_VALID_SMILE", "TF_FXMC", false)
+
+// 用例目的：遍历参数 smileQuoteType 的全部文档合法枚举取值，逐一调用验证均被接受
+@testing:case="createFxMktConventions supports all smileQuoteType enums"
+labelEnum = ["BUTTERFLY_QUOTE", "MARKET_STRANGLE_QUOTE", "WINGS_RATIO_BF_QUOTE"]
+okEnum = true;
+for (i in 0..(size(labelEnum)-1)) {
+    try { caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "SIMPLE_DELTA", "RR_CALL_PUT", labelEnum[i], "TF_FXMC", false); } catch(ex) { okEnum = false; }
+}
+assert 1, okEnum

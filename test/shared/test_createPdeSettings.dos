@@ -57,11 +57,97 @@ caplib::createPdeSettings(tSize=1, xSize=1, xMin=0.02, xMax=0.02, xMinMaxType=1,
 @testing:case="createPdeSettings optional returnJson null uses default"
 result = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createPdeSettings rejects non-BOOL returnJson", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", 1)
 // 用例目的：参数 tSize 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createPdeSettings rejects zero tSize", exception=1
-caplib::createPdeSettings(0.0, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+// 用例目的：tSize 传 0 —— 实测插件不校验该 INT 取值、宽松接受，记录实际行为
+@testing:case="accepts zero tSize (no range validation)"
+rPD_z = caplib::createPdeSettings(0, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_z) != "VOID"
 
 // 用例目的：参数 tSize 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createPdeSettings rejects negative tSize", exception=1
-caplib::createPdeSettings(-1.0, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+// 用例目的：tSize 传 -1 —— 实测插件不校验该 INT 取值、宽松接受，记录实际行为
+@testing:case="accepts negative tSize (no range validation)"
+rPD_n = caplib::createPdeSettings(-1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_n) != "VOID"
+
+// 用例目的：参数 xMinMaxType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range xMinMaxType", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 999, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 xGridType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range xGridType", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 999, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 xInterp 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range xInterp", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 999, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 handle 传入整数 123 —— 实测插件未对该参数做 STRING 判型，宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts INT handle (no strict type check)"
+rPD_h = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, 123, false)
+assert 1, typestr(rPD_h) != "VOID"
+
+// 用例目的：tSize 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createPdeSettings rejects BOOL tSize", exception=1
+caplib::createPdeSettings(true, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：枚举选择器 xGridType 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL xGridType (no strict type check)"
+rPD_xgt = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, true, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_xgt) != "VOID"
+
+// 用例目的：枚举选择器 xInterp 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL xInterp (no strict type check)"
+rPD_xi = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, true, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_xi) != "VOID"
+
+// 用例目的：枚举选择器 xMinMaxType 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL xMinMaxType (no strict type check)"
+rPD_xmm = caplib::createPdeSettings(1, 1, 0.02, 0.02, true, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_xmm) != "VOID"
+
+// 用例目的：xSize 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createPdeSettings rejects BOOL xSize", exception=1
+caplib::createPdeSettings(1, true, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：枚举选择器 yGridType 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL yGridType (no strict type check)"
+rPD_ygt = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, true, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_ygt) != "VOID"
+
+// 用例目的：枚举选择器 yInterp 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL yInterp (no strict type check)"
+rPD_yi = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, true, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_yi) != "VOID"
+
+// 用例目的：枚举选择器 yMinMaxType 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL yMinMaxType (no strict type check)"
+rPD_ymm = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, true, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_ymm) != "VOID"
+
+// 用例目的：ySize 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createPdeSettings rejects BOOL ySize", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, true, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：枚举选择器 zGridType 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL zGridType (no strict type check)"
+rPD_zgt = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, true, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_zgt) != "VOID"
+
+// 用例目的：枚举选择器 zInterp 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL zInterp (no strict type check)"
+rPD_zi = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, true, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_zi) != "VOID"
+
+// 用例目的：枚举选择器 zMinMaxType 传 BOOL 值 —— 实测插件直接 getInt() 未做严格判型，true 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createPdeSettings accepts BOOL zMinMaxType (no strict type check)"
+rPD_zmm = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, true, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+assert 1, typestr(rPD_zmm) != "VOID"
+
+// 用例目的：zSize 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createPdeSettings rejects BOOL zSize", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, true, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 

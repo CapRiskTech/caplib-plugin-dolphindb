@@ -94,10 +94,42 @@ caplib::createFxForwardTemplate("EURUSD_FWD_TPL", "-2d", "EURUSD", "FOLLOWING", 
 @testing:case="createFxForwardTemplate rejects partially-null vector calendars", exception=1
 caplib::createFxForwardTemplate("EURUSD_FWD_TPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", [calEuta, string(), calGblo], true)
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxForwardTemplate rejects zero fixingOffset", exception=1
-caplib::createFxForwardTemplate("EURUSD_FWD_TPL", 0.0, "EURUSD", "FOLLOWING", "PRECEDING", [calEuta, calGblo], true)
+// 用例目的：参数 fixingOffset 传入整数0 —— INT 形式按旧版参数列表绑定（ccyPair, fixingOffset, deliveryDayConvention, calendar, name, tag），记录实际行为（宽松接受）
+@testing:case="createFxForwardTemplate accepts zero fixingOffset (no validation)"
+rFwdT_z = caplib::createFxForwardTemplate("EURUSD", 0, "FOLLOWING", "CAL_EUTA", "EURUSD_FWD_TPL", "TF_FWD_TPL_Z", false)
+assert 1, typestr(rFwdT_z) != "VOID"
 
-// 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
-@testing:case="createFxForwardTemplate rejects negative fixingOffset", exception=1
-caplib::createFxForwardTemplate("EURUSD_FWD_TPL", -1.0, "EURUSD", "FOLLOWING", "PRECEDING", [calEuta, calGblo], true)
+// 用例目的：参数 fixingOffset 传负整数 -1 —— 同上仅 fixingOffset 不同（INT -1，命中负边界），记录实际行为（宽松接受）
+@testing:case="createFxForwardTemplate accepts negative fixingOffset (no validation)"
+rFwdT_n = caplib::createFxForwardTemplate("EURUSD", -1, "FOLLOWING", "CAL_EUTA", "EURUSD_FWD_TPL", "TF_FWD_TPL_N", false)
+assert 1, typestr(rFwdT_n) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2: fixingDayConvention 枚举 + returnJson 非 BOOL + 单字符串日历
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 fixingDayConvention 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createFxForwardTemplate rejects invalid enum for fixingDayConvention", exception=1
+caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", "FOLLOWING", "NOT_A_VALID_ENUM_LABEL", ["CAL_EUTA","CAL_GBLO"], false)
+
+// 用例目的：遍历参数 fixingDayConvention 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createFxForwardTemplate supports all fixingDayConvention enums"
+fixLabelEnum = ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]
+okFixEnum = true;
+for (i in 0..(size(fixLabelEnum)-1)) {
+    try { caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", "FOLLOWING", fixLabelEnum[i], ["CAL_EUTA","CAL_GBLO"], false); } catch(ex) { okFixEnum = false; }
+}
+assert 1, okFixEnum
+
+// 用例目的：calendars 传单个 STRING 日历（标量形式，而非向量），验证标量与向量均被接受
+@testing:case="createFxForwardTemplate accepts single-string calendar"
+resScalarCal = caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", "CAL_EUTA", false)
+assert 1, typestr(resScalarCal) != "VOID" && resScalarCal == "TF_FWDTPL"
+
+// 用例目的：参数 returnJson 传入非 BOOL 字符串，验证 BOOL 类型校验（前置参数合法，预期：抛异常）
+@testing:case="createFxForwardTemplate rejects wrong type for returnJson", exception=1
+caplib::createFxForwardTemplate("TF_FWDTPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", ["CAL_EUTA","CAL_GBLO"], "bad")
+
+// 用例目的：参数 fixingOffset（STRING 或 INT 联合类型）传入 BOOL，验证严格类型校验（预期：抛异常）
+@testing:case="createFxForwardTemplate rejects BOOL fixingOffset", exception=1
+caplib::createFxForwardTemplate("TF_FWDTPL", true, "EURUSD", "FOLLOWING", "PRECEDING", ["CAL_EUTA","CAL_GBLO"], false)

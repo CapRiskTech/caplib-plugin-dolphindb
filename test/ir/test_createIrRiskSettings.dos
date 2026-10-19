@@ -37,9 +37,9 @@ caplib::createIrRiskSettings("X", "X")
 @testing:case="createIrRiskSettings rejects extra argument", syntaxError=1
 caplib::createIrRiskSettings("X", "X", "TF_createIrRiskSettings_H", false, 1)
 
-// 用例目的：句柄参数 irCurveRiskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+// 用例目的：句柄参数 irCurveRiskSettingsHandle 传入不存在的句柄字符串（theta 用 setup 合法真实句柄，确保目标校验生效），验证句柄校验（预期：抛异常）
 @testing:case="createIrRiskSettings rejects nonexistent handle irCurveRiskSettingsHandle", exception=1
-caplib::createIrRiskSettings("TF_NO_SUCH_HANDLE_createIrRiskSettings", "X", "TF_createIrRiskSettings_H", false)
+caplib::createIrRiskSettings("TF_NO_SUCH_HANDLE_createIrRiskSettings", irThetaRisk, "TF_createIrRiskSettings_H", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIrRiskSettings rejects keyword arguments", syntaxError=1
@@ -76,3 +76,30 @@ caplib::createIrRiskSettings(irCurveRisk, string(), "TF_IRRISK", false)
 // 用例目的：标量参数 irCurveRiskSettingsHandle 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createIrRiskSettings rejects vector for scalar irCurveRiskSettingsHandle", exception=1
 caplib::createIrRiskSettings(["X"], irThetaRisk, "TF_IRRISK", false);
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: 第二个 settings 句柄不存在 + 真实句柄类型不匹配 + returnJson 类型
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 thetaRiskSettingsHandle 传入不存在的句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createIrRiskSettings rejects nonexistent handle thetaRiskSettingsHandle", exception=1
+caplib::createIrRiskSettings(irCurveRisk, "TF_NO_SUCH_HANDLE_thetaRiskSettings", "TF_IRRISK", false)
+
+// 用例目的：句柄参数 irCurveRiskSettingsHandle 传入类型不符的真实句柄（ThetaRiskSettings 而非 IrCurveRiskSettings），验证句柄类型校验（预期：抛异常）
+@testing:case="createIrRiskSettings rejects wrong object type for irCurveRiskSettingsHandle", exception=1
+caplib::createIrRiskSettings(irThetaRisk, irThetaRisk, "TF_IRRISK", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createIrRiskSettings rejects wrong type for returnJson", exception=1
+caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, "TF_IRRISK", "bad")
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续): 输出名 handle 错型
+// 判据：createIrRiskSettings 的 handle 走 args[2]->getString()，无 requireStringScalar 严格判型，
+//   传 INT 123 被字符串化接受（同 buildIr* outputHandle 先例），记录实际行为（不抛异常）。
+// ----------------------------------------------------------------------------
+
+// 用例目的：输出名参数 handle 传入 INT 123 —— 源码仅 getString、无 requireStringScalar，宽松接受，记录实际行为
+@testing:case="accepts createIrRiskSettings wrong type for handle (no validation)"
+r2_irRISK_handle = caplib::createIrRiskSettings(irCurveRisk, irThetaRisk, 123, false)
+assert 1, typestr(r2_irRISK_handle) != "VOID"

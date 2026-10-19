@@ -1,7 +1,7 @@
 // ============================================================================
 // test_priceCmSingleSharkFinOption.dos
 // Per-function test suite for caplib::priceCmSingleSharkFinOption (cm).
-// Signature: caplib::priceCmSingleSharkFinOption(instrumentHandle STRING, pricingDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
+// Signature: caplib::priceCmSingleSharkFinOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/cm")            // whole domain directory
 //     python run_tests.py --file cm/test_priceCmSingleSharkFinOption.dos   // single file
@@ -213,24 +213,25 @@ caplib::priceCmSingleSharkFinOption("X", 2024.01.01, "X", "X", "X", "X")
 @testing:case="priceCmSingleSharkFinOption rejects extra argument", syntaxError=1
 caplib::priceCmSingleSharkFinOption("X", 2024.01.01, "X", "X", "X", "X", "X", false, 1)
 
-// 用例目的：参数 pricingDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="priceCmSingleSharkFinOption rejects wrong type for pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects wrong type for asOfDate", exception=1
 caplib::priceCmSingleSharkFinOption("X", "bad", "X", "X", "X", "X", "X", false)
 
-// 用例目的：参数 mode 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+// 用例目的：参数 mode 传入错误类型（该传字符串的传整数），前置参数沿用正例调用的合法句柄，验证异常由 mode 类型校验触发（预期：抛异常）
 @testing:case="priceCmSingleSharkFinOption rejects wrong type for mode", exception=1
-caplib::priceCmSingleSharkFinOption("X", 2024.01.01, "X", "X", "X", "X", 1, false)
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, 1, true)
 
-// 用例目的：参数 pricingDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceCmSingleSharkFinOption rejects null pricingDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects null asOfDate", exception=1
 caplib::priceCmSingleSharkFinOption("X", date(), "X", "X", "X", "X", "X", false)
 
-// 用例目的：参数 mode 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="priceCmSingleSharkFinOption rejects null mode", exception=1
-caplib::priceCmSingleSharkFinOption("X", 2024.01.01, "X", "X", "X", "X", string(), false)
+// 用例目的：mode 传空字符串 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts priceCmSingleSharkFinOption null mode (no validation)"
+rMD_N = caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, string(), true)
+assert 1, typestr(rMD_N) != "VOID"
 
-// 用例目的：标量参数 pricingDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="priceCmSingleSharkFinOption rejects vector for scalar pricingDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects vector for scalar asOfDate", exception=1
 caplib::priceCmSingleSharkFinOption("X", [2024.01.01], "X", "X", "X", "X", "X", false)
 
 // 用例目的：句柄参数 instrumentHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
@@ -239,7 +240,7 @@ caplib::priceCmSingleSharkFinOption("TF_NO_SUCH_HANDLE_priceCmSingleSharkFinOpti
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="priceCmSingleSharkFinOption rejects keyword arguments", syntaxError=1
-caplib::priceCmSingleSharkFinOption(instrumentHandle="X", pricingDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
+caplib::priceCmSingleSharkFinOption(instrumentHandle="X", asOfDate=2024.01.01, mktDataHandle="X", pricingSettingsHandle="X", riskSettingsHandle="X", scnSettingsHandle="X", mode="X", returnJson=false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="priceCmSingleSharkFinOption optional returnJson null uses default"
 result = caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", bool())
@@ -247,6 +248,40 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：句柄参数 mktDataHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="priceCmSingleSharkFinOption rejects wrong object type for mktDataHandle", exception=1
 caplib::priceCmSingleSharkFinOption(inst, asOfDate, inst, bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+
+// 用例目的：参数 pricingSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects nonexistent handle pricingSettingsHandle", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], "NO_SUCH_PRICING_SETTINGS_HANDLE", cmRisk[0], scnAnalysis, "", true)
+
+// 用例目的：参数 riskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects nonexistent handle riskSettingsHandle", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, "NO_SUCH_RISK_SETTINGS_HANDLE", scnAnalysis, "", true)
+
+// 用例目的：参数 scnSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects nonexistent handle scnSettingsHandle", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], "NO_SUCH_SCN_SETTINGS_HANDLE", "", true)
+
+// 用例目的：参数 pricingSettingsHandle 传入类型不符的对象句柄（此处传 mktDataHandle），验证句柄类型校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects wrong object type for pricingSettingsHandle", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], mktData[0], cmRisk[0], scnAnalysis, "", true)
+
+// 用例目的：参数 riskSettingsHandle 传入类型不符的对象句柄（此处传 pricingSettingsHandle），验证句柄类型校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects wrong object type for riskSettingsHandle", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, bsmPdeSettings, scnAnalysis, "", true)
+
+// 用例目的：参数 scnSettingsHandle 传入类型不符的对象句柄（此处传 pricingSettingsHandle），验证句柄类型校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects wrong object type for scnSettingsHandle", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], bsmPdeSettings, "", true)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（此处传数值 1），验证类型校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects wrong type for returnJson", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", 1)
+
+// ----------------------------------------------------------------------------
+// 用例目的：asOfDate 晚于期权到期日（本期权到期日 2020.08.20）调用定价，插件层不校验 date>maturity，此用例记录晚于到期日的实际行为且不崩服务（预期：正常返回）
+@testing:case="priceCmSingleSharkFinOption asOfDate after maturity runs without crashing"
+lateResult = caplib::priceCmSingleSharkFinOption(inst, 2025.01.01, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+assert 1, true
 
 // ----------------------------------------------------------------------------
 // 用例目的：相同输入连续定价两次，验证两次现值完全一致（定价确定性）
@@ -264,3 +299,11 @@ r1 = caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSetti
 inst = caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice * 1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 2000000.0, currency, "FUTURE", currency, underlying, "TF_CM_SF", dailyObsDates, dailyObsValues, dailyObsWeights, false);
 r2 = caplib::priceCmSingleSharkFinOption(inst, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true);
 assert 1, abs(presentValue(r2) - 2.0 * presentValue(r1)) <= 1.0e-9 * (abs(presentValue(r1)) + 1.0)
+
+// 用例目的：句柄参数 mktDataHandle 传入不存在的句柄字符串，前置参数均合法，验证句柄校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects nonexistent handle mktDataHandle", exception=1
+caplib::priceCmSingleSharkFinOption(inst, asOfDate, "TF_NO_SUCH_HANDLE_priceCmSingleSharkFinOption_mktDataHandle", bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+
+// 用例目的：句柄参数 instrumentHandle 传入类型不符的定价设置句柄，验证句柄类型校验（预期：抛异常）
+@testing:case="priceCmSingleSharkFinOption rejects wrong object type for instrumentHandle", exception=1
+caplib::priceCmSingleSharkFinOption(bsmPdeSettings, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)

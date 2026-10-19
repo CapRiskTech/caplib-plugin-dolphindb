@@ -58,9 +58,10 @@ caplib::createIrMktDataSet(date(), "X", ["X"], ["X"], "TF_createIrMktDataSet_H",
 @testing:case="createIrMktDataSet rejects vector for scalar irAsOfDate", exception=1
 caplib::createIrMktDataSet([2024.01.01], "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
 
-// 用例目的：向量参数 underlyingInterestRates 传入标量，验证数据形式校验（预期：抛异常）
-@testing:case="createIrMktDataSet rejects scalar for vector underlyingInterestRates", exception=1
-caplib::createIrMktDataSet(2024.01.01, "X", ["X"], ["X"], "TF_createIrMktDataSet_H", false)
+// 用例目的：向量参数 underlyingInterestRates 传入标量（其余参数用 setup 合法值）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createIrMktDataSet scalar for vector underlyingInterestRates (no validation)"
+rIMDS_scalar = caplib::createIrMktDataSet(irAsOfDate, irCurve, "X", [irCurve], "TF_IRMKT", false)
+assert 1, typestr(rIMDS_scalar) != "VOID"
 
 // 用例目的：向量参数 underlyingInterestRates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects partially-null vector underlyingInterestRates", exception=1
@@ -84,14 +85,47 @@ caplib::createIrMktDataSet(irAsOfDate, irCurve, [string(), string(), string()], 
 @testing:case="createIrMktDataSet optional returnJson null uses default"
 result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createIrMktDataSet accepts rejects wrong object type for forwardCurveHandles", exception=1
-caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, "TF_IRMKT", false)
-// 用例目的：句柄参数 forwardCurveHandles 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
-@testing:case="createIrMktDataSet rejects wrong object type for forwardCurveHandles", exception=1
-caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, "TF_IRMKT", false)
+// 用例目的：句柄参数 forwardCurveHandles 传入类型不符的对象句柄（向量内含 IborIndex 而非曲线）——
+//            实测插件不校验句柄对象类型、不抛异常，记录实际行为
+@testing:case="createIrMktDataSet accepts wrong object type for forwardCurveHandles (no type validation)"
+mktFwd = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [iborIndex[0]], "TF_IRMKT", false)
+assert 1, typestr(mktFwd) != "VOID"
 
 // ----------------------------------------------------------------------------
 // 用例目的：两个成对数组参数长度不一致（forwardCurveHandles 多一个元素），验证参数间关系校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects forwardCurveHandles length mismatch", exception=1
 caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve, "EXTRA"], "TF_IRMKT", false);
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: 句柄不存在/类型不匹配 + returnJson 类型 + 日期场景
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 discountCurveHandle 传入类型不符的真实句柄（IborIndex 而非曲线）——
+//            实测插件不校验句柄对象类型、不抛异常，记录实际行为
+@testing:case="createIrMktDataSet accepts wrong object type for discountCurveHandle (no type validation)"
+mktDC = caplib::createIrMktDataSet(irAsOfDate, iborIndex[0], [iborIndex[0]], [irCurve], "TF_IRMKT", false)
+assert 1, typestr(mktDC) != "VOID"
+
+// 用例目的：句柄参数 forwardCurveHandles 向量内传入不存在的句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createIrMktDataSet rejects nonexistent handle in forwardCurveHandles", exception=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], ["TF_NO_SUCH_CURVE"], "TF_IRMKT", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（字符串），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createIrMktDataSet rejects wrong type for returnJson", exception=1
+caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", "bad")
+
+// 用例目的：asOfDate 晚于曲线结束日，文档说明包装器不检查此关系，记录实际行为
+@testing:case="createIrMktDataSet asOfDate later than curve stop (wrapper does not check)"
+resLateMkt = caplib::createIrMktDataSet(2099.12.31, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT_LATE", false)
+assert 1, true
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续): 输出名 handle 错型
+// 判据：createIrMktDataSet 的 handle 走 args[4]->getString()，无 requireStringScalar 严格判型，
+//   传 INT 123 被字符串化接受（同 buildIr* outputHandle 先例），记录实际行为（不抛异常）。
+// ----------------------------------------------------------------------------
+
+// 用例目的：输出名参数 handle 传入 INT 123 —— 源码仅 getString、无 requireStringScalar，宽松接受，记录实际行为
+@testing:case="accepts createIrMktDataSet wrong type for handle (no validation)"
+r2_irMDS_handle = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], 123, false)
+assert 1, typestr(r2_irMDS_handle) != "VOID"

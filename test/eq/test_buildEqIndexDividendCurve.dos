@@ -25,6 +25,14 @@ irCurve = caplib::createIrYieldCurve(
     "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
     "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "IR_CURVE", false);
 
+divDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23];
+divValues = [0.05361055758784821, 0.01338941242891319,
+             -0.001765240983827533, -0.002594662370949712];
+divCurve = caplib::createDividendCurve(
+    asOfDate, divDates, divValues, asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "DIVIDEND_CURVE_50ETF", "DIV_CURVE", false);
+
 quoteTermDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23];
 
 idxOptionPrices = table(
@@ -107,3 +115,20 @@ caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), id
 @testing:case="buildEqIndexDividendCurve termDates length mismatch (lenient validation, does not raise)"
 result = caplib::buildEqIndexDividendCurve(asOfDate, join(quoteTermDates, quoteTermDates[0]), array(DOUBLE,0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv", false);
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：句柄参数 discountCurveHandle 传入类型不符的对象句柄（用股息曲线顶替利率曲线），验证句柄类型校验（预期：抛异常）
+@testing:case="buildEqIndexDividendCurve rejects wrong object type for discountCurveHandle", exception=1
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), idxOptionPrices, underlyingPrice, divCurve, "f_idxdiv", false)
+
+// 用例目的：参数 returnJson 传入非 BOOL 值（该传逻辑值却传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildEqIndexDividendCurve rejects non-bool returnJson", exception=1
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv", "true")
+
+// 用例目的：参数 spot 传入 0（文档标明可为负/零/正），记录插件实际接受行为
+@testing:case="buildEqIndexDividendCurve accepts zero spot (lenient validation, does not raise)"
+result = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), idxOptionPrices, 0.0, irCurve, "f_idxdiv", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="buildEqIndexDividendCurve rejects wrong type for handle", exception=1
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), idxOptionPrices, underlyingPrice, irCurve, 123, false)

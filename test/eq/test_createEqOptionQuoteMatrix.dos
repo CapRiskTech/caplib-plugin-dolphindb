@@ -76,9 +76,10 @@ caplib::createEqOptionQuoteMatrix("X", string(), 2024.01.01, [2024.01.01], matri
 @testing:case="createEqOptionQuoteMatrix rejects vector for scalar exerciseType", exception=1
 caplib::createEqOptionQuoteMatrix(["X"], "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
 
-// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter termDates must be a vector。
 @testing:case="createEqOptionQuoteMatrix rejects scalar for vector termDates", exception=1
-caplib::createEqOptionQuoteMatrix("X", "X", 2024.01.01, [2024.01.01], matrix([0.2]), matrix([0.2]), matrix([0.2]), "X", "TF_createEqOptionQuoteMatrix_H", false)
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, 2024.01.01, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 
 // 用例目的：向量参数 termDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects partially-null vector termDates", exception=1
@@ -129,4 +130,50 @@ assert 1, okEnum
 // 用例目的：矩阵参数 payoffTypes 传入0 列矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createEqOptionQuoteMatrix rejects zero-col matrix payoffTypes", exception=1
 caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(STRING, 3, 0), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+// 用例目的：枚举参数 underlyingType 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects invalid enum for underlyingType", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "NOT_A_VALID_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false)
+// 用例目的：遍历参数 underlyingType 的全部文档枚举取值，逐一调用验证均被接受
+@testing:case="createEqOptionQuoteMatrix supports all underlyingType enums"
+typeEnum = ["SPOT_UNDERLYING_TYPE", "FUTURE_UNDERLYING_TYPE"]
+okUnderlying = true;
+for (i in 0..(size(typeEnum)-1)) {
+    try { caplib::createEqOptionQuoteMatrix("EUROPEAN", typeEnum[i], asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", false); } catch(ex) { okUnderlying = false; }
+}
+assert 1, okUnderlying
+// 用例目的：参数 returnJson 传入非 BOOL 值（该传逻辑值却传字符串），验证类型校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects non-bool returnJson", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, "f_eqoq", "true")
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects wrong type for handle", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, quoteStrikes, underlying, 123, false)
+
+// 用例目的：矩阵参数 optionPrices 传入0 行矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects zero-row matrix optionPrices", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, matrix(DOUBLE, 0, 3), quoteStrikes, underlying, "f_eqoq", false)
+
+// 用例目的：矩阵参数 optionPrices 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects all-null matrix optionPrices", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, matrix([double(), double()], [double(), double()]), quoteStrikes, underlying, "f_eqoq", false)
+
+// 用例目的：矩阵参数 optionPrices 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects partially-null matrix optionPrices", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, matrix([0.1, double()], [double(), 0.1]), quoteStrikes, underlying, "f_eqoq", false)
+
+// 用例目的：矩阵参数 optionStrikes 传入0 行矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects zero-row matrix optionStrikes", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, matrix(DOUBLE, 0, 3), underlying, "f_eqoq", false)
+
+// 用例目的：矩阵参数 optionStrikes 传入全部空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects all-null matrix optionStrikes", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, matrix([double(), double()], [double(), double()]), underlying, "f_eqoq", false)
+
+// 用例目的：矩阵参数 optionStrikes 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects partially-null matrix optionStrikes", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, quotePayoffTypes, quotePrices, matrix([0.1, double()], [double(), 0.1]), underlying, "f_eqoq", false)
+
+// 用例目的：枚举参数 payoffTypes 传入非法值，验证枚举校验（预期：抛异常）
+@testing:case="createEqOptionQuoteMatrix rejects invalid enum for payoffTypes", exception=1
+caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, quoteTermDates, matrix(["NOT_A_REAL_ENUM", "CALL"], ["PUT", "CALL"]), quotePrices, quoteStrikes, underlying, "f_eqoq", false)
 

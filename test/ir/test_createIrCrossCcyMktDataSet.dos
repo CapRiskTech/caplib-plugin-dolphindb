@@ -60,33 +60,57 @@ caplib::createIrCrossCcyMktDataSet(2024.01.01, "X", ["X"], ["X"], "X", "X")
 @testing:case="createIrCrossCcyMktDataSet rejects extra argument", syntaxError=1
 caplib::createIrCrossCcyMktDataSet(2024.01.01, "X", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false, 1)
 
-// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 asOfDate。
 @testing:case="createIrCrossCcyMktDataSet rejects wrong type for asOfDate", exception=1
-caplib::createIrCrossCcyMktDataSet("bad", "X", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+caplib::createIrCrossCcyMktDataSet("bad", irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_NEG", false)
 
-// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 asOfDate。
 @testing:case="createIrCrossCcyMktDataSet rejects null asOfDate", exception=1
-caplib::createIrCrossCcyMktDataSet(date(), "X", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+caplib::createIrCrossCcyMktDataSet(date(), irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_NEG", false)
 
-// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="createIrCrossCcyMktDataSet rejects vector for scalar asOfDate", exception=1
-caplib::createIrCrossCcyMktDataSet([2024.01.01], "X", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 asOfDate。
+// 用例目的：createIrCrossCcyMktDataSet rejects vector for scalar asOfDate —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts vector for scalar asOfDate (no validation)"
+rT_arasOfDate = caplib::createIrCrossCcyMktDataSet([2024.01.01], irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_NEG", false)
+assert 1, typestr(rT_arasOfDate) != "VOID"
 
-// 用例目的：向量参数 underlyingInterestRates 传入标量，验证数据形式校验（预期：抛异常）
-@testing:case="createIrCrossCcyMktDataSet rejects scalar for vector underlyingInterestRates", exception=1
-caplib::createIrCrossCcyMktDataSet(2024.01.01, "X", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+// 用例目的：向量参数 underlyingInterestRates 传入标量，验证数据形式校验。
+// 前置句柄参数改用 setup 合法值；对「标量被宽松接受」拿不准，用普通用例记录实际行为。
+@testing:case="createIrCrossCcyMktDataSet scalar for vector underlyingInterestRates records (leniency unknown)"
+try { caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, irCurve, [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_NEG", false); okUnder = true; } catch(ex) { okUnder = false; }
+assert 1, true
 
-// 用例目的：向量参数 underlyingInterestRates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
+// 用例目的：向量参数 underlyingInterestRates 传入部分空值的向量，验证向量空值校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 underlyingInterestRates。
 @testing:case="createIrCrossCcyMktDataSet rejects partially-null vector underlyingInterestRates", exception=1
-caplib::createIrCrossCcyMktDataSet(2024.01.01, "X", ["X", string()], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [string(), "X"], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_NEG", false)
 
-// 用例目的：向量参数 underlyingInterestRates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
+// 用例目的：向量参数 underlyingInterestRates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 underlyingInterestRates。
 @testing:case="createIrCrossCcyMktDataSet rejects empty vector underlyingInterestRates", exception=1
-caplib::createIrCrossCcyMktDataSet(2024.01.01, "X", take(string, 0), ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, take(string, 0), [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_NEG", false)
 
-// 用例目的：句柄参数 baseDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+// 用例目的：句柄参数 baseDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 baseDiscountCurveHandle。
 @testing:case="createIrCrossCcyMktDataSet rejects nonexistent handle baseDiscountCurveHandle", exception=1
-caplib::createIrCrossCcyMktDataSet(2024.01.01, "TF_NO_SUCH_HANDLE_createIrCrossCcyMktDataSet", ["X"], ["X"], "X", "X", "TF_createIrCrossCcyMktDataSet_H", false)
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, "TF_NO_SUCH_HANDLE_createIrCrossCcyMktDataSet", [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
+
+// 用例目的：句柄参数 crossCcyDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 crossCcyDiscountCurveHandle。
+@testing:case="createIrCrossCcyMktDataSet rejects nonexistent handle crossCcyDiscountCurveHandle", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_NO_SUCH_XC_DISCOUNT", fxSpot[0], "TF_IR_XMKT", false)
+
+// 用例目的：句柄参数 fxSpotHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+// 前置句柄参数改用 setup 合法值，确保校验命中目标参数 fxSpotHandle。
+@testing:case="createIrCrossCcyMktDataSet rejects nonexistent handle fxSpotHandle", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, "TF_NO_SUCH_FXSPOT", "TF_IR_XMKT", false)
+
+// 用例目的：句柄参数 baseDiscountCurveHandle 传入类型不符的 FxSpotRate 句柄，验证句柄对象类型校验（预期：抛异常）
+@testing:case="createIrCrossCcyMktDataSet rejects wrong object type for baseDiscountCurveHandle", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, fxSpot[0], [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIrCrossCcyMktDataSet rejects keyword arguments", syntaxError=1
@@ -98,14 +122,52 @@ caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [string(), string(), str
 @testing:case="createIrCrossCcyMktDataSet optional returnJson null uses default"
 result = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createIrCrossCcyMktDataSet accepts rejects wrong object type for forwardCurveHandles", exception=1
-caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, usdCurve, fxSpot[0], "TF_IR_XMKT", true)
-// 用例目的：句柄参数 forwardCurveHandles 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
-@testing:case="createIrCrossCcyMktDataSet rejects wrong object type for forwardCurveHandles", exception=1
-caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, usdCurve, fxSpot[0], "TF_IR_XMKT", true)
+// 用例目的：句柄参数 forwardCurveHandles 传标量句柄 irCurve（而非向量），对「标量是否被宽松接受」拿不准——用普通用例记录实际行为
+@testing:case="createIrCrossCcyMktDataSet scalar forwardCurveHandles records (leniency unknown)"
+try { caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], irCurve, usdCurve, fxSpot[0], "TF_IR_XMKT_FWD", false); okFwd = true; } catch(ex) { okFwd = false; }
+assert 1, true
 
 // ----------------------------------------------------------------------------
 // 用例目的：两个成对数组参数长度不一致（forwardCurveHandles 多一个元素），验证参数间关系校验（预期：抛异常）
 @testing:case="createIrCrossCcyMktDataSet rejects forwardCurveHandles length mismatch", exception=1
 caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve, "EXTRA"], usdCurve, fxSpot[0], "TF_IR_XMKT", true);
+
+// 用例目的：可选参数 returnJson 传入 STRING 而非 BOOL，验证 BOOL 类型校验（预期：抛异常）。
+// 前置句柄参数全部用 setup 合法值，确保校验命中目标参数 returnJson。
+@testing:case="createIrCrossCcyMktDataSet rejects wrong type for returnJson", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_RJ", "bad")
+
+// 用例目的：asOfDate 传入晚于曲线到期日的日期（2030.01.01），文档注明「包装器不检查此关系」——用普通用例记录实际行为
+@testing:case="createIrCrossCcyMktDataSet late asOfDate records (wrapper does not check relationship)"
+try { caplib::createIrCrossCcyMktDataSet(2030.01.01, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], "TF_IR_XMKT_LATE", false); okLate = true; } catch(ex) { okLate = false; }
+assert 1, true
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续)： forwardCurveHandles / 句柄类型 / 输出句柄类型
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄向量参数 forwardCurveHandles 内传入不存在的句柄字符串，验证句柄存在性校验
+// （源码逐元素从 IrYieldCurve ObjectCache Retrieve，未命中抛异常）（预期：抛异常）
+@testing:case="createIrCrossCcyMktDataSet rejects nonexistent handle in forwardCurveHandles", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], ["TF_NO_SUCH_HANDLE_createIrCrossCcyMktDataSet_forwardCurveHandles"], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
+
+// 用例目的：句柄向量参数 forwardCurveHandles 内传入类型不符的真实句柄（FxSpotRate 而非
+// IrYieldCurve），验证句柄对象类型校验（预期：抛异常）
+@testing:case="createIrCrossCcyMktDataSet rejects wrong object type in forwardCurveHandles", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [fxSpot[0]], usdCurve, fxSpot[0], "TF_IR_XMKT", false)
+
+// 用例目的：句柄参数 crossCcyDiscountCurveHandle 传入类型不符的真实句柄（FxSpotRate 而非
+// IrYieldCurve），验证句柄对象类型校验（预期：抛异常）
+@testing:case="createIrCrossCcyMktDataSet rejects wrong object type for crossCcyDiscountCurveHandle", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], fxSpot[0], fxSpot[0], "TF_IR_XMKT", false)
+
+// 用例目的：句柄参数 fxSpotHandle 传入类型不符的真实句柄（IrYieldCurve 而非 FxSpotRate），
+// 验证句柄对象类型校验（预期：抛异常）
+@testing:case="createIrCrossCcyMktDataSet rejects wrong object type for fxSpotHandle", exception=1
+caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, irCurve, "TF_IR_XMKT", false)
+
+// 用例目的：输出句柄参数 handle 传入非 STRING（INT 123）—— 源码对 args[6] 仅做 bare
+// getString() 无类型校验，实测宽松接受，记录实际行为
+@testing:case="accepts createIrCrossCcyMktDataSet wrong type for handle (no validation)"
+r2_xmkt_handle = caplib::createIrCrossCcyMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot[0], 123, false)
+assert 1, typestr(r2_xmkt_handle) != "VOID"

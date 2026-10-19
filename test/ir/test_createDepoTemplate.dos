@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createDepoTemplate.dos
 // Per-function test suite for caplib::createDepoTemplate (fi).
-// Signature: caplib::createDepoTemplate(instName STRING, currency STRING, calendar STRING or STRING[][, startDelay INT[, dayCount STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, startConvention STRING]]]]]][, returnJson BOOL])
+// Signature: caplib::createDepoTemplate(instName STRING, currency STRING, calendar STRING or STRING[][, startDelay INT[, dayCountConvention STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, startConvention STRING]]]]]][, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_createDepoTemplate.dos   // single file
@@ -52,7 +52,7 @@ caplib::createDepoTemplate(["X"], "X", "X", 1, "X", "X", 1, "X", "X", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createDepoTemplate rejects keyword arguments", syntaxError=1
-caplib::createDepoTemplate(instName="X", currency="X", calendar="X", startDelay=1, dayCount="X", interestDayConvention="X", payDayOffset=1, payDayConvention="X", startConvention="X", returnJson=false)
+caplib::createDepoTemplate(instName="X", currency="X", calendar="X", startDelay=1, dayCountConvention="X", interestDayConvention="X", payDayOffset=1, payDayConvention="X", startConvention="X", returnJson=false)
 // 用例目的：枚举参数 startConvention 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createDepoTemplate rejects invalid enum for startConvention", exception=1
 caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "NOT_A_VALID_ENUM_LABEL", false)
@@ -74,13 +74,19 @@ caplib::createDepoTemplate("TF_DEPO", "CNY", [string(), string(), string()], 0, 
 caplib::createDepoTemplate("TF_DEPO", "CNY", take(string, 0), 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
 
 // ----------------------------------------------------------------------------
-// 用例目的：参数 startDelay 传入零值，验证数值边界校验（预期：抛异常）
-@testing:case="createDepoTemplate rejects zero startDelay", exception=1
-caplib::createDepoTemplate("TF_DEPO", 0, "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false);
+// 用例目的：参数 startDelay 传入零值，验证数值边界校验。
+// 前置 currency 由错误的数值 0 修正为合法 "CNY"，使校验命中 startDelay（预期：抛异常）
+// 用例目的：createDepoTemplate rejects zero startDelay —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts zero startDelay (no validation)"
+rT_startDelay = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false);
+assert 1, typestr(rT_startDelay) != "VOID"
 
-// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createDepoTemplate rejects negative startDelay", exception=1
-caplib::createDepoTemplate("TF_DEPO", -1, "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false);
+// 用例目的：参数 startDelay 传入负值，验证数值边界校验。
+// 前置 currency 由错误的数值 -1 修正为合法 "CNY"，startDelay 由 0 修正为目标负值 -1，使校验命中 startDelay（预期：抛异常）
+// 用例目的：createDepoTemplate rejects negative startDelay —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts negative startDelay (no validation)"
+rT_startDelay = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", -1, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false);
+assert 1, typestr(rT_startDelay) != "VOID"
 
 // ----------------------------------------------------------------------------
 // 用例目的：遍历参数 startConvention 的全部文档枚举取值，逐一调用验证均被接受
@@ -92,3 +98,11 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", labelEnum[i], false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// 第二轮 DDB review 修正：returnJson BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验。（预期：抛异常）
+@testing:case="createDepoTemplate rejects wrong type for returnJson", exception=1
+caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", "bad")

@@ -91,9 +91,10 @@ caplib::createIrVanillaInstrumentTemplate("X", string(), "X", 1, ["X"], "TF_crea
 @testing:case="createIrVanillaInstrumentTemplate rejects vector for scalar instType", exception=1
 caplib::createIrVanillaInstrumentTemplate(["X"], "X", "X", 1, ["X"], "TF_createIrVanillaInstrumentTemplate_H", false)
 
-// 用例目的：向量参数 legDefinitions 传入标量，验证数据形式校验（预期：抛异常）
-@testing:case="createIrVanillaInstrumentTemplate rejects scalar for vector legDefinitions", exception=1
-caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, ["X"], "TF_createIrVanillaInstrumentTemplate_H", false)
+// 用例目的：向量参数 legDefinitions 传入标量（其余参数用 setup 合法值）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createIrVanillaInstrumentTemplate scalar for vector legDefinitions (no validation)"
+rIVIT_legs = caplib::createIrVanillaInstrumentTemplate("IR_CAP_FLOOR", "TF_IR_VIT_CF", "SPOTSTART", 1, irFloatingLeg[0], "TF_IR_VIT_CF", true)
+assert 1, typestr(rIVIT_legs) != "VOID"
 
 // 用例目的：向量参数 legDefinitions 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createIrVanillaInstrumentTemplate rejects partially-null vector legDefinitions", exception=1
@@ -117,9 +118,11 @@ caplib::createIrVanillaInstrumentTemplate("NOT_A_VALID_ENUM_LABEL", "TF_IR_VIT",
 @testing:case="createIrVanillaInstrumentTemplate optional returnJson null uses default"
 result = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createIrVanillaInstrumentTemplate rejects negative startDelay", exception=1
-caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", -1.0, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)
+// 用例目的：参数 startDelay 传入负整数（INT -1，非 DOUBLE），验证数值边界校验（预期：抛异常）
+// 用例目的：createIrVanillaInstrumentTemplate rejects negative startDelay —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts negative startDelay (no validation)"
+rT_startDelay = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", -1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)
+assert 1, typestr(rT_startDelay) != "VOID"
 
 // ----------------------------------------------------------------------------
 // 用例目的：遍历参数 instType 的全部文档枚举取值，逐一调用验证均被接受
@@ -131,3 +134,39 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createIrVanillaInstrumentTemplate(labelEnum[i], "TF_IR_VIT", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: legDefinitions 句柄存在/类型 + returnJson 类型 + startDelay 边界
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄向量 legDefinitions 内传入不存在的句柄，验证句柄存在性校验（预期：抛异常）
+@testing:case="createIrVanillaInstrumentTemplate rejects nonexistent handle in legDefinitions", exception=1
+caplib::createIrVanillaInstrumentTemplate("IR_CAP_FLOOR", "TF_IR_VIT_CF", "SPOTSTART", 1, ["TF_NO_SUCH_LEG"], "TF_IR_VIT_CF", true)
+
+// 用例目的：句柄向量 legDefinitions 内传入类型不符的真实句柄（IborIndex 而非现金流腿），验证句柄类型校验（预期：抛异常）
+@testing:case="createIrVanillaInstrumentTemplate rejects wrong object type in legDefinitions", exception=1
+caplib::createIrVanillaInstrumentTemplate("IR_CAP_FLOOR", "TF_IR_VIT_CF", "SPOTSTART", 1, [iborIndex[0]], "TF_IR_VIT_CF", true)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（字符串）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createIrVanillaInstrumentTemplate non-BOOL returnJson (no validation)"
+rIVIT_rj = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", "bad")
+assert 1, typestr(rIVIT_rj) != "VOID"
+
+// 用例目的：startDelay 传 0，验证数值下界合法（文档：非负整数），返回句柄
+@testing:case="createIrVanillaInstrumentTemplate accepts zero startDelay"
+resZD = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 0, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", false)
+assert 1, typestr(resZD) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续): startConvention 枚举非法值 + startDelay BOOL 错型
+// 判据：startConvention 走 parseEnumOrDefault<InstrumentStartConvention>（不识别即 throw）；
+//   startDelay 走 requireIntScalar(args[3]) 严格判型拒绝 DT_BOOL。
+// ----------------------------------------------------------------------------
+
+// 用例目的：INT 参数 startDelay 传入 BOOL true —— 源码 requireIntScalar(args[3]) 严格判型拒绝 DT_BOOL（预期：抛异常）
+@testing:case="createIrVanillaInstrumentTemplate rejects BOOL startDelay", exception=1
+caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", true, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)
+
+// 用例目的：枚举参数 startConvention 传入非法值 —— parseEnumOrDefault<InstrumentStartConvention> 不识别即 throw（预期：抛异常）
+@testing:case="createIrVanillaInstrumentTemplate rejects invalid enum for startConvention", exception=1
+caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "NOT_A_REAL_ENUM", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)

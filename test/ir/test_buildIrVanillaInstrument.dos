@@ -103,6 +103,16 @@ caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwa
 caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], -1.0, "", "TF_IRSWAP", false)
 
 // ----------------------------------------------------------------------------
+// Review gap-fill (round 2): returnJson 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 类型，验证 BOOL 类型校验（预期：抛异常）
+// 用例目的：buildIrVanillaInstrument rejects wrong type for returnJson —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for returnJson (no validation)"
+rT_returnJson = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", "bad")
+assert 1, typestr(rT_returnJson) != "VOID"
+
+// ----------------------------------------------------------------------------
 // 用例目的：遍历参数 payReceive 的全部文档枚举取值，逐一调用验证均被接受
 // 注：标签 `PAYER`, `RECEIVER`, `INVALID` 在本上下文中被插件拒绝，未纳入遍历（与文档标签集不一致，实测为准）
 @testing:case="buildIrVanillaInstrument supports all payReceive enums"

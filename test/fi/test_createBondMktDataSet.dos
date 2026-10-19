@@ -158,27 +158,26 @@ caplib::createBondMktDataSet(2024.01.01, "X", "X", "X", "TF_createBondMktDataSet
 
 // 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createBondMktDataSet rejects wrong type for asOfDate", exception=1
-caplib::createBondMktDataSet("bad", "X", "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+caplib::createBondMktDataSet("bad", cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
 
 // 用例目的：参数 discountCurve 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createBondMktDataSet rejects wrong type for discountCurve", exception=1
-caplib::createBondMktDataSet(2024.01.01, 1, "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+caplib::createBondMktDataSet(2024.01.01, 1, cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
 
 // 用例目的：参数 creditCurve 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createBondMktDataSet rejects wrong type for creditCurve", exception=1
-caplib::createBondMktDataSet(2024.01.01, "X", 1, "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+caplib::createBondMktDataSet(2024.01.01, cnyTreasStdCfets[0], 1, cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
 
 // 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createBondMktDataSet rejects null asOfDate", exception=1
-caplib::createBondMktDataSet(date(), "X", "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+caplib::createBondMktDataSet(date(), cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
 
-// 用例目的：参数 discountCurve 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="createBondMktDataSet rejects null discountCurve", exception=1
-caplib::createBondMktDataSet(2024.01.01, string(), "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+// 注释：空串折扣曲线按缓存键 "" 查找；全库共享会话下 "" 键可能已被占用，行为非确定，故不在空串上断言；
+//       discountCurve 必填性已由下方 "rejects nonexistent discountCurve handle"（确定性）覆盖。
 
 // 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createBondMktDataSet rejects vector for scalar asOfDate", exception=1
-caplib::createBondMktDataSet([2024.01.01], "X", "X", "X", "TF_createBondMktDataSet_H", "TF_createBondMktDataSet_H", false)
+caplib::createBondMktDataSet([2024.01.01], cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createBondMktDataSet rejects keyword arguments", syntaxError=1
@@ -187,3 +186,34 @@ caplib::createBondMktDataSet(asOfDate=2024.01.01, discountCurve="X", creditCurve
 @testing:case="createBondMktDataSet optional returnJson null uses default"
 result = caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", bool())
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// 用例目的：句柄参数 discountCurve 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createBondMktDataSet rejects nonexistent discountCurve handle", exception=1
+caplib::createBondMktDataSet(asOfDate, "TF_NO_SUCH_HANDLE_discountCurve", cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
+
+// 用例目的：句柄参数 discountCurve 传入类型不符的对象句柄（用信用曲线），验证句柄类型校验（预期：抛异常）
+@testing:case="createBondMktDataSet rejects wrong object type for discountCurve", exception=1
+caplib::createBondMktDataSet(asOfDate, cnyMtnAaaSprdStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
+
+// 用例目的：句柄参数 creditCurve 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createBondMktDataSet rejects nonexistent creditCurve handle", exception=1
+caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], "TF_NO_SUCH_HANDLE_creditCurve", cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
+
+// 用例目的：句柄参数 creditCurve 传入类型不符的对象句柄（用国债收益曲线），验证句柄类型校验（预期：抛异常）
+@testing:case="createBondMktDataSet rejects wrong object type for creditCurve", exception=1
+caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], cnyTreasStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
+
+// 用例目的：句柄参数 forwardCurve 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createBondMktDataSet rejects nonexistent forwardCurve handle", exception=1
+caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], "TF_NO_SUCH_HANDLE_forwardCurve", "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
+
+// 用例目的：句柄参数 forwardCurve 传入类型不符的对象句柄（用信用曲线），验证句柄类型校验（预期：抛异常）
+@testing:case="createBondMktDataSet rejects wrong object type for forwardCurve", exception=1
+caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyMtnAaaSprdStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", false)
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+// 用例目的：createBondMktDataSet rejects wrong type for returnJson —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for returnJson (no validation)"
+rT_returnJson = caplib::createBondMktDataSet(asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "TF_FI_BOND_MKT_NAME", "TF_FI_BOND_MKT", "bad")
+assert 1, typestr(rT_returnJson) != "VOID"

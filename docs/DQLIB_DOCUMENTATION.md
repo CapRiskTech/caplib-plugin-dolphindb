@@ -20,6 +20,35 @@ Caplib 是面向金融衍生品定价与风险分析的 DolphinDB 插件。插�
 
 使用前必须准备有效的 `dqlibc.lic`。许可证文件格式要求 `lic_ver = 200`，并应放在 `~/.dqlib/dqlibc.lic`、`/etc/dqlib/dqlibc.lic` 或 `libdqlibc.so` 所在目录。
 
+## 版本与发行说明
+
+当前市场版本：**`3.00.5.1`**（首个市场版本，适配 DolphinDB Server `3.00.5`）。本插件为**开源 + 免费**（`openSource/isFree/isFreeForCommercial` 均 `true`，见 [License 说明](#license-说明)），随包附带通用的 `dqlibc.lic`。
+
+### 3.00.5.1（市场首发）
+
+- **新功能**
+  - 实现并导出 `pluginInfo` 元数据接口（返回 `pluginName / openSource / repositoryUrl / isFree / isFreeForCommercial / pluginVersion / serverVersion / architecture / platform / feature` 字典），由 Server 在 `loadPlugin` 时自动注册，适配 DolphinDB 插件市场接入规范（本插件为开源 + 免费）。
+- **功能优化**
+  - 全部日志与异常消息统一加 `[PLUGIN::CAPLIB] ` 前缀，便于定位与运维排查。
+  - 版本号命名改为跟随 Server 的 `3.00.5.X` 方案；后续补丁递增第五段（如 `3.00.5.1.1`）。
+- **故障修复**
+  - （本版无既有发行期缺陷修复项。）
+- **兼容性**
+  - 兼容 Server `3.00.5`（Linux x86-64 / ABI0），构建链为 GCC 8.4，最高要求 `GLIBCXX_3.4.23` / `CXXABI_1.3.11`。
+  - 保持既有 184 个对外接口的签名与语义不变。
+
+### 0.0.15（源码构建基线，已并入 3.00.5.1）
+
+- **兼容性（破坏性）**
+  - `createPricingSettings` 自 0.0.13 起仅接受 9 个必填参数 + 可选 *returnJson*；不含 *specificPricingRequests* 的旧形式不再接受。
+  - 移除 `buildHistSimIrYieldCurve`、`buildHistSimCreditCurve` 两个市场风险接口（接口数 186 → 184）。
+- **返回值变更**
+  - `calcVaR` / `calcExpectedShortfall` 返回值由 DOUBLE 标量改为字典（`value_at_risk` / `expected_shortfall` 及对应 `_mirrored` 键）。
+- **兼容性（非破坏）**
+  - 波动率翼部行权价枚举拼写修正 `ABOSULTE_STRIKE` → `ABSOLUTE_STRIKE`（旧拼写仍被识别）。
+
+> 更早版本（0.0.11 及以前）的变更记录见各对应 GitHub Release 发行说明。
+
 ## 安装插件
 
 ### 版本要求
@@ -59,13 +88,25 @@ caplib/
     └── calendars.bin
 ```
 
-加载生成后的插件描述文件：
+将上述 `caplib/` 目录置于 Server 的 `plugins` 目录（如 `/data/ddb/server/plugins/caplib/`）后加载插件：
 
 ```dolphindb
-loadPlugin("/your/path/to/caplib/PluginCaplib.txt")
+loadPlugin("caplib")
+go
 ```
 
 > 请使用发行包内已配置的 `PluginCaplib.txt`（源码构建时为 `build/PluginCaplib.txt`）；不要部署含 CMake 变量的模板。
+
+加载成功后，可调用 `caplib::pluginInfo()` 核对插件元数据（版本、开源/免费标志、适配 Server、feature 标签等）：
+
+```dolphindb
+caplib::pluginInfo()
+// 预期返回（字典）：
+//   pluginName -> "caplib", openSource -> true, isFree -> true,
+//   isFreeForCommercial -> true, pluginVersion -> "3.00.5.1",
+//   serverVersion -> "3.00.5", architecture -> "x86",
+//   platform -> "Linux", feature -> "ABI", repositoryUrl -> "..."
+```
 
 ## 核心概念
 
@@ -78,7 +119,7 @@ loadPlugin("/your/path/to/caplib/PluginCaplib.txt")
 
 ### 句柄和 `returnJson`
 
-大多数工厂与定价接口支持最后一个可选参数 `returnJson`：
+大多数工厂与定价接口支持最后一个可选参数 *returnJson*：
 
 - 省略或传入 `false`：只返回对象句柄。
 - 传入 `true`：返回 `[handle, protobufJson]`。
@@ -102,7 +143,7 @@ loadPlugin("/your/path/to/caplib/PluginCaplib.txt")
 
 ### 日期术语
 
-- `asOfDate`：统一的基准 / 估值日期。曲线、工具、市场数据的基准日与执行估值的日期均使用该名称（原 `referenceDate`、`pricingDate`、`calculationDate` 一律以 `asOfDate` 表示）。
+- *asOfDate*：统一的基准 / 估值日期。曲线、工具、市场数据的基准日与执行估值的日期均使用该名称（原 `referenceDate`、`pricingDate`、`calculationDate` 一律以 *asOfDate* 表示）。
 
 ## 数据类型转换
 
@@ -132,7 +173,7 @@ caplib::calcYearFraction(startDate DATE, endDate DATE, dayCountConvention STRING
 
 **详情**
 
-通过 CAPLIB 日期服务应用所选日计数约定，计算 startDate 到 endDate 的应计年化比例。
+通过 CAPLIB 日期服务应用所选计息惯例，计算 startDate 到 endDate 的应计年化比例。
 
 **参数**
 
@@ -140,20 +181,18 @@ startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB 
 
 endDate DATE 类型。结束日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
-dayCountConvention STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
 **返回值**
 
-**返回：** DOUBLE 数值。
+计算结果，DOUBLE 类型标量。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-ACTUAL_360 = "ACTUAL_360"
-caplib::calcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360)
+caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360")
 ```
 
 #### createCalendar
@@ -161,7 +200,7 @@ caplib::calcYearFraction(2025.01.01, 2025.12.31, `ACTUAL_360)
 **语法**
 
 ```dolphindb
-caplib::createCalendar(calName STRING, [holidays, [specialBusinessDays])
+caplib::createCalendar(calName STRING, [holidays, [specialBusinessDays]])
 ```
 
 **详情**
@@ -172,22 +211,22 @@ caplib::createCalendar(calName STRING, [holidays, [specialBusinessDays])
 
 calName STRING 类型。日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-holidays DATE 向量 or INT 向量 类型。节假日日期数组。**有效性:** 可省略；显式提供时必须是非空且不含空值的 DATE/INT 向量。与特殊工作日向量的长度互相独立；包装器不检查排序或日期先后关系。
+holidays DATE 向量 or INT 向量 类型。节假日日期数组。**有效性:** 默认为 空（即不提供节假日）；显式提供时必须是非空且不含空值的 DATE/INT 向量。与特殊工作日向量的长度互相独立；包装器不检查排序或日期先后关系。
 
-specialBusinessDays DATE 向量 or INT 向量 类型。特殊工作日日期数组。**有效性:** 可省略或为空向量；非空时必须是不含空值的 DATE/INT 向量。包装器不检查排序或日期先后关系。
+specialBusinessDays DATE 向量 or INT 向量 类型。特殊工作日日期数组。**有效性:** 默认为 空向量（即不提供特殊工作日）；非空时必须是不含空值的 DATE/INT 向量。包装器不检查排序或日期先后关系。
 
 **返回值**
 
-**返回：** BOOL `true`；失败时抛出异常，不返回 `false`。
+BOOL `true`；失败时抛出异常，不返回 `false`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-calEuta = "calEuta"
-caplib::createCalendar(calEuta)
+holidays = [2025.01.01, 2025.01.29]
+specialBusinessDays = [2025.01.25]
+caplib::createCalendar("CAL_CFETS", holidays, specialBusinessDays)
 ```
 #### getObjectCacheJson
 
@@ -209,7 +248,7 @@ handle STRING 类型。分配给创建对象并由函数返回的 内存对象 �
 
 **返回值**
 
-**返回：** 两元素 STRING 向量 `[handle, protobufJson]`。
+两元素 STRING 向量 `[handle, protobufJson]`。
 
 **示例**
 
@@ -224,7 +263,7 @@ caplib::getObjectCacheJson("PricingResults", "EO_INST_results")
 **语法**
 
 ```dolphindb
-caplib::createDividendCurve(referenceDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, yieldStartDate DATE, dividendType STRING, dcc STRING, interp STRING, extrap STRING, compounding STRING, name STRING, handle STRING, [returnJson])
+caplib::createDividendCurve(asOfDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, yieldStartDate DATE, dividendType STRING, dayCountConvention STRING, interp STRING, extrap STRING, compounding STRING, name STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -233,7 +272,7 @@ caplib::createDividendCurve(referenceDate DATE, pillarDates DATE 向量, pillarV
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 pillarDates DATE 向量 类型。曲线节点日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -243,7 +282,7 @@ yieldStartDate DATE 类型。日期或日期数组。**有效性:** 必须是非
 
 dividendType STRING 类型。股息曲线类型。**有效性:** 可接受值：`CONTINUOUS`, `DISCRETE`。区分大小写。
 
-dcc STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
 interp STRING 类型。插值方法。**有效性:** 可接受值：`LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。仅接受所示精确拼写。
 
@@ -259,7 +298,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -282,7 +321,7 @@ caplib::createDividendCurve(
 **语法**
 
 ```dolphindb
-caplib::createVolatilityCurve(referenceDate DATE, pillarDates DATE 向量, vols DOUBLE 向量, dcc STRING, interp STRING, extrap STRING, underlying STRING, handle STRING, [returnJson])
+caplib::createVolatilityCurve(asOfDate DATE, pillarDates DATE 向量, vols DOUBLE 向量, dayCountConvention STRING, interp STRING, extrap STRING, underlying STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -291,13 +330,13 @@ caplib::createVolatilityCurve(referenceDate DATE, pillarDates DATE 向量, vols 
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 pillarDates DATE 向量 类型。曲线节点日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
 vols DOUBLE 向量 类型。波动率节点值数组。**有效性:** 必须具有所列元素类型和形状；数值必须非负且有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-dcc STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
 interp STRING 类型。插值方法。**有效性:** 可接受值：`LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。仅接受所示精确拼写。
 
@@ -311,22 +350,19 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilityCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilityCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-quantoDates = [2020.02.21]
-quantoValues = [0.0]
-underlying = "EURUSD"
+asOfDate = 2022.03.09
+pillarDates = [2022.03.10, 2025.03.10]
 caplib::createVolatilityCurve(
-    asOfDate, quantoDates, quantoValues,
+    asOfDate, pillarDates, [0.20, 0.21],
     "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
-    underlying, "QUANTO_FX_VOL", false)
+    "AN_UNDERLYING", "AN_VOL_CURVE", false)
 ```
 
 #### createVolatilitySurface
@@ -334,7 +370,7 @@ caplib::createVolatilityCurve(
 **语法**
 
 ```dolphindb
-caplib::createVolatilitySurface(definitionHandle STRING, referenceDate DATE, volSmileHandles STRING 向量, termDates DATE 向量, underlying STRING, handle STRING, [returnJson])
+caplib::createVolatilitySurface(definitionHandle STRING, asOfDate DATE, volSmileHandles STRING 向量, termDates DATE 向量, underlying STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -345,7 +381,7 @@ caplib::createVolatilitySurface(definitionHandle STRING, referenceDate DATE, vol
 
 definitionHandle STRING 类型。波动率曲面定义 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 volSmileHandles STRING 向量 类型。波动率微笑对象 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -359,21 +395,31 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-curveDates = [2020.02.21]
-volSmile1d = "volSmile1d"
-volSmile3y = "volSmile3y"
+asOfDate = 2022.03.09
+emptyD = array(DOUBLE, 0)
+volSmile1d = caplib::createVolatilitySmile(
+    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21],
+    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0/365.0, emptyD, emptyD,
+    90.0, 110.0, "AN_VOL_SMILE_1D", false)
+volSmile3y = caplib::createVolatilitySmile(
+    "STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.23, 0.21, 0.22],
+    "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 3.0, emptyD, emptyD,
+    90.0, 110.0, "AN_VOL_SMILE_3Y", false)
+volSurfaceDefinition = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP",
+    "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED",
+    "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0,
+    "AN_VOL_SURFACE_DEF", false)
 caplib::createVolatilitySurface(
-    volSurfaceDefinition[0], asOfDate, [volSmile1d, volSmile3y], curveDates,
-    "AN_UNDERLYING", "AN_VOL_SURFACE", false)
+    volSurfaceDefinition, asOfDate, [volSmile1d, volSmile3y],
+    [2022.03.10, 2025.03.10], "AN_UNDERLYING", "AN_VOL_SURFACE", false)
 ```
 
 #### createOptionQuoteMatrix
@@ -392,9 +438,9 @@ caplib::createOptionQuoteMatrix(quoteValueType STRING, quoteTermType STRING, quo
 
 quoteValueType STRING 类型。报价值类型，例如价格或波动率。**有效性:** 值必须是以下完整 protobuf 标签之一：`OQVT_INVALID`, `OQVT_VOLATILITY`, `OQVT_PRICE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-quoteTermType STRING 类型。报价期限类型。**有效性:** 可接受值：`OQTT_INVALID`, `OQTT_ABSOLUTE_TERM`, `OQTT_ABSOLUTE_TERM`, `OQTT_RELATIVE_TERM`。不区分大小写。
+quoteTermType STRING 类型。报价期限类型。**有效性:** 可接受值：`OQTT_INVALID`, `OQTT_ABSOLUTE_TERM`, `OQTT_RELATIVE_TERM`。不区分大小写。
 
-quoteStrikeType STRING 类型。报价行权价类型。**有效性:** 可接受值：`OQST_INVALID`, `OQST_ABSOLUTE_STRIKE`, `OQST_ABSOLUTE_STRIKE`, `OQST_RELATIVE_STRIKE`, `OQST_DELTA_STRIKE`。不区分大小写。
+quoteStrikeType STRING 类型。报价行权价类型。**有效性:** 可接受值：`OQST_INVALID`, `OQST_ABSOLUTE_STRIKE`, `OQST_RELATIVE_STRIKE`, `OQST_DELTA_STRIKE`。不区分大小写。
 
 exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -402,7 +448,7 @@ optionUnderlyingType STRING 类型。期权标的类型。**有效性:** 值必�
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-terms STRING 向量 类型。报价期限数组。**有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+terms STRING 向量 类型。报价期限数组。**有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 包装器不校验本参数的向量形式，传入字符串标量亦可宽松接受并完成调用；建议按字符串向量传入。
 
 termDates DATE 向量 类型。报价期限对应的到期日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -420,19 +466,18 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-quotePayoffTypes = ["CALL"]
-quoteStrikes = [100.0]
-quoteTermDates = ["1Y"]
-quoteValues = [0.2]
+asOfDate = 2022.03.09
+quoteTermDates = [2022.06.09, 2022.09.09]
+quotePayoffTypes = matrix(["CALL", "PUT"], ["CALL", "PUT"])
+quoteValues = matrix([10.5, 8.5], [11.0, 9.0])
+quoteStrikes = matrix([95.0, 95.0], [105.0, 105.0])
 caplib::createOptionQuoteMatrix(
     "OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE",
     "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
@@ -464,15 +509,15 @@ timeInterpMethod STRING 类型。期限方向插值方法。**有效性:** 可�
 
 timeExtrapMethod STRING 类型。期限方向外推方法。**有效性:** 可接受值：`FLAT_IN_VOLATILITY`。不区分大小写。
 
-dayCountConvention STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
 volType STRING 类型。波动率类型。**有效性:** 识别值：`INVALID_VOLATILITY_TYPE`, `LOG_NORMAL_VOL_TYPE`, `NORMAL_VOL_TYPE`, `LOG_NORMAL`, `NORMAL`。不区分大小写。
 
-wingStrikeType STRING 类型。翼部行权价类型。**有效性:** 识别值：`DELTA`, `RELATIVE_RATIO_STRIKE`, `RELATIVE_SPREAD_STRIKE`, `ABSOLUTE_STRIKE`, `ABSOLUTE_STRIKE`。不区分大小写。
+wingStrikeType STRING 类型。翼部行权价类型。**有效性:** 识别值：`DELTA`, `RELATIVE_RATIO_STRIKE`, `RELATIVE_SPREAD_STRIKE`, `ABSOLUTE_STRIKE`。不区分大小写。
 
-lower DOUBLE 类型。下界参数。**有效性:** 必须有限且严格小于 `upper`；包装器不检查此关系。
+lower DOUBLE 类型。下界参数。**有效性:** 必须有限且严格小于 *upper*；包装器不检查此关系。
 
-upper DOUBLE 类型。上界参数。**有效性:** 必须有限且严格大于 `lower`；包装器不检查此关系。
+upper DOUBLE 类型。上界参数。**有效性:** 必须有限且严格大于 *lower*；包装器不检查此关系。
 
 handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
 
@@ -480,7 +525,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySurfaceDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySurfaceDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -508,7 +553,7 @@ caplib::createVolSurfBuildSettings(fixedParamIndex INT, fixedParamValue DOUBLE, 
 
 **参数**
 
-fixedParamIndex INT 类型。需要固定的模型参数索引。**有效性:** 必须非负且小于对应数组长度；包装器仅检查 INT 类型。
+fixedParamIndex INT 类型。需要固定的模型参数索引。**有效性:** 必须非负且小于对应数组长度；包装器仅检查 INT 类型。**行为实测:** 传负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
 
 fixedParamValue DOUBLE 类型。固定模型参数取值。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
@@ -518,7 +563,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySurfaceBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySurfaceBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -556,7 +601,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingModelSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingModelSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -583,31 +628,31 @@ caplib::createPdeSettings(tSize INT, xSize INT, xMin DOUBLE, xMax DOUBLE, xMinMa
 
 **参数**
 
-tSize INT 类型。时间维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
+tSize INT 类型。时间维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。**行为实测:** 传 0 或负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
 
 xSize INT 类型。X 维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
-xMin DOUBLE 类型。X 维网格下界。**有效性:** 必须有限且严格小于 `xMax`；包装器不检查此关系。
+xMin DOUBLE 类型。X 维网格下界。**有效性:** 必须有限且严格小于 *xMax*；包装器不检查此关系。
 
-xMax DOUBLE 类型。X 维网格上界。**有效性:** 必须有限且严格大于 `xMin`；包装器不检查此关系。
+xMax DOUBLE 类型。X 维网格上界。**有效性:** 必须有限且严格大于 *xMin*；包装器不检查此关系。
 
-xMinMaxType INT 类型。X 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABOSLUTE`.
+xMinMaxType INT 类型。X 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABSOLUTE`.
 
 ySize INT 类型。Y 维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
-yMin DOUBLE 类型。Y 维网格下界。**有效性:** 必须有限且严格小于 `yMax`；包装器不检查此关系。
+yMin DOUBLE 类型。Y 维网格下界。**有效性:** 必须有限且严格小于 *yMax*；包装器不检查此关系。
 
-yMax DOUBLE 类型。Y 维网格上界。**有效性:** 必须有限且严格大于 `yMin`；包装器不检查此关系。
+yMax DOUBLE 类型。Y 维网格上界。**有效性:** 必须有限且严格大于 *yMin*；包装器不检查此关系。
 
-yMinMaxType INT 类型。Y 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABOSLUTE`.
+yMinMaxType INT 类型。Y 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABSOLUTE`.
 
 zSize INT 类型。Z 维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
-zMin DOUBLE 类型。Z 维网格下界。**有效性:** 必须有限且严格小于 `zMax`；包装器不检查此关系。
+zMin DOUBLE 类型。Z 维网格下界。**有效性:** 必须有限且严格小于 *zMax*；包装器不检查此关系。
 
-zMax DOUBLE 类型。Z 维网格上界。**有效性:** 必须有限且严格大于 `zMin`；包装器不检查此关系。
+zMax DOUBLE 类型。Z 维网格上界。**有效性:** 必须有限且严格大于 *zMin*；包装器不检查此关系。
 
-zMinMaxType INT 类型。Z 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABOSLUTE`.
+zMinMaxType INT 类型。Z 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABSOLUTE`.
 
 xDensity DOUBLE 类型。X 维网格密度参数。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -633,7 +678,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PdeSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PdeSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -678,7 +723,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `MonteCarloSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `MonteCarloSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -700,7 +745,7 @@ caplib::createPricingSettings(currency STRING, pricingMethod STRING, incCurrent 
 
 创建并缓存定价设置。函数验证并转换字段，构造 `PricingSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-创建并缓存定价设置对象。`specificPricingRequests` 对应 `PricingSettings.specific_pricing_requests`（repeated INT），服务端按 `BondSpecificPricingRequest` 枚举把对应指标填入定价结果的 `specific_pricing_results`：0=到期收益率（YIELD_TO_MATUIRTY_REQUEST）、1=全价（DIRTY_PRICE_REQUEST）、2=净价（CLEAN_PRICE_REQUEST）、3=应计利息（ACCRUED_INTEREST_REQUEST）、4=久期（SIMPLE_DURATION_REQUEST）、5=修正久期（MODIFIED_DURATION_REQUEST）、6=麦考利久期（MACAULAY_DURATION_REQUEST）、7=凸性（CONVEXITY_REQUEST）、8=基点价值（BASIS_POINT_VALUE_REQUEST）。主要用于债券类定价；空向量等价于不请求。**注意：请求列表不要包含 0（YTM 请求）**——服务端在请求含 0 时返回空 `specific_pricing_results`；不包含 0 时返回全量 9 项指标（YTM 值无需请求即出现在返回向量的首个元素）。
+创建并缓存定价设置对象。*specificPricingRequests* 对应 `PricingSettings.specific_pricing_requests`（repeated INT），服务端按 `BondSpecificPricingRequest` 枚举把对应指标填入定价结果的 `specific_pricing_results`：0=到期收益率（YIELD_TO_MATUIRTY_REQUEST）、1=全价（DIRTY_PRICE_REQUEST）、2=净价（CLEAN_PRICE_REQUEST）、3=应计利息（ACCRUED_INTEREST_REQUEST）、4=久期（SIMPLE_DURATION_REQUEST）、5=修正久期（MODIFIED_DURATION_REQUEST）、6=麦考利久期（MACAULAY_DURATION_REQUEST）、7=凸性（CONVEXITY_REQUEST）、8=基点价值（BASIS_POINT_VALUE_REQUEST）。主要用于债券类定价；空向量等价于不请求。**注意：请求列表不要包含 0（YTM 请求）**——服务端在请求含 0 时返回空 `specific_pricing_results`；不包含 0 时返回全量 9 项指标（YTM 值无需请求即出现在返回向量的首个元素）。
 
 **参数**
 
@@ -712,7 +757,7 @@ incCurrent BOOL 类型。估值输出中是否包含当前现金流。**有效�
 
 cashFlows BOOL 类型。定价结果中是否包含详细现金流输出。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-specificPricingRequests INT 向量 类型。必填。具体定价请求列表，取值为 BondSpecificPricingRequest 枚举：0=到期收益率，1=全价，2=净价，3=应计利息，4=久期，5=修正久期，6=麦考利久期，7=凸性，8=基点价值。服务端把对应指标填入定价结果的 `specific_pricing_results`。空向量等价于不请求。**注意：** 请求列表不要包含 0（YTM 请求），否则服务端返回空结果；YTM 值无需请求即出现在返回向量首元素。
+specificPricingRequests INT 向量 类型。必填。具体定价请求列表，取值为 BondSpecificPricingRequest 枚举：0=到期收益率，1=全价，2=净价，3=应计利息，4=久期，5=修正久期，6=麦考利久期，7=凸性，8=基点价值。服务端把对应指标填入定价结果的 `specific_pricing_results`。空向量等价于不请求。**有效性:** 必须是不含空值的 INT 向量，元素取值 0–8。**注意：** 请求列表不要包含 0（YTM 请求），否则服务端返回空结果；YTM 值无需请求即出现在返回向量首元素。
 
 modelHandle STRING 类型。定价模型设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -726,18 +771,16 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-bsmModel = "BSM"
 currency = "CNY"
 caplib::createPricingSettings(
-    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+    currency, "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "CNY_BSM_ANALYTICAL", false)
 ```
 
 #### createDividendCurveRiskSettings
@@ -774,7 +817,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DividendCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DividendCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -821,7 +864,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PriceRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PriceRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -866,7 +909,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -913,7 +956,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PriceVolRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PriceVolRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -950,7 +993,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `ThetaRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `ThetaRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -974,11 +1017,11 @@ caplib::createScnSettings(min DOUBLE, max DOUBLE, size INT, scnGenType INT, hand
 
 **参数**
 
-min DOUBLE 类型。情景网格下界。**有效性:** 必须为有限、非空 DOUBLE 标量，且不得大于 `max`。建议使用严格递增的区间；包装器保留两端相等的兼容行为。
+min DOUBLE 类型。情景网格下界。**有效性:** 必须为有限、非空 DOUBLE 标量，且不得大于 *max*。建议使用严格递增的区间；包装器保留两端相等的兼容行为。
 
-max DOUBLE 类型。情景网格上界。**有效性:** 必须为有限、非空 DOUBLE 标量，且不得小于 `min`。
+max DOUBLE 类型。情景网格上界。**有效性:** 必须为有限、非空 DOUBLE 标量，且不得小于 *min*。
 
-size INT 类型。情景网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
+size INT 类型。情景网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。**行为实测:** 传 0 或负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
 
 scnGenType INT 类型。情景生成类型。**有效性:** 定义代码为 `0` 和 `1`；包装器字段为 int32，不拒绝其他整数。
 
@@ -988,7 +1031,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `ScnSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `ScnSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1016,7 +1059,7 @@ scnType STRING 类型。情景分析类型。**有效性:** 可接受值：`NONE
 
 priceHandle STRING 类型。价格情景设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-volHandle STRING 类型。波动率设置或曲面 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+volHandle STRING 类型。波动率设置或曲面 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传类型不匹配的对象句柄不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
@@ -1026,7 +1069,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `ScnAnalysisSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `ScnAnalysisSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1045,7 +1088,7 @@ caplib::createScnAnalysisSettings(
 **语法**
 
 ```dolphindb
-caplib::createFlatDividendCurve(referenceDate DATE, dividend DOUBLE, curveName STRING, handle STRING, [returnJson])
+caplib::createFlatDividendCurve(asOfDate DATE, dividend DOUBLE, curveName STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -1054,7 +1097,7 @@ caplib::createFlatDividendCurve(referenceDate DATE, dividend DOUBLE, curveName S
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 dividend DOUBLE 类型。操作使用的数值。**有效性:** 必须有限；还须满足业务正值与跨参数约束。
 
@@ -1066,7 +1109,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1084,7 +1127,7 @@ caplib::createFlatDividendCurve(
 **语法**
 
 ```dolphindb
-caplib::createFlatVolCurve(referenceDate DATE, volatility DOUBLE, underlying STRING, handle STRING, [returnJson])
+caplib::createFlatVolCurve(asOfDate DATE, volatility DOUBLE, underlying STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -1093,7 +1136,7 @@ caplib::createFlatVolCurve(referenceDate DATE, volatility DOUBLE, underlying STR
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 volatility DOUBLE 类型。操作使用的数值。**有效性:** 必须有限；还须满足业务正值与跨参数约束。
 
@@ -1105,7 +1148,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilityCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilityCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1122,7 +1165,7 @@ caplib::createFlatVolCurve(asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_CURVE",
 **语法**
 
 ```dolphindb
-caplib::createVolatilitySmile(volSmileType STRING, referenceDate DATE, strikes DOUBLE 向量, vols DOUBLE 向量, smileMethod STRING, extrapMethod STRING, term DOUBLE, modelParams DOUBLE 向量, auxiliaryParams DOUBLE 向量, lower DOUBLE, upper DOUBLE, handle STRING, [returnJson])
+caplib::createVolatilitySmile(volSmileType STRING, asOfDate DATE, strikes DOUBLE 向量, vols DOUBLE 向量, smileMethod STRING, extrapMethod STRING, term DOUBLE, modelParams DOUBLE 向量, auxiliaryParams DOUBLE 向量, lower DOUBLE, upper DOUBLE, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -1133,7 +1176,7 @@ caplib::createVolatilitySmile(volSmileType STRING, referenceDate DATE, strikes D
 
 volSmileType STRING 类型。波动率微笑类型。**有效性:** 可接受值：`STRIKE`, `STRIKE_VOL_SMILE`, `DELTA`, `DELTA_VOL_SMILE`, `LOG_STRIKE`, `LOG_STRIKE_VOL_SMILE`。仅接受所示精确拼写。
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 strikes DOUBLE 向量 类型。操作使用的数值向量。**有效性:** 所有值须有限且形状与配对参数一致。
 
@@ -1149,9 +1192,9 @@ modelParams DOUBLE 向量 类型。操作使用的数值向量。**有效性:** 
 
 auxiliaryParams DOUBLE 向量 类型。操作使用的数值向量。**有效性:** 所有值须有限且形状与配对参数一致。
 
-lower DOUBLE 类型。下界参数。**有效性:** 必须有限且严格小于 `upper`；包装器不检查此关系。
+lower DOUBLE 类型。下界参数。**有效性:** 必须有限且严格小于 *upper*；包装器不检查此关系。
 
-upper DOUBLE 类型。上界参数。**有效性:** 必须有限且严格大于 `lower`；包装器不检查此关系。
+upper DOUBLE 类型。上界参数。**有效性:** 必须有限且严格大于 *lower*；包装器不检查此关系。
 
 handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
 
@@ -1159,7 +1202,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySmile` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySmile` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1180,7 +1223,7 @@ caplib::createVolatilitySmile(
 **语法**
 
 ```dolphindb
-caplib::createFlatVolatilitySurface(referenceDate DATE, volatility DOUBLE, underlying STRING, handle STRING, [returnJson])
+caplib::createFlatVolatilitySurface(asOfDate DATE, volatility DOUBLE, underlying STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -1189,7 +1232,7 @@ caplib::createFlatVolatilitySurface(referenceDate DATE, volatility DOUBLE, under
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 volatility DOUBLE 类型。操作使用的数值。**有效性:** 必须有限；还须满足业务正值与跨参数约束。
 
@@ -1201,7 +1244,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1242,15 +1285,16 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+flatVolSurface = caplib::createFlatVolatilitySurface(2021.03.30, 0.20, "AN_UNDERLYING", "AN_FVS", false)
 caplib::createProxyOptionQuoteMatrix(
-    "AN_UNDERLYING", flatVolSurface[0], 100.0, 101.0, "AN_PROXY_OPTION_QUOTES", true)
+    "AN_UNDERLYING", flatVolSurface, 100.0, 101.0, "AN_PROXY_OPTION_QUOTES", true)
 ```
 
 #### createModelFreePricingSettings
@@ -1279,7 +1323,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1312,16 +1356,17 @@ strikes DOUBLE 向量 类型。操作使用的数值向量。**有效性:** 所�
 
 **返回值**
 
-**返回：** DOUBLE 矩阵，对应到期日/执行价网格。
+DOUBLE 矩阵，对应到期日/执行价网格。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-curveDates = [2020.02.21]
-caplib::getVolatility(flatVolSurface[0], curveDates, [95.0, 105.0])
+asOfDate = 2022.03.09
+flatVolSurface = caplib::createFlatVolatilitySurface(
+    asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_SURFACE", false)
+caplib::getVolatility(flatVolSurface, [2023.03.09], [100.0])
 ```
 
 #### impliedVolCalculator
@@ -1329,7 +1374,7 @@ caplib::getVolatility(flatVolSurface[0], curveDates, [95.0, 105.0])
 **语法**
 
 ```dolphindb
-caplib::impliedVolCalculator(calculationDate DATE, underlyingPrice DOUBLE, discountCurveHandle STRING, assetCurveHandle STRING, pricingSettingsHandle STRING, optionPrice DOUBLE, payoffType STRING, exerciseType STRING, expiryDate DATE, strike DOUBLE)
+caplib::impliedVolCalculator(asOfDate DATE, underlyingPrice DOUBLE, discountCurveHandle STRING, assetCurveHandle STRING, pricingSettingsHandle STRING, optionPrice DOUBLE, payoffType STRING, exerciseType STRING, expiryDate DATE, strike DOUBLE)
 ```
 
 **详情**
@@ -1338,7 +1383,7 @@ caplib::impliedVolCalculator(calculationDate DATE, underlyingPrice DOUBLE, disco
 
 **参数**
 
-calculationDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlyingPrice DOUBLE 类型。当前标的价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -1360,18 +1405,22 @@ strike DOUBLE 类型。行权价。**有效性:** 利率行权价必须有限；
 
 **返回值**
 
-**返回：** DOUBLE 数值。
+计算结果，DOUBLE 类型标量。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-flatDividendCurve = "flatDividendCurve"
-flatIrCurve = "flatIrCurve"
-pricingSettings = "PS"
+asOfDate = 2022.03.09
+flatIrCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "AN_FLAT_IR_CURVE", false)
+flatDividendCurve = caplib::createFlatDividendCurve(
+    asOfDate, 0.01, "AN_FLAT_DIV_CURVE", "AN_FLAT_DIV_CURVE", false)
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "AN_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    "CNY", "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "",
+    "AN_PRICING_SETTINGS", false)
 caplib::impliedVolCalculator(
     asOfDate, 100.0, flatIrCurve, flatDividendCurve, pricingSettings,
     5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
@@ -1384,7 +1433,7 @@ caplib::impliedVolCalculator(
 **语法**
 
 ```dolphindb
-caplib::buildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCount STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian INT, forwardCurveHandle STRING, handle STRING, [returnJson])
+caplib::buildBondYieldCurve(asOfDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCountConvention STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian INT, forwardCurveHandle STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -1393,15 +1442,15 @@ caplib::buildBondYieldCurve(referenceDate DATE, buildSettingsHandle STRING, curv
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 buildSettingsHandle STRING 类型。构建设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 parCurveHandle STRING 类型。平价曲线输入对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-dayCount STRING 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
 compoundingType STRING 类型。复利类型。**有效性:** 识别值：`SIMPLE`, `SIMPLE_COMPOUNDING`, `COMPOUNDED`, `DISCRETE`, `DISCRETE_COMPOUNDING`, `CONTINUOUS`, `CONTINUOUS_COMPOUNDING`。不区分大小写。空值或其他字符串回退为 CONTINUOUS_COMPOUNDING。
 
@@ -1419,30 +1468,44 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-cnyTreasStdCfetsName = "CAL_CFETS"
-
-asOfDate = 2020.02.21
-cnyTreasStdCfets = "CAL_CFETS"
+asOfDate = 2021.07.22
+currency = "CNY"
+curveName = "cny_treas_std_cfets"
+caplib::createCalendar("CAL_CFETS")
+bondNames = [
+    "CNY_TREAS_ZERO_1M", "CNY_TREAS_CPN_A_3M", "CNY_TREAS_CPN_A_6M",
+    "CNY_TREAS_CPN_A_9M", "CNY_TREAS_CPN_A_1Y", "CNY_TREAS_CPN_A_2Y",
+    "CNY_TREAS_CPN_A_3Y", "CNY_TREAS_CPN_A_5Y", "CNY_TREAS_CPN_SA_7Y",
+    "CNY_TREAS_CPN_SA_10Y", "CNY_TREAS_CPN_SA_15Y", "CNY_TREAS_CPN_SA_20Y",
+    "CNY_TREAS_CPN_SA_30Y"]
+bondQuotes = [
+    1.7112e-2, 1.8317e-2, 1.9413e-2, 1.9500e-2, 2.1563e-2,
+    2.4985e-2, 2.5538e-2, 2.7550e-2, 2.9175e-2, 2.9263e-2,
+    3.2984e-2, 3.3462e-2, 3.5023e-2]
+parCurve = caplib::createBondParCurve(
+    asOfDate, currency, bondNames, bondQuotes,
+    "YIELD_TO_MATURITY", curveName, false)
+buildSettings = caplib::createBondYieldCurveBuildSettings(
+    curveName, "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CNY_TREAS_STD_CFETS_BUILD_SETTINGS", false)
 caplib::buildBondYieldCurve(
-    asOfDate, cnyTreasBuildSettings[0], cnyTreasStdCfetsName, parCnyTreasStdCfets[0],
+    asOfDate, buildSettings, curveName, parCurve,
     "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL",
     "BOOTSTRAPPING_METHOD", 0, "", "CNY_TREAS_STD_CFETS", true)
-
 ```
 #### calcYieldToMaturity
 
 **语法**
 
 ```dolphindb
-caplib::calcYieldToMaturity(calculationDate DATE, compoundingType STRING, bondHandle STRING, forwardCurveHandle STRING, price DOUBLE, priceType STRING, frequency STRING)
+caplib::calcYieldToMaturity(asOfDate DATE, compoundingType STRING, bondHandle STRING, forwardCurveHandle STRING, price DOUBLE, priceType STRING, frequency STRING)
 ```
 
 **详情**
@@ -1451,9 +1514,9 @@ caplib::calcYieldToMaturity(calculationDate DATE, compoundingType STRING, bondHa
 
 **参数**
 
-calculationDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。**行为实测:** 传 DATE 向量也被宽松接受、不抛异常（2026-10-15 全新容器实测）。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-compoundingType STRING 类型。复利类型。**有效性:** 识别值：`SIMPLE`, `SIMPLE_COMPOUNDING`, `COMPOUNDED`, `DISCRETE`, `DISCRETE_COMPOUNDING`, `CONTINUOUS`, `CONTINUOUS_COMPOUNDING`。不区分大小写。空值或其他字符串回退为 DISCRETE_COMPOUNDING。
+compoundingType STRING 类型。复利类型。**有效性:** 识别值：`SIMPLE`, `SIMPLE_COMPOUNDING`, `COMPOUNDED`, `DISCRETE`, `DISCRETE_COMPOUNDING`, `CONTINUOUS`, `CONTINUOUS_COMPOUNDING`。不区分大小写。空值或其他字符串回退为 DISCRETE_COMPOUNDING。**行为实测:** 传错误类型（非 STRING）或 NULL 也不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 bondHandle STRING 类型。债券对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -1467,35 +1530,50 @@ frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTE
 
 **返回值**
 
-**返回：** DOUBLE 数值。
+计算结果，DOUBLE 类型标量。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-vanillaBond = "BOND"
+asOfDate = 2021.07.22
+currency = "CNY"
+calCfets = "CAL_CFETS"
+caplib::createCalendar(calCfets)
+bondTemplate = caplib::createVanillaBondTemplate(
+    "cny_treas_cpn_bond_200014", "FIXED_COUPON_BOND",
+    2020.10.09, 1, 2020.10.10, "5Y",
+    2.15e-2, currency, 100.0,
+    "ACT_365_FIXED", calCfets, "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, false)
+vanillaBond = caplib::buildVanillaBond(
+    1000000.0, bondTemplate, "", 2020.10.10, "FI_VANILLA_BOND", false)
+// 远期曲线句柄传空字符串时按平坦零曲线处理
 caplib::calcYieldToMaturity(
-    asOfDate, "DISCRETE_COMPOUNDING", vanillaBond, cnyTreasStdCfets[0], 972294.9381034705,
-    "DIRTY_PRICE", "ANNUAL")
+    asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5,
+    "CLEAN_PRICE", "ANNUAL")
 ```
 #### calcFixedCpnBondParRate
 
 **语法**
 
 ```dolphindb
-caplib::calcFixedCpnBondParRate(calculationDate DATE, bondHandle STRING, discountCurveHandle STRING, spreadCurveHandle STRING)
+caplib::calcFixedCpnBondParRate(asOfDate DATE, bondHandle STRING, discountCurveHandle STRING, spreadCurveHandle STRING)
 ```
 
 **详情**
 
-计算缓存固定利率债券（VanillaBond）的平价票面利率：以给定贴现曲线贴现（可叠加信用利差曲线），求得使债券按面值定价的票息率。`spreadCurveHandle` 传空字符串时按插件内部平坦零利差处理；传入其他类型曲线对象（如平坦信用曲线）会抛出异常。
+计算缓存固定利率债券（VanillaBond）的平价票面利率：以给定贴现曲线贴现（可叠加信用利差曲线），求得使债券按面值定价的票息率。*spreadCurveHandle* 传空字符串时按插件内部平坦零利差处理；传入其他类型曲线对象（如平坦信用曲线）会抛出异常。
 
 **参数**
 
-calculationDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 传单元素 DATE 向量亦可宽松接受并返回结果（包装器不校验标量形式）（2026-10-15 全新容器实测）。
 
 bondHandle STRING 类型。债券对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -1505,17 +1583,33 @@ spreadCurveHandle STRING 类型。信用利差曲线 内存对象 句柄。**有
 
 **返回值**
 
-**返回：** DOUBLE 数值（小数形式的平价利率，如 0.0223）。
+DOUBLE 数值（小数形式的平价利率，如 0.0223）。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-vanillaBond = "BOND"
-caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0])
+asOfDate = 2021.07.22
+currency = "CNY"
+calCfets = "CAL_CFETS"
+caplib::createCalendar(calCfets)
+bondTemplate = caplib::createVanillaBondTemplate(
+    "cny_treas_cpn_bond_200014", "FIXED_COUPON_BOND",
+    2020.10.09, 1, 2020.10.10, "5Y",
+    2.15e-2, currency, 100.0,
+    "ACT_365_FIXED", calCfets, "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, false)
+vanillaBond = caplib::buildVanillaBond(
+    1000000.0, bondTemplate, "", 2020.10.10, "FI_VANILLA_BOND", false)
+// 用平坦零曲线作贴现曲线；利差曲线传空字符串按内部平坦零利差处理
+discountCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.025, "CNY_FLAT_IR", false)
+caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, discountCurve, "")
 ```
 
 #### priceVanillaBond
@@ -1534,7 +1628,7 @@ caplib::priceVanillaBond(instrumentHandle STRING, asOfDate DATE, mktDataHandle S
 
 instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 传单元素 DATE 向量亦可宽松接受并完成定价（包装器不校验标量形式）（2026-10-15 全新容器实测）。
 
 mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -1542,27 +1636,64 @@ pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有�
 
 riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传类型不符的对象句柄（如定价设置句柄）亦宽松接受并完成定价（包装器不校验句柄对象类型）（2026-10-15 全新容器实测）。
 
-mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
+mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。**行为实测:** 传 NULL 同样按默认模式处理、不抛异常；传非字符串（如整数）亦宽松接受并完成定价（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+asOfDate = 2021.07.22
+currency = "CNY"
+calCfets = "CAL_CFETS"
+caplib::createCalendar(calCfets)
+bondTemplate = caplib::createVanillaBondTemplate(
+    "cny_treas_cpn_bond_200014", "FIXED_COUPON_BOND",
+    2020.10.09, 1, 2020.10.10, "5Y",
+    2.15e-2, currency, 100.0,
+    "ACT_365_FIXED", calCfets, "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, false)
+vanillaBond = caplib::buildVanillaBond(
+    1000000.0, bondTemplate, "", 2020.10.10, "FI_VANILLA_BOND", false)
 
-asOfDate = 2020.02.21
-pricingSettings = "PS"
-vanillaBond = "BOND"
+// Market data: flat discount curve + flat credit curve
+discountCurve = caplib::createFlatIrYieldCurve(
+    asOfDate, "CNY", 0.02, "FI_TREAS_CURVE", false)
+creditCurve = caplib::createCreditCurve(
+    asOfDate, [2022.02.21, 2027.02.21], [0.002, 0.003],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "FI_CREDIT_CURVE", "FI_CREDIT_CURVE", false)
+fiMktData = caplib::createFiMktDataSet(
+    asOfDate, discountCurve, creditCurve,
+    discountCurve, discountCurve, discountCurve,
+    "FI_MKT_NAME", "FI_MKT", false)
+
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 1, 1, take(0, 0), "", "", "", "FI_PRICING", false)
+
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "FI_IR_RISK", false)
+csCurveRisk = caplib::createCreditCurveRiskSettings(
+    1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "FI_CREDIT_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0/365.0, "FI_THETA_RISK", false)
+fiRisk = caplib::createFiRiskSettings(
+    irCurveRisk, csCurveRisk, thetaRisk, "FI_RISK_NAME", "FI_RISK", false)
+
 caplib::priceVanillaBond(
-    vanillaBond, asOfDate, fiMktData[0], pricingSettings, fiRisk[0], "", "", true)
+    vanillaBond, asOfDate, fiMktData, pricingSettings, fiRisk, "", "", true)
 ```
 
 #### buildVanillaBond
@@ -1579,7 +1710,7 @@ caplib::buildVanillaBond(nominal DOUBLE, instTemplate STRING, fixings STRING, st
 
 **参数**
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限。**行为实测:** 实测包装器校验该约束，传 0 或负数抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 instTemplate STRING 类型。工具模板对象或模板句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -1589,21 +1720,33 @@ startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB 
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `VanillaBond` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VanillaBond` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-bondTemplate = "bondTemplate"
+currency = "CNY"
+calCfets = "CAL_CFETS"
+caplib::createCalendar(calCfets)
+bondTemplate = caplib::createVanillaBondTemplate(
+    "cny_treas_cpn_bond_200014", "FIXED_COUPON_BOND",
+    2020.10.09, 1, 2020.10.10, "5Y",
+    2.15e-2, currency, 100.0,
+    "ACT_365_FIXED", calCfets, "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, false)
 caplib::buildVanillaBond(
-    1000000.0, bondTemplate, "", 2020.07.22, "FI_VANILLA_BOND", false)
+    1000000.0, bondTemplate, "", 2020.10.10, "FI_VANILLA_BOND", false)
 ```
 
 #### createBondParCurve
@@ -1611,7 +1754,7 @@ caplib::buildVanillaBond(
 **语法**
 
 ```dolphindb
-caplib::createBondParCurve(referenceDate DATE, currency STRING, instrumentNames STRING 向量, quotes DOUBLE 向量, quoteType STRING, curveName STRING, [returnJson])
+caplib::createBondParCurve(asOfDate DATE, currency STRING, instrumentNames STRING 向量, quotes DOUBLE 向量, quoteType STRING, curveName STRING, [returnJson])
 ```
 
 **详情**
@@ -1620,7 +1763,7 @@ caplib::createBondParCurve(referenceDate DATE, currency STRING, instrumentNames 
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -1636,25 +1779,36 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `BondParCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `BondParCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-cnyTreasStdCfetsName = "CAL_CFETS"
-
-asOfDate = 2020.02.21
-cnyTreasBondNames = "cnyTreasBondNames"
-cnyTreasBondQuotes = [0.0]
-cnyTreasStdCfets = "CAL_CFETS"
+asOfDate = 2021.07.22
 currency = "CNY"
+bondNames = [
+    "CNY_TREAS_ZERO_1M",
+    "CNY_TREAS_CPN_A_3M",
+    "CNY_TREAS_CPN_A_6M",
+    "CNY_TREAS_CPN_A_9M",
+    "CNY_TREAS_CPN_A_1Y",
+    "CNY_TREAS_CPN_A_2Y",
+    "CNY_TREAS_CPN_A_3Y",
+    "CNY_TREAS_CPN_A_5Y",
+    "CNY_TREAS_CPN_SA_7Y",
+    "CNY_TREAS_CPN_SA_10Y",
+    "CNY_TREAS_CPN_SA_15Y",
+    "CNY_TREAS_CPN_SA_20Y",
+    "CNY_TREAS_CPN_SA_30Y"]
+bondQuotes = [
+    1.7112e-2, 1.8317e-2, 1.9413e-2, 1.9500e-2, 2.1563e-2,
+    2.4985e-2, 2.5538e-2, 2.7550e-2, 2.9175e-2, 2.9263e-2,
+    3.2984e-2, 3.3462e-2, 3.5023e-2]
 caplib::createBondParCurve(
-    asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes,
-    "YIELD_TO_MATURITY", cnyTreasStdCfetsName, true)
-
+    asOfDate, currency, bondNames, bondQuotes,
+    "YIELD_TO_MATURITY", "cny_treas_std_cfets", true)
 ```
 
 #### createFixedLegDefinition
@@ -1662,7 +1816,7 @@ caplib::createBondParCurve(
 **语法**
 
 ```dolphindb
-caplib::createFixedLegDefinition(currency STRING, calendar STRING or STRING 向量, freq STRING, dayCount STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, notionalExchange STRING, tag STRING, [returnJson])
+caplib::createFixedLegDefinition(currency STRING, calendar STRING or STRING 向量, freq STRING, dayCountConvention STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, notionalExchange STRING, tag STRING, [returnJson])
 ```
 
 **详情**
@@ -1677,7 +1831,7 @@ calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** �
 
 freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-dayCount STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
 
 interestDayConvention STRING 类型。计息日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
@@ -1697,7 +1851,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1718,7 +1872,7 @@ caplib::createFixedLegDefinition(
 **语法**
 
 ```dolphindb
-caplib::createFloatingLegDefinition(currency STRING, refIndex STRING, calendar STRING or STRING 向量, fixingCalendars STRING or STRING 向量, freq STRING, fixingFreq STRING, dayCount STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, spread BOOL, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT[, notionalExchange STRING], tag STRING, [returnJson])
+caplib::createFloatingLegDefinition(currency STRING, refIndex STRING, calendar STRING or STRING 向量, fixingCalendars STRING or STRING 向量, freq STRING, fixingFreq STRING, dayCountConvention STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, spread BOOL, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT[, notionalExchange STRING], tag STRING, [returnJson])
 ```
 
 **详情**
@@ -1729,9 +1883,9 @@ caplib::createFloatingLegDefinition(currency STRING, refIndex STRING, calendar S
 
 currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
-refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传不存在的句柄键不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 与 fixingCalendars 长度不一致时不抛异常、宽松接受；也接受单个 STRING 标量配更长的 fixingCalendars 向量（2026-10-15 全新容器实测）。
 
 fixingCalendars STRING or STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
@@ -1739,7 +1893,7 @@ freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONT
 
 fixingFreq STRING 类型。定盘频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-dayCount STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
 
 paymentDiscountMethod STRING 类型。付款金额贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -1763,7 +1917,7 @@ fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是�
 
 fixingDayOffset INT 类型。定盘日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
-notionalExchange STRING, optional 类型。是否交换名义本金。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_NOTIONAL_EXCHANGE`, `INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+notionalExchange STRING, optional 类型。是否交换名义本金。省略时默认为 `INVALID_NOTIONAL_EXCHANGE`（不交换名义本金）。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_NOTIONAL_EXCHANGE`, `INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
@@ -1771,18 +1925,22 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
 calCfets = "CAL_CFETS"
 currency = "CNY"
+caplib::createCalendar(calCfets)
+iborIndex = caplib::createIborIndex(
+    "CNY_SHIBOR_3M", "3M", currency, [calCfets], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 caplib::createFloatingLegDefinition(
-    currency, iborIndex[0], calCfets, [calCfets],
+    currency, iborIndex, calCfets, [calCfets],
     "QUARTERLY", "QUARTERLY", "ACT_360",
     "NO_DISCOUNT", "STANDARD", false,
     "MODIFIED_FOLLOWING", "INITIAL", "LONG",
@@ -1795,7 +1953,7 @@ caplib::createFloatingLegDefinition(
 **语法**
 
 ```dolphindb
-caplib::createDepoTemplate(instName STRING, currency STRING, calendar STRING or STRING 向量[, startDelay INT[, dayCount STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, startConvention STRING]]]]]], [returnJson])
+caplib::createDepoTemplate(instName STRING, currency STRING, calendar STRING or STRING 向量[, startDelay INT[, dayCountConvention STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, startConvention STRING]]]]]], [returnJson])
 ```
 
 **详情**
@@ -1810,9 +1968,9 @@ currency STRING 类型。币种代码。**有效性:** 必须是非空币种标�
 
 calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-startDelay INT, optional 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+startDelay INT, optional 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-dayCount STRING, optional 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
+dayCountConvention STRING, optional 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
 
 interestDayConvention STRING, optional 类型。计息日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
@@ -1826,18 +1984,19 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-calendar = "CAL"
+calCfets = "CAL_CFETS"
+caplib::createCalendar(calCfets)
 currency = "CNY"
-instName = "INST"
-result = caplib::createDepoTemplate(instName, currency, calendar)
+instName = "CNY_DEPO_1M"
+caplib::createDepoTemplate(
+    instName, currency, calCfets, 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
 ```
 
 #### createFraTemplate
@@ -1845,7 +2004,7 @@ result = caplib::createDepoTemplate(instName, currency, calendar)
 **语法**
 
 ```dolphindb
-caplib::createFraTemplate(instName STRING, refIndex STRING, currency STRING, calendar STRING or STRING 向量, fixingCalendars STRING or STRING 向量, freq STRING[, dayCount STRING[, paymentDiscountMethod STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, fixingDayConvention STRING[, fixingDayOffset INT]]]]]]], [returnJson])
+caplib::createFraTemplate(instName STRING, refIndex STRING, currency STRING, calendar STRING or STRING 向量, fixingCalendars STRING or STRING 向量, freq STRING[, dayCountConvention STRING[, paymentDiscountMethod STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, fixingDayConvention STRING[, fixingDayOffset INT]]]]]]], [returnJson])
 ```
 
 **详情**
@@ -1856,7 +2015,7 @@ caplib::createFraTemplate(instName STRING, refIndex STRING, currency STRING, cal
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传不存在的句柄键不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -1866,7 +2025,7 @@ fixingCalendars STRING or STRING 向量 类型。定盘日业务日历名称。*
 
 freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-dayCount STRING, optional 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
+dayCountConvention STRING, optional 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
 
 paymentDiscountMethod STRING, optional 类型。付款金额贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -1884,21 +2043,22 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-calendar = "CAL"
-currency = "CNY"
-fixingCalendars = "fixingCalendars"
-freq = "freq"
-instName = "INST"
-refIndex = "refIndex"
-result = caplib::createFraTemplate(instName, refIndex, currency, calendar, fixingCalendars, freq)
+caplib::createCalendar("CAL_CFETS")
+iborIndex = caplib::createIborIndex(
+    "CNY_SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+caplib::createFraTemplate(
+    "FRA_TEMPLATE", iborIndex, "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY",
+    "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0,
+    "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, true)
 ```
 
 #### createBondLegDefinition
@@ -1906,7 +2066,7 @@ result = caplib::createFraTemplate(instName, refIndex, currency, calendar, fixin
 **语法**
 
 ```dolphindb
-caplib::createBondLegDefinition(bondType STRING, settlementDays INT, currency STRING, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, instName STRING, [returnJson])
+caplib::createBondLegDefinition(bondType STRING, settlementDays INT, currency STRING, dayCountConvention STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, instName STRING, [returnJson])
 ```
 
 **详情**
@@ -1921,11 +2081,11 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
-dayCount STRING 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
 calendar STRING 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 interestDayConvention STRING 类型。计息日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -1951,11 +2111,11 @@ fixingDayOffset INT 类型。定盘日偏移天数。**有效性:** 必须是 IN
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1976,7 +2136,7 @@ caplib::createBondLegDefinition(
 **语法**
 
 ```dolphindb
-caplib::createVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE, settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING, issuePrice DOUBLE, dayCount STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING or STRING 向量, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING, exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL[, notionalType STRING[, recoveryRate DOUBLE]], [returnJson])
+caplib::createVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE, settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING, issuePrice DOUBLE, dayCountConvention STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING or STRING 向量, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING, exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL[, notionalType STRING[, recoveryRate DOUBLE]], [returnJson])
 ```
 
 **详情**
@@ -2003,7 +2163,7 @@ currency STRING 类型。币种代码。**有效性:** 必须是非空币种标�
 
 issuePrice DOUBLE 类型。发行价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-dayCount STRING 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
 calendar STRING 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
@@ -2047,7 +2207,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VanillaBondTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VanillaBondTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2091,11 +2251,11 @@ extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `BondYieldCurveBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `BondYieldCurveBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2142,23 +2302,28 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FiMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FiMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-discountCurve = "DF"
-spreadCurve = "spreadCurve"
+asOfDate = 2021.07.22
+discountCurve = caplib::createFlatIrYieldCurve(
+    asOfDate, "CNY", 0.02, "FI_TREAS_CURVE", false)
+creditCurve = caplib::createCreditCurve(
+    asOfDate, [2022.02.21, 2027.02.21], [0.002, 0.003],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "FI_CREDIT_CURVE", "FI_CREDIT_CURVE", false)
 caplib::createFiMktDataSet(
-    asOfDate, discountCurve, spreadCurve, "", "", "", "FI_MKT_NAME", "FI_MKT", true)
+    asOfDate, discountCurve, creditCurve,
+    discountCurve, discountCurve, discountCurve,
+    "FI_MKT_NAME", "FI_MKT", true)
 ```
 
 #### createBondMktDataSet
@@ -2187,22 +2352,27 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FiMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FiMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
+asOfDate = 2021.07.22
+currency = "CNY"
+discountCurve = caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "CNY_DISCOUNT", false)
+creditCurve = caplib::createCreditCurve(
+    asOfDate, [2022.02.21, 2027.02.21], [0.002, 0.003],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "FI_CREDIT_CURVE", "FI_CREDIT_CURVE", false)
 caplib::createBondMktDataSet(
-    asOfDate, cnyTreasStdCfets[0], cnyMtnAaaSprdStdCfets[0],
-    cnyTreasStdCfets[0], "FI_BOND_MKT_NAME", "FI_BOND_MKT", true)
+    asOfDate, discountCurve, creditCurve, discountCurve,
+    "FI_BOND_MKT_NAME", "FI_BOND_MKT", true)
 ```
 
 #### createFiRiskSettings
@@ -2229,23 +2399,24 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FiRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FiRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-creditRisk = false
-irRisk = false
-thetaRisk = false
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "FI_IR_RISK", false)
+csCurveRisk = caplib::createCreditCurveRiskSettings(
+    1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "FI_CREDIT_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0/365.0, "FI_THETA_RISK", false)
 caplib::createFiRiskSettings(
-    irRisk, creditRisk, thetaRisk, "FI_RISK_NAME", "FI_RISK", true)
+    irCurveRisk, csCurveRisk, thetaRisk, "FI_RISK_NAME", "FI_RISK", true)
 ```
 
 #### createVanillaBondRiskSettings
@@ -2272,11 +2443,11 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FiRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FiRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2292,7 +2463,7 @@ caplib::createVanillaBondRiskSettings(
 **语法**
 
 ```dolphindb
-caplib::createAssetYieldCurve(referenceDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, interp STRING, extrap STRING, dcc STRING, compounding STRING, pillarNames STRING 向量, curveName STRING, handle STRING, [returnJson])
+caplib::createAssetYieldCurve(asOfDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, interp STRING, extrap STRING, dayCountConvention STRING, compounding STRING, pillarNames STRING 向量, curveName STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -2301,7 +2472,7 @@ caplib::createAssetYieldCurve(referenceDate DATE, pillarDates DATE 向量, pilla
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 pillarDates DATE 向量 类型。曲线节点日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -2311,7 +2482,7 @@ interp STRING 类型。插值方法。**有效性:** 可接受值：`LINEAR_INTE
 
 extrap STRING 类型。外推方法。**有效性:** 可接受值：`FLAT_EXTRAP`, `LINEAR_EXTRAP`。仅接受所示精确拼写。
 
-dcc STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
 compounding STRING 类型。复利约定。**有效性:** 可接受值：`CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。仅接受所示精确拼写。
 
@@ -2325,19 +2496,18 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `AssetYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `AssetYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-curveDates = [2020.02.21]
-curveValues = [0.0]
+asOfDate = 2021.07.22
+pillarDates = [2021.07.26, 2022.07.22]
+pillarValues = [0.02, 0.025]
 caplib::createAssetYieldCurve(
-    asOfDate, curveDates, curveValues,
+    asOfDate, pillarDates, pillarValues,
     "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED",
     "CONTINUOUS_COMPOUNDING", ["1D", "3Y"],
     "AN_ASSET_YIELD_CURVE", "AN_ASSET_YIELD_CURVE", false)
@@ -2349,25 +2519,25 @@ caplib::createAssetYieldCurve(
 **语法**
 
 ```dolphindb
-caplib::buildIrSingleCurrencyCurve(referenceDate DATE, targetCurveNames STRING 向量, buildSettingsHandles STRING 向量, parCurveHandles STRING 向量, dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING 向量, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING 向量, outputHandle STRING, [returnJson])
+caplib::buildIrSingleCurrencyCurve(asOfDate DATE, targetCurveNames STRING 向量, buildSettingsHandles STRING 向量, parCurveHandles STRING 向量, dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING 向量, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING 向量, outputHandle STRING, [returnJson])
 ```
 
 **详情**
 
 构建单币种利率曲线组。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrSingleCurrencyCurveBuildingOutput`。
-> **用法说明：** `targetCurveHandles` 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；`outputHandle` 指向构建输出容器本身。
+> **用法说明：** *targetCurveHandles* 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；*outputHandle* 指向构建输出容器本身。
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 包装器不校验本参数的向量形式，传入字符串标量亦可宽松接受并完成调用（服务层按单条目标曲线处理）；建议按字符串向量传入。
 
 buildSettingsHandles STRING 向量 类型。曲线构建设置 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 parCurveHandles STRING 向量 类型。平价曲线输入对象 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-dayCountConvention STRING 类型。日计数约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
 compoundingType STRING 类型。复利类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_COMPOUNDING_TYPE`, `CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -2379,7 +2549,7 @@ buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:*
 
 calcJacobian BOOL 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
+shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常（2026-10-15 全新容器实测）。
 
 finiteDifferenceMethod STRING 类型。有限差分方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -2393,32 +2563,46 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrSingleCurrencyCurveBuildingOutput` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrSingleCurrencyCurveBuildingOutput` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+asOfDate = 2022.03.09
+curveName = "CNY_SHIBOR_3M"
+caplib::createCalendar("CAL_CFETS")
 
-asOfDate = 2020.02.21
-curveName = "TREAS"
-caplib::buildIrSingleCurrencyCurve(
-    asOfDate,
-    [curveName],
-    [curveBuildSettings[0]],
-    [builderParCurve[0]],
-    "ACT_365_FIXED",
-    "CONTINUOUS_COMPOUNDING",
-    "ANNUAL",
-    [],
-    "BOOTSTRAPPING_METHOD",
-    0,
-    1.0e-4,
-    "CENTRAL_DIFFERENCE_METHOD",
-    "SINGLE_THREADING_MODE",
-    ["IR_BUILT_CURVE"],
-    "IR_SINGLE_CCY_BUILD_OUTPUT", true)
+iborIndex = caplib::createIborIndex(
+    "CNY_SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+fixedLeg = caplib::createFixedLegDefinition(
+    "CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "IR_FIXED_LEG", false)
+floatingLeg = caplib::createFloatingLegDefinition(
+    "CNY", iborIndex, "CAL_CFETS", ["CAL_CFETS"],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "IR_FLOATING_LEG", false)
+caplib::createIrVanillaSwapTemplate(curveName, 1, fixedLeg, floatingLeg, "SPOTSTART", false)
+
+parCurve = caplib::createIrParRateCurve(asOfDate, "CNY", curveName,
+    [curveName, curveName, curveName],
+    ["IR_VANILLA_SWAP", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"],
+    ["6M", "1Y", "3Y"], [100, 100, 100], [2.3, 2.4, 2.6], "IR_PAR_CURVE", false)
+buildSettings = caplib::createIrYieldCurveBuildSettings(curveName, 0,
+    ["CNY"], [curveName], [curveName], [curveName], "IR_BUILD_SETTINGS", false)
+caplib::buildIrSingleCurrencyCurve(asOfDate,
+    [curveName], [buildSettings], [parCurve],
+    "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [],
+    "BOOTSTRAPPING_METHOD", 0, 1.0e-4,
+    "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE",
+    ["IR_BUILT_CURVE"], "IR_SINGLE_CCY_BUILD_OUTPUT", true)
 ```
 #### priceIrVanillaInstrument
 
@@ -2436,7 +2620,7 @@ caplib::priceIrVanillaInstrument(instrumentHandle STRING, asOfDate DATE, mktData
 
 instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 也接受 DATE 向量（非标量）（2026-10-15 全新容器实测）。
 
 mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -2444,27 +2628,74 @@ pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有�
 
 riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
+mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。**行为实测:** 传 NULL 或错误类型同样按默认模式处理、不抛异常（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency and the CNY calendar used by schedules
+caplib::createCalendar("CAL_CFETS")
+asOfDate = 2022.03.09
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
 
-asOfDate = 2020.02.21
-pricingSettings = "PS"
-swap = "swap"
-caplib::priceIrVanillaInstrument(
-    swap, asOfDate, mktData[0], pricingSettings, irRisk[0], "", "", true)
+// CNY discount curve and the 3M SHIBOR index
+irCurve = caplib::createIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, curveName, "IR_CURVE", false)
+iborIndex = caplib::createIborIndex(
+    curveName, "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+
+// Fixed and floating leg definitions assembled into a vanilla swap template
+fixedLeg = caplib::createFixedLegDefinition(
+    currency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "IR_FIXED_LEG", false)
+floatingLeg = caplib::createFloatingLegDefinition(
+    currency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "IR_FLOATING_LEG", false)
+swapTemplate = caplib::createIrVanillaSwapTemplate(
+    curveName, 1, fixedLeg[0], floatingLeg[0], "SPOTSTART", false)
+
+// Pay-fixed 1Y swap on 1,000,000 CNY notional
+swap = caplib::buildIrVanillaInstrument(
+    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+    swapTemplate[0], 1000000.0, "", "IR_SWAP", false)
+
+// Analytical pricing settings and IR risk settings
+pricingModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "IR_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 1, 1, take(0, 0), pricingModel, "", "", "IR_PRICING", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "IR_CURVE_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(
+    1, 1, 1.0 / 365.0, "IR_THETA_RISK", false)
+riskSettings = caplib::createIrRiskSettings(irCurveRisk, thetaRisk, "IR_RISK", false)
+
+// Market data set with the curve as both discount and forward curve
+mktData = caplib::createIrMktDataSet(
+    asOfDate, irCurve, [iborIndex[0]], [irCurve], "IR_MKT", false)
+
+result = caplib::priceIrVanillaInstrument(
+    swap, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 #### buildIrVanillaInstrument
 
@@ -2492,28 +2723,53 @@ maturityDate DATE 类型。到期日。**有效性:** 必须是非空 DolphinDB 
 
 instTemplate STRING 类型。工具模板对象或模板句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。**行为实测:** 传 0 不抛异常，包装器不做正数校验（2026-10-15 全新容器实测）。
 
 legFixings STRING 类型。各现金流腿使用的定盘值对象或数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `IrVanillaInstrument` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrVanillaInstrument` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the CNY calendar used by schedules and the index
+caplib::createCalendar("CAL_CFETS")
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
 
-swapTemplate = "swapTemplate"
-caplib::buildIrVanillaInstrument(
+// 3M SHIBOR index plus fixed and floating leg definitions
+iborIndex = caplib::createIborIndex(
+    curveName, "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+fixedLeg = caplib::createFixedLegDefinition(
+    currency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "IR_FIXED_LEG", false)
+floatingLeg = caplib::createFloatingLegDefinition(
+    currency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "IR_FLOATING_LEG", false)
+
+// Assemble the legs into a vanilla swap template
+swapTemplate = caplib::createIrVanillaSwapTemplate(
+    curveName, 1, fixedLeg[0], floatingLeg[0], "SPOTSTART", false)
+
+// Build a pay-fixed 1Y swap on 1,000,000 CNY notional
+swap = caplib::buildIrVanillaInstrument(
     "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
-    swapTemplate, 1000000.0, "", "IR_SWAP", false)
+    swapTemplate[0], 1000000.0, "", "IR_SWAP", false)
 ```
 #### getDiscountFactor
 
@@ -2535,16 +2791,20 @@ dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对�
 
 **返回值**
 
-**返回：** DOUBLE 向量，元素顺序与输入一致。
+对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-curve = "C"
-caplib::getDiscountFactor(curve, 2025.07.15)
+irAsOfDate = 2022.03.09
+irCurrency = "CNY"
+irCurve = caplib::createIrYieldCurve(
+    irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", irCurrency, "CNY_SHIBOR_3M", "IR_CHAIN_CURVE", false)
+caplib::getDiscountFactor(irCurve, [2025.03.10])
 ```
 
 #### getZeroRate
@@ -2567,16 +2827,20 @@ dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对�
 
 **返回值**
 
-**返回：** DOUBLE 向量，元素顺序与输入一致。
+对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-curve = "C"
-caplib::getZeroRate(curve, 2025.07.15)
+irAsOfDate = 2022.03.09
+irCurrency = "CNY"
+irCurve = caplib::createIrYieldCurve(
+    irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", irCurrency, "CNY_SHIBOR_3M", "IR_CHAIN_CURVE", false)
+caplib::getZeroRate(irCurve, [2025.03.10])
 ```
 
 #### getFwdRate
@@ -2597,20 +2861,24 @@ irCurveHandle STRING 类型。所引用具体类的 ObjectCache 句柄。**有�
 
 dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对应 dates[i]。**有效性:** 必须是无空值 DATE 向量。单日使用单元素向量，多日使用更长向量；不接受 DATE 标量。
 
-tenor DOUBLE 类型。以年化比例表示的远期间隔。**有效性:** 业务有效值须严格为正且有限；包装器仅检查 DOUBLE 类型。
+tenor DOUBLE 类型。以年化比例表示的远期间隔。**有效性:** 业务有效值须严格为正且有限；包装器仅检查 DOUBLE 类型。**行为实测:** 传 0 或负数会被下游服务拒绝（tenor must be positive）（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** DOUBLE 向量，元素顺序与输入一致。
+对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-curve = "C"
-caplib::getFwdRate(curve, 2025.01.15, 2025.07.15)
+irAsOfDate = 2022.03.09
+irCurrency = "CNY"
+irCurve = caplib::createIrYieldCurve(
+    irAsOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", irCurrency, "CNY_SHIBOR_3M", "IR_CHAIN_CURVE", false)
+caplib::getFwdRate(irCurve, [2025.03.10], 0.25)
 ```
 
 #### createIrYieldCurve
@@ -2618,7 +2886,7 @@ caplib::getFwdRate(curve, 2025.01.15, 2025.07.15)
 **语法**
 
 ```dolphindb
-caplib::createIrYieldCurve(referenceDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, curveType STRING, dcc STRING, interp STRING, extrap STRING, compounding STRING, currency STRING, name STRING, handle STRING, [returnJson])
+caplib::createIrYieldCurve(asOfDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, curveType STRING, dayCountConvention STRING, interp STRING, extrap STRING, compounding STRING, currency STRING, name STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -2627,7 +2895,7 @@ caplib::createIrYieldCurve(referenceDate DATE, pillarDates DATE 向量, pillarVa
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 pillarDates DATE 向量 类型。曲线节点日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -2635,7 +2903,7 @@ pillarValues DOUBLE 向量 类型。曲线节点值数组。**有效性:** 必�
 
 curveType STRING 类型。曲线值类型，例如零利率、贴现因子或利差。**有效性:** 可接受值：`ZERO_RATE`, `LOG_DISCOUNT`, `FORWARD_RATE`。仅接受所示精确拼写。
 
-dcc STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
 interp STRING 类型。插值方法。**有效性:** 可接受值：`LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。仅接受所示精确拼写。
 
@@ -2653,7 +2921,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2702,13 +2970,13 @@ scaling DOUBLE 类型。风险扰动缩放因子。**有效性:** 必须严格�
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传错误类型的标量不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `IrCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2738,7 +3006,7 @@ currency STRING 类型。币种代码。**有效性:** 必须是非空币种标�
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-instNames STRING 向量 类型。与工具类型、期限和报价对齐的工具名称。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+instNames STRING 向量 类型。与工具类型、期限和报价对齐的工具名称。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 也接受 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
 instTypes STRING 向量 类型。构建曲线使用的工具类型数组。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。
 
@@ -2754,20 +3022,24 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrParRateCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrParRateCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
 asOfDate = 2020.02.21
 currency = "CNY"
 curveName = "TREAS"
+caplib::createCalendar("CAL_CFETS")
+iborIndex = caplib::createIborIndex(
+    "CNY_SHIBOR_3M", "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 caplib::createIrParRateCurve(
     asOfDate, currency, curveName,
-    [iborIndex[0], curveName, curveName],
+    [iborIndex, curveName, curveName],
     ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"],
     ["3M", "6M", "1Y"],
     [100.0, 100.0, 100.0],
@@ -2793,21 +3065,21 @@ curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 ST
 
 useOnTnFxSwap BOOL 类型。是否使用 ON/TN 外汇掉期工具构建曲线。**有效性:** 必须是非空 BOOL 标量；兼容旧示例的 INT `0/1`。字符串、空值及其他整数会抛错。
 
-discountCurrencyNames STRING 向量 类型。币种代码。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
+discountCurrencyNames STRING 向量 类型。币种代码。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。**行为实测:** 元素类型不符时不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-discountCurveNames STRING 向量 类型。贴现曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+discountCurveNames STRING 向量 类型。贴现曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 也接受 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
-forwardIndexNames STRING 向量 类型。远期指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
+forwardIndexNames STRING 向量 类型。远期指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。**行为实测:** 元素类型不符时不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-forwardCurveNames STRING 向量 类型。远期曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+forwardCurveNames STRING 向量 类型。远期曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 元素类型不符时不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传错误类型的标量不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `IrYieldCurveBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrYieldCurveBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2816,9 +3088,9 @@ loadPlugin("caplib")
 
 
 currency = "CNY"
-curveName = "TREAS"
+curveName = "CNY_SHIBOR_3M"
 caplib::createIrYieldCurveBuildSettings(
-    curveName, 0, [currency], [curveName], [iborIndex[0]], [curveName], "IR_BUILD_SETTINGS", true)
+    curveName, 0, [currency], [curveName], [curveName], [curveName], "IR_BUILD_SETTINGS", true)
 ```
 
 #### buildIrCrossCurrencyCurve
@@ -2826,25 +3098,25 @@ caplib::createIrYieldCurveBuildSettings(
 **语法**
 
 ```dolphindb
-caplib::buildIrCrossCurrencyCurve(referenceDate DATE, targetCurveNames STRING 向量, buildSettingsHandles STRING 向量, parCurveHandles STRING 向量, dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING 向量, fxSpotHandle STRING, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING 向量, outputHandle STRING, [returnJson])
+caplib::buildIrCrossCurrencyCurve(asOfDate DATE, targetCurveNames STRING 向量, buildSettingsHandles STRING 向量, parCurveHandles STRING 向量, dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING 向量, fxSpotHandle STRING, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING 向量, outputHandle STRING, [returnJson])
 ```
 
 **详情**
 
 构建跨币种利率曲线组。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrCrossCurrencyCurveBuildingOutput`。
-> **用法说明：** `targetCurveHandles` 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；`outputHandle` 指向构建输出容器本身。
+> **用法说明：** *targetCurveHandles* 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；*outputHandle* 指向构建输出容器本身。
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 包装器不校验本参数的向量形式，传入字符串标量亦可宽松接受并完成调用（服务层按单条目标曲线处理）；建议按字符串向量传入。
 
 buildSettingsHandles STRING 向量 类型。曲线构建设置 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 parCurveHandles STRING 向量 类型。平价曲线输入对象 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-dayCountConvention STRING 类型。日计数约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
 compoundingType STRING 类型。复利类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_COMPOUNDING_TYPE`, `CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -2858,7 +3130,7 @@ buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:*
 
 calcJacobian BOOL 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
+shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常（2026-10-15 全新容器实测）。
 
 finiteDifferenceMethod STRING 类型。有限差分方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -2872,31 +3144,52 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrCrossCurrencyCurveBuildingOutput` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrCrossCurrencyCurveBuildingOutput` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, CNY calendar and the domestic CNY curve
+caplib::createCalendar("CAL_CFETS")
+asOfDate = 2022.03.09
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
+irCurve = caplib::createIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, curveName, "IR_CURVE", false)
 
-buildSettingsHandles = "buildSettingsHandles"
-buildingMethod = "buildingMethod"
-calcJacobian = false
-compoundingType = "compoundingType"
-dayCountConvention = "dayCountConvention"
-finiteDifferenceMethod = "finiteDifferenceMethod"
-frequency = "frequency"
-fxSpotHandle = "fxSpotHandle"
-otherCurveHandles = "otherCurveHandles"
-outputHandle = "outputHandle"
-parCurveHandles = "parCurveHandles"
-referenceDate = 2020.02.21
-shift = "shift"
-targetCurveHandles = "targetCurveHandles"
-targetCurveNames = "targetCurveNames"
-threadingMode = "threadingMode"
-result = caplib::buildIrCrossCurrencyCurve(referenceDate, targetCurveNames, buildSettingsHandles, parCurveHandles, dayCountConvention, compoundingType, frequency, otherCurveHandles, fxSpotHandle, buildingMethod, calcJacobian, shift, finiteDifferenceMethod, threadingMode, targetCurveHandles, outputHandle)
+// USDCNY FX-swap par curve (points in pips, factor 10000) for the USD leg
+parCurve = caplib::createIrParRateCurve(
+    asOfDate, "USD", "USD_USDCNY_FX",
+    take("USDCNY", 11), take("FX_SWAP", 11),
+    ["ON", "TN", "1W", "1M", "2M", "3M", "6M", "9M", "12M", "2Y", "3Y"],
+    take(10000, 11),
+    [2.01, 3.91, 5.93, 22.5, 44.25, 63.25, 130.75, 194.75, 268.25, 1017.0, 2075.0],
+    "USD_FX_PAR", false)
+
+// Build settings: discount off the USD par curve and the CNY curve
+buildSettings = caplib::createIrYieldCurveBuildSettings(
+    "USD_USDCNY_FX", true, ["USD", "CNY"], ["USD_USDCNY_FX", curveName],
+    [], [], "XCCY_BUILD_SETTINGS", false)
+
+// Static-data templates and the USDCNY spot rate the build resolves
+caplib::createFxSpotTemplate(
+    "USDCNY_SPOT_TPL", "USDCNY", "FOLLOWING", ["CAL_CFETS"], "2d", false)
+caplib::createFxSwapTemplate(
+    "USDCNY_SWP_TPL", "SPOTSTART", "USDCNY", ["CAL_CFETS"],
+    "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false)
+fxSpot = caplib::createFxSpotRate(
+    6.6916, "CNY", "USD", asOfDate, asOfDate, "XCCY_FXSPOT", false)
+
+// Bootstrap the USD_USDCNY_FX target curve from the FX-swap par curve
+result = caplib::buildIrCrossCurrencyCurve(
+    asOfDate, ["USD_USDCNY_FX"], [buildSettings], [parCurve],
+    "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [irCurve], fxSpot,
+    "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD",
+    "SINGLE_THREADING_MODE", ["XCCY_CURVE"], "XCCY_OUT", true)
 ```
 #### createIrMktDataSet
 
@@ -2916,7 +3209,7 @@ asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:
 
 discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-underlyingInterestRates STRING 向量 类型。标的利率指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+underlyingInterestRates STRING 向量 类型。标的利率指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 也接受 DOUBLE 标量（非向量）（2026-10-15 全新容器实测）。
 
 forwardCurveHandles STRING 向量 类型。远期曲线 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -2926,19 +3219,30 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the CNY calendar and build the discount curve and index
+caplib::createCalendar("CAL_CFETS")
+asOfDate = 2022.03.09
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
+irCurve = caplib::createIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, curveName, "IR_CURVE", false)
+iborIndex = caplib::createIborIndex(
+    curveName, "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 
-asOfDate = 2020.02.21
-indexName = "indexName"
-irCurve = "IR"
-caplib::createIrMktDataSet(
-    asOfDate, irCurve, [indexName], [irCurve], "IR_MKT", true)
+// Market data set: irCurve discounts, iborIndex forward-set off the same curve
+mktData = caplib::createIrMktDataSet(
+    asOfDate, irCurve, [iborIndex[0]], [irCurve], "IR_MKT", false)
 ```
 
 #### createIrCrossCcyMktDataSet
@@ -2955,7 +3259,7 @@ caplib::createIrCrossCcyMktDataSet(asOfDate DATE, baseDiscountCurveHandle STRING
 
 **参数**
 
-asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 也接受 DATE 向量（非标量）（2026-10-15 全新容器实测）。
 
 baseDiscountCurveHandle STRING 类型。基准币种贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -2973,22 +3277,39 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrCrossCcyMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrCrossCcyMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the CNY calendar and build both currency curves and the index
+caplib::createCalendar("CAL_CFETS")
+asOfDate = 2022.03.09
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
+irCurve = caplib::createIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, curveName, "IR_CURVE", false)
+iborIndex = caplib::createIborIndex(
+    curveName, "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+usdCurve = caplib::createIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "USD_CURVE", false)
 
-asOfDate = 2020.02.21
-baseDiscountCurveHandle = "baseDiscountCurveHandle"
-crossCcyDiscountCurveHandle = "crossCcyDiscountCurveHandle"
-forwardCurveHandles = "forwardCurveHandles"
-fxSpotHandle = "fxSpotHandle"
-handle = "H"
-underlyingInterestRates = [0.0]
-result = caplib::createIrCrossCcyMktDataSet(asOfDate, baseDiscountCurveHandle, underlyingInterestRates, forwardCurveHandles, crossCcyDiscountCurveHandle, fxSpotHandle, handle)
+// USDCNY spot rate for the cross-currency leg
+fxSpot = caplib::createFxSpotRate(
+    6.9, "USD", "CNY", asOfDate, 2022.03.16, "FX_SPOT", false)
+
+// CNY base discount curve + forward curve, USD cross-currency discount curve
+mktData = caplib::createIrCrossCcyMktDataSet(
+    asOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot,
+    "IR_XCCY_MKT", false)
 ```
 
 #### createIrRiskSettings
@@ -3015,17 +3336,20 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// IR curve risk (delta/gamma with 1bp shift) and theta risk (1-day decay)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "IR_CURVE_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(
+    1, 1, 1.0 / 365.0, "IR_THETA_RISK", false)
 
-irCurveRisk = false
-thetaRisk = false
-caplib::createIrRiskSettings(irCurveRisk, thetaRisk, "IR_RISK", true)
+riskSettings = caplib::createIrRiskSettings(irCurveRisk, thetaRisk, "IR_RISK", false)
 ```
 
 #### createXccyIrRiskSettings
@@ -3054,18 +3378,23 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `XccyIrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `XccyIrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// IR curve risk, FX price risk and theta risk for the cross-currency setting
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "IR_CURVE_RISK", false)
+fxRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "IR_PRICE_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(
+    1, 1, 1.0 / 365.0, "IR_THETA_RISK", false)
 
-irCurveRisk = false
-priceRisk = false
-thetaRisk = false
-caplib::createXccyIrRiskSettings(irCurveRisk, priceRisk, thetaRisk, "IR_XCCY_RISK", true)
+riskSettings = caplib::createXccyIrRiskSettings(
+    irCurveRisk, fxRisk, thetaRisk, "IR_XCCY_RISK", false)
 ```
 
 #### priceIrCrossCurrencySwap
@@ -3092,7 +3421,7 @@ pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有�
 
 riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
@@ -3100,22 +3429,72 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, CNY calendar and the domestic CNY curve and index
+caplib::createCalendar("CAL_CFETS")
+asOfDate = 2022.03.09
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
+irCurve = caplib::createIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.02, 0.025],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, curveName, "IR_CURVE", false)
+iborIndex = caplib::createIborIndex(
+    curveName, "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 
-asOfDate = 2020.02.21
-instrumentHandle = "INST"
-mktDataHandle = "MKT"
-mode = ""
-pricingSettingsHandle = "PS"
-riskSettingsHandle = "RS"
-scnSettingsHandle = ""
-result = caplib::priceIrCrossCurrencySwap(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
+// Fixed legs in both currencies assembled into a cross-currency swap template
+cnyFixedLeg = caplib::createFixedLegDefinition(
+    currency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "XCCY_CNY_LEG", false)
+usdFixedLeg = caplib::createFixedLegDefinition(
+    "USD", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "XCCY_USD_LEG", false)
+swapTemplate = caplib::createIrVanillaInstrumentTemplate(
+    "CROSS_CURRENCY_SWAP", "XCCY_SWAP_TPL", "SPOTSTART", 1,
+    [cnyFixedLeg[0], usdFixedLeg[0]], "XCCY_SWAP_TPL", false)
+
+// Pay-CNY 1Y cross-currency swap on 1,000,000 CNY notional
+xccySwap = caplib::buildIrVanillaInstrument(
+    "PAY", 0.05, 0.0, 2022.03.07, 2023.03.07,
+    swapTemplate[0], 1000000.0, "", "XCCY_SWAP", false)
+
+// USDCNY spot rate, USD discount curve and cross-currency market data set
+fxSpot = caplib::createFxSpotRate(
+    6.6916, "CNY", "USD", asOfDate, asOfDate, "XCCY_FXSPOT", false)
+usdCurve = caplib::createIrYieldCurve(
+    asOfDate, [2022.03.10, 2025.03.10], [0.03, 0.035],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_SOFR", "USD_CURVE", false)
+mktData = caplib::createIrCrossCcyMktDataSet(
+    asOfDate, irCurve, [iborIndex[0]], [irCurve], usdCurve, fxSpot,
+    "XCCY_MKT", false)
+
+// Analytical pricing settings and cross-currency IR risk settings
+pricingModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", "", 0, [0.0], "XCCY_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 1, 1, take(0, 0), pricingModel, "", "", "XCCY_PRICING", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "XCCY_CURVE_RISK", false)
+fxRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0, 0, "XCCY_PRICE_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(
+    1, 1, 1.0 / 365.0, "XCCY_THETA_RISK", false)
+riskSettings = caplib::createXccyIrRiskSettings(
+    irCurveRisk, fxRisk, thetaRisk, "XCCY_RISK", false)
+
+result = caplib::priceIrCrossCurrencySwap(
+    xccySwap, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 #### createInterestCalcScheduleDefinition
 
@@ -3145,11 +3524,11 @@ dateRollConvention STRING 类型。日期或日期数组。**有效性:** 值必
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `InterestCaculationScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestCaculationScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3180,17 +3559,17 @@ frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTE
 
 payDayMode STRING 类型。付款日生成模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。
 
-payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
+payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。**行为实测:** 传 0、正数或负数均不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
 
 payDayConvention STRING 类型。付款日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `InterestPaymentScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestPaymentScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3229,11 +3608,11 @@ fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 识�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateFixingScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateFixingScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3249,7 +3628,7 @@ caplib::createInterestRateFixingScheduleDefinition(
 **语法**
 
 ```dolphindb
-caplib::createIborIndex(indexName STRING, indexTenor STRING, indexCcy STRING, calendarList STRING or STRING 向量, startDelay INT[, dayCount STRING[, interestDayConvention STRING[, dateRollConvention STRING[, iborType STRING]]]], [returnJson])
+caplib::createIborIndex(indexName STRING, indexTenor STRING, indexCcy STRING, calendarList STRING or STRING 向量, startDelay INT[, dayCountConvention STRING[, interestDayConvention STRING[, dateRollConvention STRING[, iborType STRING]]]], [returnJson])
 ```
 
 **详情**
@@ -3266,11 +3645,11 @@ indexCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标�
 
 calendarList STRING or STRING 向量 类型。业务日历名称列表。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-startDelay INT 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-dayCount STRING, optional 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING, optional 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。**行为实测:** 传错误类型（非 STRING）不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-interestDayConvention STRING, optional 类型。计息日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
+interestDayConvention STRING, optional 类型。计息日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。**行为实测:** 传错误类型（非 STRING）不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 dateRollConvention STRING, optional 类型。日期或日期数组。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_ROLL_CONVENTION`, `EOM`, `FRN`, `IMM`, `IMM_CAD`, `IMM_AUD`, `IMM_NZD`, `SFE`, `NONE`, `TBILL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -3280,20 +3659,21 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IborIndex` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IborIndex` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the business calendar referenced by the index
+caplib::createCalendar("CAL_CFETS")
 
-currency = "CNY"
-indexName = "indexName"
-caplib::createIborIndex(
-    "3M", "ACT_360", currency, 1, "CAL_CFETS",
-    "MODIFIED_FOLLOWING", "NONE", "STANDARD_IBOR_INDEX",
-    indexName, "IR_IBOR_INDEX", false)
+// 3M SHIBOR index: ACT_360 day count, modified-following adjustment
+iborIndex = caplib::createIborIndex(
+    "CNY_SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 ```
 
 #### createIrLegDefinition
@@ -3301,7 +3681,7 @@ caplib::createIborIndex(
 **语法**
 
 ```dolphindb
-caplib::createIrLegDefinition(legType STRING, currency STRING, dayCount STRING, refIndex STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, notionalExchange STRING, spread BOOL, fxConvert BOOL, fxReset BOOL, calendar STRING or STRING 向量, freq STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingCalendars STRING or STRING 向量, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, tag STRING, [returnJson])
+caplib::createIrLegDefinition(legType STRING, currency STRING, dayCountConvention STRING, refIndex STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, notionalExchange STRING, spread BOOL, fxConvert BOOL, fxReset BOOL, calendar STRING or STRING 向量, freq STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingCalendars STRING or STRING 向量, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, tag STRING, [returnJson])
 ```
 
 **详情**
@@ -3314,9 +3694,9 @@ legType STRING 类型。现金流腿类型。**有效性:** 值必须是以下�
 
 currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
-dayCount STRING 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
-refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 固定腿传空字符串即可；浮动腿/FRA 腿须为可解析的参考指数。包装器不验证业务标识的字符集或成员资格。
+refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 固定腿传空字符串即可；浮动腿/FRA 腿须为可解析的参考指数。包装器不验证业务标识的字符集或成员资格。**行为实测:** 传不存在的句柄键不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 paymentDiscountMethod STRING 类型。支付现金流贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -3330,7 +3710,7 @@ fxConvert BOOL 类型。是否进行外汇折算。**有效性:** 必须是 BOOL
 
 fxReset BOOL 类型。是否使用外汇重置。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 与 fixingCalendars 长度不一致时不抛异常、宽松接受；也接受单个 STRING 标量配更长的 fixingCalendars 向量（2026-10-15 全新容器实测）。
 
 freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
@@ -3360,7 +3740,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3397,30 +3777,49 @@ instName STRING 类型。工具或模板名称，通常也作为缓存句柄。*
 
 startConvention STRING 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-startDelay INT 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-legDefinitions STRING 向量 类型。现金流腿定义对象或句柄数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
+legDefinitions STRING 向量 类型。现金流腿定义对象或句柄数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。**行为实测:** 也接受 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the CNY calendar and the 3M SHIBOR index
+caplib::createCalendar("CAL_CFETS")
+currency = "CNY"
+curveName = "CNY_SHIBOR_3M"
+iborIndex = caplib::createIborIndex(
+    curveName, "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
 
-curveName = "TREAS"
-fixedLeg = "fixedLeg"
-floatingLeg = "floatingLeg"
-caplib::createIrVanillaInstrumentTemplate(
-    "IR_VANILLA_SWAP", curveName, "SPOTSTART", 1,
-    [fixedLeg, floatingLeg], "IR_SWAP_TEMPLATE", false)
+// Fixed and floating leg definitions
+fixedLeg = caplib::createFixedLegDefinition(
+    currency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "IR_FIXED_LEG", false)
+floatingLeg = caplib::createFloatingLegDefinition(
+    currency, iborIndex[0], "CAL_CFETS", ["CAL_CFETS"],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "IR_FLOATING_LEG", false)
+
+// Vanilla swap template holding both legs
+swapTemplate = caplib::createIrVanillaInstrumentTemplate(
+    "IR_VANILLA_SWAP", "CNY_SWAP_TPL", "SPOTSTART", 1,
+    [fixedLeg[0], floatingLeg[0]], "CNY_SWAP_TPL", false)
 ```
 
 #### createIrVanillaSwapTemplate
@@ -3439,7 +3838,7 @@ caplib::createIrVanillaSwapTemplate(instName STRING, startDelay INT or STRING, l
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startDelay INT or STRING 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+startDelay INT or STRING 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 传 0 不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
 leg1Definition STRING 类型。第一条现金流腿定义对象或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -3451,17 +3850,33 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-curveName = "TREAS"
+caplib::createCalendar("CAL_CFETS")
+currency = "CNY"
+curveName = "CNY_SWAP_TPL"
+iborIndex = caplib::createIborIndex(
+    "CNY_SHIBOR_3M", "3M", currency, ["CAL_CFETS"], 1,
+    "ACT_360", "MODIFIED_FOLLOWING",
+    "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+fixedLeg = caplib::createFixedLegDefinition(
+    currency, "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "IR_FIXED_LEG", false)
+floatingLeg = caplib::createFloatingLegDefinition(
+    currency, iborIndex, "CAL_CFETS", ["CAL_CFETS"],
+    "QUARTERLY", "QUARTERLY", "ACT_360",
+    "NO_DISCOUNT", "STANDARD", false,
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING",
+    "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "IR_FLOATING_LEG", false)
 caplib::createIrVanillaSwapTemplate(
-    curveName, 1, fixedLeg[0], floatingLeg[0], "SPOTSTART", true)
+    curveName, 1, fixedLeg, floatingLeg, "SPOTSTART", true)
 ```
 
 #### createFlatIrYieldCurve
@@ -3469,7 +3884,7 @@ caplib::createIrVanillaSwapTemplate(
 **语法**
 
 ```dolphindb
-caplib::createFlatIrYieldCurve(referenceDate DATE, currency STRING, rate DOUBLE, handle STRING, [returnJson])
+caplib::createFlatIrYieldCurve(asOfDate DATE, currency STRING, rate DOUBLE, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -3478,11 +3893,11 @@ caplib::createFlatIrYieldCurve(referenceDate DATE, currency STRING, rate DOUBLE,
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 传晚于到期日的参考日期不抛异常（包装器不检查此关系，与上文说明一致）（2026-10-15 全新容器实测）。
 
 currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
-rate DOUBLE 类型。利率或票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
+rate DOUBLE 类型。利率或票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 或负数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
 handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
 
@@ -3490,7 +3905,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3531,18 +3946,59 @@ foreignDiscountCurveHandle STRING 类型。foreign IrYieldCurve 的 ObjectCache 
 
 **返回值**
 
-**返回：** DOUBLE 数值。
+计算结果，DOUBLE 类型标量。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+asOfDate = 2021.03.30
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-eurCurve = "EUR"
-usdCurve = "USD"
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// Smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+builtVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+
 caplib::calcFxAtmStrike(
-    "ATM_DNS_PIPS", 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+    "ATM_DNS_PIPS", 2021.09.26, builtVolSurface, eurusdSpotRate, usdCurve, eurCurve)
 ```
 
 #### calcFxDeltaToStrike
@@ -3559,15 +4015,15 @@ caplib::calcFxDeltaToStrike(deltaType STRING, delta DOUBLE, expiryDate DATE, vol
 
 **参数**
 
-deltaType STRING 类型。外汇 Delta 约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+deltaType STRING 类型。外汇 Delta 约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 包装器接受全部字符串标签，但 `SIMPLE_DELTA` 会被下游定价服务拒绝（抛异常）；实测可用的业务标签为 `PIPS_SPOT_DELTA`、`PERCENTAGE_SPOT_DELTA`、`PIPS_FORWARD_DELTA`、`PERCENTAGE_FORWARD_DELTA` 四个（2026-10-15 全新容器实测）。
 
-delta DOUBLE 类型。带符号的期权 Delta；负值选择 PUT，非负值选择 CALL。**有效性:** 必须为有限数，业务有效范围为 `(-1,0) ∪ (0,1)`；包装器仅检查 DOUBLE 类型。
+delta DOUBLE 类型。带符号的期权 Delta；负值选择 PUT，非负值选择 CALL。**有效性:** 必须为有限数，业务有效范围为 `(-1,0) ∪ (0,1)`；包装器仅检查 DOUBLE 类型。**行为实测:** 传负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
 
 expiryDate DATE 类型。该计算使用的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
 volSurfaceHandle STRING 类型。FxVolatilitySurface 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-fxSpotRateHandle STRING 类型。FxSpotRate 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+fxSpotRateHandle STRING 类型。FxSpotRate 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传类型不匹配的对象句柄不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 domesticDiscountCurveHandle STRING 类型。domestic IrYieldCurve 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -3575,18 +4031,59 @@ foreignDiscountCurveHandle STRING 类型。foreign IrYieldCurve 的 ObjectCache 
 
 **返回值**
 
-**返回：** DOUBLE 数值。
+计算结果，DOUBLE 类型标量。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+asOfDate = 2021.03.30
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-eurCurve = "EUR"
-usdCurve = "USD"
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// Smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+builtVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+
 caplib::calcFxDeltaToStrike(
-    "PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
+    "PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface, eurusdSpotRate, usdCurve, eurCurve)
 ```
 
 #### createFxOptionQuoteMatrix
@@ -3621,16 +4118,16 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `FxOptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxOptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-caplib::createFxOptionQuoteMatrix(
+// EURUSD smile quotes (ATM and 25-delta risk reversal / butterfly)
+asOfDate = 2021.03.30
+optionQuotes = caplib::createFxOptionQuoteMatrix(
     "EUR", "USD", asOfDate, ["1W", "1M", "3M"], ["ATM", "D25_RR", "D25_BF"],
     matrix([0.05515, 0.06115, 0.06135], [-0.00290, -0.00248, -0.00180], [0.00135, 0.00147, 0.00205]),
     "EURUSD_OPTION_QUOTES", true)
@@ -3641,7 +4138,7 @@ caplib::createFxOptionQuoteMatrix(
 **语法**
 
 ```dolphindb
-caplib::createFlatFxVolatilitySurface(referenceDate DATE, currencyPair STRING, vol DOUBLE, tag STRING, [returnJson])
+caplib::createFlatFxVolatilitySurface(asOfDate DATE, currencyPair STRING, vol DOUBLE, tag STRING, [returnJson])
 ```
 
 **详情**
@@ -3650,7 +4147,7 @@ caplib::createFlatFxVolatilitySurface(referenceDate DATE, currencyPair STRING, v
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 currencyPair STRING 类型。货币对标识，通常为基准币种/目标币种格式。**有效性:** 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。
 
@@ -3658,11 +4155,11 @@ vol DOUBLE 类型。波动率数值。**有效性:** 必须非负且有限；包
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3680,7 +4177,7 @@ caplib::createFlatFxVolatilitySurface(
 **语法**
 
 ```dolphindb
-caplib::createFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE 向量, strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING, [returnJson])
+caplib::createFxVolatilitySurface(asOfDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE 向量, strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -3689,7 +4186,7 @@ caplib::createFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy S
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 leftCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -3697,9 +4194,9 @@ rightCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标�
 
 termDates DATE 向量 类型。报价期限对应的到期日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
-strikes DOUBLE matrix/vector 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。
+strikes DOUBLE matrix/vector 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。**行为实测:** 与 vols 形状（向量/矩阵）不一致时也接受（2026-10-15 全新容器实测）。
 
-volatilities DOUBLE matrix/vector 类型。波动率数组或矩阵。**有效性:** 必须具有所列元素类型和形状；数值必须非负且有限；除明确说明外包装器不强制非空。
+volatilities DOUBLE matrix/vector 类型。波动率数组或矩阵。**有效性:** 必须具有所列元素类型和形状；数值必须非负且有限；除明确说明外包装器不强制非空。**行为实测:** 与 strikes 形状（向量/矩阵）不一致时也接受（2026-10-15 全新容器实测）。
 
 definitionHandle STRING 类型。波动率曲面定义 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -3711,21 +4208,32 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Volatility surface definition and FX market conventions
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE",
+    1.0e-4, 1.0e4, "FX_LINEAR_VOL_SURF_DEF", false)
+fxMktConventions = caplib::createFxMktConventions(
+    "EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
 
-asOfDate = 2020.02.21
-volStrikes = "volStrikes"
-volTermDates = [2020.02.21]
-volValues = [0.0]
-caplib::createFxVolatilitySurface(
-    asOfDate, "EUR", "USD", volTermDates, volStrikes, volValues,
-    linearVolSurfDefinition[0], fxMktConventions[0], "EURUSD_VOL_SURF", true)
+// Three-strike flat smile for a single term date
+asOfDate = 2021.03.30
+eurusdSpot = 1.1761
+termDates = [2021.06.30]
+strikes = [1.00, eurusdSpot, 1.35]
+volatilities = [0.06, 0.06, 0.06]
+fxVolSurface = caplib::createFxVolatilitySurface(
+    asOfDate, "EUR", "USD", termDates, strikes, volatilities,
+    volDef, fxMktConventions, "EURUSD_VOL_SURF", true)
 ```
 
 #### buildFxVolatilitySurface
@@ -3733,7 +4241,7 @@ caplib::createFxVolatilitySurface(
 **语法**
 
 ```dolphindb
-caplib::buildFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, handle STRING, [returnJson])
+caplib::buildFxVolatilitySurface(asOfDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -3742,7 +4250,7 @@ caplib::buildFxVolatilitySurface(referenceDate DATE, leftCcy STRING, rightCcy ST
 
 **参数**
 
-referenceDate DATE 类型。该计算使用的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。该计算使用的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 leftCcy STRING 类型。货币对的左侧币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -3772,22 +4280,58 @@ returnJson BOOL 类型。可选返回形状标志。**有效性:** 必须是 BOO
 
 **返回值**
 
-**返回：** 成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date and spot rate
+asOfDate = 2021.03.30
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-eurCurve = "EUR"
-eurusdSpot = "eurusdSpot"
-usdCurve = "USD"
-caplib::buildFxVolatilitySurface(
-    asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0],
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+
+// FX market conventions and SVI smile definition
+fxMktConventions = caplib::createFxMktConventions(
+    "EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+
+// Six-tenor EURUSD option quote matrix (ATM + 25/10-delta RR and BF)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+
+// Build the smile surface from the quote matrix
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
     eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
-    volSurfDefinition[0], "EURUSD_BUILT_VOL_SURF", true)
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", true)
 ```
 
 #### priceFxForward
@@ -3814,7 +4358,7 @@ pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有�
 
 riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
@@ -3822,19 +4366,56 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmSettings = false
-fxForward = "fxForward"
-caplib::priceFxForward(
-    fxForward, asOfDate, eurusdMktData[0], bsmSettings, fxRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+flatVolSurface = caplib::createFlatFxVolatilitySurface(
+    asOfDate, "EURUSD", 0.0, "EURUSD_FLAT_FX_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, flatVolSurface, "", "EURUSD_MKT", false)
+
+// Analytical pricing settings and FX risk settings
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "FX_CASH_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+volRisk = caplib::createVolRiskSettings(
+    1, 1, 1.0e-2, 0, 0, 1.0e-2, 0, "FX_VOL_RISK", false)
+priceVolRisk = caplib::createPriceVolRiskSettings(
+    1, 1.0e-2, 1.0e-2, 0, 0, 1.0e-2, 1.0e-2, 0, "FX_PRICE_VOL_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "FX_THETA_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "FX_RISK", false)
+
+// Forward: buy EUR 1,000,000 against USD at 1.1761
+forwardInst = caplib::createFxForward(
+    "EUR", 1000000.0, "USD", 1176100.0, 2021.07.01, 2021.06.30, "FX_FWD", false)
+result = caplib::priceFxForward(
+    forwardInst, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxSwap
@@ -3861,7 +4442,7 @@ pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有�
 
 riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
@@ -3869,19 +4450,57 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-cashAnalyticalSettings = false
-fxSwap = "fxSwap"
-caplib::priceFxSwap(
-    fxSwap, asOfDate, eurusdMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+flatVolSurface = caplib::createFlatFxVolatilitySurface(
+    asOfDate, "EURUSD", 0.0, "EURUSD_FLAT_FX_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, flatVolSurface, "", "EURUSD_MKT", false)
+
+// Analytical pricing settings and FX risk settings
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "FX_CASH_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+volRisk = caplib::createVolRiskSettings(
+    1, 1, 1.0e-2, 0, 0, 1.0e-2, 0, "FX_VOL_RISK", false)
+priceVolRisk = caplib::createPriceVolRiskSettings(
+    1, 1.0e-2, 1.0e-2, 0, 0, 1.0e-2, 1.0e-2, 0, "FX_PRICE_VOL_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "FX_THETA_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "FX_RISK", false)
+
+// Swap: near leg buy EUR / sell USD at spot, far leg reversed in 3 months
+swapInst = caplib::createFxSwap(
+    "EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31,
+    "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "FX_SWAP_INST", false)
+result = caplib::priceFxSwap(
+    swapInst, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxNonDeliverableForward
@@ -3908,7 +4527,7 @@ pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有�
 
 riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
@@ -3916,19 +4535,56 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+usdcnhSpot = 6.7
 
-asOfDate = 2020.02.21
-cashAnalyticalSettings = false
-fxNdf = "fxNdf"
-caplib::priceFxNonDeliverableForward(
-    fxNdf, asOfDate, usdcnhMktData[0], cashAnalyticalSettings, fxRisk[0], "", "", true)
+// CNH (domestic) and USD (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+cnhCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.01, 2021.09.30, 2022.03.31, 2023.03.31, 2026.03.31, 2031.03.31],
+    [0.01825, 0.02770, 0.02958, 0.03150, 0.03497, 0.03814],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNH", "CNH_USDCNH_FX", "CNH_USDCNH_FX", false)
+usdcnhSpotRate = caplib::createFxSpotRate(
+    usdcnhSpot, "USD", "CNH", asOfDate, 2021.04.01, "USDCNH_SPOT_RATE", false)
+flatVolSurface = caplib::createFlatFxVolatilitySurface(
+    asOfDate, "USDCNH", 0.0, "USDCNH_FLAT_FX_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, cnhCurve, usdCurve, usdcnhSpotRate, flatVolSurface, "", "USDCNH_MKT", false)
+
+// Analytical pricing settings and FX risk settings
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "FX_CASH_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+volRisk = caplib::createVolRiskSettings(
+    1, 1, 1.0e-2, 0, 0, 1.0e-2, 0, "FX_VOL_RISK", false)
+priceVolRisk = caplib::createPriceVolRiskSettings(
+    1, 1.0e-2, 1.0e-2, 0, 0, 1.0e-2, 1.0e-2, 0, "FX_PRICE_VOL_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "FX_THETA_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "FX_RISK", false)
+
+// NDF: buy USD 10,000 against CNH, cash-settled in USD
+ndfInst = caplib::createFxNonDeliverableForward(
+    "USD", 10000.0, "CNH", 66916.0, "USD", 2021.07.01, 2021.06.30, "FX_NDF_INST", false)
+result = caplib::priceFxNonDeliverableForward(
+    ndfInst, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 #### priceFxEuropeanOption
 
@@ -3962,20 +4618,79 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmSettings = false
-fxEuropean = "fxEuropean"
-scnAnalysis = false
-caplib::priceFxEuropeanOption(
-    fxEuropean, asOfDate, eurusdMktData[0], bsmSettings, fxRisk[0], scnAnalysis, "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// European call on EURUSD spot
+europeanOption = caplib::createEuropeanOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27,
+    1000000.0, currency, "SPOT", currency, underlying, "FX_EUROPEAN", false)
+result = caplib::priceFxEuropeanOption(
+    europeanOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxAmericanOption
@@ -4010,19 +4725,79 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-americanOption = "americanOption"
-asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-caplib::priceFxAmericanOption(
-    americanOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// American call on EURUSD spot
+americanOption = caplib::createAmericanOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27,
+    1, 1000000.0, currency, "SPOT", currency, underlying, "FX_AMERICAN", false)
+result = caplib::priceFxAmericanOption(
+    americanOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxAsianOption
@@ -4057,19 +4832,86 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-asianOption = "ASIAN"
-bsmMcSettings = false
-caplib::priceFxAsianOption(
-    asianOption, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Discrete daily observation schedule
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Arithmetic-average Asian call with fixed strike
+asianOption = caplib::createAsianOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27,
+    "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE",
+    1000000.0, currency, "SPOT", currency, underlying, "FX_ASIAN",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxAsianOption(
+    asianOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxDigitalOption
@@ -4104,19 +4946,79 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-digitalOption = "digitalOption"
-caplib::priceFxDigitalOption(
-    digitalOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Cash-or-nothing digital call
+digitalOption = caplib::createDigitalOption("CALL", eurusdSpot, 2021.09.26, 2021.09.27,
+    0.0, 1.0, 1000000.0, currency, "SPOT", currency, underlying, "FX_DIGITAL", false)
+result = caplib::priceFxDigitalOption(
+    digitalOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxOneTouchOption
@@ -4151,19 +5053,80 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-oneTouchOption = "oneTouchOption"
-caplib::priceFxOneTouchOption(
-    oneTouchOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// One-touch knock-in paying at maturity, barrier 5% above spot
+oneTouchOption = caplib::createOneTouchOption(2021.09.26, 2021.09.27, "UP_IN",
+    eurusdSpot*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_ONE_TOUCH", false)
+result = caplib::priceFxOneTouchOption(
+    oneTouchOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxDoubleTouchOption
@@ -4198,19 +5161,81 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-doubleTouchOption = "doubleTouchOption"
-caplib::priceFxDoubleTouchOption(
-    doubleTouchOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Double-touch with barriers 5% below and above spot
+doubleTouchOption = caplib::createDoubleTouchOption(2021.09.26, 2021.09.27,
+    "DOWN_IN", eurusdSpot*0.95, "UP_IN", eurusdSpot*1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_DOUBLE_TOUCH", false)
+result = caplib::priceFxDoubleTouchOption(
+    doubleTouchOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxSingleBarrierOption
@@ -4245,19 +5270,80 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-singleBarrierOption = "singleBarrierOption"
-caplib::priceFxSingleBarrierOption(
-    singleBarrierOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Up-and-in single-barrier call, barrier 5% above spot
+singleBarrierOption = caplib::createSingleBarrierOption("CALL", eurusdSpot, 2021.09.26,
+    2021.09.27, "UP_IN", eurusdSpot*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_BARRIER", false)
+result = caplib::priceFxSingleBarrierOption(
+    singleBarrierOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxDoubleBarrierOption
@@ -4292,19 +5378,82 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-doubleBarrierOption = "doubleBarrierOption"
-caplib::priceFxDoubleBarrierOption(
-    doubleBarrierOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Double-barrier call with barriers 5% below and above spot
+doubleBarrierOption = caplib::createDoubleBarrierOption("CALL", eurusdSpot, 2021.09.26,
+    2021.09.27, "DOWN_IN", eurusdSpot*0.95, "UP_IN", eurusdSpot*1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying,
+    "FX_DOUBLE_BARRIER", false)
+result = caplib::priceFxDoubleBarrierOption(
+    doubleBarrierOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxSingleSharkFinOption
@@ -4339,19 +5488,89 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmPdeSettings = false
-singleSharkFinOption = "singleSharkFinOption"
-caplib::priceFxSingleSharkFinOption(
-    singleSharkFinOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM PDE pricing settings and FX risk settings
+modelParams = [0.0]
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "FX_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 1, modelParams, "FX_BSM_PDE_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "FX_BSM_PDE", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Discrete daily observation schedule
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Up-and-out single shark-fin call, barrier 5% above spot
+singleSharkFinOption = caplib::createSingleSharkFinOption("CALL", eurusdSpot,
+    2021.09.26, 2021.09.27, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", eurusdSpot*1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_SHARKFIN",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxSingleSharkFinOption(
+    singleSharkFinOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxDoubleSharkFinOption
@@ -4386,19 +5605,89 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmPdeSettings = false
-doubleSharkFinOption = "doubleSharkFinOption"
-caplib::priceFxDoubleSharkFinOption(
-    doubleSharkFinOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM PDE pricing settings and FX risk settings
+modelParams = [0.0]
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "FX_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 1, modelParams, "FX_BSM_PDE_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "FX_BSM_PDE", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Discrete daily observation schedule
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Double shark-fin with barriers 5% below and above spot
+doubleSharkFinOption = caplib::createDoubleSharkFinOption(eurusdSpot, eurusdSpot,
+    2021.09.26, 2021.09.27, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE",
+    eurusdSpot*0.95, eurusdSpot*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying,
+    "FX_DOUBLE_SHARKFIN", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxDoubleSharkFinOption(
+    doubleSharkFinOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxPingPongOption
@@ -4433,19 +5722,88 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmMcSettings = false
-pingPongOption = "pingPongOption"
-caplib::priceFxPingPongOption(
-    pingPongOption, asOfDate, eurusdMktData[0], bsmMcSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM Monte Carlo pricing settings and FX risk settings
+modelParams = [0.0]
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 365, "FX_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MC_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "FX_BSM_MC", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Discrete daily observation schedule
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Ping-pong with barriers 5% below and above spot
+pingPongOption = caplib::createPingPongOption(2021.09.26, 2021.09.27,
+    "DOWN_IN", eurusdSpot*0.95, "UP_IN", eurusdSpot*1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.015, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "FX_PING_PONG",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxPingPongOption(
+    pingPongOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxAirbagOption
@@ -4480,19 +5838,88 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-airbagOption = "airbagOption"
-asOfDate = 2020.02.21
-bsmPdeSettings = false
-caplib::priceFxAirbagOption(
-    airbagOption, asOfDate, eurusdMktData[0], bsmPdeSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM PDE pricing settings and FX risk settings
+modelParams = [0.0]
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "FX_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 1, modelParams, "FX_BSM_PDE_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "FX_BSM_PDE", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Discrete daily observation schedule
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Airbag call with knock-in barrier 20% below spot
+airbagOption = caplib::createAirbagOption("CALL", 2021.09.26, 2021.09.27,
+    eurusdSpot, eurusdSpot*1.05, 1.0, 1.0, eurusdSpot, "DOWN_IN", eurusdSpot*0.8,
+    "DISCRETE_OBSERVATION_TYPE", 1000000.0, currency, "SPOT", currency, underlying,
+    "FX_AIRBAG", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxAirbagOption(
+    airbagOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxRangeAccrualOption
@@ -4527,19 +5954,86 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-rangeAccrualOption = "rangeAccrualOption"
-caplib::priceFxRangeAccrualOption(
-    rangeAccrualOption, asOfDate, eurusdMktData[0], bsmAnalyticalSettings, fxOptionRisk[0], "", "", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM analytical pricing settings and FX risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "FX_BSM_ANALYTICAL", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Discrete daily observation schedule
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Range accrual paying 1% per day inside the range
+rangeAccrualOption = caplib::createRangeAccrualOption(2021.09.26, 2021.09.27,
+    0.0, 0.01, eurusdSpot*0.95, eurusdSpot*1.05, 1000000.0, currency, "SPOT",
+    currency, underlying, "FX_RANGE_ACCRUAL",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxRangeAccrualOption(
+    rangeAccrualOption, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxPhoenixAutoCallableNote
@@ -4574,22 +6068,92 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-instrumentHandle = "INST"
-mktDataHandle = "MKT"
-mode = ""
-pricingSettingsHandle = "PS"
-riskSettingsHandle = "RS"
-scnSettingsHandle = ""
-result = caplib::priceFxPhoenixAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM Monte Carlo pricing settings and FX risk settings
+modelParams = [0.0]
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 365, "FX_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MC_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "FX_BSM_MC", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Semi-annual coupon observation and daily monitoring schedules
+couponObsDates = [2021.06.30, 2021.09.26]
+couponObsValues = take(0.0, size(couponObsDates))
+couponObsWeights = take(1.0, size(couponObsDates))
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Phoenix auto-callable note, 12% coupon, ±10% barriers, 0.85-strike short put
+phoenixNote = caplib::createPhoenixAutoCallableNote("CALL", eurusdSpot, 0.12,
+    "ACT_365_FIXED", 2021.04.01, couponObsDates, "UP_OUT", eurusdSpot*1.1,
+    "DOWN_IN", eurusdSpot*0.9, "SELL", "PUT", eurusdSpot*0.85, 2021.09.26, 2021.09.27,
+    1, 1000000.0, currency, "SPOT", currency, underlying, "FX_PHOENIX",
+    couponObsDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxPhoenixAutoCallableNote(
+    phoenixNote, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceFxSnowballAutoCallableNote
@@ -4624,22 +6188,92 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date, currency pair and spot rate
+asOfDate = 2021.03.30
+currency = "USD"
+underlying = "EURUSD"
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-instrumentHandle = "INST"
-mktDataHandle = "MKT"
-mode = ""
-pricingSettingsHandle = "PS"
-riskSettingsHandle = "RS"
-scnSettingsHandle = ""
-result = caplib::priceFxSnowballAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// BSM Monte Carlo pricing settings and FX risk settings
+modelParams = [0.0]
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 365, "FX_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings(
+    "BLACK_SCHOLES_MERTON", underlying, 0, modelParams, "FX_BSM_MC_MODEL", false)
+pricingSettings = caplib::createPricingSettings(
+    currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "FX_BSM_MC", false)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, "", "", "", "", "FX_OPTION_RISK", false)
+
+// Build the smile surface from a six-tenor option quote matrix
+fxMktConventions = caplib::createFxMktConventions(
+    underlying, "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "EURUSD_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition(
+    "STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -1.0e-4, 1.0e-4, "FX_VOL_SURF_DEF", false)
+quoteTerms = ["ON", "1W", "1M", "3M", "6M", "1Y"]
+quoteNames = ["ATM", "D25_RR", "D25_BF", "D10_RR", "D10_BF"]
+quoteValues = matrix(
+    [0.06035, 0.05515, 0.06115, 0.06135, 0.06250, 0.06330],
+    [-0.00310, -0.00290, -0.00248, -0.00180, -0.00135, -0.00100],
+    [0.00115, 0.00135, 0.00147, 0.00205, 0.00250, 0.00325],
+    [-0.00565, -0.00520, -0.00450, -0.00330, -0.00240, -0.00185],
+    [0.00310, 0.00385, 0.00450, 0.00625, 0.00815, 0.01120])
+optionQuotes = caplib::createFxOptionQuoteMatrix(
+    "EUR", "USD", asOfDate, quoteTerms, quoteNames, quoteValues,
+    "EURUSD_OPTION_QUOTES", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "FX_VOL_BUILD_SETTINGS", false)
+fxVolSurface = caplib::buildFxVolatilitySurface(
+    asOfDate, "EUR", "USD", fxMktConventions, optionQuotes,
+    eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve,
+    volDef, volBuildSettings, "EURUSD_BUILT_VOL_SURF", false)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, fxVolSurface, "", "EURUSD_MKT", false)
+
+// Semi-annual coupon observation and daily monitoring schedules
+couponObsDates = [2021.06.30, 2021.09.26]
+couponObsValues = take(0.0, size(couponObsDates))
+couponObsWeights = take(1.0, size(couponObsDates))
+dailyObsDates = 2021.03.31..2021.09.26
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+
+// Snowball auto-callable note, 12% coupon, +5%/-20% barriers, short ATM put
+snowballNote = caplib::createSnowballAutoCallableNote(0.12, 2021.03.31, couponObsDates,
+    "ACT_365_FIXED", "UP_OUT", eurusdSpot*1.05, "DOWN_IN", eurusdSpot*0.8,
+    "SELL", "PUT", eurusdSpot, 1.0, eurusdSpot, 2021.09.26, 2021.09.27,
+    1, 1000000.0, currency, "SPOT", currency, underlying, "FX_SNOWBALL",
+    couponObsDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceFxSnowballAutoCallableNote(
+    snowballNote, asOfDate, mktData, pricingSettings, riskSettings, "", "", true)
 ```
 
 #### createFxSpotTemplate
@@ -4662,28 +6296,30 @@ currencyPair STRING 类型。货币对标识，通常为基准币种/目标币�
 
 spotDayConvention STRING 类型。即期日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
-spotDelay STRING or INT 类型。即期结算延迟。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+spotDelay STRING or INT 类型。即期结算延迟。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键；本接口 handle 为可选，省略时自动生成句柄键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxSpotTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxSpotTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the business calendars used for spot date adjustment
+caplib::createCalendar("CAL_EUTA")
+caplib::createCalendar("CAL_GBLO")
 
-calEuta = "calEuta"
-calGblo = "calGblo"
-caplib::createFxSpotTemplate(
-    "EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", [calEuta, calGblo], "2d", true)
+// EURUSD spot template with a 2-business-day spot delay
+spotTemplate = caplib::createFxSpotTemplate(
+    "EURUSD_SPOT_TPL", "EURUSD", "FOLLOWING", ["CAL_EUTA", "CAL_GBLO"], "2d", false)
 ```
 
 #### createFxSpotRate
@@ -4702,7 +6338,7 @@ caplib::createFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRIN
 
 **参数**
 
-value DOUBLE 类型。报价、利率或即期汇率数值。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
+value DOUBLE 类型。报价、利率或即期汇率数值。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常，包装器不做正数校验（2026-10-15 全新容器实测）。
 
 baseCurrency STRING 类型。外汇货币对中的基准币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -4714,22 +6350,22 @@ spotDate DATE 类型。即期结算日。**有效性:** 必须是非空 DolphinD
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxSpotRate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxSpotRate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-eurusdSpot = "eurusdSpot"
-caplib::createFxSpotRate(
-    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", true)
+// EURUSD spot quote as of 2021.03.30, spot settlement on 2021.04.01
+asOfDate = 2021.03.30
+eurusdSpot = 1.1761
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
 ```
 
 #### createFxForwardTemplate
@@ -4756,24 +6392,27 @@ deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 值
 
 fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `FxForwardTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxForwardTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the business calendars used for date adjustment
+caplib::createCalendar("CAL_EUTA")
+caplib::createCalendar("CAL_GBLO")
 
-calEuta = "calEuta"
-calGblo = "calGblo"
-caplib::createFxForwardTemplate(
-    "EURUSD_FWD_TPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING", [calEuta, calGblo], true)
+// EURUSD forward template: fixing 2 business days before delivery
+forwardTemplate = caplib::createFxForwardTemplate(
+    "EURUSD_FWD_TPL", "-2d", "EURUSD", "FOLLOWING", "PRECEDING",
+    ["CAL_EUTA", "CAL_GBLO"], false)
 ```
 
 #### createFxSwapTemplate
@@ -4786,7 +6425,7 @@ caplib::createFxSwapTemplate(instName STRING, startConvention STRING, currencyPa
 
 **详情**
 
-创建并缓存外汇掉期模板。函数验证并转换字段，构造 `FxSwapTemplate` protobuf 并存入 ObjectCache，供后续分析使用。另支持两种 6 参简写形式，按第二个参数的类型区分：传入 STRING `startConvention` 时为文档签名的前 6 参（`instName, startConvention, currencyPair, calendars, startDayConvention, endDayConvention`），此时 `fixingOffset` 取 `0d`、`fixingDayConvention` 由 `startDayConvention` 派生；传入 INT `startDelay` 时为旧式 `currencyPair, startDelay, deliveryDayConvention, calendar, instName, tag` 形式。
+创建并缓存外汇掉期模板。函数验证并转换字段，构造 `FxSwapTemplate` protobuf 并存入 ObjectCache，供后续分析使用。另支持两种 6 参简写形式，按第二个参数的类型区分：传入 STRING *startConvention* 时为文档签名的前 6 参（`instName, startConvention, currencyPair, calendars, startDayConvention, endDayConvention`），此时 *fixingOffset* 取 `0d`、*fixingDayConvention* 由 *startDayConvention* 派生；传入 INT *startDelay* 时为旧式 `currencyPair, startDelay, deliveryDayConvention, calendar, instName, tag` 形式。
 
 **参数**
 
@@ -4796,13 +6435,13 @@ startConvention STRING 类型。工具起息约定。**有效性:** 值必须是
 
 currencyPair STRING 类型。货币对标识，通常为基准币种/目标币种格式。**有效性:** 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
 startDayConvention STRING 类型。起始日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
 endDayConvention STRING 类型。结束日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-fixingOffset STRING or INT 类型。定盘偏移期限。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+fixingOffset STRING or INT 类型。定盘偏移期限。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
 fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
@@ -4810,19 +6449,21 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `FxSwapTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxSwapTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the business calendars used for date adjustment
+caplib::createCalendar("CAL_EUTA")
+caplib::createCalendar("CAL_GBLO")
 
-calEuta = "calEuta"
-calGblo = "calGblo"
-caplib::createFxSwapTemplate(
-    "EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", [calEuta, calGblo],
-    "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", true)
+// EURUSD swap template: spot-starting legs, fixing 2 business days before settlement
+swapTemplate = caplib::createFxSwapTemplate(
+    "EURUSD_SWP_TPL", "SPOTSTART", "EURUSD", ["CAL_EUTA", "CAL_GBLO"],
+    "FOLLOWING", "FOLLOWING", "-2d", "PRECEDING", false)
 ```
 
 #### createFxNdfTemplate
@@ -4849,7 +6490,7 @@ deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 值
 
 fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
 settlementCurrency STRING 类型。结算币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -4857,19 +6498,21 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `FxNdfTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxNdfTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Register the business calendars used for date adjustment
+caplib::createCalendar("CAL_HKHK")
+caplib::createCalendar("CAL_GBLO")
 
-calGblo = "calGblo"
-calHkhk = "calHkhk"
-caplib::createFxNdfTemplate(
+// USDCNH NDF template: fixing 2 business days before delivery, settled in USD
+ndfTemplate = caplib::createFxNdfTemplate(
     "USDCNH_NDF_TPL", "-2d", "USDCNH", "FOLLOWING", "PRECEDING",
-    [calHkhk, calGblo], "USD", true)
+    ["CAL_HKHK", "CAL_GBLO"], "USD", false)
 ```
 
 #### createFxForward
@@ -4900,11 +6543,11 @@ expiryDate DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxForward` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxForward` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4956,11 +6599,11 @@ farExpiryDate DATE 类型。日期或日期数组。**有效性:** 必须是非�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxSwap` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxSwap` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5003,11 +6646,11 @@ expiryDate DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxNonDeliverableForward` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxNonDeliverableForward` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5049,11 +6692,11 @@ smileQuoteType STRING 类型。波动率微笑报价类型。**有效性:** 值�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxMarketConventions` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxMarketConventions` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5095,23 +6738,42 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Valuation date and spot rate
+asOfDate = 2021.03.30
+eurusdSpot = 1.1761
 
-asOfDate = 2020.02.21
-eurCurve = "EUR"
-usdCurve = "USD"
-caplib::createFxMktDataSet(
-    asOfDate, usdCurve, eurCurve, eurusdSpotRate[0], volSurface[0], "", "EURUSD_MKT", true)
+// USD (domestic) and EUR (foreign) discount curves
+usdCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [0.00016, 0.00028, 0.00042, 0.00108, 0.00798, 0.01624],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO", false)
+eurCurve = caplib::createIrYieldCurve(asOfDate,
+    [2021.04.06, 2021.09.30, 2022.03.30, 2023.03.30, 2026.03.30, 2031.03.31],
+    [-0.00814, -0.00759, -0.00814, -0.00801, -0.0068, -0.00355],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EUR", "EUR_EURUSD_FX", "EUR_EURUSD_FX", false)
+eurusdSpotRate = caplib::createFxSpotRate(
+    eurusdSpot, "EUR", "USD", asOfDate, 2021.04.01, "EURUSD_SPOT_RATE", false)
+
+// Flat volatility surface as a minimal vol source
+flatVolSurface = caplib::createFlatFxVolatilitySurface(
+    asOfDate, "USDCNH", 0.0, "USDCNH_FLAT_FX_VOL_SURF", false)
+
+// EURUSD market data set (domestic USD, foreign EUR)
+mktData = caplib::createFxMktDataSet(
+    asOfDate, usdCurve, eurCurve, eurusdSpotRate, flatVolSurface, "", "EURUSD_MKT", true)
 ```
 
 #### createFxRiskSettings
@@ -5142,25 +6804,31 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `FxRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `FxRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// Component risk settings (curve, price, vol, price-vol, theta)
+irCurveRisk = caplib::createIrCurveRiskSettings(
+    1, 1, 0, 1.0e-4, 5.0e-1, 0, 0, 1.0e-4, 0, "FX_IR_CURVE_RISK", false)
+priceRisk = caplib::createPriceRiskSettings(
+    1, 1, 0, 1.0e-2, 5.0e-1, 0, 1.0e-2, 0, "FX_PRICE_RISK", false)
+volRisk = caplib::createVolRiskSettings(
+    1, 1, 1.0e-2, 0, 0, 1.0e-2, 0, "FX_VOL_RISK", false)
+priceVolRisk = caplib::createPriceVolRiskSettings(
+    1, 1.0e-2, 1.0e-2, 0, 0, 1.0e-2, 1.0e-2, 0, "FX_PRICE_VOL_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "FX_THETA_RISK", false)
 
-irCurveRisk = false
-priceRisk = false
-priceVolRisk = false
-thetaRisk = false
-volRisk = false
-caplib::createFxRiskSettings(
-    irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "FX_RISK", true)
+// FX risk settings bundle
+riskSettings = caplib::createFxRiskSettings(
+    irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "FX_RISK", false)
 ```
 
 ### 权益
@@ -5187,7 +6855,7 @@ futurePrices DOUBLE 向量 类型。期货价格数组。**有效性:** 所有�
 
 optionPrices TABLE 类型。期权价格矩阵或表。**有效性:** 所有元素必须非负且有限，并与配对行权价/期限参数形状一致；包装器主要检查类型/形状。
 
-spot DOUBLE 类型。当前现货价格。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
+spot DOUBLE 类型。当前现货价格。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常，包装器不做正数校验（2026-10-15 全新容器实测）。
 
 discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -5197,23 +6865,37 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
 asOfDate = 2020.02.21
-emptyFuturePrices = [0.0]
-idxOptionPrices = [0.0]
-irCurve = "IR"
-quoteTermDates = ["1Y"]
-underlyingPrice = 100.0
-caplib::buildEqIndexDividendCurve(
-    asOfDate, quoteTermDates, emptyFuturePrices, idxOptionPrices,
-    underlyingPrice, irCurve, "IDX_DIV_CURVE", true)
+underlyingPrice = 2.958
+
+// CNY discount curve for the index
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+
+// Option quotes used to back out implied dividends (no index futures)
+quoteTermDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+idxOptionPrices = table(
+    [quoteTermDates[0], quoteTermDates[0], quoteTermDates[1], quoteTermDates[1]] as expiry,
+    [2.9, 2.9, 2.9, 2.9] as strike,
+    ["CALL", "PUT", "CALL", "PUT"] as optionType,
+    [0.02, 0.02, 0.03, 0.03] as price)
+
+result = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0),
+    idxOptionPrices, underlyingPrice, irCurve, "EQ_IDX_DIV_CURVE", true)
 ```
 
 #### buildEqVolatilitySurface
@@ -5221,7 +6903,7 @@ caplib::buildEqIndexDividendCurve(
 **语法**
 
 ```dolphindb
-caplib::buildEqVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE 向量, discountCurveHandle STRING, dividendCurveHandle STRING, buildSettingsHandle STRING, pricingSettingsHandle STRING, handle STRING, [returnJson])
+caplib::buildEqVolatilitySurface(asOfDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE 向量, discountCurveHandle STRING, dividendCurveHandle STRING, buildSettingsHandle STRING, pricingSettingsHandle STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -5230,7 +6912,7 @@ caplib::buildEqVolatilitySurface(referenceDate DATE, underlying STRING, definiti
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -5254,23 +6936,61 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmSettings = false
-divCurve = "divCurve"
-irCurve = "IR"
-underlying = "EURUSD"
-caplib::buildEqVolatilitySurface(
-    asOfDate, underlying, volDef[0], quoteMatrix[0],
-    [2.958, 2.960, 2.962],
-    irCurve, divCurve, volBuildSettings[0], bsmSettings, "EQ_VOL_SURFACE", true)
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings for the calibration step
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+
+result = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURFACE", true)
 ```
 
 #### createEqOptionQuoteMatrix
@@ -5309,7 +7029,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5375,19 +7095,77 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmSettings = false
-europeanOption = "europeanOption"
-caplib::priceEqEuropeanOption(
-    europeanOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// European call on the 50ETF spot
+europeanOption = caplib::createEuropeanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    1000000.0, currency, "SPOT", currency, underlying, "EQ_EUROPEAN", false)
+result = caplib::priceEqEuropeanOption(europeanOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### createEqMktDataSet
@@ -5428,21 +7206,69 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `EqMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `EqMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-divCurve = "divCurve"
-irCurve = "IR"
-underlying = "EURUSD"
-underlyingPrice = 100.0
-caplib::createEqMktDataSet(
-    asOfDate, underlying, underlyingPrice, irCurve, divCurve, volSurface[0], "", "", 0.0, "EQ_MKT", true)
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings for the surface build
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+result = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", true)
 ```
 
 #### createEqRiskSettings
@@ -5459,7 +7285,7 @@ caplib::createEqRiskSettings(irDelta INT, priceDelta INT, volVega INT, theta INT
 
 **参数**
 
-irDelta INT 类型。是否计算利率 Delta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
+irDelta INT 类型。是否计算利率 Delta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。**行为实测:** 传负数不抛异常（非零即 true）（2026-10-15 全新容器实测）。
 
 priceDelta INT 类型。是否计算标的价格 Delta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
@@ -5473,7 +7299,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `EqRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `EqRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5505,7 +7331,7 @@ expiry DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DAT
 
 delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -5521,7 +7347,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `EuropeanOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `EuropeanOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5561,7 +7387,7 @@ delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 Do
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -5577,7 +7403,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `AmericanOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `AmericanOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5635,7 +7461,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DigitalOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DigitalOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5679,7 +7505,7 @@ avgMethod STRING 类型。平均价格或平均观察值计算方法。**有效�
 
 obsType STRING 类型。观察方式。**有效性:** 可接受值：``, `CONTINUOUS`, `CONTINUOUS_OBSERVATION_TYPE`, `DISCRETE`, `DISCRETE_OBSERVATION_TYPE`。仅接受所示精确拼写。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -5701,7 +7527,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `AsianOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `AsianOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5718,7 +7544,7 @@ underlyingPrice = 100.0
 caplib::createAsianOption(
     "CALL", underlyingPrice, 2020.08.19, 2020.08.20,
     "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE",
-    1000000.0, "SPOT", currency, underlying, "EQ_ASIAN",
+    1000000.0, currency, "SPOT", currency, underlying, "EQ_ASIAN",
     dailyObsDates, dailyObsValues, dailyObsWeights, false)
 ```
 
@@ -5754,7 +7580,7 @@ asset DOUBLE 类型。资产收益或资产返还金额。**有效性:** 必须�
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -5776,7 +7602,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `OneTouchOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `OneTouchOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5829,7 +7655,7 @@ asset DOUBLE 类型。资产收益或资产返还金额。**有效性:** 必须�
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -5851,7 +7677,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DoubleTouchOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DoubleTouchOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5899,13 +7725,13 @@ barrierObsType STRING 类型。障碍观察约定。**有效性:** 可接受值�
 
 paymentType STRING 类型。返还或障碍支付时点类型。**有效性:** 可接受值：``, `PAY_AT_HIT`, `PAH`, `PAY_AT_MATURITY`, `PAM`。仅接受所示精确拼写。
 
-cashRebate DOUBLE 类型。现金返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+cashRebate DOUBLE 类型。现金返还金额。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-assetRebate DOUBLE 类型。资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+assetRebate DOUBLE 类型。资产返还金额。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
+settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -5927,7 +7753,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `SingleBarrierOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `SingleBarrierOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5979,17 +7805,17 @@ barrierObsType STRING 类型。障碍观察约定。**有效性:** 可接受值�
 
 paymentType STRING 类型。返还或障碍支付时点类型。**有效性:** 可接受值：``, `PAY_AT_HIT`, `PAH`, `PAY_AT_MATURITY`, `PAM`。仅接受所示精确拼写。
 
-lowerCashRebate DOUBLE 类型。下障碍现金返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+lowerCashRebate DOUBLE 类型。下障碍现金返还金额。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-lowerAssetRebate DOUBLE 类型。下障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+lowerAssetRebate DOUBLE 类型。下障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。**行为实测:** 传负数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-upperCashRebate DOUBLE 类型。上障碍现金返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+upperCashRebate DOUBLE 类型。上障碍现金返还金额。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-upperAssetRebate DOUBLE 类型。上障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+upperAssetRebate DOUBLE 类型。上障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。**行为实测:** 传负数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
+settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6011,7 +7837,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DoubleBarrierOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DoubleBarrierOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6057,7 +7883,7 @@ expiry DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DAT
 
 delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6073,28 +7899,17 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CollarOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CollarOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-delivery = "delivery"
-expiry = "expiry"
-handle = "H"
-lowerGearing = "lowerGearing"
-lowerStrike = "lowerStrike"
-nominal = "nominal"
-payoffCurrency = "payoffCurrency"
-payoffType = "payoffType"
-underlying = "EURUSD"
-underlyingCurrency = "underlyingCurrency"
-underlyingType = "underlyingType"
-upperGearing = "upperGearing"
-upperStrike = "upperStrike"
-result = caplib::createCollarOption(payoffType, lowerGearing, upperGearing, lowerStrike, upperStrike, expiry, delivery, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle)
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+result = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice * 0.9, underlyingPrice * 1.1,
+    2020.08.19, 2020.08.20, 1000000.0, "CNY", "SPOT", "CNY", underlying, "EQ_COLLAR", false)
 ```
 
 #### createSingleSharkFinOption
@@ -6137,7 +7952,7 @@ assetRebate DOUBLE 类型。资产返还金额。**有效性:** 必须非负且�
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6159,7 +7974,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `SingleSharkFinOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `SingleSharkFinOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6227,7 +8042,7 @@ upperAssetRebate DOUBLE 类型。上障碍资产返还金额。**有效性:** �
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6249,7 +8064,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DoubleSharkFinOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DoubleSharkFinOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6294,11 +8109,11 @@ asset DOUBLE 类型。资产收益或资产返还金额。**有效性:** 必须�
 
 cash DOUBLE 类型。现金收益或现金返还金额。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-lowerBarrier DOUBLE 类型。下障碍水平。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+lowerBarrier DOUBLE 类型。下障碍水平。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-upperBarrier DOUBLE 类型。上障碍水平。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+upperBarrier DOUBLE 类型。上障碍水平。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6320,7 +8135,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `RangeAccrualOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `RangeAccrualOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6399,7 +8214,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `AirbagOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `AirbagOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6441,7 +8256,7 @@ delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 Do
 
 lowerBarrierType STRING 类型。下障碍类型。**有效性:** 可接受值：`DOWN_IN`, `UAI`, `DOWN_AND_IN`, `UP_IN`, `DAO`, `UP_AND_IN`, `DOWN_OUT`, `DAI`, `DOWN_AND_OUT`, `UP_OUT`, `UAO`, `UP_AND_OUT`。仅接受所示精确拼写。
 
-lowerBarrierValue DOUBLE 类型。下障碍水平。**有效性:** 必须非负且有限；包装器通常仅检查类型。
+lowerBarrierValue DOUBLE 类型。下障碍水平。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 upperBarrierType STRING 类型。上障碍类型。**有效性:** 可接受值：`DOWN_IN`, `UAI`, `DOWN_AND_IN`, `UP_IN`, `DAO`, `UP_AND_IN`, `DOWN_OUT`, `DAI`, `DOWN_AND_OUT`, `UP_OUT`, `UAO`, `UP_AND_OUT`。仅接受所示精确拼写。
 
@@ -6457,7 +8272,7 @@ asset DOUBLE 类型。资产收益或资产返还金额。**有效性:** 必须�
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6479,7 +8294,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PingPongOption` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PingPongOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6506,7 +8321,7 @@ caplib::createPingPongOption(
 **语法**
 
 ```dolphindb
-caplib::createPhoenixAutoCallableNote(couponPayoffType STRING, couponStrike DOUBLE, couponRate DOUBLE, dayCount STRING, startDate DATE, couponDates DATE 向量, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE 向量, knockOutValues DOUBLE 向量, knockOutWeights DOUBLE 向量, knockInDates DATE 向量, knockInValues DOUBLE 向量, knockInWeights DOUBLE 向量, [returnJson])
+caplib::createPhoenixAutoCallableNote(couponPayoffType STRING, couponStrike DOUBLE, couponRate DOUBLE, dayCountConvention STRING, startDate DATE, couponDates DATE 向量, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE 向量, knockOutValues DOUBLE 向量, knockOutWeights DOUBLE 向量, knockInDates DATE 向量, knockInValues DOUBLE 向量, knockInWeights DOUBLE 向量, [returnJson])
 ```
 
 **详情**
@@ -6521,11 +8336,11 @@ couponStrike DOUBLE 类型。票息条件使用的行权价。**有效性:** 必
 
 couponRate DOUBLE 类型。票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-dayCount STRING 类型。日计数约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
 startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
+couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。**行为实测:** 包装器不校验本参数的向量形式，传入 DATE 标量亦可宽松接受并完成调用（按单日期票息处理）；建议按日期向量传入。
 
 knockOutBarrierType STRING 类型。敲出障碍类型。**有效性:** 可接受值：`DOWN_IN`, `UAI`, `DOWN_AND_IN`, `UP_IN`, `DAO`, `UP_AND_IN`, `DOWN_OUT`, `DAI`, `DOWN_AND_OUT`, `UP_OUT`, `UAO`, `UP_AND_OUT`。仅接受所示精确拼写。
 
@@ -6547,7 +8362,7 @@ delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 Do
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6575,7 +8390,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PhoenixAutoCallableNote` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PhoenixAutoCallableNote` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6606,7 +8421,7 @@ caplib::createPhoenixAutoCallableNote(
 **语法**
 
 ```dolphindb
-caplib::createSnowballAutoCallableNote(couponRate DOUBLE, startDate DATE, couponDates DATE 向量, dayCount STRING, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, knockInPayoffGearing DOUBLE, referencePrice DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE 向量, knockOutValues DOUBLE 向量, knockOutWeights DOUBLE 向量, knockInDates DATE 向量, knockInValues DOUBLE 向量, knockInWeights DOUBLE 向量, [returnJson])
+caplib::createSnowballAutoCallableNote(couponRate DOUBLE, startDate DATE, couponDates DATE 向量, dayCountConvention STRING, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, knockInPayoffGearing DOUBLE, referencePrice DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE 向量, knockOutValues DOUBLE 向量, knockOutWeights DOUBLE 向量, knockInDates DATE 向量, knockInValues DOUBLE 向量, knockInWeights DOUBLE 向量, [returnJson])
 ```
 
 **详情**
@@ -6619,9 +8434,9 @@ couponRate DOUBLE 类型。票息率。**有效性:** 必须是有限 DOUBLE；�
 
 startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
+couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。**行为实测:** 包装器不校验本参数的向量形式，传入 DATE 标量亦可宽松接受并完成调用（按单日期票息处理）；建议按日期向量传入。
 
-dayCount STRING 类型。日计数约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
 knockOutBarrierType STRING 类型。敲出障碍类型。**有效性:** 可接受值：`DOWN_IN`, `UAI`, `DOWN_AND_IN`, `UP_IN`, `DAO`, `UP_AND_IN`, `DOWN_OUT`, `DAI`, `DOWN_AND_OUT`, `UP_OUT`, `UAO`, `UP_AND_OUT`。仅接受所示精确拼写。
 
@@ -6647,7 +8462,7 @@ delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 Do
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
 payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
 
@@ -6675,7 +8490,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `SnowballAutoCallableNote` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `SnowballAutoCallableNote` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6734,19 +8549,77 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-caplib::priceEqAmericanOption(
-        am, asOfDate, mktData[0],
-        bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// American call on the 50ETF spot
+americanOption = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    1, 1000000.0, currency, "SPOT", currency, underlying, "EQ_AMERICAN", false)
+result = caplib::priceEqAmericanOption(americanOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqAsianOption
@@ -6781,19 +8654,85 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-asianOption = "ASIAN"
-bsmSettings = false
-caplib::priceEqAsianOption(
-    asianOption, asOfDate, mktData[0], bsmSettings, eqRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical settings drive the surface build; Monte Carlo settings price the Asian payoff
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "EQ_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MC_MODEL", false)
+bsmMcSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "EQ_BSM_MC", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Discretely observed Asian call on the 50ETF spot
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+asianOption = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE",
+    1000000.0, currency, "SPOT", currency, underlying, "EQ_ASIAN",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqAsianOption(asianOption, asOfDate, mktData,
+    bsmMcSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqDigitalOption
@@ -6828,19 +8767,77 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-caplib::priceEqDigitalOption(
-        dg, asOfDate, mktData[0],
-        bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Asset-or-nothing digital call on the 50ETF spot
+digitalOption = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    0.0, 1.0, 1000000.0, currency, "SPOT", currency, underlying, "EQ_DIGITAL", false)
+result = caplib::priceEqDigitalOption(digitalOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqOneTouchOption
@@ -6875,19 +8872,78 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-caplib::priceEqOneTouchOption(
-        ot, asOfDate, mktData[0],
-        bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Up-and-in one-touch with cash payout at maturity
+oneTouchOption = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN",
+    underlyingPrice * 1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "EQ_ONE_TOUCH", false)
+result = caplib::priceEqOneTouchOption(oneTouchOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqDoubleTouchOption
@@ -6922,19 +8978,79 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-caplib::priceEqDoubleTouchOption(
-        dt, asOfDate, mktData[0],
-        bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Double-touch with cash payout at maturity
+doubleTouchOption = caplib::createDoubleTouchOption(2020.08.19, 2020.08.20, "DOWN_IN",
+    underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    1.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "EQ_DOUBLE_TOUCH", false)
+result = caplib::priceEqDoubleTouchOption(doubleTouchOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqSingleBarrierOption
@@ -6969,19 +9085,79 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-caplib::priceEqSingleBarrierOption(
-        sb, asOfDate, mktData[0],
-        bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Up-and-in single-barrier call without rebates
+singleBarrierOption = caplib::createSingleBarrierOption("CALL", underlyingPrice,
+    2020.08.19, 2020.08.20, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "EQ_SINGLE_BARRIER", false)
+result = caplib::priceEqSingleBarrierOption(singleBarrierOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqDoubleBarrierOption
@@ -7016,20 +9192,80 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-dblB = "dblB"
-caplib::priceEqDoubleBarrierOption(
-        dblB, asOfDate, mktData[0],
-        bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Double-knock-in call without rebates
+doubleBarrierOption = caplib::createDoubleBarrierOption("CALL", underlyingPrice,
+    2020.08.19, 2020.08.20, "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying,
+    "EQ_DOUBLE_BARRIER", false)
+result = caplib::priceEqDoubleBarrierOption(doubleBarrierOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqSingleSharkFinOption
@@ -7064,19 +9300,87 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmPdeSettings = false
-caplib::priceEqSingleSharkFinOption(
-        sf, asOfDate, mktData[0],
-        bsmPdeSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical settings drive the surface build; PDE settings price the shark-fin payoff
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "EQ_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_PDE_MODEL", false)
+bsmPdeSettings = caplib::createPricingSettings(currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "EQ_BSM_PDE", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Discretely observed single shark-fin call
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+singleSharkFinOption = caplib::createSingleSharkFinOption("CALL", underlyingPrice,
+    2020.08.19, 2020.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice * 1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying, "EQ_SINGLE_SHARKFIN",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqSingleSharkFinOption(singleSharkFinOption, asOfDate, mktData,
+    bsmPdeSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqDoubleSharkFinOption
@@ -7111,19 +9415,88 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmPdeSettings = false
-caplib::priceEqDoubleSharkFinOption(
-        ds, asOfDate, mktData[0],
-        bsmPdeSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical settings drive the surface build; PDE settings price the shark-fin payoff
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "EQ_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_PDE_MODEL", false)
+bsmPdeSettings = caplib::createPricingSettings(currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "EQ_BSM_PDE", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Discretely observed double shark-fin note
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+doubleSharkFinOption = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice,
+    2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE",
+    underlyingPrice * 0.95, underlyingPrice * 1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "SPOT", currency, underlying,
+    "EQ_DOUBLE_SHARKFIN", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqDoubleSharkFinOption(doubleSharkFinOption, asOfDate, mktData,
+    bsmPdeSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqPingPongOption
@@ -7158,19 +9531,86 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmMcSettings = false
-caplib::priceEqPingPongOption(
-        pp, asOfDate, mktData[0],
-        bsmMcSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical settings (surface build) and Monte Carlo pricing settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "EQ_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MC_MODEL", false)
+bsmMcSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "EQ_BSM_MC", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Discretely observed ping-pong option between +/-5% barriers
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+pingPongOption = caplib::createPingPongOption(2020.08.19, 2020.08.20,
+    "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0,
+    1, 1000000.0, currency, "SPOT", currency, underlying, "EQ_PINGPONG",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqPingPongOption(pingPongOption, asOfDate, mktData,
+    bsmMcSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqAirbagOption
@@ -7205,19 +9645,87 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmPdeSettings = false
-caplib::priceEqAirbagOption(
-        ab, asOfDate, mktData[0],
-        bsmPdeSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical settings drive the surface build; PDE settings price the airbag payoff
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "EQ_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_PDE_MODEL", false)
+bsmPdeSettings = caplib::createPricingSettings(currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "EQ_BSM_PDE", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Discretely observed airbag with a knock-in strike at the spot
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+airbagOption = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20,
+    underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice,
+    "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE",
+    1000000.0, currency, "SPOT", currency, underlying, "EQ_AIRBAG",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqAirbagOption(airbagOption, asOfDate, mktData,
+    bsmPdeSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqRangeAccrualOption
@@ -7252,19 +9760,82 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-caplib::priceEqRangeAccrualOption(
-        ra, asOfDate, mktData[0],
-        bsmAnalyticalSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical pricing settings and EQ risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Daily-observed range accrual within +/-5% barriers
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+rangeAccrualOption = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20,
+    0.0, 0.01, underlyingPrice * 0.95, underlyingPrice * 1.05,
+    1000000.0, currency, "SPOT", currency, underlying, "EQ_RANGE_ACCRUAL",
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqRangeAccrualOption(rangeAccrualOption, asOfDate, mktData,
+    bsmAnalyticalSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqPhoenixAutoCallableNote
@@ -7299,19 +9870,90 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmMcSettings = false
-caplib::priceEqPhoenixAutoCallableNote(
-        ph, asOfDate, mktData[0],
-        bsmMcSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical settings (surface build) and Monte Carlo pricing settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "EQ_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MC_MODEL", false)
+bsmMcSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "EQ_BSM_MC", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Monthly coupons with knock-out/knock-in barriers and a short put floor
+couponDates = [2020.03.23, 2020.04.22, 2020.05.22, 2020.06.22, 2020.07.23, 2020.08.22]
+couponObsValues = take(0.0, size(couponDates))
+couponObsWeights = take(1.0, size(couponDates))
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+phoenixNote = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12,
+    "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice * 1.1,
+    "DOWN_IN", underlyingPrice * 0.9, "SELL", "PUT", underlyingPrice * 0.85,
+    2020.08.19, 2020.08.20, 1, 1000000.0, currency, "SPOT", currency, underlying,
+    "EQ_PHOENIX", couponDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqPhoenixAutoCallableNote(phoenixNote, asOfDate, mktData,
+    bsmMcSettings, riskSettings, "", "", true)
 ```
 
 #### priceEqSnowballAutoCallableNote
@@ -7346,19 +9988,90 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and market curves
 asOfDate = 2020.02.21
-bsmMcSettings = false
-caplib::priceEqSnowballAutoCallableNote(
-        sn, asOfDate, mktData[0],
-        bsmMcSettings, eqNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "50ETF.SSE"
+underlyingPrice = 2.958
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24, 2020.05.24, 2020.08.24, 2020.11.24,
+     2021.02.24, 2022.02.24, 2023.02.24, 2024.02.24, 2025.02.24, 2027.02.24, 2030.02.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655,
+     0.0241740300538751, 0.0256822601972516, 0.0265096948143765, 0.0271330931714993,
+     0.0274314991366822, 0.0284834397783798, 0.0297276346662025, 0.0308410887945891,
+     0.032692683803743, 0.034410206396147],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "EQ_IR_CURVE", false)
+divCurve = caplib::createDividendCurve(asOfDate,
+    [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23],
+    [0.05361055758784821, 0.01338941242891319, -0.001765240983827533, -0.002594662370949712],
+    asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "EQ_DIV_50ETF", "EQ_DIV_CURVE", false)
+
+// BSM analytical settings (surface build) and Monte Carlo pricing settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MODEL", false)
+bsmAnalyticalSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "EQ_BSM_ANALYTICAL", false)
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "EQ_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "EQ_BSM_MC_MODEL", false)
+bsmMcSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "EQ_BSM_MC", false)
+riskSettings = caplib::createEqRiskSettings(0, 0, 0, 0, "EQ_RISK", false)
+
+// Equity option quote matrix, surface definition and build settings
+termDates = [2020.02.26, 2020.03.25, 2020.06.24, 2020.09.23]
+payoffTypes = [take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5),
+               take("PUT", 10) join take("CALL", 5), take("PUT", 10) join take("CALL", 5)]
+optionPrices = [
+    [0.0002, 0.0002, 0.0002, 0.0002, 0.0004, 0.0008, 0.0015, 0.0023, 0.0065, 0.0184, 0.0053, 0.0012, 0.0005, 0.0001, 0.0001],
+    [0.0027, 0.0033, 0.0040, 0.0054, 0.0081, 0.0113, 0.0172, 0.0270, 0.0400, 0.0608, 0.0498, 0.0216, 0.0110, 0.0066, 0.0046],
+    [0.0201, 0.0230, 0.0281, 0.0345, 0.0433, 0.0541, 0.0668, 0.0818, 0.1004, 0.1229, 0.1325, 0.0935, 0.0659, 0.0470, 0.0330],
+    [0.0365, 0.0434, 0.0516, 0.0612, 0.0724, 0.0862, 0.1015, 0.1184, 0.1381, 0.1595, 0.1930, 0.1483, 0.1298, 0.0897, 0.0702]]
+optionStrikes = [
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4],
+    [2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.1, 3.2, 3.3, 3.4]]
+optionQuotes = caplib::createEqOptionQuoteMatrix("EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, optionPrices, optionStrikes, underlying, "EQ_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "EQ_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", false)
+volSurface = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [underlyingPrice], irCurve, divCurve, volBuildSettings, bsmAnalyticalSettings,
+    "EQ_VOL_SURF", false)
+
+// Quanto curves and the EQ market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "EQ_QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "EQ_QUANTO_FX_VOL", false)
+mktData = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, divCurve, volSurface, quantoIr, quantoFxVol, 0.0, "EQ_MKT", false)
+
+// Monthly coupons with knock-out/knock-in barriers and a short put at spot
+couponDates = [2020.03.23, 2020.04.22, 2020.05.22, 2020.06.22, 2020.07.23, 2020.08.22]
+couponObsValues = take(0.0, size(couponDates))
+couponObsWeights = take(1.0, size(couponDates))
+dailyObsDates = 2020.02.22..2020.08.19
+dailyObsValues = take(0.0, size(dailyObsDates))
+dailyObsWeights = take(1.0, size(dailyObsDates))
+snowballNote = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates,
+    "ACT_365_FIXED", "UP_OUT", underlyingPrice * 1.05, "DOWN_IN", underlyingPrice * 0.8,
+    "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice,
+    2020.08.19, 2020.08.20, 1, 1000000.0, currency, "SPOT", currency, underlying,
+    "EQ_SNOWBALL", couponDates, couponObsValues, couponObsWeights,
+    dailyObsDates, dailyObsValues, dailyObsWeights, false)
+result = caplib::priceEqSnowballAutoCallableNote(snowballNote, asOfDate, mktData,
+    bsmMcSettings, riskSettings, "", "", true)
 ```
 
 ### 商品
@@ -7368,7 +10081,7 @@ caplib::priceEqSnowballAutoCallableNote(
 **语法**
 
 ```dolphindb
-caplib::buildCmVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE 向量, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, handle STRING, [returnJson])
+caplib::buildCmVolatilitySurface(asOfDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE 向量, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -7377,7 +10090,7 @@ caplib::buildCmVolatilitySurface(referenceDate DATE, underlying STRING, definiti
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -7399,22 +10112,47 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying and curves
 asOfDate = 2020.02.21
-fwdCurve = "fwdCurve"
-irCurve = "IR"
-underlying = "EURUSD"
-caplib::buildCmVolatilitySurface(
-    asOfDate, underlying, volDef[0], optionQuotes[0],
-    [66380.00, 66400.00, 66420.00], irCurve, fwdCurve,
-    volBuildSettings[0], "CM_VOL_SURF", true)
+underlying = "CU.SHFE"
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// Option quote matrix: two tenors, nine strikes per tenor
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+
+// Surface definition and build settings
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+
+// One underlying forward price per quote tenor
+underlyingPrices = [66460.0, 66380.0]
+result = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    underlyingPrices, irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", true)
 ```
 
 #### buildPmYieldCurve
@@ -7422,7 +10160,7 @@ caplib::buildCmVolatilitySurface(
 **语法**
 
 ```dolphindb
-caplib::buildPmYieldCurve(referenceDate DATE, parCurveHandle STRING, discountCurveHandle STRING, pmTemplateHandle STRING, spotPrice DOUBLE, calcJacobian INT, dayCount STRING, interpMethod STRING, extrapMethod STRING, curveType STRING, curveName STRING, shift DOUBLE, method STRING, mode STRING, handle STRING, [returnJson])
+caplib::buildPmYieldCurve(asOfDate DATE, parCurveHandle STRING, discountCurveHandle STRING, pmTemplateHandle STRING, spotPrice DOUBLE, calcJacobian INT, dayCountConvention STRING, interpMethod STRING, extrapMethod STRING, curveType STRING, curveName STRING, shift DOUBLE, method STRING, mode STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -7431,7 +10169,7 @@ caplib::buildPmYieldCurve(referenceDate DATE, parCurveHandle STRING, discountCur
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 parCurveHandle STRING 类型。平价曲线输入对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -7443,15 +10181,15 @@ spotPrice DOUBLE 类型。标的或贵金属的即期价格。**有效性:** 必
 
 calcJacobian INT 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-dayCount STRING 类型。日计数约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-interpMethod STRING 类型。插值方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTERP_METHOD`, `LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `SABR_INTERP`, `SVI_INTERP`, `LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `SABR_NORMAL_INTERP`, `QUADRATIC_POLYNOMIAL_INTERP`, `CUBIC_POLYNOMIAL_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+interpMethod STRING 类型。插值方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTERP_METHOD`, `LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `SABR_INTERP`, `SVI_INTERP`, `LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `SABR_NORMAL_INTERP`, `QUADRATIC_POLYNOMIAL_INTERP`, `CUBIC_POLYNOMIAL_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 构建服务端仅接受 LINEAR/CUBIC_SPLINE/LEFT_CONTINUOUS_FLAT/QUADRATIC_POLYNOMIAL/CUBIC_POLYNOMIAL/CUBIC_HERMITE_SPLINE 子集，传 SABR/SVI/LOG_MONEYNESS/SABR_NORMAL 会被服务端拒绝（2026-10-15 全新容器实测）。
 
-extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_EXTRAP_METHOD`, `FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_EXTRAP_METHOD`, `FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 构建服务端仅接受 FLAT/LINEAR/ADJ_FLAT 子集，传 NATURAL 会被服务端拒绝（2026-10-15 全新容器实测）。
 
-curveType STRING 类型。曲线值类型，例如零利率、贴现因子或利差。**有效性:** 值必须是以下完整 protobuf 标签之一：`ZERO_RATE`, `LOG_DISCOUNT`, `FORWARD_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+curveType STRING 类型。曲线值类型，例如零利率、贴现因子或利差。**有效性:** 值必须是以下完整 protobuf 标签之一：`ZERO_RATE`, `LOG_DISCOUNT`, `FORWARD_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 构建服务端仅接受 ZERO_RATE/LOG_DISCOUNT 子集，传 FORWARD_RATE 会被服务端拒绝（2026-10-15 全新容器实测）。
 
-curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
@@ -7465,30 +10203,38 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+asOfDate = 2019.09.04
 
-calcJacobian = false
-curveName = "TREAS"
-curveType = "curveType"
-dayCount = "dayCount"
-discountCurveHandle = "discountCurveHandle"
-extrapMethod = "extrapMethod"
-handle = "H"
-interpMethod = "interpMethod"
-method = "method"
-mode = ""
-parCurveHandle = "parCurveHandle"
-pmTemplateHandle = "pmTemplateHandle"
-referenceDate = 2020.02.21
-shift = "shift"
-spotPrice = [0.0]
-result = caplib::buildPmYieldCurve(referenceDate, parCurveHandle, discountCurveHandle, pmTemplateHandle, spotPrice, calcJacobian, dayCount, interpMethod, extrapMethod, curveType, curveName, shift, method, mode, handle)
+// Business calendar and PM cash template
+caplib::createCalendar("CAL_GBLO", [44623])
+pmCashTemplate = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_GBLO"], "ACT_360", false)
+
+// USD deposit discount curve
+discountCurve = caplib::createIrYieldCurve(asOfDate,
+    [2019.09.09, 2019.11.06, 2020.06.08, 2021.03.08, 2023.09.06, 2026.09.07, 2034.09.06, 2049.09.06],
+    [0.021594, 0.019103, 0.015248, 0.012617, 0.010018, 0.011028, 0.013473, 0.015525],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "USD_DEPO_CURVE", false)
+
+// PM par rate curve with pillar swap rates
+parCurve = caplib::createPmParRateCurve(asOfDate, "USD", "XAU_XAUUSD",
+    table(
+        ["XAUUSD","XAUUSD","XAUUSD","XAUUSD","XAUUSD","XAUUSD","XAUUSD","XAUUSD","XAUUSD"] as instrument_name,
+        ["PM_SWAP","PM_SWAP","PM_SWAP","PM_SWAP","PM_SWAP","PM_SWAP","PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
+        ["1W","2W","1M","2M","3M","6M","9M","12M","2Y"] as instrument_term,
+        [0.025, 0.025, 0.0248, 0.02, 0.0235, 0.0223, 0.0203, 0.0192, 0.0152] as instrument_rate),
+    "PM_PAR_CURVE", false)
+
+result = caplib::buildPmYieldCurve(asOfDate, parCurve, discountCurve, pmCashTemplate, 1544.06, 0,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4,
+    "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "PM_YIELD_CURVE", true)
 ```
 
 #### buildPmVolatilitySurface
@@ -7496,7 +10242,7 @@ result = caplib::buildPmYieldCurve(referenceDate, parCurveHandle, discountCurveH
 **语法**
 
 ```dolphindb
-caplib::buildPmVolatilitySurface(referenceDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrice DOUBLE, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, marketConventionsHandle STRING, spotTemplateHandle STRING, handle STRING, [returnJson])
+caplib::buildPmVolatilitySurface(asOfDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrice DOUBLE, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, marketConventionsHandle STRING, spotTemplateHandle STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -7505,7 +10251,7 @@ caplib::buildPmVolatilitySurface(referenceDate DATE, underlying STRING, definiti
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -7531,26 +10277,52 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+asOfDate = 2019.09.04
+underlying = "XAUUSD"
+spotPrice = 1544.06
 
-buildSettingsHandle = "buildSettingsHandle"
-definitionHandle = "definitionHandle"
-discountCurveHandle = "discountCurveHandle"
-fwdCurveHandle = "fwdCurveHandle"
-handle = "H"
-marketConventionsHandle = "marketConventionsHandle"
-quoteMatrixHandle = "quoteMatrixHandle"
-referenceDate = 2020.02.21
-spotTemplateHandle = "spotTemplateHandle"
-underlying = "EURUSD"
-underlyingPrice = 100.0
-result = caplib::buildPmVolatilitySurface(referenceDate, underlying, definitionHandle, quoteMatrixHandle, underlyingPrice, discountCurveHandle, fwdCurveHandle, buildSettingsHandle, marketConventionsHandle, spotTemplateHandle, handle)
+// Calendar, cash template, USD deposit curve and PM par curve
+caplib::createCalendar("CAL_CFETS")
+caplib::createPmCashTemplate(underlying, 2, "FOLLOWING", ["CAL_CFETS"], "ACT_360", false)
+depoCurve = caplib::createIrYieldCurve(asOfDate, [2019.09.09, 2020.09.08, 2021.09.07],
+    [0.021594, 0.014216, 0.012617], "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_DEPO", "PM_DEPO_CURVE", false)
+caplib::createPmParRateCurve(asOfDate, "USD", "XAU_XAUUSD",
+    table(["XAUUSD","XAUUSD","XAUUSD"] as instrument_name,
+          ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
+          ["1M","6M","12M"] as instrument_term,
+          [0.0248, 0.0223, 0.0192] as instrument_rate), "PM_PAR_CURVE", false)
+fwdCurve = caplib::buildPmYieldCurve(asOfDate, "PM_PAR_CURVE", "PM_DEPO_CURVE", underlying, spotPrice, 0,
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 0.0001,
+    "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "PM_FWD_CURVE", false)
+
+// PM option quote matrix, market conventions, surface definition and build settings
+caplib::createPmOptionQuoteMatrix(underlying, asOfDate, ["1M", "6M", "1Y"],
+    [["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"],
+     ["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"],
+     ["ATM_STRADDLE", "RISK_REVERSAL", "BUTTERFLY", "RISK_REVERSAL", "BUTTERFLY"]],
+    [[0, 0.25, 0.25, 0.10, 0.10],
+     [0, 0.25, 0.25, 0.10, 0.10],
+     [0, 0.25, 0.25, 0.10, 0.10]],
+    [[0.15340, 0.03623, 0.00578, 0.06738, 0.01753],
+     [0.15153, 0.04255, 0.00808, 0.08120, 0.02148],
+     [0.15383, 0.04725, 0.01070, 0.09253, 0.02838]], "PM_QUOTE_MATRIX", false)
+caplib::createPmMktConventions("ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "PIPS_SPOT_DELTA", "RR_CALL_PUT", "BUTTERFLY_QUOTE", underlying, "PM_MKT_CONV", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD", "FLAT_EXTRAP",
+    "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA",
+    -0.0001, 0.0001, "PM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "PM_VOL_BUILD", false)
+
+result = caplib::buildPmVolatilitySurface(asOfDate, underlying, volDef, "PM_QUOTE_MATRIX", spotPrice,
+    "PM_DEPO_CURVE", fwdCurve, volBuildSettings, "PM_MKT_CONV", underlying, "PM_VOL_SURF", true)
 ```
 
 #### createCmMktDataSet
@@ -7583,29 +10355,61 @@ quantoDiscountCurve STRING 类型。Quanto 贴现曲线 内存对象 句柄。**
 
 quantoFxVolCurve STRING 类型。Quanto 外汇波动率曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-quantoCorrelation DOUBLE 类型。Quanto 调整相关系数。**有效性:** 必须有限且业务有效范围为 `[-1,1]`；包装器仅检查类型。
+quantoCorrelation DOUBLE 类型。Quanto 调整相关系数。**有效性:** 必须有限且业务有效范围为 `[-1,1]`；包装器仅检查类型。**行为实测:** 传超出 [-1,1] 的值（如 1.5、-1.5）不抛异常，包装器不做边界校验；-1 与 1 为合法值（2026-10-15 全新容器实测）。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `CmMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CmMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-fwdCurve = "fwdCurve"
-irCurve = "IR"
-underlying = "EURUSD"
-underlyingPrice = 100.0
-caplib::createCmMktDataSet(
-    asOfDate, underlying, underlyingPrice, irCurve, fwdCurve, volSurface[0], "", "", 0.0, "CM_MKT", true)
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CNY", "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// Build the volatility surface from a compact option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Explicit zero-rate quanto curves, even with zero correlation
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+
+result = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", true)
 ```
 
 #### createCmRiskSettings
@@ -7630,13 +10434,13 @@ volVega INT 类型。是否计算波动率 Vega 风险。**有效性:** 必须�
 
 theta INT 类型。是否计算 Theta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `CmRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CmRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7678,19 +10482,65 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmSettings = false
-europeanOption = "europeanOption"
-caplib::priceCmEuropeanOption(
-    europeanOption, asOfDate, mktData[0], bsmSettings, cmRisk[0], "", "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// European call on the copper future
+europeanOption = caplib::createEuropeanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_EUROPEAN", false)
+result = caplib::priceCmEuropeanOption(europeanOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmAmericanOption
@@ -7725,20 +10575,65 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-americanOption = "americanOption"
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-scnAnalysis = false
-caplib::priceCmAmericanOption(
-    americanOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// American call on the copper future
+americanOption = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_AMERICAN", false)
+result = caplib::priceCmAmericanOption(americanOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmAsianOption
@@ -7773,20 +10668,70 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-asianOption = "ASIAN"
-bsmMcSettings = false
-scnAnalysis = false
-caplib::priceCmAsianOption(
-    asianOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM Monte Carlo pricing settings and CM risk settings
+modelParams = [0.0]
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "CM_BSM_MC", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Daily average observation schedule and arithmetic average Asian call
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+asianOption = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_ASIAN", obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmAsianOption(asianOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmDigitalOption
@@ -7821,20 +10766,65 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-digitalOption = "digitalOption"
-scnAnalysis = false
-caplib::priceCmDigitalOption(
-    digitalOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Cash-or-nothing digital call paying 1.0 per notional
+digitalOption = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    0.0, 1.0, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DIGITAL", false)
+result = caplib::priceCmDigitalOption(digitalOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmOneTouchOption
@@ -7869,20 +10859,66 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-oneTouchOption = "oneTouchOption"
-scnAnalysis = false
-caplib::priceCmOneTouchOption(
-    oneTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Up-and-in one-touch option with continuous observation
+oneTouchOption = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_ONE_TOUCH", false)
+result = caplib::priceCmOneTouchOption(oneTouchOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmDoubleTouchOption
@@ -7917,20 +10953,67 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-doubleTouchOption = "doubleTouchOption"
-scnAnalysis = false
-caplib::priceCmDoubleTouchOption(
-    doubleTouchOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Double-touch option with a lower down-in and an upper up-in barrier
+doubleTouchOption = caplib::createDoubleTouchOption(2020.08.19, 2020.08.20,
+    "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_DOUBLE_TOUCH", false)
+result = caplib::priceCmDoubleTouchOption(doubleTouchOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmSingleBarrierOption
@@ -7965,20 +11048,66 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-scnAnalysis = false
-singleBarrierOption = "singleBarrierOption"
-caplib::priceCmSingleBarrierOption(
-    singleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Up-and-in single barrier call
+singleBarrierOption = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "UP_IN", underlyingPrice * 1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SINGLE_BARRIER", false)
+result = caplib::priceCmSingleBarrierOption(singleBarrierOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmDoubleBarrierOption
@@ -8013,20 +11142,67 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-doubleBarrierOption = "doubleBarrierOption"
-scnAnalysis = false
-caplib::priceCmDoubleBarrierOption(
-    doubleBarrierOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Knock-in double barrier call with lower and upper barriers
+doubleBarrierOption = caplib::createDoubleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20,
+    "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
+    "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY",
+    0.0, 0.0, 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_DOUBLE_BARRIER", false)
+result = caplib::priceCmDoubleBarrierOption(doubleBarrierOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmSingleSharkFinOption
@@ -8061,20 +11237,72 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmPdeSettings = false
-scnAnalysis = false
-singleSharkFinOption = "singleSharkFinOption"
-caplib::priceCmSingleSharkFinOption(
-    singleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM PDE pricing settings and CM risk settings
+modelParams = [0.0]
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "CM_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_PDE_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "CM_BSM_PDE", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Discrete observation schedule and up-and-out single shark fin call
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+singleSharkFinOption = caplib::createSingleSharkFinOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1.0,
+    "RELATIVE_PERFORM_TYPE", "UP_OUT", underlyingPrice * 1.05, "DISCRETE_OBSERVATION_TYPE",
+    "PAY_AT_MATURITY", 0.0, 0.0, 1, 1000000.0, currency, "FUTURE", currency, underlying,
+    "CM_SINGLE_SHARK_FIN", obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmSingleSharkFinOption(singleSharkFinOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmDoubleSharkFinOption
@@ -8109,20 +11337,74 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmPdeSettings = false
-doubleSharkFinOption = "doubleSharkFinOption"
-scnAnalysis = false
-caplib::priceCmDoubleSharkFinOption(
-    doubleSharkFinOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM PDE pricing settings and CM risk settings
+modelParams = [0.0]
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "CM_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_PDE_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "CM_BSM_PDE", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Discrete observation schedule and double shark fin note
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+doubleSharkFinOption = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice,
+    2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE",
+    underlyingPrice * 0.95, underlyingPrice * 1.05, "DISCRETE_OBSERVATION_TYPE",
+    "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_DOUBLE_SHARK_FIN",
+    obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmDoubleSharkFinOption(doubleSharkFinOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmPingPongOption
@@ -8157,20 +11439,72 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmMcSettings = false
-pingPongOption = "pingPongOption"
-scnAnalysis = false
-caplib::priceCmPingPongOption(
-    pingPongOption, asOfDate, mktData[0], bsmMcSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM Monte Carlo pricing settings and CM risk settings
+modelParams = [0.0]
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "CM_BSM_MC", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Discrete observation schedule and ping-pong option
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+pingPongOption = caplib::createPingPongOption(2020.08.19, 2020.08.20,
+    "DOWN_IN", underlyingPrice * 0.95, "UP_IN", underlyingPrice * 1.05,
+    "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_PING_PONG",
+    obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmPingPongOption(pingPongOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmAirbagOption
@@ -8199,26 +11533,79 @@ riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效�
 
 scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
+mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。**行为实测:** 传 NULL 同样按默认模式处理、不抛异常（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-airbagOption = "airbagOption"
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmPdeSettings = false
-scnAnalysis = false
-caplib::priceCmAirbagOption(
-    airbagOption, asOfDate, mktData[0], bsmPdeSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM PDE pricing settings and CM risk settings
+modelParams = [0.0]
+pdeSettings = caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
+    0, 0.0, 0.0, 0, 0.001, 0.001, 0.001, 2, 0, 0, 3, 0, 0, "CM_PDE_SETTINGS", false)
+bsmPdeModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_PDE_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "PDE", 0, 0, take(0, 0), bsmPdeModel, pdeSettings, "", "CM_BSM_PDE", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Discrete observation schedule and airbag option
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+airbagOption = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20,
+    underlyingPrice, underlyingPrice * 1.05, 1.0, 1.0, underlyingPrice,
+    "DOWN_IN", underlyingPrice * 0.8, "DISCRETE_OBSERVATION_TYPE",
+    1000000.0, currency, "FUTURE", currency, underlying, "CM_AIRBAG",
+    obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmAirbagOption(airbagOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmRangeAccrualOption
@@ -8253,20 +11640,70 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmAnalyticalSettings = false
-rangeAccrualOption = "rangeAccrualOption"
-scnAnalysis = false
-caplib::priceCmRangeAccrualOption(
-    rangeAccrualOption, asOfDate, mktData[0], bsmAnalyticalSettings, cmRisk[0], scnAnalysis, "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM analytical pricing settings and CM risk settings
+modelParams = [0.0]
+bsmModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "ANALYTICAL", 0, 0, take(0, 0), bsmModel, "", "", "CM_BSM_ANALYTICAL", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Daily observation schedule and range accrual option
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+rangeAccrualOption = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01,
+    underlyingPrice * 0.95, underlyingPrice * 1.05, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_RANGE_ACCRUAL",
+    obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmRangeAccrualOption(rangeAccrualOption, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmPhoenixAutoCallableNote
@@ -8301,19 +11738,75 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmMcSettings = false
-phoenixNote = "phoenixNote"
-caplib::priceCmPhoenixAutoCallableNote(
-    phoenixNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM Monte Carlo pricing settings and CM risk settings
+modelParams = [0.0]
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "CM_BSM_MC", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Coupon and daily observation schedules for the phoenix auto-callable note
+couponDates = [2020.03.23, 2020.04.22, 2020.05.22, 2020.06.22, 2020.07.23, 2020.08.22]
+couponValues = take(0.0, size(couponDates))
+couponWeights = take(1.0, size(couponDates))
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+phoenixNote = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED",
+    2020.02.22, couponDates, "UP_OUT", underlyingPrice * 1.1, "DOWN_IN", underlyingPrice * 0.9,
+    "SELL", "PUT", underlyingPrice * 0.85, 2020.08.19, 2020.08.20, 1, 1000000.0,
+    currency, "FUTURE", currency, underlying, "CM_PHOENIX",
+    couponDates, couponValues, couponWeights, obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmPhoenixAutoCallableNote(phoenixNote, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### priceCmSnowballAutoCallableNote
@@ -8348,19 +11841,75 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Valuation date, underlying, discount and forward curves
 asOfDate = 2020.02.21
-bsmMcSettings = false
-snowballNote = "snowballNote"
-caplib::priceCmSnowballAutoCallableNote(
-    snowballNote, asOfDate, mktData[0], bsmMcSettings, cmNoRisk[0], "", "", true)
+currency = "CNY"
+underlying = "CU.SHFE"
+underlyingPrice = 66380.00
+irCurve = caplib::createIrYieldCurve(asOfDate,
+    [2020.02.26, 2020.03.02, 2020.03.09, 2020.03.24],
+    [0.0135486283791684, 0.0197762034605164, 0.0197686053073393, 0.0224838821372655],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CNY_SHIBOR_3M", "CM_IR_CURVE", false)
+fwdCurve = caplib::createDividendCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0], asOfDate,
+    "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "CM_FLAT_FWD", "CM_FWD_CURVE", false)
+
+// BSM Monte Carlo pricing settings and CM risk settings
+modelParams = [0.0]
+mcSettings = caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", false)
+bsmMcModel = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, modelParams, "CM_BSM_MC_MODEL", false)
+pricingSettings = caplib::createPricingSettings(currency, "MONTE_CARLO", 0, 0, take(0, 0), bsmMcModel, "", mcSettings, "CM_BSM_MC", false)
+riskSettings = caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", false)
+
+// Build the volatility surface from a compact two-tenor option quote matrix
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+optionQuotes = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", false)
+volDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD",
+    "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY",
+    "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", -1.0e-5, 1.0e-5, "CM_VOL_DEF", false)
+volBuildSettings = caplib::createVolSurfBuildSettings(1, 0.5, "CM_VOL_BUILD", false)
+volSurface = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQuotes,
+    [66460.0, 66380.0], irCurve, fwdCurve, volBuildSettings, "CM_VOL_SURF", false)
+
+// Zero-rate quanto curves and the CM market data set
+quantoIr = caplib::createIrYieldCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", "USD", "USD_FLAT_ZERO", "QUANTO_IR", false)
+quantoFxVol = caplib::createVolatilityCurve(asOfDate, [2020.02.22, 2030.02.24], [0.0, 0.0],
+    "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", underlying, "QUANTO_FX_VOL", false)
+mktData = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
+    irCurve, fwdCurve, volSurface, quantoIr, quantoFxVol, 0.0, "CM_MKT", false)
+
+// Coupon and daily observation schedules for the snowball auto-callable note
+couponDates = [2020.03.23, 2020.04.22, 2020.05.22, 2020.06.22, 2020.07.23, 2020.08.22]
+couponValues = take(0.0, size(couponDates))
+couponWeights = take(1.0, size(couponDates))
+obsDates = 2020.02.22..2020.08.19
+obsValues = take(0.0, size(obsDates))
+obsWeights = take(1.0, size(obsDates))
+snowballNote = caplib::createSnowballAutoCallableNote(0.12, 2020.02.21, couponDates, "ACT_365_FIXED",
+    "UP_OUT", underlyingPrice * 1.05, "DOWN_IN", underlyingPrice * 0.8,
+    "SELL", "PUT", underlyingPrice, 1.0, underlyingPrice, 2020.08.22, 2020.08.22,
+    1, 1000000.0, currency, "FUTURE", currency, underlying, "CM_SNOWBALL",
+    couponDates, couponValues, couponWeights, obsDates, obsValues, obsWeights, false)
+result = caplib::priceCmSnowballAutoCallableNote(snowballNote, asOfDate, mktData,
+    pricingSettings, riskSettings, "", "", true)
 ```
 
 #### createPmCashTemplate
@@ -8368,7 +11917,7 @@ caplib::priceCmSnowballAutoCallableNote(
 **语法**
 
 ```dolphindb
-caplib::createPmCashTemplate(instName STRING, startDelay INT, deliveryDayConvention STRING, calendars STRING or STRING 向量, dayCount STRING, [returnJson])
+caplib::createPmCashTemplate(instName STRING, startDelay INT, deliveryDayConvention STRING, calendars STRING or STRING 向量, dayCountConvention STRING, [returnJson])
 ```
 
 **详情**
@@ -8379,32 +11928,28 @@ caplib::createPmCashTemplate(instName STRING, startDelay INT, deliveryDayConvent
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startDelay INT 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
 
 deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
 
-dayCount STRING 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `PmCashTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PmCashTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-calendars = "calendars"
-dayCount = "dayCount"
-deliveryDayConvention = "deliveryDayConvention"
-instName = "INST"
-startDelay = "startDelay"
-result = caplib::createPmCashTemplate(instName, startDelay, deliveryDayConvention, calendars, dayCount)
+// Register the business calendar referenced by the template
+caplib::createCalendar("CAL_CFETS")
+result = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_CFETS"], "ACT_360", true)
 ```
 
 #### createPmParRateCurve
@@ -8429,26 +11974,26 @@ curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 ST
 
 pillarsTable MATRIX/TABLE 类型。曲线节点输入表。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传空字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `PmParRateCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PmParRateCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-currency = "CNY"
-curveName = "TREAS"
-pillarsTable = "pillarsTable"
-tag = "tag"
-result = caplib::createPmParRateCurve(asOfDate, currency, curveName, pillarsTable, tag)
+asOfDate = 2019.09.04
+pillarsTable = table(
+    ["XAUUSD","XAUUSD","XAUUSD"] as instrument_name,
+    ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type,
+    ["1W","2W","1M"] as instrument_term,
+    [0.025, 0.025, 0.0248] as instrument_rate)
+result = caplib::createPmParRateCurve(asOfDate, "USD", "XAU_XAUUSD", pillarsTable, "PM_PAR_CURVE", true)
 ```
 
 #### createPmMktConventions
@@ -8471,37 +12016,29 @@ shortDeltaType STRING 类型。短期限 Delta 报价类型。**有效性:** 值
 
 longDeltaType STRING 类型。长期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
 
-deltaCutoff STRING 类型。Delta 报价切换阈值。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+deltaCutoff STRING 类型。Delta 报价切换阈值。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串映射为 INVALID 哨兵并继续执行，不抛异常（2026-10-15 全新容器实测）。
 
-riskReversal STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 值必须是以下完整 protobuf 标签之一：`RR_CALL_PUT`, `RR_PUT_CALL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+riskReversal STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 值必须是以下完整 protobuf 标签之一：`RR_CALL_PUT`, `RR_PUT_CALL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串映射为 INVALID 哨兵并继续执行，不抛异常（2026-10-15 全新容器实测）。
 
-smileQuoteType STRING 类型。波动率微笑报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`BUTTERFLY_QUOTE`, `MARKET_STRANGLE_QUOTE`, `WINGS_RATIO_BF_QUOTE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+smileQuoteType STRING 类型。波动率微笑报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`BUTTERFLY_QUOTE`, `MARKET_STRANGLE_QUOTE`, `WINGS_RATIO_BF_QUOTE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串映射为 INVALID 哨兵并继续执行，不抛异常（2026-10-15 全新容器实测）。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传空字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `PmMarketConventions` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PmMarketConventions` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-atmType = "atmType"
-deltaCutoff = "deltaCutoff"
-longDeltaType = "longDeltaType"
-riskReversal = "riskReversal"
-shortDeltaType = "shortDeltaType"
-smileQuoteType = "smileQuoteType"
-tag = "tag"
-underlying = "EURUSD"
-result = caplib::createPmMktConventions(atmType, shortDeltaType, longDeltaType, deltaCutoff, riskReversal, smileQuoteType, underlying, tag)
+result = caplib::createPmMktConventions("ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA",
+    "PERCENTAGE_SPOT_DELTA", "RR_CALL_PUT", "BUTTERFLY_QUOTE", "XAUUSD", "PM_MKT_CONV", true)
 ```
 
 #### createPmOptionQuoteMatrix
@@ -8530,28 +12067,25 @@ deltas DOUBLE matrix/vector 类型。Delta 行权价矩阵或向量。**有效�
 
 quotes DOUBLE matrix/vector 类型。市场报价值数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传空字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 **返回值**
 
-**返回：** 成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-asOfDate = 2020.02.21
-deltas = "deltas"
-handle = "H"
-payoffTypes = "payoffTypes"
-quotes = "quotes"
-terms = "terms"
-underlying = "EURUSD"
-result = caplib::createPmOptionQuoteMatrix(underlying, asOfDate, terms, payoffTypes, deltas, quotes, handle)
+asOfDate = 2022.03.09
+terms = ["1M"]
+payoffTypes = ["CALL"]
+deltas = [0.10]
+quotes = matrix([450.0])
+result = caplib::createPmOptionQuoteMatrix("AU.SHFE", asOfDate, terms, payoffTypes, deltas, quotes, "PM_OPTION_QUOTES", true)
 ```
 
 #### createCmOptionQuoteMatrix
@@ -8590,23 +12124,25 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// Two expiry tenors, nine strikes per tenor
 asOfDate = 2020.02.21
-payoffTypes = "payoffTypes"
-prices = "prices"
-strikes = "strikes"
-termDates = [2020.02.21]
-underlying = "EURUSD"
-caplib::createCmOptionQuoteMatrix(
-    "AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
-    termDates, payoffTypes, strikes, prices, underlying, "CM_OPTION_QUOTES", true)
+termDates = [2020.08.12, 2020.09.11]
+payoffTypes = [take("PUT", 4) join take("CALL", 5), take("PUT", 4) join take("CALL", 5)]
+strikes = [
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000],
+    [63000, 64000, 65000, 66000, 67000, 68000, 69000, 70000, 71000]]
+prices = [
+    [2446.0, 2862.0, 3314.0, 3814.0, 3590.0, 3168.0, 2784.0, 2446.0, 2136.0],
+    [2688.0, 3118.0, 3578.0, 4078.0, 3828.0, 3408.0, 3024.0, 2680.0, 2358.0]]
+result = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate,
+    termDates, payoffTypes, strikes, prices, "CU.SHFE", "CM_OPTION_QUOTES", true)
 ```
 
 ### 信用
@@ -8616,7 +12152,7 @@ caplib::createCmOptionQuoteMatrix(
 **语法**
 
 ```dolphindb
-caplib::createCreditCurve(referenceDate DATE, pillarDates DATE 向量, spreads DOUBLE 向量, dcc STRING, interp STRING, extrap STRING, name STRING, handle STRING, [returnJson])
+caplib::createCreditCurve(asOfDate DATE, pillarDates DATE 向量, spreads DOUBLE 向量, dayCountConvention STRING, interp STRING, extrap STRING, name STRING, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -8625,13 +12161,13 @@ caplib::createCreditCurve(referenceDate DATE, pillarDates DATE 向量, spreads D
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 pillarDates DATE 向量 类型。曲线节点日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
 spreads DOUBLE 向量 类型。信用利差或曲线利差数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限；除明确说明外包装器不强制非空。
 
-dcc STRING 类型。日计数约定。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
 interp STRING 类型。插值方法。**有效性:** 可接受值：`LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。仅接受所示精确拼写。
 
@@ -8645,7 +12181,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8696,7 +12232,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CreditCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8712,7 +12248,7 @@ caplib::createCreditCurveRiskSettings(
 **语法**
 
 ```dolphindb
-caplib::buildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian INT, handle STRING, [returnJson])
+caplib::buildBondCreditSpreadCurve(asOfDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian INT, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -8721,7 +12257,7 @@ caplib::buildBondCreditSpreadCurve(referenceDate DATE, curveName STRING, parCurv
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -8741,17 +12277,70 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
+// 标准债券模板（同 test/cr/test_buildBondCreditSpreadCurve.dos 的 setup）
+def createStdBondTemplate(instName, bondType, maturity, currency, calendarName, asOfDate) {
+    return caplib::createVanillaBondTemplate(
+        instName, bondType,
+        asOfDate, 1, asOfDate, maturity,
+        0.0, currency, 100.0,
+        "ACT_365_FIXED", calendarName, "ANNUAL",
+        "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+        0, "MODIFIED_FOLLOWING", "",
+        "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+        "INVALID_DATE_GENERATION_MODE", -1,
+        "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+        "CONST_NOTIONAL", 0.0, true);
+}
 
-asOfDate = 2020.02.21
-cnyMtnAaaSprdStdCfetsName = "cnyMtnAaaSprdStdCfetsName"
-caplib::buildBondCreditSpreadCurve(
+asOfDate = 2021.07.22
+currency = "CNY"
+calCfets = "CAL_CFETS"
+caplib::createCalendar(calCfets)
+
+// 国债模板与平价曲线（取测试 setup 的子集）
+createStdBondTemplate("CNY_TREAS_ZERO_1M", "ZERO_COUPON_BOND", "1M", currency, calCfets, asOfDate)
+createStdBondTemplate("CNY_TREAS_CPN_A_6M", "FIXED_COUPON_BOND", "6M", currency, calCfets, asOfDate)
+createStdBondTemplate("CNY_TREAS_CPN_A_1Y", "FIXED_COUPON_BOND", "1Y", currency, calCfets, asOfDate)
+createStdBondTemplate("CNY_TREAS_CPN_A_3Y", "FIXED_COUPON_BOND", "3Y", currency, calCfets, asOfDate)
+createStdBondTemplate("CNY_TREAS_CPN_A_5Y", "FIXED_COUPON_BOND", "5Y", currency, calCfets, asOfDate)
+
+cnyTreasStdCfetsName = "cny_treas_std_cfets"
+parCnyTreasStdCfets = caplib::createBondParCurve(
+    asOfDate, currency,
+    ["CNY_TREAS_ZERO_1M", "CNY_TREAS_CPN_A_6M", "CNY_TREAS_CPN_A_1Y",
+     "CNY_TREAS_CPN_A_3Y", "CNY_TREAS_CPN_A_5Y"],
+    [1.7112e-2, 1.9413e-2, 2.1563e-2, 2.5538e-2, 2.7550e-2],
+    "YIELD_TO_MATURITY", cnyTreasStdCfetsName, true)
+cnyTreasBuildSettings = caplib::createBondYieldCurveBuildSettings(
+    cnyTreasStdCfetsName, "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CNY_TREAS_STD_CFETS_BUILD_SETTINGS", true)
+cnyTreasStdCfets = caplib::buildBondYieldCurve(
+    asOfDate, cnyTreasBuildSettings[0], cnyTreasStdCfetsName, parCnyTreasStdCfets[0],
+    "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL",
+    "BOOTSTRAPPING_METHOD", 0, "", "CNY_TREAS_STD_CFETS", true)
+
+// 中票 AA+ 模板与平价曲线（取测试 setup 的子集）
+createStdBondTemplate("CNY_MTN_AAA_CPN_A_1M", "FIXED_COUPON_BOND", "1M", currency, calCfets, asOfDate)
+createStdBondTemplate("CNY_MTN_AAA_CPN_A_1Y", "FIXED_COUPON_BOND", "1Y", currency, calCfets, asOfDate)
+createStdBondTemplate("CNY_MTN_AAA_CPN_A_3Y", "FIXED_COUPON_BOND", "3Y", currency, calCfets, asOfDate)
+createStdBondTemplate("CNY_MTN_AAA_CPN_A_5Y", "FIXED_COUPON_BOND", "5Y", currency, calCfets, asOfDate)
+
+cnyMtnAaaSprdStdCfetsName = "cny_mtn_aaa_sprd_std_cfets"
+parCnyMtnAaaSprdStdCfets = caplib::createBondParCurve(
+    asOfDate, currency,
+    ["CNY_MTN_AAA_CPN_A_1M", "CNY_MTN_AAA_CPN_A_1Y",
+     "CNY_MTN_AAA_CPN_A_3Y", "CNY_MTN_AAA_CPN_A_5Y"],
+    [0.022916, 0.027216, 0.031112, 0.033816],
+    "YIELD_TO_MATURITY", cnyMtnAaaSprdStdCfetsName, true)
+
+cnyMtnAaaSprdStdCfets = caplib::buildBondCreditSpreadCurve(
     asOfDate, cnyMtnAaaSprdStdCfetsName, parCnyMtnAaaSprdStdCfets[0],
     cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0,
     "CNY_MTN_AAA_SPRD_STD_CFETS", true)
@@ -8793,7 +12382,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CreditParCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditParCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8843,16 +12432,40 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
 asOfDate = 2020.02.21
-discountCurve = "DF"
+currency = "CNY"
+caplib::createCalendar("CAL_CFETS")
+
+caplib::createCdsTemplate(
+    "CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0,
+    "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD",
+    "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+discountCurve = caplib::createIrYieldCurve(
+    asOfDate,
+    [2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21,
+     2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21, 2030.02.21],
+    [0.0166, 0.0183, 0.0198, 0.0212, 0.0234,
+     0.0256, 0.0268, 0.0280, 0.0294, 0.0305],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CN_TREAS", "CR_DISCOUNT_CURVE", false)
+
+creditParCurve = caplib::createCreditParCurve(
+    asOfDate, currency, "BOND_CREDIT",
+    ["CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA"],
+    ["CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP"],
+    ["1Y", "3Y", "5Y"],
+    [0.0080, 0.0100, 0.0120],
+    ["SPOTSTART", "SPOTSTART", "SPOTSTART"],
+    "CR_CREDIT_PAR_CURVE", true)
+
 caplib::buildCreditCurve(
     asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT",
     "BOOTSTRAPPING_METHOD", "CR_CREDIT_CURVE", true)
@@ -8890,17 +12503,68 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
+// 数值同 test/cr/test_priceCreditDefaultSwap.dos 的 setup
 asOfDate = 2020.02.21
-cds = "cds"
-caplib::priceCreditDefaultSwap(
+currency = "CNY"
+caplib::createCalendar("CAL_CFETS")
+
+cdsTpl = caplib::createCdsTemplate(
+    "CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0,
+    "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD",
+    "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+discountCurve = caplib::createIrYieldCurve(
+    asOfDate,
+    [2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21,
+     2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21, 2030.02.21],
+    [0.0166, 0.0183, 0.0198, 0.0212, 0.0234,
+     0.0256, 0.0268, 0.0280, 0.0294, 0.0305],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CN_TREAS", "CR_DISCOUNT_CURVE", false)
+
+pricingSettings = caplib::createCdsPricingSettings(
+    currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE",
+    "CR_PRICING_NAME", "CR_PRICING", true)
+
+irRisk = caplib::createIrCurveRiskSettings(
+    1, 0, 0, 1.0e-4, 5.0e-1, 0, 1, 1.0e-4, 0, "CR_IR_RISK", false)
+creditRisk = caplib::createCreditCurveRiskSettings(
+    1, 0, 1.0e-4, 0, 1, 1.0e-4, 0, "CR_CREDIT_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "CR_THETA_RISK", false)
+crRisk = caplib::createCrRiskSettings(
+    irRisk, creditRisk, thetaRisk, "CR_RISK_NAME", "CR_RISK", true)
+
+creditParCurve = caplib::createCreditParCurve(
+    asOfDate, currency, "BOND_CREDIT",
+    ["CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA"],
+    ["CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP"],
+    ["1Y", "3Y", "5Y"],
+    [0.0080, 0.0100, 0.0120],
+    ["SPOTSTART", "SPOTSTART", "SPOTSTART"],
+    "CR_CREDIT_PAR_CURVE", true)
+
+creditCurve = caplib::buildCreditCurve(
+    asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT",
+    "BOOTSTRAPPING_METHOD", "CR_CREDIT_CURVE", true)
+
+mktData = caplib::createCrMktDataSet(
+    asOfDate, discountCurve, creditCurve[0], "CR_MKT_NAME", "CR_MKT", true)
+
+cds = caplib::buildCreditDefaultSwap(
+    1000000.0, currency, 2019.06.20, 2024.06.20,
+    "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4,
+    0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY",
+    "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0,
+    "CR_CDS_NAME", "CR_CDS", false)
+
+cdsPricingResult = caplib::priceCreditDefaultSwap(
     cds, asOfDate, mktData[0], pricingSettings[0], crRisk[0], "", "", true)
 ```
 
@@ -8909,7 +12573,7 @@ caplib::priceCreditDefaultSwap(
 **语法**
 
 ```dolphindb
-caplib::createCdsTemplate(instName STRING, startDelay STRING or INT, settlementType STRING, referencePrice DOUBLE, leverage DOUBLE, creditProtectionType STRING, recoveryRate DOUBLE, creditPremiumType STRING, dayCount STRING, frequency STRING, businessDayConvention STRING, calendars STRING or STRING 向量, rebateAccrual BOOL or INT, [returnJson])
+caplib::createCdsTemplate(instName STRING, startDelay STRING or INT, settlementType STRING, referencePrice DOUBLE, leverage DOUBLE, creditProtectionType STRING, recoveryRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING or STRING 向量, rebateAccrual BOOL or INT, [returnJson])
 ```
 
 **详情**
@@ -8934,7 +12598,7 @@ recoveryRate DOUBLE 类型。回收率。**有效性:** 必须有限且业务有
 
 creditPremiumType STRING 类型。信用产品溢价支付类型。**有效性:** 可接受值：`PAY_PREMIUM_AT_DEFAULT`, `PAY_PREMIUM_UPTO_CURRENT_PERIOD`, `PAY_PREMIUM_UPTO_MATURITY`, `PAY_NOTHING_AFTER_DEFAULT`。不区分大小写。空字符串或 NAN 回退为 PAY_PREMIUM_AT_DEFAULT；其他未知值报错。
 
-dayCount STRING 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
 frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。任何其他字符串均回退到函数指定的默认频率。
 
@@ -8948,7 +12612,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CreditInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8999,7 +12663,7 @@ couponRate DOUBLE 类型。票息率。**有效性:** 必须是有限 DOUBLE；�
 
 creditPremiumType STRING 类型。信用产品溢价支付类型。**有效性:** 精确值 `PAY_PREMIUM_UPTO_CURRENT_PERIOD` 选择当前期间；`PAY_PREMIUM_UPTO_MATURITY` 及任何其他 STRING 均选择到期。
 
-dayCountConvention STRING 类型。日计数约定。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
 frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。任何其他字符串均回退到函数指定的默认频率。
 
@@ -9015,11 +12679,11 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `CreditDefaultSwap` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditDefaultSwap` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9068,11 +12732,11 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9110,22 +12774,49 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `CrMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CrMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
 asOfDate = 2020.02.21
-discountCurve = "DF"
+currency = "CNY"
+caplib::createCalendar("CAL_CFETS")
+
+caplib::createCdsTemplate(
+    "CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0,
+    "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD",
+    "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+discountCurve = caplib::createIrYieldCurve(
+    asOfDate,
+    [2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21,
+     2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21, 2030.02.21],
+    [0.0166, 0.0183, 0.0198, 0.0212, 0.0234,
+     0.0256, 0.0268, 0.0280, 0.0294, 0.0305],
+    "ZERO_RATE", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP",
+    "CONTINUOUS_COMPOUNDING", currency, "CN_TREAS", "CR_DISCOUNT_CURVE", false)
+
+creditParCurve = caplib::createCreditParCurve(
+    asOfDate, currency, "BOND_CREDIT",
+    ["CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA", "CFETS-SHCH-GTJA"],
+    ["CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP", "CREDIT_DEFAULT_SWAP"],
+    ["1Y", "3Y", "5Y"],
+    [0.0080, 0.0100, 0.0120],
+    ["SPOTSTART", "SPOTSTART", "SPOTSTART"],
+    "CR_CREDIT_PAR_CURVE", true)
+creditCurve = caplib::buildCreditCurve(
+    asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT",
+    "BOOTSTRAPPING_METHOD", "CR_CREDIT_CURVE", true)
+
 caplib::createCrMktDataSet(
-    asOfDate, discountCurve, creditCurve[0], "CR_MKT_NAME", "CR_MKT", true)
+    asOfDate, discountCurve, creditCurve, "CR_MKT_NAME", "CR_MKT", true)
 ```
 
 #### createCrRiskSettings
@@ -9152,21 +12843,23 @@ name STRING 类型。写入创建对象的业务名称。**有效性:** 必须�
 
 tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
 
 **返回值**
 
-**返回：** 成功时创建 `CrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-creditRisk = false
-irRisk = false
-thetaRisk = false
+// 数值同 test/cr/test_createCrRiskSettings.dos 的 setup
+irRisk = caplib::createIrCurveRiskSettings(
+    1, 0, 0, 1.0e-4, 5.0e-1, 0, 1, 1.0e-4, 0, "CR_IR_RISK", false)
+creditRisk = caplib::createCreditCurveRiskSettings(
+    1, 0, 1.0e-4, 0, 1, 1.0e-4, 0, "CR_CREDIT_RISK", false)
+thetaRisk = caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "CR_THETA_RISK", false)
 caplib::createCrRiskSettings(
     irRisk, creditRisk, thetaRisk, "CR_RISK_NAME", "CR_RISK", true)
 ```
@@ -9176,7 +12869,7 @@ caplib::createCrRiskSettings(
 **语法**
 
 ```dolphindb
-caplib::createFlatCreditCurve(referenceDate DATE, hazardRate DOUBLE, handle STRING, [returnJson])
+caplib::createFlatCreditCurve(asOfDate DATE, hazardRate DOUBLE, handle STRING, [returnJson])
 ```
 
 **详情**
@@ -9185,7 +12878,7 @@ caplib::createFlatCreditCurve(referenceDate DATE, hazardRate DOUBLE, handle STRI
 
 **参数**
 
-referenceDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 hazardRate DOUBLE 类型。平坦 CreditCurve 的常量风险率/利差。**有效性:** 业务有效值须有限且非负；包装器仅检查 DOUBLE 类型。
 
@@ -9195,7 +12888,7 @@ returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 �
 
 **返回值**
 
-**返回：** 成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄；`returnJson=true` 时返回 `[handle, protobufJson]`。
+成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9227,17 +12920,17 @@ dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对�
 
 **返回值**
 
-**返回：** DOUBLE 向量，元素顺序与输入一致。
+对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-curveDates = [2020.02.21]
-flatCreditCurve = "flatCreditCurve"
-caplib::getSurvivalProbability(flatCreditCurve, curveDates)
+// 平坦信用曲线：SP(t) = exp(-h*t)，h = 0.002
+asOfDate = 2020.02.21
+flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.002, "FLAT_CREDIT_CURVE", false)
+caplib::getSurvivalProbability(flatCreditCurve, [2020.02.21, 2021.02.20])
 ```
 
 #### getCreditSpread
@@ -9260,17 +12953,17 @@ dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对�
 
 **返回值**
 
-**返回：** DOUBLE 向量，元素顺序与输入一致。
+对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
 **示例**
 
 ```dolphindb
 loadPlugin("caplib")
 
-
-curveDates = [2020.02.21]
-flatCreditCurve = "flatCreditCurve"
-caplib::getCreditSpread(flatCreditCurve, curveDates)
+// 平坦信用曲线的信用利差恒等于风险率 0.002
+asOfDate = 2020.02.21
+flatCreditCurve = caplib::createFlatCreditCurve(asOfDate, 0.002, "FLAT_CREDIT_CURVE", false)
+caplib::getCreditSpread(flatCreditCurve, [2020.05.21, 2021.02.20])
 ```
 
 
@@ -9292,21 +12985,21 @@ caplib::buildHistSimFxSpotRate(simDate, referenceSpot, histStart, histEnd, useTe
 
 **参数**
 
-simDate DATE 类型。模拟基准日。
+simDate DATE 类型。模拟基准日。**有效性:** 必须是非空 DolphinDB DATE 标量。
 
-referenceSpot STRING 类型。参考 FxSpotRate 句柄。
+referenceSpot STRING 类型。参考 FxSpotRate 句柄。**有效性:** 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。
 
-histStart STRING 类型。历史起始 FxSpotRate 句柄。
+histStart STRING 类型。历史起始 FxSpotRate 句柄。**有效性:** 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。
 
-histEnd STRING 类型。历史结束 FxSpotRate 句柄。
+histEnd STRING 类型。历史结束 FxSpotRate 句柄。**有效性:** 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。
 
-useTemplate BOOL 类型。是否应用 FX 即期模板；为 true 时 fxSpotTemplate 必填。
+useTemplate BOOL 类型。是否应用 FX 即期模板；为 true 时 fxSpotTemplate 必填。**有效性:** 必须是 BOOL 标量。为 true 时 *fxSpotTemplate* 须为有效的 FxSpotTemplate 句柄；为 false 时须传空字符串。
 
-fxSpotTemplate STRING 类型。FxSpotTemplate 句柄；useTemplate 为 false 时传空字符串。
+fxSpotTemplate STRING 类型。FxSpotTemplate 句柄；useTemplate 为 false 时传空字符串。**有效性:** *useTemplate* 为 true 时必须是已存在的 FxSpotTemplate 对象的非空 ObjectCache 键；否则传空字符串。
 
-handle STRING 类型。结果 FxSpotRate 的缓存键。
+handle STRING 类型。结果 FxSpotRate 的缓存键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型，可选。默认为 false。
+returnJson BOOL 类型，可选。默认为 false。**有效性:** 必须是 BOOL 标量。
 
 **返回值**
 
@@ -9340,29 +13033,29 @@ caplib::buildHistSimFxVolSurface(simDate, referenceVolSurf, histStart, histEnd, 
 
 **参数**
 
-simDate DATE 类型。模拟基准日。
+simDate DATE 类型。模拟基准日。**有效性:** 必须是非空 DolphinDB DATE 标量。
 
-referenceVolSurf STRING 类型。参考 FxVolatilitySurface 句柄。
+referenceVolSurf STRING 类型。参考 FxVolatilitySurface 句柄。**有效性:** 必须是已存在的 FxVolatilitySurface 对象的非空 ObjectCache 键。
 
-histStart STRING 类型。历史起始 FxVolatilitySurface 句柄。
+histStart STRING 类型。历史起始 FxVolatilitySurface 句柄。**有效性:** 必须是已存在的 FxVolatilitySurface 对象的非空 ObjectCache 键。
 
-histEnd STRING 类型。历史结束 FxVolatilitySurface 句柄。
+histEnd STRING 类型。历史结束 FxVolatilitySurface 句柄。**有效性:** 必须是已存在的 FxVolatilitySurface 对象的非空 ObjectCache 键。
 
-volSurfaceDates DATE 向量类型。目标曲面日期，至少两个。
+volSurfaceDates DATE 向量类型。目标曲面日期，至少两个。**有效性:** 必须是无空值的 DATE 向量，且至少两个日期；长度须与 `volSurfaceStrikes` 的行权价集个数一致。
 
-volSurfaceStrikes 任意向量类型。每个目标日期一行权价集（DOUBLE 向量的向量），形状须与日期数匹配。
+volSurfaceStrikes 任意向量类型。每个目标日期一行权价集（DOUBLE 向量的向量），形状须与日期数匹配。**有效性:** 必须是无空值的 DOUBLE 向量的向量；长度须与 `volSurfaceDates` 的日期个数一致。
 
-spot STRING 类型。FxSpotRate 句柄。
+spot STRING 类型。FxSpotRate 句柄。**有效性:** 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。
 
-domCurve STRING 类型。本币 IrYieldCurve 句柄。
+domCurve STRING 类型。本币 IrYieldCurve 句柄。**有效性:** 必须是已存在的 IrYieldCurve 对象的非空 ObjectCache 键。
 
-forCurve STRING 类型。外币 IrYieldCurve 句柄。
+forCurve STRING 类型。外币 IrYieldCurve 句柄。**有效性:** 必须是已存在的 IrYieldCurve 对象的非空 ObjectCache 键。
 
-settings STRING 类型。VolatilitySurfaceBuildSettings 句柄，可传空字符串。
+settings STRING 类型。VolatilitySurfaceBuildSettings 句柄，可传空字符串。**有效性:** 必须是已存在的 VolatilitySurfaceBuildSettings 对象的 ObjectCache 键，或空字符串。
 
-handle STRING 类型。结果 FxVolatilitySurface 的缓存键。
+handle STRING 类型。结果 FxVolatilitySurface 的缓存键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型，可选。默认为 false。
+returnJson BOOL 类型，可选。默认为 false。**有效性:** 必须是 BOOL 标量。
 
 **返回值**
 
@@ -9408,11 +13101,11 @@ caplib::calcVaR(profitLossSamples, probability, antithetic)
 
 **参数**
 
-profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。
+profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。**有效性:** 必须是无空值且非空的 DOUBLE 向量。
 
-probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。
+probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。**有效性:** 必须是严格在 (0, 1) 内的 DOUBLE 标量。
 
-antithetic BOOL 类型。是否同时计算对偶样本的镜像 VaR。
+antithetic BOOL 类型。是否同时计算对偶样本的镜像 VaR。**有效性:** 必须是 BOOL 标量。
 
 **返回值**
 
@@ -9443,11 +13136,11 @@ caplib::calcExpectedShortfall(profitLossSamples, probability, antithetic)
 
 **参数**
 
-profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。
+profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。**有效性:** 必须是无空值且非空的 DOUBLE 向量。
 
-probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。
+probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。**有效性:** 必须是严格在 (0, 1) 内的 DOUBLE 标量。
 
-antithetic BOOL 类型。是否同时计算对偶样本的镜像期望损失。
+antithetic BOOL 类型。是否同时计算对偶样本的镜像期望损失。**有效性:** 必须是 BOOL 标量。
 
 **返回值**
 
@@ -9540,14 +13233,18 @@ print(vanillaBondPricingResult)
 
 ## 错误行为
 
-所有接口在下列情况抛出 DolphinDB `RuntimeException`，不返回备用标量或部分对象：
+所有接口失败时统一按下方规则抛出 DolphinDB 异常，不返回备用标量或部分对象；异常消息统一以 `[PLUGIN::CAPLIB]` 前缀标明来源。
 
-- **服务调用失败**：服务返回 `success=false` 时，其 `err_msg` 写入异常消息。
-- **参数验证失败**：类型、形状、空值、值域或跨参数约束不满足。
-- **缓存类 / 句柄错误**：句柄不存在，或其 protobuf 类型与接口要求不符。
-- **解析 / 序列化失败**：protobuf 解析或序列化失败。
+| 错误类别 | 触发条件 | 异常类型 |
+| --- | --- | --- |
+| 参数验证 | 参数类型、个数、形状、空值、值域或跨参数约束不满足（含非法枚举、越界取值） | `IllegalArgumentException` |
+| 句柄错误 | 句柄不存在，或其 protobuf 类型与接口要求不符 | `IllegalArgumentException` |
+| 服务失败 | 底层 CAPLIB 服务返回 `success=false`，其 `err_msg` 写入异常消息 | `RuntimeException` |
+| 解析 / 序列化 | protobuf 解析或序列化失败 | `RuntimeException` |
 
 仅包装器执行的操作不提供状态标量；所有错误都表现为异常。
+
+各接口「参数」小节中带 **行为实测:** 标注的条目，记录了 2026-10-15 在全新容器（官方 dolphindb/dolphindb:v3.00.5 镜像 + 本插件）中逐用例验证到的实际行为；其中与常规校验规则不符的宽松行为（如传非 BOOL 的 returnJson、越界数值、不存在的句柄键不抛异常、部分向量参数传标量仍可完成调用）均为实测结论，调用方不应依赖这些宽松行为——后续版本可能收紧校验。
 
 ## 附录
 
@@ -9565,7 +13262,9 @@ bash docker/build.sh --test
 
 ### License 说明
 
-Caplib 和 `dqlibc` 为专有软件。请通过 [caprisktech.com](https://caprisktech.com) 申请许可证。插件在服务调用前校验许可证，并缓存校验结果 3600 秒。
+本插件为**开源 + 免费**（`openSource/isFree/isFreeForCommercial` 均 `true`）。Caplib 本体开源；其底层计算库 `dqlibc` 为 CapRiskTech 专有软件，随发行包附带不绑定特定机器的通用 `dqlibc.lic`（签名 + 有效期校验，非机器绑定）以启用计算。企业批量/定制许可另行通过 [https://www.caprisktech.com/](https://www.caprisktech.com) 联系申请。插件在服务调用前校验该许可证，并缓存校验结果 3600 秒。
+
+也可在 DolphinDB 中调用 `caplib::pluginInfo()` 核对插件与许可元数据（含 `isFree`、`pluginVersion`、`feature`）。
 
 ### 常见问题
 

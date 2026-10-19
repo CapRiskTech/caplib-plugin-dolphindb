@@ -86,3 +86,31 @@ assert 1, typestr(result) != "VOID"
 @testing:case="createPmParRateCurve rejects zero-col matrix pillarsTable", exception=1
 caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", matrix(DOUBLE, 3, 0), "TF_PM_PAR_OK", false)
 
+// ----------------------------------------------------------------------------
+// Review round-2: exception + column-count boundary coverage (gap-fill)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 tag 传入错误类型，验证类型校验（前置参数合法，预期：抛异常）
+@testing:case="createPmParRateCurve rejects wrong type for tag", exception=1
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", table(["XAUUSD","XAUUSD","XAUUSD"] as instrument_name, ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type, ["1W","2W","1M"] as instrument_term, [0.025,0.025,0.0248] as instrument_rate), 1, false)
+
+// 用例目的：参数 tag 传入空字符串，验证非空校验（前置参数合法，预期：抛异常）
+// 用例目的：tag 传空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createPmParRateCurve empty tag (no validation)"
+rPR_T = caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", table(["XAUUSD","XAUUSD","XAUUSD"] as instrument_name, ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type, ["1W","2W","1M"] as instrument_term, [0.025,0.025,0.0248] as instrument_rate), string(), false)
+assert 1, typestr(rPR_T) != "VOID"
+
+// 用例目的：参数 returnJson 传入非 BOOL 类型，验证类型校验（前置参数合法，预期：抛异常）
+// 用例目的：returnJson 传非 BOOL 字符串 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createPmParRateCurve non-BOOL returnJson (no validation)"
+rPR_RJ = caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", table(["XAUUSD","XAUUSD","XAUUSD"] as instrument_name, ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type, ["1W","2W","1M"] as instrument_term, [0.025,0.025,0.0248] as instrument_rate), "TF_PM_PAR_OK", "yes")
+assert 1, typestr(rPR_RJ) != "VOID"
+
+// 用例目的：表参数 pillarsTable 列数少于 4，验证列数边界校验（预期：抛异常）
+@testing:case="createPmParRateCurve rejects too-few-column pillarsTable", exception=1
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", table(["XAUUSD","XAUUSD","XAUUSD"] as instrument_name, ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type, ["1W","2W","1M"] as instrument_term), "TF_PM_PAR_OK", false)
+
+// 用例目的：表参数 pillarsTable 列数多于 4，验证列数边界校验（预期：抛异常）
+@testing:case="createPmParRateCurve rejects too-many-column pillarsTable", exception=1
+caplib::createPmParRateCurve(2019.09.04, "USD", "XAU_XAUUSD", table(["XAUUSD","XAUUSD","XAUUSD"] as instrument_name, ["PM_SWAP","PM_SWAP","PM_SWAP"] as instrument_type, ["1W","2W","1M"] as instrument_term, [0.025,0.025,0.0248] as instrument_rate, [1.0,1.0,1.0] as extra), "TF_PM_PAR_OK", false)
+

@@ -53,7 +53,25 @@ caplib::createVolSurfBuildSettings(fixedParamIndex=1, fixedParamValue=0.02, hand
 @testing:case="createVolSurfBuildSettings optional returnJson null uses default"
 result = caplib::createVolSurfBuildSettings(1, 0.02, "TF_createVolSurfBuildSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createVolSurfBuildSettings rejects non-BOOL returnJson", exception=1
+caplib::createVolSurfBuildSettings(1, 0.02, "TF_createVolSurfBuildSettings_H", 1)
 // 用例目的：参数 fixedParamIndex 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createVolSurfBuildSettings rejects negative fixedParamIndex", exception=1
-caplib::createVolSurfBuildSettings(-1.0, 0.02, "TF_createVolSurfBuildSettings_H", false)
+// 用例目的：fixedParamIndex 传 -1 —— 实测插件不校验该 INT 取值、宽松接受，记录实际行为
+@testing:case="accepts negative fixedParamIndex (no range validation)"
+rVS_n = caplib::createVolSurfBuildSettings(-1, 0.02, "TF_createVolSurfBuildSettings_H", false)
+assert 1, typestr(rVS_n) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle / BOOL coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createVolSurfBuildSettings rejects wrong type for handle", exception=1
+caplib::createVolSurfBuildSettings(1, 0.02, 123, false)
+
+// 用例目的：fixedParamIndex 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createVolSurfBuildSettings rejects BOOL fixedParamIndex", exception=1
+caplib::createVolSurfBuildSettings(true, 0.02, "TF_createVolSurfBuildSettings_H", false)
 

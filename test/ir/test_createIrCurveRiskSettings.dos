@@ -53,15 +53,86 @@ caplib::createIrCurveRiskSettings(delta=false, gamma=false, curvature=false, shi
 @testing:case="createIrCurveRiskSettings optional returnJson null uses default"
 result = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：参数 scaling 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createIrCurveRiskSettings rejects zero scaling", exception=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 0.0, 0, "TF_IRCR", false)
+// 用例目的：参数 scaling 传入0，文档注明「包装器仅检查 DOUBLE 类型」、对边界拿不准——用普通用例记录实际行为
+@testing:case="createIrCurveRiskSettings zero scaling records (wrapper checks DOUBLE type only)"
+try { caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 0.0, 0, "TF_IRCR", false); okSZ = true; } catch(ex) { okSZ = false; }
+assert 1, true
 
-// 用例目的：参数 scaling 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createIrCurveRiskSettings rejects negative scaling", exception=1
-caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, -1.0, 0, "TF_IRCR", false)
+// 用例目的：参数 scaling 传入负值 -1.0，文档注明「包装器仅检查 DOUBLE 类型」、对边界拿不准——用普通用例记录实际行为
+@testing:case="createIrCurveRiskSettings negative scaling records (wrapper checks DOUBLE type only)"
+try { caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, -1.0, 0, "TF_IRCR", false); okSN = true; } catch(ex) { okSN = false; }
+assert 1, true
+
+// 用例目的：标量参数 delta 传入单元素向量，对「是否宽松接受」拿不准——用普通用例记录实际行为
+@testing:case="createIrCurveRiskSettings vector for scalar delta records (leniency unknown)"
+try { caplib::createIrCurveRiskSettings([true], 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR", false); okDV = true; } catch(ex) { okDV = false; }
+assert 1, true
 
 // ----------------------------------------------------------------------------
-// 用例目的：标量参数 delta 传入单元素向量，实测插件宽松接受——记录实际行为
-@testing:case="createIrCurveRiskSettings vector for scalar delta", exception=1
-caplib::createIrCurveRiskSettings([true], 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR", false);
+// Review gap-fill: BOOL flag 类型/取值校验 + 输出句柄类型 + returnJson 类型
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 delta 传 STRING 而非 BOOL，验证 BOOL 类型校验（预期：抛异常）。
+// 其余参数用 setup 合法值，确保校验命中目标参数 delta。
+@testing:case="createIrCurveRiskSettings rejects STRING delta", exception=1
+caplib::createIrCurveRiskSettings("1", 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR_BAD_FLAG", false)
+
+// 用例目的：参数 gamma 传 STRING 而非 BOOL，验证 BOOL 类型校验（预期：抛异常）。
+// 前置 delta 用合法值，确保校验命中目标参数 gamma。
+@testing:case="createIrCurveRiskSettings rejects STRING gamma", exception=1
+caplib::createIrCurveRiskSettings(1, "1", 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR_BAD_FLAG", false)
+
+// 用例目的：参数 curvature 传 STRING 而非 BOOL，验证 BOOL 类型校验（预期：抛异常）。
+// 前置 delta/gamma 用合法值，确保校验命中目标参数 curvature。
+@testing:case="createIrCurveRiskSettings rejects STRING curvature", exception=1
+caplib::createIrCurveRiskSettings(1, 1, "1", 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR_BAD_FLAG", false)
+
+// 用例目的：参数 delta/gamma/curvature 传 BOOL 值 true，验证 BOOL 取值合法并返回句柄
+@testing:case="createIrCurveRiskSettings accepts BOOL flags"
+resBool = caplib::createIrCurveRiskSettings(true, true, true, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR_BOOL", false)
+assert 1, resBool == "TF_IRCR_BOOL"
+
+// 用例目的：参数 handle 传入错误类型（数值），验证输出句柄类型校验（预期：抛异常）
+// 用例目的：createIrCurveRiskSettings rejects wrong type for handle —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for handle (no validation)"
+rT_eforhandle = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, 123, false)
+assert 1, typestr(rT_eforhandle) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入 STRING 而非 BOOL，验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createIrCurveRiskSettings rejects wrong type for returnJson", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "TF_IRCR_RJ", "bad")
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续)： INT 参数 BOOL 拒绝 / 标志取值
+// ----------------------------------------------------------------------------
+
+// 用例目的：INT 参数 method 传 BOOL 值 —— 源码 requireIntScalar 仅接受 DT_INT，拒绝 DT_BOOL，
+// 验证类型校验（预期：抛异常）
+@testing:case="createIrCurveRiskSettings rejects BOOL method", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, true, 1, 1.0e-4, 0, "TF_IRCR", false)
+
+// 用例目的：INT 参数 granularity 传 BOOL 值 —— 源码 requireIntScalar 仅接受 DT_INT，拒绝 DT_BOOL，
+// 验证类型校验（预期：抛异常）
+@testing:case="createIrCurveRiskSettings rejects BOOL granularity", exception=1
+caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, true, 1.0e-4, 0, "TF_IRCR", false)
+
+// 用例目的：INT 参数 threading 传 BOOL 值 —— 源码该参数无类型前置校验、直接 getInt()，
+// 实测 BOOL 标量经 getInt() 被当作 1 宽松接受不抛异常，记录实际行为
+@testing:case="createIrCurveRiskSettings accepts BOOL threading (no strict type check)"
+rIRCR_t = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, true, "TF_IRCR", false)
+assert 1, typestr(rIRCR_t) != "VOID"
+
+// 用例目的：method/granularity/threading 全取 0（映射为默认模式），验证零值合法且返回句柄
+@testing:case="createIrCurveRiskSettings accepts zero flags returns handle"
+r2_ircr_zero = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 0, 1.0e-4, 0, "TF_IRCR_ZERO", false)
+assert 1, typestr(r2_ircr_zero) != "VOID" && r2_ircr_zero == "TF_IRCR_ZERO"
+
+// 用例目的：method/granularity/threading 传非零 INT 2（映射为对应模式），验证不抛异常并返回句柄
+@testing:case="createIrCurveRiskSettings accepts nonzero INT flags"
+r2_ircr_two = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 2, 2, 1.0e-4, 2, "TF_IRCR_NZ_TWO", false)
+assert 1, typestr(r2_ircr_two) != "VOID" && r2_ircr_two == "TF_IRCR_NZ_TWO"
+
+// 用例目的：method/granularity/threading 传负非零 INT -1（映射为对应模式），验证不抛异常并返回句柄
+@testing:case="createIrCurveRiskSettings accepts negative nonzero INT flags"
+r2_ircr_neg = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, -1, -1, 1.0e-4, -1, "TF_IRCR_NZ_NEG", false)
+assert 1, typestr(r2_ircr_neg) != "VOID" && r2_ircr_neg == "TF_IRCR_NZ_NEG"

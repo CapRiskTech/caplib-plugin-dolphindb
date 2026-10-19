@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createVolatilitySurface.dos
 // Per-function test suite for caplib::createVolatilitySurface (shared).
-// Signature: caplib::createVolatilitySurface(definitionHandle STRING, referenceDate DATE, volSmileHandles STRING[], termDates DATE[], underlying STRING, handle STRING[, returnJson BOOL])
+// Signature: caplib::createVolatilitySurface(definitionHandle STRING, asOfDate DATE, volSmileHandles STRING[], termDates DATE[], underlying STRING, handle STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/shared")            // whole domain directory
 //     python run_tests.py --file shared/test_createVolatilitySurface.dos   // single file
@@ -15,7 +15,7 @@ asOfDate = 2022.03.09;
 emptyD = array(DOUBLE, 0);
 smile1 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0/365.0, emptyD, emptyD, 90.0, 110.0, "TF_S1", false);
 smile3 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.23, 0.21, 0.22], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 3.0, emptyD, emptyD, 90.0, 110.0, "TF_S3", false);
-vdef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABOSULTE_STRIKE", 90.0, 110.0, "TF_VD", false);
+vdef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VD", false);
 
 // ============================================================================
 // Tests
@@ -37,29 +37,30 @@ caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], "X")
 @testing:case="createVolatilitySurface rejects extra argument", syntaxError=1
 caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false, 1)
 
-// 用例目的：参数 referenceDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
-@testing:case="createVolatilitySurface rejects wrong type for referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createVolatilitySurface rejects wrong type for asOfDate", exception=1
 caplib::createVolatilitySurface("X", "bad", ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
 // 用例目的：参数 underlying 传入错误类型（如该传数值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createVolatilitySurface rejects wrong type for underlying", exception=1
 caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], 1, "TF_createVolatilitySurface_H", false)
 
-// 用例目的：参数 referenceDate 传入对应类型的空值，验证空值校验（预期：抛异常）
-@testing:case="createVolatilitySurface rejects null referenceDate", exception=1
+// 用例目的：参数 asOfDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createVolatilitySurface rejects null asOfDate", exception=1
 caplib::createVolatilitySurface("X", date(), ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
 // 用例目的：参数 underlying 传入对应类型的空值，验证空值校验（预期：抛异常）
 @testing:case="createVolatilitySurface rejects null underlying", exception=1
 caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], string(), "TF_createVolatilitySurface_H", false)
 
-// 用例目的：标量参数 referenceDate 传入向量，验证数据形式校验（预期：抛异常）
-@testing:case="createVolatilitySurface rejects vector for scalar referenceDate", exception=1
+// 用例目的：标量参数 asOfDate 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="createVolatilitySurface rejects vector for scalar asOfDate", exception=1
 caplib::createVolatilitySurface("X", [2024.01.01], ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
 
-// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）
+// 用例目的：向量参数 termDates 传入标量，验证数据形式校验（预期：抛异常）。
+// 其余参数沿用正例调用的合法值，实测异常命中 [PLUGIN::CAPLIB] Parameter termDates must be a vector。
 @testing:case="createVolatilitySurface rejects scalar for vector termDates", exception=1
-caplib::createVolatilitySurface("X", 2024.01.01, ["X"], [2024.01.01], "X", "TF_createVolatilitySurface_H", false)
+caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], 2024.01.01, "TF_UNDERLYING", "TF_VS", false)
 
 // 用例目的：向量参数 termDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createVolatilitySurface rejects partially-null vector termDates", exception=1
@@ -75,7 +76,7 @@ caplib::createVolatilitySurface("TF_NO_SUCH_HANDLE_createVolatilitySurface", 202
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createVolatilitySurface rejects keyword arguments", syntaxError=1
-caplib::createVolatilitySurface(definitionHandle="X", referenceDate=2024.01.01, volSmileHandles=["X"], termDates=[2024.01.01], underlying="X", handle="TF_createVolatilitySurface_H", returnJson=false)
+caplib::createVolatilitySurface(definitionHandle="X", asOfDate=2024.01.01, volSmileHandles=["X"], termDates=[2024.01.01], underlying="X", handle="TF_createVolatilitySurface_H", returnJson=false)
 // 用例目的：向量参数 volSmileHandles 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createVolatilitySurface rejects all-null vector volSmileHandles", exception=1
 caplib::createVolatilitySurface(vdef, asOfDate, [string(), string(), string()], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
@@ -83,6 +84,10 @@ caplib::createVolatilitySurface(vdef, asOfDate, [string(), string(), string()], 
 @testing:case="createVolatilitySurface optional returnJson null uses default"
 result = caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createVolatilitySurface rejects non-BOOL returnJson", exception=1
+caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", 1)
 // 用例目的：句柄参数 volSmileHandles 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="createVolatilitySurface rejects wrong object type for volSmileHandles", exception=1
 caplib::createVolatilitySurface(vdef, asOfDate, vdef, [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
@@ -91,3 +96,19 @@ caplib::createVolatilitySurface(vdef, asOfDate, vdef, [2022.03.10, 2025.03.10], 
 // 用例目的：两个成对数组参数长度不一致（volSmileHandles 多一个元素），验证参数间关系校验（预期：抛异常）
 @testing:case="createVolatilitySurface rejects volSmileHandles length mismatch", exception=1
 caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3, "EXTRA"], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false);
+
+// ----------------------------------------------------------------------------
+// Review round-2 gap-fill: handle coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄向量参数 volSmileHandles 的一个元素传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createVolatilitySurface rejects nonexistent handle volSmileHandles", exception=1
+caplib::createVolatilitySurface(vdef, asOfDate, [smile1, "TF_NO_SUCH_HANDLE_createVolatilitySurface_volSmileHandles"], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
+
+// 用例目的：句柄参数 definitionHandle 传入类型不符的对象句柄（波动率微笑），验证句柄类型校验（预期：抛异常）
+@testing:case="createVolatilitySurface rejects wrong object type for definitionHandle", exception=1
+caplib::createVolatilitySurface(smile1, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS", false)
+
+// 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createVolatilitySurface rejects wrong type for handle", exception=1
+caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", 123, false)

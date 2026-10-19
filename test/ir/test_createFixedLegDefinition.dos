@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createFixedLegDefinition.dos
 // Per-function test suite for caplib::createFixedLegDefinition (fi).
-// Signature: caplib::createFixedLegDefinition(currency STRING, calendar STRING or STRING[], freq STRING, dayCount STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, notionalExchange STRING, tag STRING[, returnJson BOOL])
+// Signature: caplib::createFixedLegDefinition(currency STRING, calendar STRING or STRING[], freq STRING, dayCountConvention STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, notionalExchange STRING, tag STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_createFixedLegDefinition.dos   // single file
@@ -71,7 +71,7 @@ caplib::createFixedLegDefinition(["X"], "X", "X", "X", "X", "X", "X", 1, "X", "X
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFixedLegDefinition rejects keyword arguments", syntaxError=1
-caplib::createFixedLegDefinition(currency="X", calendar="X", freq="X", dayCount="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", notionalExchange="X", tag="TF_createFixedLegDefinition_H", returnJson=false)
+caplib::createFixedLegDefinition(currency="X", calendar="X", freq="X", dayCountConvention="X", interestDayConvention="X", stubPolicy="X", brokenPeriodType="X", payDayOffset=1, payDayConvention="X", notionalExchange="X", tag="TF_createFixedLegDefinition_H", returnJson=false)
 // 用例目的：枚举参数 stubPolicy 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects invalid enum for stubPolicy", exception=1
 caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "NOT_A_VALID_ENUM_LABEL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true)
@@ -107,3 +107,71 @@ caplib::createFixedLegDefinition("CNY", [string(), string(), string()], "QUARTER
 // 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects empty vector calendar", exception=1
 caplib::createFixedLegDefinition("CNY", take(string, 0), "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true)
+
+// ----------------------------------------------------------------------------
+// 第二轮 DDB review 修正：returnJson 类型校验 / 严格枚举合法遍历与非法值
+// ----------------------------------------------------------------------------
+
+// 用例目的：returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验。（预期：抛异常）
+@testing:case="createFixedLegDefinition rejects wrong type for returnJson", exception=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG_RJ", "bad")
+
+// 用例目的：遍历参数 brokenPeriodType 的文档合法子集，逐一调用验证均被接受
+@testing:case="createFixedLegDefinition supports all brokenPeriodType enums"
+labelBP = ["SHORT", "LONG"]
+okBP = true;
+for (i in 0..(size(labelBP)-1)) {
+    try { caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", labelBP[i], 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true); } catch(ex) { okBP = false; }
+}
+assert 1, okBP
+
+// 用例目的：brokenPeriodType 传入未识别字符串，验证文档所述严格枚举校验（预期：抛异常）
+@testing:case="createFixedLegDefinition rejects invalid enum for brokenPeriodType", exception=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "NOT_A_VALID_ENUM_LABEL", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true)
+
+// 用例目的：遍历参数 freq 的文档合法子集，逐一调用验证均被接受
+@testing:case="createFixedLegDefinition supports all freq enums"
+labelFreq = ["MONTHLY", "QUARTERLY", "SEMIANNUAL", "SEMI_ANNUAL", "ANNUAL"]
+okFreq = true;
+for (i in 0..(size(labelFreq)-1)) {
+    try { caplib::createFixedLegDefinition("CNY", "CAL_CFETS", labelFreq[i], "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", true); } catch(ex) { okFreq = false; }
+}
+assert 1, okFreq
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续)： 枚举非法值 / BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 freq 传入非法取值 —— 源码 parseFrequencyOrDefault 对无法识别的
+// 取值回退默认值（不抛异常），实测宽松接受，记录实际行为
+@testing:case="accepts createFixedLegDefinition invalid enum for freq (falls back to default)"
+r2_fxleg_freq = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "NOT_A_REAL_ENUM", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r2_fxleg_freq) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入非法取值 —— parseDayCountConventionOrDefault 回退默认值，
+// 实测宽松接受，记录实际行为
+@testing:case="accepts createFixedLegDefinition invalid enum for dayCountConvention (falls back to default)"
+r2_fxleg_dcc = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "NOT_A_REAL_ENUM", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r2_fxleg_dcc) != "VOID"
+
+// 用例目的：枚举参数 interestDayConvention 传入非法取值 —— parseBusinessDayConventionOrDefault
+// 回退默认值，实测宽松接受，记录实际行为
+@testing:case="accepts createFixedLegDefinition invalid enum for interestDayConvention (falls back to default)"
+r2_fxleg_idc = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "NOT_A_REAL_ENUM", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r2_fxleg_idc) != "VOID"
+
+// 用例目的：枚举参数 payDayConvention 传入非法取值 —— parseBusinessDayConventionOrDefault
+// 回退默认值，实测宽松接受，记录实际行为
+@testing:case="accepts createFixedLegDefinition invalid enum for payDayConvention (falls back to default)"
+r2_fxleg_pdc = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "NOT_A_REAL_ENUM", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r2_fxleg_pdc) != "VOID"
+
+// 用例目的：枚举参数 notionalExchange 传入非法取值 —— 源码 parseEnumOrDefault 对无法识别的
+// 非空取值抛 IllegalArgumentException，验证枚举校验（预期：抛异常）
+@testing:case="createFixedLegDefinition rejects invalid enum for notionalExchange", exception=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "NOT_A_REAL_ENUM", "TF_IR_FIXED_LEG", false)
+
+// 用例目的：INT 参数 payDayOffset 传入 BOOL true —— 源码 requireIntScalar 拒绝 DT_BOOL，
+// 验证类型校验（预期：抛异常）
+@testing:case="createFixedLegDefinition rejects BOOL payDayOffset", exception=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", true, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)

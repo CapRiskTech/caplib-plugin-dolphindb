@@ -201,3 +201,45 @@ assert 1, abs(r1 - r2) > 0.0
 // 用例目的：句柄参数 volSurfaceHandle 传入类型不符的对象句柄（createCalendar），验证句柄类型校验（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects wrong object type for volSurfaceHandle", exception=1
 caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, calEutaCreated, eurusdSpotRate[0], usdCurve, eurCurve);
+
+// ----------------------------------------------------------------------------
+// Review gap-fill: missing handle validation coverage (类别 A) + deltaType 枚举遍历 (类别 D)
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 fxSpotRateHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="calcFxDeltaToStrike rejects nonexistent handle fxSpotRateHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], "TF_NO_SUCH_HANDLE_calcFxDeltaToStrike_fxSpotRateHandle", usdCurve, eurCurve);
+
+// 用例目的：句柄参数 fxSpotRateHandle 传入类型不符的对象句柄（builtVolSurface），验证句柄类型校验（预期：抛异常）
+@testing:case="calcFxDeltaToStrike rejects wrong object type for fxSpotRateHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], builtVolSurface[0], usdCurve, eurCurve);
+
+// 用例目的：句柄参数 domesticDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="calcFxDeltaToStrike rejects nonexistent handle domesticDiscountCurveHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], "TF_NO_SUCH_HANDLE_calcFxDeltaToStrike_domesticDiscountCurveHandle", eurCurve);
+
+// 用例目的：句柄参数 domesticDiscountCurveHandle 传入类型不符的对象句柄（fxMktConventions），验证句柄类型校验（预期：抛异常）
+@testing:case="calcFxDeltaToStrike rejects wrong object type for domesticDiscountCurveHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], fxMktConventions[0], eurCurve);
+
+// 用例目的：句柄参数 foreignDiscountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="calcFxDeltaToStrike rejects nonexistent handle foreignDiscountCurveHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, "TF_NO_SUCH_HANDLE_calcFxDeltaToStrike_foreignDiscountCurveHandle");
+
+// 用例目的：句柄参数 foreignDiscountCurveHandle 传入类型不符的对象句柄（volSurfDefinition），验证句柄类型校验（预期：抛异常）
+@testing:case="calcFxDeltaToStrike rejects wrong object type for foreignDiscountCurveHandle", exception=1
+caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, volSurfDefinition[0]);
+
+// 用例目的：遍历参数 deltaType 的全部实测可用枚举取值，逐一调用验证均被接受
+// （不用 try/catch：DolphinDB try{} 语句重写器会把 caplib:: 前缀二次拼接导致必然进 catch；
+//   SIMPLE_DELTA 实测被下游服务拒绝，单独见下一条用例）
+@testing:case="calcFxDeltaToStrike supports all deltaType enums"
+labelEnum = ["PIPS_SPOT_DELTA", "PERCENTAGE_SPOT_DELTA", "PIPS_FORWARD_DELTA", "PERCENTAGE_FORWARD_DELTA"]
+for (i in 0..(size(labelEnum)-1)) {
+    caplib::calcFxDeltaToStrike(labelEnum[i], 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+}
+assert 1, true
+
+// 用例目的：deltaType 传 SIMPLE_DELTA —— 实测被下游服务拒绝（std::exception），记录实际行为
+@testing:case="calcFxDeltaToStrike rejects SIMPLE_DELTA (service-level)", exception=1
+caplib::calcFxDeltaToStrike("SIMPLE_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);

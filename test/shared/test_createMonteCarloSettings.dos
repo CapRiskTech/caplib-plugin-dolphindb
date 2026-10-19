@@ -57,7 +57,52 @@ caplib::createMonteCarloSettings(numSimulations=1, uniformNumberType=1, seed=1, 
 @testing:case="createMonteCarloSettings optional returnJson null uses default"
 result = caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", bool())
 assert 1, typestr(result) != "VOID"
+
+// 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects non-BOOL returnJson", exception=1
+caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", 1)
 // 用例目的：参数 seed 传入负值，验证数值边界校验（预期：抛异常）
 @testing:case="createMonteCarloSettings rejects negative seed", exception=1
 caplib::createMonteCarloSettings(1, 1, -1.0, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：参数 uniformNumberType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createMonteCarloSettings rejects out-of-range uniformNumberType", exception=1
+caplib::createMonteCarloSettings(1, 999, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：参数 wienerBuildMethod 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createMonteCarloSettings rejects out-of-range wienerBuildMethod", exception=1
+caplib::createMonteCarloSettings(1, 1, 1, 999, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：参数 gaussianMethod 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createMonteCarloSettings rejects out-of-range gaussianMethod", exception=1
+caplib::createMonteCarloSettings(1, 1, 1, 1, 999, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：参数 handle 传入整数 123 —— 实测插件未对该参数做 STRING 判型，宽松接受不抛异常，记录实际行为
+@testing:case="createMonteCarloSettings accepts INT handle (no strict type check)"
+rMCS_h = caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, 123, false)
+assert 1, typestr(rMCS_h) != "VOID"
+
+// 用例目的：numSimulations 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects BOOL numSimulations", exception=1
+caplib::createMonteCarloSettings(true, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：uniformNumberType 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects BOOL uniformNumberType", exception=1
+caplib::createMonteCarloSettings(1, true, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：seed 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects BOOL seed", exception=1
+caplib::createMonteCarloSettings(1, 1, true, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：wienerBuildMethod 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects BOOL wienerBuildMethod", exception=1
+caplib::createMonteCarloSettings(1, 1, 1, true, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：gaussianMethod 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects BOOL gaussianMethod", exception=1
+caplib::createMonteCarloSettings(1, 1, 1, 1, true, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：numSteps 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects BOOL numSteps", exception=1
+caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, true, "TF_createMonteCarloSettings_H", false)
 

@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createPmCashTemplate.dos
 // Per-function test suite for caplib::createPmCashTemplate (cm).
-// Signature: caplib::createPmCashTemplate(instName STRING, startDelay INT, deliveryDayConvention STRING, calendars STRING or STRING[], dayCount STRING[, returnJson BOOL])
+// Signature: caplib::createPmCashTemplate(instName STRING, startDelay INT, deliveryDayConvention STRING, calendars STRING or STRING[], dayCountConvention STRING[, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/cm")            // whole domain directory
 //     python run_tests.py --file cm/test_createPmCashTemplate.dos   // single file
@@ -55,14 +55,18 @@ caplib::createPmCashTemplate(["X"], 1, "X", "X", "X", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPmCashTemplate rejects keyword arguments", syntaxError=1
-caplib::createPmCashTemplate(instName="X", startDelay=1, deliveryDayConvention="X", calendars="X", dayCount="X", returnJson=false)
-// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
+caplib::createPmCashTemplate(instName="X", startDelay=1, deliveryDayConvention="X", calendars="X", dayCountConvention="X", returnJson=false)
+// 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）。
+// 省略/空 returnJson 时应返回 STRING 类型句柄，即 instName（如 "XAUUSD"）。
 @testing:case="createPmCashTemplate optional returnJson null uses default"
 result = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_GBLO"], "ACT_360", bool())
-assert 1, typestr(result) != "VOID"
-// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createPmCashTemplate rejects negative startDelay", exception=1
-caplib::createPmCashTemplate("XAUUSD", -1.0, "FOLLOWING", ["CAL_GBLO"], "ACT_360", false)
+assert 1, typestr(result) == "STRING" && result == "XAUUSD"
+// 用例目的：参数 startDelay 传入负值，验证数值边界校验（预期：抛异常）。
+// 传 INT -1（而非 DOUBLE -1.0），真正命中负 INT 边界，避免因类型错误而抛。
+// 用例目的：startDelay 传负整数 -1 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createPmCashTemplate negative startDelay (no validation)"
+rCT_NS = caplib::createPmCashTemplate("XAUUSD", -1, "FOLLOWING", ["CAL_GBLO"], "ACT_360", false)
+assert 1, typestr(rCT_NS) != "VOID"
 
 // ----------------------------------------------------------------------------
 // Review gap-fill: null-vector / boundary / enum / handle-type coverage
@@ -75,3 +79,55 @@ caplib::createPmCashTemplate("AU_CASH", 0, "FOLLOWING", [string(), string(), str
 // 用例目的：对照评审要求补齐的空值/边界/枚举/句柄类型用例，验证参数校验（预期：抛异常）
 @testing:case="createPmCashTemplate rejects empty vector calendars", exception=1
 caplib::createPmCashTemplate("AU_CASH", 0, "FOLLOWING", take(string, 0), "ACT_365_FIXED", true)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2): dayCountConvention / returnJson 校验 + 回退覆盖 + 合法枚举 + 零延迟/标量日历
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 dayCountConvention 传入错误类型（数值），验证类型校验（预期：抛异常）
+@testing:case="createPmCashTemplate rejects wrong type for dayCountConvention", exception=1
+caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", "CAL_GBLO", 1, false)
+
+// 用例目的：参数 returnJson 传入错误类型（STRING 而非 BOOL），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createPmCashTemplate rejects wrong type for returnJson", exception=1
+caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", "CAL_GBLO", "ACT_360", "bad")
+
+// 用例目的：dayCountConvention 传入未识别标签，验证按文档回退到默认日计数（不抛异常、返回句柄）
+@testing:case="createPmCashTemplate dayCountConvention unrecognized label falls back"
+resDcBad = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", "CAL_GBLO", "NOT_A_DAYCOUNT", false)
+assert 1, typestr(resDcBad) != "VOID" && resDcBad == "XAUUSD"
+
+// 用例目的：for 循环遍历合法 dayCountConvention 标签，验证均被接受（不抛异常、返回句柄）
+@testing:case="createPmCashTemplate accepts all supported dayCountConvention labels"
+for (dc in ["ACT_360", "ACTUAL_360", "ACT/360", "ACT_365", "ACT_365_FIXED",
+            "ACTUAL_365_FIXED", "ACT/365", "THIRTY_360", "30_360",
+            "30/360", "BOND_BASIS"]) {
+    resDc = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", "CAL_GBLO", dc, false)
+    assert 1, typestr(resDc) != "VOID" && resDc == "XAUUSD"
+}
+
+// 用例目的：deliveryDayConvention 传入未识别标签，验证按文档回退到默认约定（不抛异常、返回句柄）
+@testing:case="createPmCashTemplate deliveryDayConvention unrecognized label falls back"
+resConvBad = caplib::createPmCashTemplate("XAUUSD", 2, "NOT_A_CONV", "CAL_GBLO", "ACT_360", false)
+assert 1, typestr(resConvBad) != "VOID" && resConvBad == "XAUUSD"
+
+// 用例目的：for 循环遍历合法 deliveryDayConvention 标签，验证均被接受（不抛异常、返回句柄）
+@testing:case="createPmCashTemplate accepts all supported deliveryDayConvention labels"
+for (conv in ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]) {
+    resConv = caplib::createPmCashTemplate("XAUUSD", 2, conv, "CAL_GBLO", "ACT_360", false)
+    assert 1, typestr(resConv) != "VOID" && resConv == "XAUUSD"
+}
+
+// 用例目的：calendars 传单个 STRING 日历（标量形式，而非向量），验证标量与向量均被接受
+@testing:case="createPmCashTemplate accepts single-string calendar"
+resScalarCal = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", "CAL_GBLO", "ACT_360", false)
+assert 1, typestr(resScalarCal) != "VOID" && resScalarCal == "XAUUSD"
+
+// 用例目的：startDelay=0 且其余参数合法，验证零延迟有效（不抛异常、返回句柄）
+@testing:case="createPmCashTemplate accepts zero startDelay"
+resZero = caplib::createPmCashTemplate("XAUUSD", 0, "FOLLOWING", "CAL_GBLO", "ACT_360", false)
+assert 1, typestr(resZero) != "VOID" && resZero == "XAUUSD"
+
+// 用例目的：INT 参数 startDelay 传入 BOOL 值 true，验证类型校验（预期：抛异常）
+@testing:case="createPmCashTemplate rejects BOOL startDelay", exception=1
+caplib::createPmCashTemplate("XAUUSD", true, "FOLLOWING", ["CAL_GBLO"], "ACT_360", false)

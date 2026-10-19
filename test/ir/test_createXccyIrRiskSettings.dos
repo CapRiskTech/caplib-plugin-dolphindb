@@ -78,3 +78,46 @@ caplib::createXccyIrRiskSettings(irCurveRisk, string(), irThetaRisk, "TF_XCCY", 
 // 用例目的：标量参数 irCurveRiskSettingsHandle 传入向量，验证数据形式校验（预期：抛异常）
 @testing:case="createXccyIrRiskSettings rejects vector for scalar irCurveRiskSettingsHandle", exception=1
 caplib::createXccyIrRiskSettings(["X"], irPriceRisk, irThetaRisk, "TF_XCCY", false);
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-3: 补齐各句柄参数的「不存在/类型不匹配」覆盖 + returnJson 非 BOOL
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 irCurveRiskSettingsHandle 传入类型不符的句柄（PriceRiskSettings），验证句柄类型校验（预期：抛异常）
+@testing:case="createXccyIrRiskSettings rejects wrong object type for irCurveRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irPriceRisk, irPriceRisk, irThetaRisk, "TF_XCCY", false)
+
+// 用例目的：句柄参数 fxRiskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createXccyIrRiskSettings rejects nonexistent handle fxRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, "TF_NO_SUCH_HANDLE_fxRiskSettingsHandle", irThetaRisk, "TF_XCCY", false)
+
+// 用例目的：句柄参数 thetaRiskSettingsHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="createXccyIrRiskSettings rejects nonexistent handle thetaRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, "TF_NO_SUCH_HANDLE_thetaRiskSettingsHandle", "TF_XCCY", false)
+
+// 用例目的：句柄参数 thetaRiskSettingsHandle 传入类型不符的句柄（IrCurveRiskSettings），验证句柄类型校验（预期：抛异常）
+@testing:case="createXccyIrRiskSettings rejects wrong object type for thetaRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irCurveRisk, "TF_XCCY", false)
+
+// 用例目的：参数 thetaRiskSettingsHandle 传入错误类型（数值），验证类型校验（预期：抛异常）
+@testing:case="createXccyIrRiskSettings rejects wrong type for thetaRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, 1, "TF_XCCY", false)
+
+// 用例目的：参数 thetaRiskSettingsHandle 传入空值，验证空值校验（预期：抛异常）
+@testing:case="createXccyIrRiskSettings rejects null thetaRiskSettingsHandle", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, string(), "TF_XCCY", false)
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createXccyIrRiskSettings rejects wrong type for returnJson", exception=1
+caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, "TF_XCCY", "bad")
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续): 输出名 handle 错型
+// 判据：createXccyIrRiskSettings 的 handle 走 args[3]->getString()，无 requireStringScalar 严格判型，
+//   传 INT 123 被字符串化接受（同 buildIr* outputHandle 先例），记录实际行为（不抛异常）。
+// ----------------------------------------------------------------------------
+
+// 用例目的：输出名参数 handle 传入 INT 123 —— 源码仅 getString、无 requireStringScalar，宽松接受，记录实际行为
+@testing:case="accepts createXccyIrRiskSettings wrong type for handle (no validation)"
+r2_irXCCY_handle = caplib::createXccyIrRiskSettings(irCurveRisk, irPriceRisk, irThetaRisk, 123, false)
+assert 1, typestr(r2_irXCCY_handle) != "VOID"

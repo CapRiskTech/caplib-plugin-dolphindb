@@ -65,3 +65,78 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createInterestPaymentScheduleDefinition("X", "X", labelEnum[i], 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-2: returnJson 类型 / 剩余参数类型 / payDayOffset 边界 / 枚举遍历
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（STRING）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createInterestPaymentScheduleDefinition non-BOOL returnJson (no validation)"
+rIPS_rj = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", "bad")
+assert 1, typestr(rIPS_rj) != "VOID"
+
+// 用例目的：参数 payDayOffset 传入错误类型（字符串），验证类型校验（预期：抛异常）
+@testing:case="createInterestPaymentScheduleDefinition rejects wrong type for payDayOffset", exception=1
+caplib::createInterestPaymentScheduleDefinition("X", "X", "X", "bad", "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+
+// 用例目的：参数 payDayConvention 传入错误类型（数值），验证类型校验（预期：抛异常）
+@testing:case="createInterestPaymentScheduleDefinition rejects wrong type for payDayConvention", exception=1
+caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, 1, "TF_createInterestPaymentScheduleDefinition_H", false)
+
+// 用例目的：输出句柄 tag 传入错误类型（数值），验证 STRING 类型校验（预期：抛异常）
+@testing:case="createInterestPaymentScheduleDefinition rejects wrong type for tag", exception=1
+caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "X", 123, false)
+
+// 用例目的：payDayOffset 传 0，验证零值边界合法（文档：可为负、零或正），记录实际行为
+@testing:case="createInterestPaymentScheduleDefinition accepts zero payDayOffset"
+resPay0 = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 0, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+assert 1, typestr(resPay0) != "VOID"
+
+// 用例目的：payDayOffset 传负值，验证负值边界合法（文档：可为负、零或正），记录实际行为
+@testing:case="createInterestPaymentScheduleDefinition accepts negative payDayOffset"
+resPayNeg = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", -1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+assert 1, typestr(resPayNeg) != "VOID"
+
+// 用例目的：payDayOffset 传正值，验证合法值可用，记录实际行为
+@testing:case="createInterestPaymentScheduleDefinition accepts positive payDayOffset"
+resPay2 = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 2, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+assert 1, typestr(resPay2) != "VOID"
+
+// 用例目的：遍历参数 payDayConvention 的文档识别取值，逐一调用验证均被接受（其它字符串回退默认，不抛异常）
+@testing:case="createInterestPaymentScheduleDefinition supports accepted payDayConvention values"
+labelConv = ["FOLLOWING", "MODIFIED_FOLLOWING", "PRECEDING", "MODIFIED_PRECEDING", "UNADJUSTED"]
+okConv = true;
+for (i in 0..(size(labelConv)-1)) {
+    try { caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, labelConv[i], "TF_createInterestPaymentScheduleDefinition_H", false); } catch(ex) { okConv = false; }
+}
+assert 1, okConv
+
+// 用例目的：遍历参数 frequency 的文档识别取值，逐一调用验证均被接受（其它字符串回退默认，不抛异常）
+@testing:case="createInterestPaymentScheduleDefinition supports accepted frequency values"
+labelFreq = ["MONTHLY", "QUARTERLY", "SEMIANNUAL", "SEMI_ANNUAL", "ANNUAL"]
+okFreq = true;
+for (i in 0..(size(labelFreq)-1)) {
+    try { caplib::createInterestPaymentScheduleDefinition("X", labelFreq[i], "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false); } catch(ex) { okFreq = false; }
+}
+assert 1, okFreq
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续)： 枚举非法值 / BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 frequency 传入非法取值 —— 源码 parseFrequencyOrDefault 对无法识别的
+// 取值回退默认值（不抛异常），实测宽松接受，记录实际行为
+@testing:case="accepts createInterestPaymentScheduleDefinition invalid enum for frequency (falls back to default)"
+r2_ips_freq = caplib::createInterestPaymentScheduleDefinition("X", "NOT_A_REAL_ENUM", "X", 1, "X", "TF_createInterestPaymentScheduleDefinition_H", false)
+assert 1, typestr(r2_ips_freq) != "VOID"
+
+// 用例目的：枚举参数 payDayConvention 传入非法取值 —— parseBusinessDayConventionOrDefault
+// 回退默认值，实测宽松接受，记录实际行为
+@testing:case="accepts createInterestPaymentScheduleDefinition invalid enum for payDayConvention (falls back to default)"
+r2_ips_pdc = caplib::createInterestPaymentScheduleDefinition("X", "X", "X", 1, "NOT_A_REAL_ENUM", "TF_createInterestPaymentScheduleDefinition_H", false)
+assert 1, typestr(r2_ips_pdc) != "VOID"
+
+// 用例目的：INT 参数 payDayOffset 传入 BOOL true —— 源码 requireIntScalar 拒绝 DT_BOOL，
+// 验证类型校验（预期：抛异常）
+@testing:case="createInterestPaymentScheduleDefinition rejects BOOL payDayOffset", exception=1
+caplib::createInterestPaymentScheduleDefinition("X", "X", "X", true, "X", "TF_createInterestPaymentScheduleDefinition_H", false)

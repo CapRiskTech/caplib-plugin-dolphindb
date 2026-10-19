@@ -1,7 +1,7 @@
 // ============================================================================
 // test_createFraTemplate.dos
 // Per-function test suite for caplib::createFraTemplate (fi).
-// Signature: caplib::createFraTemplate(instName STRING, refIndex STRING, currency STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING[, dayCount STRING[, paymentDiscountMethod STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, fixingDayConvention STRING[, fixingDayOffset INT]]]]]]][, returnJson BOOL])
+// Signature: caplib::createFraTemplate(instName STRING, refIndex STRING, currency STRING, calendar STRING or STRING[], fixingCalendars STRING or STRING[], freq STRING[, dayCountConvention STRING[, paymentDiscountMethod STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, fixingDayConvention STRING[, fixingDayOffset INT]]]]]]][, returnJson BOOL])
 // Uses the native DolphinDB testing framework:
 //     test("test/fi")            // whole domain directory
 //     python run_tests.py --file fi/test_createFraTemplate.dos   // single file
@@ -70,7 +70,7 @@ caplib::createFraTemplate(["X"], "X", "X", "X", "X", "X", "X", "X", "X", 1, "X",
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFraTemplate rejects keyword arguments", syntaxError=1
-caplib::createFraTemplate(instName="X", refIndex="X", currency="X", calendar="X", fixingCalendars="X", freq="X", dayCount="X", paymentDiscountMethod="X", interestDayConvention="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingDayOffset=1, returnJson=false)
+caplib::createFraTemplate(instName="X", refIndex="X", currency="X", calendar="X", fixingCalendars="X", freq="X", dayCountConvention="X", paymentDiscountMethod="X", interestDayConvention="X", payDayOffset=1, payDayConvention="X", fixingDayConvention="X", fixingDayOffset=1, returnJson=false)
 // 用例目的：枚举参数 paymentDiscountMethod 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createFraTemplate rejects invalid enum for paymentDiscountMethod", exception=1
 caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NOT_A_VALID_ENUM_LABEL", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, true)
@@ -119,3 +119,36 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", labelEnum[i], "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, true); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// 第二轮 DDB review 修正：returnJson 类型校验 / refIndex 句柄宽松实测
+// ----------------------------------------------------------------------------
+
+// 用例目的：returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createFraTemplate rejects wrong type for returnJson", exception=1
+caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, "bad")
+
+// 用例目的：refIndex 传入未创建句柄字符串，实测文档所述「包装器不校验句柄成员资格」、宽松接受——记录实际行为
+@testing:case="createFraTemplate accepts nonexistent refIndex handle (no membership validation)"
+nfrR = caplib::createFraTemplate("TF_FRA", "NONEXISTENT_IBOR_HANDLE", "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, true)
+assert 1, typestr(nfrR) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 2 续)： 枚举非法值 / BOOL 类型校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：枚举参数 freq 传入非法取值 —— 源码 parseFrequencyOrDefault 对无法识别的
+// 取值回退默认值（不抛异常），实测宽松接受，记录实际行为
+@testing:case="accepts createFraTemplate invalid enum for freq (falls back to default)"
+r2_fra_freq = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "NOT_A_REAL_ENUM", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(r2_fra_freq) != "VOID"
+
+// 用例目的：INT 参数 payDayOffset 传入 BOOL true —— 源码 requireIntScalar 拒绝 DT_BOOL，
+// 验证类型校验（预期：抛异常）
+@testing:case="createFraTemplate rejects BOOL payDayOffset", exception=1
+caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", true, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+
+// 用例目的：INT 参数 fixingDayOffset 传入 BOOL true —— 源码 requireIntScalar 拒绝 DT_BOOL，
+// 验证类型校验（预期：抛异常）
+@testing:case="createFraTemplate rejects BOOL fixingDayOffset", exception=1
+caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", true, false)

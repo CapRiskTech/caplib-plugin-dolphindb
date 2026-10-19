@@ -81,3 +81,51 @@ caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X", "EXTRA"], ["X"]
 // 用例目的：标量参数 curveName 传入单元素向量，实测插件宽松接受——记录实际行为
 @testing:case="createIrYieldCurveBuildSettings vector for scalar curveName", exception=1
 caplib::createIrYieldCurveBuildSettings(["X"], false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false);
+
+// ----------------------------------------------------------------------------
+// Review gap-fill-3: returnJson 非 BOOL + 剩余向量/输出句柄类型 + useOnTnFxSwap 边界
+// ----------------------------------------------------------------------------
+
+// 用例目的：可选参数 returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验（预期：抛异常）
+@testing:case="createIrYieldCurveBuildSettings rejects wrong type for returnJson", exception=1
+caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", "bad")
+
+// 用例目的：向量参数 discountCurrencyNames 传入错误元素类型（数值）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createIrYieldCurveBuildSettings wrong element type for discountCurrencyNames (no validation)"
+rIYBS_dcn = caplib::createIrYieldCurveBuildSettings("X", false, [1], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
+assert 1, typestr(rIYBS_dcn) != "VOID"
+
+// 用例目的：向量参数 discountCurveNames 传入标量 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createIrYieldCurveBuildSettings scalar for vector discountCurveNames (no validation)"
+rIYBS_dkcn = caplib::createIrYieldCurveBuildSettings("X", false, ["X"], "X", ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
+assert 1, typestr(rIYBS_dkcn) != "VOID"
+
+// 用例目的：向量参数 forwardIndexNames 传入错误元素类型（数值）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createIrYieldCurveBuildSettings wrong element type for forwardIndexNames (no validation)"
+rIYBS_fin = caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X"], [1], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
+assert 1, typestr(rIYBS_fin) != "VOID"
+
+// 用例目的：向量参数 forwardCurveNames 传入错误元素类型（数值）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createIrYieldCurveBuildSettings wrong element type for forwardCurveNames (no validation)"
+rIYBS_fcn = caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X"], ["X"], [1], "TF_createIrYieldCurveBuildSettings_H", false)
+assert 1, typestr(rIYBS_fcn) != "VOID"
+
+// 用例目的：参数 handle 传入错误类型（数值），验证输出句柄类型校验（预期：抛异常）
+// 用例目的：createIrYieldCurveBuildSettings rejects wrong type for handle —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts wrong type for handle (no validation)"
+rT_eforhandle = caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X"], ["X"], ["X"], 123, false)
+assert 1, typestr(rT_eforhandle) != "VOID"
+
+// 用例目的：useOnTnFxSwap 传兼容的旧示例 INT 0，验证 INT 0 合法且返回句柄
+@testing:case="createIrYieldCurveBuildSettings accepts INT 0 useOnTnFxSwap"
+rB0 = caplib::createIrYieldCurveBuildSettings("X", 0, ["X"], ["X"], ["X"], ["X"], "TF_BS_INT0", false)
+assert 1, typestr(rB0) != "VOID"
+
+// 用例目的：useOnTnFxSwap 传兼容的旧示例 INT 1，验证 INT 1 合法且返回句柄
+@testing:case="createIrYieldCurveBuildSettings accepts INT 1 useOnTnFxSwap"
+rB1 = caplib::createIrYieldCurveBuildSettings("X", 1, ["X"], ["X"], ["X"], ["X"], "TF_BS_INT1", false)
+assert 1, typestr(rB1) != "VOID"
+
+// 用例目的：useOnTnFxSwap 传其他整数（INT 2），验证文档所述「其他整数会抛错」（预期：抛异常）
+@testing:case="createIrYieldCurveBuildSettings rejects INT 2 useOnTnFxSwap", exception=1
+caplib::createIrYieldCurveBuildSettings("X", 2, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
