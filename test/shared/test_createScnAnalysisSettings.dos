@@ -54,7 +54,7 @@ caplib::createScnAnalysisSettings(["X"], "X", "X", 1, "TF_createScnAnalysisSetti
 
 // 用例目的：句柄参数 priceHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
 @testing:case="createScnAnalysisSettings rejects nonexistent handle priceHandle", exception=1
-caplib::createScnAnalysisSettings("X", "TF_NO_SUCH_HANDLE_createScnAnalysisSettings", "X", 1, "TF_createScnAnalysisSettings_H", false)
+caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", "TF_NO_SUCH_HANDLE_createScnAnalysisSettings", volScn, 1, "TF_createScnAnalysisSettings_H", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createScnAnalysisSettings rejects keyword arguments", syntaxError=1
@@ -76,14 +76,10 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createScnAnalysisSettings(labelEnum[i], priceScn, volScn, 1, "TF_SCNA", false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createScnAnalysisSettings accepts rejects wrong object type for volHandle (lenient validation, does not raise)"
-result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, priceScn, 1, "TF_SCNA", false)
-assert 1, typestr(result) != "VOID"
-// 用例目的：句柄参数 volHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
-@testing:case="createScnAnalysisSettings rejects wrong object type for volHandle (lenient validation, does not raise)"
-result = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, priceScn, 1, "TF_SCNA", false)
-assert 1, typestr(result) != "VOID"
+// 用例目的：volHandle 传入类型不符的真实对象句柄（波动率平面而非 ScnSettings），验证对象类型校验（预期：抛异常）
+@testing:case="createScnAnalysisSettings rejects wrong object type for volHandle", exception=1
+wrongObjV = caplib::createFlatVolatilitySurface(2022.03.09, 0.20, "TF_UNDERLYING", "TF_SCNA_WRONGTYPE_VOL", false)
+caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", priceScn, wrongObjV, 1, "TF_SCNA", false)
 
 // ----------------------------------------------------------------------------
 // Review round-2 gap-fill: handle / enum / BOOL coverage

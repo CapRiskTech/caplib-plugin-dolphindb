@@ -10,19 +10,26 @@ Caplib 是面向金融衍生品定价与风险分析的 DolphinDB 插件。插�
 | 利率（Interest Rate，IR） | 单币种与跨币种曲线构建与定价、互换工具模板、利率腿/日程/IBOR 指数定义 |
 | 外汇（Foreign Exchange，FX） | 即期、远期、掉期、NDF、外汇期权和波动率曲面 |
 | 权益（Equity，EQ） | 股息曲线、波动率曲面及欧式、美式、亚式、障碍、雪球等期权定价 |
-| 商品（Commodity，CM） | 商品与贵金属曲线、市场数据、波动率曲面和期权定价 |
+| 商品（Commodity，CM） | 商品曲线、市场数据、波动率曲面和期权定价 |
+| 贵金属（Precious Metal，PM） | 贵金属收益率曲线、市场数据、波动率曲面和期权定价 |
 | 信用（Credit，CR） | 信用曲线、信用违约互换（CDS）定价和信用风险设置 |
 | 市场风险 | 历史模拟曲线/即期情景生成、VaR、期望损失（ES） |
 
 ## 第三方库说明
 
-本插件依赖 CapRiskTech 提供的专有 `dqlibc` 库。`dqlibc` 负责底层金融计算、protobuf 数据处理和许可证校验；Caplib 插件负责 DolphinDB 数据类型转换、ObjectCache 内存对象管理和接口注册。
+本插件依赖 CapRiskTech 提供的专有 `dqlibc` 库。`dqlibc` 负责底层金融计算、protobuf 数据处理和许可证校验；Caplib 插件负责 DolphinDB 数据类型转换、ObjectCache 对象缓存管理和接口注册。
 
 使用前必须准备有效的 `dqlibc.lic`。许可证文件格式要求 `lic_ver = 200`，并应放在 `~/.dqlib/dqlibc.lic`、`/etc/dqlib/dqlibc.lic` 或 `libdqlibc.so` 所在目录。
 
 ## 版本与发行说明
 
-当前市场版本：**`3.00.5.1`**（首个市场版本，适配 DolphinDB Server `3.00.5`）。本插件为**开源 + 免费**（`openSource/isFree/isFreeForCommercial` 均 `true`，见 [License 说明](#license-说明)），随包附带通用的 `dqlibc.lic`。
+当前市场版本：**`3.00.5.2`**（适配 DolphinDB Server `3.00.5`）。本插件为**开源 + 免费**（`openSource/isFree/isFreeForCommercial` 均 `true`，见 [License 说明](#license-说明)），随包附带通用的 `dqlibc.lic`。
+
+### 3.00.5.2
+
+- 输出句柄参数的错误信息统一使用 `handle`，184 个对外接口的位置参数和业务语义不变。
+- 按第三轮 review 完善 103 个测试文件，补充日期、形状、边界和枚举覆盖，修正无效隔离、重复用例和恒真断言。
+- 全文统一接口语法、逐参数说明和返回值格式，补充 ObjectCache 核心概念，清理内部日志式说明，并修正外汇与市场风险页面及文档链接。
 
 ### 3.00.5.1（市场首发）
 
@@ -103,7 +110,7 @@ go
 caplib::pluginInfo()
 // 预期返回（字典）：
 //   pluginName -> "caplib", openSource -> true, isFree -> true,
-//   isFreeForCommercial -> true, pluginVersion -> "3.00.5.1",
+//   isFreeForCommercial -> true, pluginVersion -> "3.00.5.2",
 //   serverVersion -> "3.00.5", architecture -> "x86",
 //   platform -> "Linux", feature -> "ABI", repositoryUrl -> "..."
 ```
@@ -113,7 +120,15 @@ caplib::pluginInfo()
 插件对外函数统一使用 lowerCamelCase，例如 `caplib::calcYearFraction`。`PluginCaplib.txt` 第一列保留 PascalCase C++ 实现符号，第二列记录 lowerCamelCase 外部名称。
 
 
-### 工厂函数与内存对象
+### ObjectCache 对象缓存
+
+ObjectCache 是插件在 DolphinDB Server 进程内维护的对象缓存，用于保存曲线、模板、市场数据、金融工具和设置等 protobuf 对象。它不是 DolphinDB 数据库表，也不是持久化对象；Server 或插件进程重启后，缓存对象需要重新创建。
+
+`create*` 和 `build*` 函数将对象写入缓存，并返回 STRING 类型的缓存键（文档统称“句柄”）。后续接口通过该键读取对象；键不存在或对象的 protobuf 类型与参数要求不匹配时抛出异常。相同键再次写入会替换对应缓存对象，因此连续调用应使用有区分度的键。
+
+`returnJson=false` 时仅返回句柄；`returnJson=true` 时返回 `[handle, protobufJson]`，便于检查对象内容。`getObjectCacheJson` 也可按对象类型和句柄读取 JSON。
+
+### 工厂函数与 ObjectCache
 
 `create*` 和 `build*` 工厂函数创建曲线、报价、模板、设置、市场数据或金融工具，并将对象写入 ObjectCache。函数返回 STRING 句柄，后续构建与定价接口通过句柄引用对象。
 
@@ -126,24 +141,29 @@ caplib::pluginInfo()
 
 ### 定价接口的统一参数
 
-| 位置 | 参数 | 类型 | 含义 |
-| ---: | --- | --- | --- |
-| 1 | `instrumentHandle` | STRING | 金融工具句柄 |
-| 2 | `asOfDate` | DATE | 定价日 |
-| 3 | `mktDataHandle` | STRING | 市场数据句柄 |
-| 4 | `pricingSettingsHandle` | STRING | 定价设置句柄 |
-| 5 | `riskSettingsHandle` | STRING | 风险设置句柄 |
-| 6 | `scnSettingsHandle` | STRING | 情景设置句柄；不使用时传空字符串 |
-| 7 | `mode` | STRING | 定价模式；使用默认模式时传空字符串 |
-| 8 | `returnJson` | BOOL，可选 | 是否同时返回 JSON，默认 `false` |
+`instrumentHandle` STRING 类型。金融工具句柄。
+
+`asOfDate` DATE 类型。定价日。
+
+`mktDataHandle` STRING 类型。市场数据句柄。
+
+`pricingSettingsHandle` STRING 类型。定价设置句柄。
+
+`riskSettingsHandle` STRING 类型。风险设置句柄。
+
+`scnSettingsHandle` STRING 类型。情景设置句柄；不使用时传空字符串。
+
+`mode` STRING 类型。定价模式；使用默认模式时传空字符串。
+
+`returnJson` BOOL 类型，可选。是否同时返回 JSON，默认 `false`。
 
 ### 必填参数与可选参数
 
-接口语法中的方括号表示可选参数，例如 `, [returnJson]`。未放在方括号中的参数均为必填参数。参数表同时给出数据类型、形状、可选值、默认行为和有效性约束。
+接口语法中的方括号表示可选参数，例如 `[, returnJson]`。未放在方括号中的参数均为必填参数。参数表同时给出数据类型、形状、可选值、默认行为和有效性约束。
 
 ### 日期术语
 
-- *asOfDate*：统一的基准 / 估值日期。曲线、工具、市场数据的基准日与执行估值的日期均使用该名称（原 `referenceDate`、`pricingDate`、`calculationDate` 一律以 *asOfDate* 表示）。
+asOfDate DATE 类型。基准日或估值日，具体业务含义见各接口参数说明。
 
 ## 数据类型转换
 
@@ -165,17 +185,17 @@ caplib::pluginInfo()
 
 #### calcYearFraction
 
-**语法**
+语法
 
 ```dolphindb
-caplib::calcYearFraction(startDate DATE, endDate DATE, dayCountConvention STRING)
+caplib::calcYearFraction(startDate, endDate, dayCountConvention)
 ```
 
-**详情**
+详情
 
 通过 CAPLIB 日期服务应用所选计息惯例，计算 startDate 到 endDate 的应计年化比例。
 
-**参数**
+参数
 
 startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -183,7 +203,7 @@ endDate DATE 类型。结束日期。**有效性:** 必须是非空 DolphinDB DA
 
 dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
-**返回值**
+返回值
 
 计算结果，DOUBLE 类型标量。
 
@@ -197,27 +217,27 @@ caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360")
 
 #### createCalendar
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCalendar(calName STRING, [holidays, [specialBusinessDays]])
+caplib::createCalendar(calName[, holidays[, specialBusinessDays]])
 ```
 
-**详情**
+详情
 
 根据名称、假日和特殊工作日构造 Calendar，将其序列化为 CalendarList 静态数据并注册到 CAPLIB。
 
-**参数**
+参数
 
 calName STRING 类型。日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-holidays DATE 向量 or INT 向量 类型。节假日日期数组。**有效性:** 默认为 空（即不提供节假日）；显式提供时必须是非空且不含空值的 DATE/INT 向量。与特殊工作日向量的长度互相独立；包装器不检查排序或日期先后关系。
+holidays DATE 或 INT 向量 类型。节假日日期数组。**有效性:** 默认为 空（即不提供节假日）；显式提供时必须是非空且不含空值的 DATE/INT 向量。与特殊工作日向量的长度互相独立；包装器不检查排序或日期先后关系。
 
-specialBusinessDays DATE 向量 or INT 向量 类型。特殊工作日日期数组。**有效性:** 默认为 空向量（即不提供特殊工作日）；非空时必须是不含空值的 DATE/INT 向量。包装器不检查排序或日期先后关系。
+specialBusinessDays DATE 或 INT 向量 类型。特殊工作日日期数组。**有效性:** 默认为 空向量（即不提供特殊工作日）；非空时必须是不含空值的 DATE/INT 向量。包装器不检查排序或日期先后关系。
 
-**返回值**
+返回值
 
-BOOL `true`；失败时抛出异常，不返回 `false`。
+创建或注册成功时返回 `true`，BOOL 类型标量；失败时抛出异常，不返回 `false`。
 
 **示例**
 
@@ -230,23 +250,23 @@ caplib::createCalendar("CAL_CFETS", holidays, specialBusinessDays)
 ```
 #### getObjectCacheJson
 
-**语法**
+语法
 
 ```dolphindb
-caplib::getObjectCacheJson(protobufType STRING, handle STRING)
+caplib::getObjectCacheJson(protobufType, handle)
 ```
 
-**详情**
+详情
 
 按具体 protobuf 类和句柄从 ObjectCache 获取对象，序列化为 protobuf JSON，并一起返回句柄与 JSON 文本。
 
-**参数**
+参数
 
 protobufType STRING 类型。protobuf 类型标签。**有效性:** 可接受值：`IrYieldCurve`, `AssetYieldCurve`, `Curve`, `CreditCurve`, `DividendCurve`, `VolatilityCurve`, `VolatilitySmile`, `VolatilitySurface`, `OptionQuoteMatrix`, `VolatilitySurfaceDefinition`, `VolatilitySurfaceBuildSettings`, `PricingModelSettings`, `PdeSettings`, `MonteCarloSettings`, `PricingSettings`, `IrCurveRiskSettings`, `CreditCurveRiskSettings`, `DividendCurveRiskSettings`, `PriceRiskSettings`, `VolRiskSettings`, `PriceVolRiskSettings`, `ThetaRiskSettings`, `ScnSettings`, `ScnAnalysisSettings`, `EqMktDataSet`, `EqRiskSettings`, `PricingResults`, `FxSpotRate`, `EuropeanOption`, `AmericanOption`, `DigitalOption`, `AsianOption`, `OneTouchOption`, `DoubleTouchOption`, `SingleBarrierOption`, `DoubleBarrierOption`, `CollarOption`, `SingleSharkFinOption`, `DoubleSharkFinOption`, `RangeAccrualOption`, `AirbagOption`, `PingPongOption`, `PhoenixAutoCallableNote`, `SnowballAutoCallableNote`, `dqproto.IrYieldCurve`。区分大小写。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-**返回值**
+返回值
 
 两元素 STRING 向量 `[handle, protobufJson]`。
 
@@ -260,17 +280,17 @@ caplib::getObjectCacheJson("PricingResults", "EO_INST_results")
 
 #### createDividendCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createDividendCurve(asOfDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, yieldStartDate DATE, dividendType STRING, dayCountConvention STRING, interp STRING, extrap STRING, compounding STRING, name STRING, handle STRING, [returnJson])
+caplib::createDividendCurve(asOfDate, pillarDates, pillarValues, yieldStartDate, dividendType, dayCountConvention, interp, extrap, compounding, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存股息或远期收益曲线。函数验证并转换字段，构造 `DividendCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -292,13 +312,13 @@ compounding STRING 类型。复利约定。**有效性:** 可接受值：`CONTIN
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DividendCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -318,17 +338,17 @@ caplib::createDividendCurve(
 
 #### createVolatilityCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVolatilityCurve(asOfDate DATE, pillarDates DATE 向量, vols DOUBLE 向量, dayCountConvention STRING, interp STRING, extrap STRING, underlying STRING, handle STRING, [returnJson])
+caplib::createVolatilityCurve(asOfDate, pillarDates, vols, dayCountConvention, interp, extrap, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存一维波动率曲线。函数验证并转换字段，构造 `VolatilityCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -344,13 +364,13 @@ extrap STRING 类型。外推方法。**有效性:** 可接受值：`FLAT_EXTRAP
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilityCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilityCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -367,35 +387,35 @@ caplib::createVolatilityCurve(
 
 #### createVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVolatilitySurface(definitionHandle STRING, asOfDate DATE, volSmileHandles STRING 向量, termDates DATE 向量, underlying STRING, handle STRING, [returnJson])
+caplib::createVolatilitySurface(definitionHandle, asOfDate, volSmileHandles, termDates, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存波动率曲面。函数验证并转换字段，构造 `VolatilitySurface` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-definitionHandle STRING 类型。波动率曲面定义 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+definitionHandle STRING 类型。波动率曲面定义 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-volSmileHandles STRING 向量 类型。波动率微笑对象 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+volSmileHandles STRING 向量 类型。波动率微笑对象 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 termDates DATE 向量 类型。报价期限对应的到期日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -424,49 +444,49 @@ caplib::createVolatilitySurface(
 
 #### createOptionQuoteMatrix
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createOptionQuoteMatrix(quoteValueType STRING, quoteTermType STRING, quoteStrikeType STRING, exerciseType STRING, optionUnderlyingType STRING, asOfDate DATE, terms STRING 向量, termDates DATE 向量, payoffTypes STRING matrix/vector, values DOUBLE matrix/vector, strikes DOUBLE matrix/vector, assetName STRING, handle STRING, [returnJson])
+caplib::createOptionQuoteMatrix(quoteValueType, quoteTermType, quoteStrikeType, exerciseType, optionUnderlyingType, asOfDate, terms, termDates, payoffTypes, values, strikes, assetName, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存通用期权报价矩阵。函数验证并转换字段，构造 `OptionQuoteMatrix` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-quoteValueType STRING 类型。报价值类型，例如价格或波动率。**有效性:** 值必须是以下完整 protobuf 标签之一：`OQVT_INVALID`, `OQVT_VOLATILITY`, `OQVT_PRICE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+quoteValueType STRING 类型。报价值类型，例如价格或波动率。**有效性:** 值必须是以下完整 protobuf 标签之一：`OQVT_INVALID`, `OQVT_VOLATILITY`, `OQVT_PRICE`。
 
 quoteTermType STRING 类型。报价期限类型。**有效性:** 可接受值：`OQTT_INVALID`, `OQTT_ABSOLUTE_TERM`, `OQTT_RELATIVE_TERM`。不区分大小写。
 
 quoteStrikeType STRING 类型。报价行权价类型。**有效性:** 可接受值：`OQST_INVALID`, `OQST_ABSOLUTE_STRIKE`, `OQST_RELATIVE_STRIKE`, `OQST_DELTA_STRIKE`。不区分大小写。
 
-exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。
 
-optionUnderlyingType STRING 类型。期权标的类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOT_UNDERLYING_TYPE`, `FUTURE_UNDERLYING_TYPE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+optionUnderlyingType STRING 类型。期权标的类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOT_UNDERLYING_TYPE`, `FUTURE_UNDERLYING_TYPE`。
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-terms STRING 向量 类型。报价期限数组。**有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 包装器不校验本参数的向量形式，传入字符串标量亦可宽松接受并完成调用；建议按字符串向量传入。
+terms STRING 向量 类型。报价期限数组。**有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
 
 termDates DATE 向量 类型。报价期限对应的到期日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
-payoffTypes STRING matrix/vector 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+payoffTypes STRING 矩阵/向量 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。
 
-values DOUBLE matrix/vector 类型。报价值矩阵或向量。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+values DOUBLE 矩阵/向量 类型。报价值矩阵或向量。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-strikes DOUBLE matrix/vector 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。
+strikes DOUBLE 矩阵/向量 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。
 
 assetName STRING 类型。资产或标的名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 OptionQuoteMatrix 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -487,17 +507,17 @@ caplib::createOptionQuoteMatrix(
 
 #### createVolatilitySurfaceDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVolatilitySurfaceDefinition(volSmileType STRING, smileMethod STRING, smileExtrapMethod STRING, timeInterpMethod STRING, timeExtrapMethod STRING, dayCountConvention STRING, volType STRING, wingStrikeType STRING, lower DOUBLE, upper DOUBLE, handle STRING, [returnJson])
+caplib::createVolatilitySurfaceDefinition(volSmileType, smileMethod, smileExtrapMethod, timeInterpMethod, timeExtrapMethod, dayCountConvention, volType, wingStrikeType, lower, upper, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存波动率曲面定义。函数验证并转换字段，构造 `VolatilitySurfaceDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 volSmileType STRING 类型。波动率微笑类型。**有效性:** 可接受值：`STRIKE`, `STRIKE_VOL_SMILE`, `DELTA`, `DELTA_VOL_SMILE`, `LOG_STRIKE`, `LOG_STRIKE_VOL_SMILE`。仅接受所示精确拼写。
 
@@ -511,7 +531,7 @@ timeExtrapMethod STRING 类型。期限方向外推方法。**有效性:** 可�
 
 dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。
 
-volType STRING 类型。波动率类型。**有效性:** 识别值：`INVALID_VOLATILITY_TYPE`, `LOG_NORMAL_VOL_TYPE`, `NORMAL_VOL_TYPE`, `LOG_NORMAL`, `NORMAL`。不区分大小写。
+volType STRING 类型。波动率类型。**有效性:** 识别值：`LOG_NORMAL_VOL_TYPE`, `NORMAL_VOL_TYPE`, `LOG_NORMAL`, `NORMAL`。不区分大小写。
 
 wingStrikeType STRING 类型。翼部行权价类型。**有效性:** 识别值：`DELTA`, `RELATIVE_RATIO_STRIKE`, `RELATIVE_SPREAD_STRIKE`, `ABSOLUTE_STRIKE`。不区分大小写。
 
@@ -519,13 +539,13 @@ lower DOUBLE 类型。下界参数。**有效性:** 必须有限且严格小于 
 
 upper DOUBLE 类型。上界参数。**有效性:** 必须有限且严格大于 *lower*；包装器不检查此关系。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySurfaceDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySurfaceDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -541,29 +561,29 @@ caplib::createVolatilitySurfaceDefinition(
 
 #### createVolSurfBuildSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVolSurfBuildSettings(fixedParamIndex INT, fixedParamValue DOUBLE, handle STRING, [returnJson])
+caplib::createVolSurfBuildSettings(fixedParamIndex, fixedParamValue, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存波动率曲面构建设置。函数验证并转换字段，构造 `VolatilitySurfaceBuildSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-fixedParamIndex INT 类型。需要固定的模型参数索引。**有效性:** 必须非负且小于对应数组长度；包装器仅检查 INT 类型。**行为实测:** 传负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
+fixedParamIndex INT 类型。需要固定的模型参数索引。**有效性:** 必须非负且小于对应数组长度；包装器仅检查 INT 类型。
 
 fixedParamValue DOUBLE 类型。固定模型参数取值。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySurfaceBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySurfaceBuildSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -575,17 +595,17 @@ caplib::createVolSurfBuildSettings(1, 0.5, "EQ_VOL_BUILD", true)
 
 #### createPricingModelSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPricingModelSettings(modelName STRING, asset STRING, calibrated BOOL, constantParams DOUBLE 向量, handle STRING, [returnJson])
+caplib::createPricingModelSettings(modelName, asset, calibrated, constantParams, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存定价模型设置。函数验证并转换字段，构造 `PricingModelSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 modelName STRING 类型。定价模型名称。**有效性:** 可接受值：`BLACK_SCHOLES_MERTON`, `BLACK_MODEL`, `BACHELIER_MODEL`, `HESTON_STOCH_VOL_MODEL`, `SKEW_MODEL`。仅接受所示精确拼写。
 
@@ -595,13 +615,13 @@ calibrated BOOL 类型。模型参数是否已校准。**有效性:** 必须是 
 
 constantParams DOUBLE 向量 类型。模型常数参数数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限；除明确说明外包装器不强制非空。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingModelSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingModelSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -616,19 +636,19 @@ caplib::createPricingModelSettings(
 
 #### createPdeSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPdeSettings(tSize INT, xSize INT, xMin DOUBLE, xMax DOUBLE, xMinMaxType INT, ySize INT, yMin DOUBLE, yMax DOUBLE, yMinMaxType INT, zSize INT, zMin DOUBLE, zMax DOUBLE, zMinMaxType INT, xDensity DOUBLE, yDensity DOUBLE, zDensity DOUBLE, xGridType INT, yGridType INT, zGridType INT, xInterp INT, yInterp INT, zInterp INT, handle STRING, [returnJson])
+caplib::createPdeSettings(tSize, xSize, xMin, xMax, xMinMaxType, ySize, yMin, yMax, yMinMaxType, zSize, zMin, zMax, zMinMaxType, xDensity, yDensity, zDensity, xGridType, yGridType, zGridType, xInterp, yInterp, zInterp, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存 PDE 网格设置。函数验证并转换字段，构造 `PdeSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-tSize INT 类型。时间维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。**行为实测:** 传 0 或负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
+tSize INT 类型。时间维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
 xSize INT 类型。X 维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
@@ -636,7 +656,7 @@ xMin DOUBLE 类型。X 维网格下界。**有效性:** 必须有限且严格小
 
 xMax DOUBLE 类型。X 维网格上界。**有效性:** 必须有限且严格大于 *xMin*；包装器不检查此关系。
 
-xMinMaxType INT 类型。X 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABSOLUTE`.
+xMinMaxType INT 类型。X 维边界解释方式。**有效性:** 可接受的整数代码：`0=按标准差倍数确定边界`, `1=绝对边界`.
 
 ySize INT 类型。Y 维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
@@ -644,7 +664,7 @@ yMin DOUBLE 类型。Y 维网格下界。**有效性:** 必须有限且严格小
 
 yMax DOUBLE 类型。Y 维网格上界。**有效性:** 必须有限且严格大于 *yMin*；包装器不检查此关系。
 
-yMinMaxType INT 类型。Y 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABSOLUTE`.
+yMinMaxType INT 类型。Y 维边界解释方式。**有效性:** 可接受的整数代码：`0=按标准差倍数确定边界`, `1=绝对边界`.
 
 zSize INT 类型。Z 维网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
@@ -652,7 +672,7 @@ zMin DOUBLE 类型。Z 维网格下界。**有效性:** 必须有限且严格小
 
 zMax DOUBLE 类型。Z 维网格上界。**有效性:** 必须有限且严格大于 *zMin*；包装器不检查此关系。
 
-zMinMaxType INT 类型。Z 维边界解释方式。**有效性:** 可接受的整数代码：`0=PdeSettings_MinMaxType_MMT_NUM_STDEVS`, `1=PdeSettings_MinMaxType_MMT_ABSOLUTE`.
+zMinMaxType INT 类型。Z 维边界解释方式。**有效性:** 可接受的整数代码：`0=按标准差倍数确定边界`, `1=绝对边界`.
 
 xDensity DOUBLE 类型。X 维网格密度参数。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -660,25 +680,25 @@ yDensity DOUBLE 类型。Y 维网格密度参数。**有效性:** 必须严格�
 
 zDensity DOUBLE 类型。Z 维网格密度参数。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-xGridType INT 类型。X 维网格类型。**有效性:** 可接受的整数代码：`0=INVALID_GRID_TYPE`, `1=UNIFORM_GRID`, `2=ADAPTIVE_GRID`.
+xGridType INT 类型。X 维网格类型。**有效性:** 可接受的整数代码：`1=UNIFORM_GRID`, `2=ADAPTIVE_GRID`.
 
-yGridType INT 类型。Y 维网格类型。**有效性:** 可接受的整数代码：`0=INVALID_GRID_TYPE`, `1=UNIFORM_GRID`, `2=ADAPTIVE_GRID`.
+yGridType INT 类型。Y 维网格类型。**有效性:** 可接受的整数代码：`1=UNIFORM_GRID`, `2=ADAPTIVE_GRID`.
 
-zGridType INT 类型。Z 维网格类型。**有效性:** 可接受的整数代码：`0=INVALID_GRID_TYPE`, `1=UNIFORM_GRID`, `2=ADAPTIVE_GRID`.
+zGridType INT 类型。Z 维网格类型。**有效性:** 可接受的整数代码：`1=UNIFORM_GRID`, `2=ADAPTIVE_GRID`.
 
-xInterp INT 类型。X 维插值方法。**有效性:** 可接受的整数代码：`0=INVALID_INTERP_METHOD`, `1=LINEAR_INTERP`, `2=CUBIC_SPLINE_INTERP`, `3=LEFT_CONTINUOUS_FLAT_INTERP`, `4=SABR_INTERP`, `5=SVI_INTERP`, `6=LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `7=SABR_NORMAL_INTERP`, `8=QUADRATIC_POLYNOMIAL_INTERP`, `9=CUBIC_POLYNOMIAL_INTERP`, `10=CUBIC_HERMITE_SPLINE_INTERP`.
+xInterp INT 类型。X 维插值方法。**有效性:** 可接受的整数代码：`1=LINEAR_INTERP`, `2=CUBIC_SPLINE_INTERP`, `3=LEFT_CONTINUOUS_FLAT_INTERP`, `4=SABR_INTERP`, `5=SVI_INTERP`, `6=LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `7=SABR_NORMAL_INTERP`, `8=QUADRATIC_POLYNOMIAL_INTERP`, `9=CUBIC_POLYNOMIAL_INTERP`, `10=CUBIC_HERMITE_SPLINE_INTERP`.
 
-yInterp INT 类型。Y 维插值方法。**有效性:** 可接受的整数代码：`0=INVALID_INTERP_METHOD`, `1=LINEAR_INTERP`, `2=CUBIC_SPLINE_INTERP`, `3=LEFT_CONTINUOUS_FLAT_INTERP`, `4=SABR_INTERP`, `5=SVI_INTERP`, `6=LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `7=SABR_NORMAL_INTERP`, `8=QUADRATIC_POLYNOMIAL_INTERP`, `9=CUBIC_POLYNOMIAL_INTERP`, `10=CUBIC_HERMITE_SPLINE_INTERP`.
+yInterp INT 类型。Y 维插值方法。**有效性:** 可接受的整数代码：`1=LINEAR_INTERP`, `2=CUBIC_SPLINE_INTERP`, `3=LEFT_CONTINUOUS_FLAT_INTERP`, `4=SABR_INTERP`, `5=SVI_INTERP`, `6=LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `7=SABR_NORMAL_INTERP`, `8=QUADRATIC_POLYNOMIAL_INTERP`, `9=CUBIC_POLYNOMIAL_INTERP`, `10=CUBIC_HERMITE_SPLINE_INTERP`.
 
-zInterp INT 类型。Z 维插值方法。**有效性:** 可接受的整数代码：`0=INVALID_INTERP_METHOD`, `1=LINEAR_INTERP`, `2=CUBIC_SPLINE_INTERP`, `3=LEFT_CONTINUOUS_FLAT_INTERP`, `4=SABR_INTERP`, `5=SVI_INTERP`, `6=LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `7=SABR_NORMAL_INTERP`, `8=QUADRATIC_POLYNOMIAL_INTERP`, `9=CUBIC_POLYNOMIAL_INTERP`, `10=CUBIC_HERMITE_SPLINE_INTERP`.
+zInterp INT 类型。Z 维插值方法。**有效性:** 可接受的整数代码：`1=LINEAR_INTERP`, `2=CUBIC_SPLINE_INTERP`, `3=LEFT_CONTINUOUS_FLAT_INTERP`, `4=SABR_INTERP`, `5=SVI_INTERP`, `6=LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `7=SABR_NORMAL_INTERP`, `8=QUADRATIC_POLYNOMIAL_INTERP`, `9=CUBIC_POLYNOMIAL_INTERP`, `10=CUBIC_HERMITE_SPLINE_INTERP`.
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PdeSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PdeSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -691,17 +711,17 @@ caplib::createPdeSettings(201, 401, -5.0, 5.0, 0, 0, 0.0, 0.0, 0,
 
 #### createMonteCarloSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createMonteCarloSettings(numSimulations INT, uniformNumberType INT, seed INT, wienerBuildMethod INT, gaussianMethod INT, useAntithetic BOOL, numSteps INT, handle STRING, [returnJson])
+caplib::createMonteCarloSettings(numSimulations, uniformNumberType, seed, wienerBuildMethod, gaussianMethod, useAntithetic, numSteps, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存蒙特卡洛模拟设置。函数验证并转换字段，构造 `MonteCarloSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 numSimulations INT 类型。蒙特卡洛模拟路径数量。**有效性:** 包装器要求非空 INT 标量且严格为正。
 
@@ -709,21 +729,21 @@ uniformNumberType INT 类型。均匀随机数生成器类型。**有效性:** �
 
 seed INT 类型。随机数种子。**有效性:** 应为非负整数；包装器接受任意 INT。
 
-wienerBuildMethod INT 类型。维纳过程构建方法。**有效性:** 可接受的整数代码：`0=INVALID_WIENER_PROCESS_BUILD_METHOD`, `1=BROWNIAN_BRIDGE_METHOD`, `2=INCREMENTAL_METHOD`.
+wienerBuildMethod INT 类型。维纳过程构建方法。**有效性:** 可接受的整数代码：`1=BROWNIAN_BRIDGE_METHOD`, `2=INCREMENTAL_METHOD`.
 
-gaussianMethod INT 类型。高斯随机数生成方法。**有效性:** 可接受的整数代码：`0=INVALID_GAUSSIAN_NUMBER_METHOD`, `1=INVERSE_CUMULATIVE_METHOD`, `2=BOX_MULLER_METHOD`, `3=CENTRAL_LIMIT_METHOD`.
+gaussianMethod INT 类型。高斯随机数生成方法。**有效性:** 可接受的整数代码：`1=INVERSE_CUMULATIVE_METHOD`, `2=BOX_MULLER_METHOD`, `3=CENTRAL_LIMIT_METHOD`.
 
 useAntithetic BOOL 类型。是否使用反向变量。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 numSteps INT 类型。蒙特卡洛时间步数。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `MonteCarloSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 MonteCarloSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -735,21 +755,21 @@ caplib::createMonteCarloSettings(8096, 1, 1023, 1, 1, 0, 1, "CM_MC_SETTINGS", fa
 
 #### createPricingSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPricingSettings(currency STRING, pricingMethod STRING, incCurrent BOOL, cashFlows BOOL, specificPricingRequests INT 向量, modelHandle STRING, pdeHandle STRING, mcHandle STRING, handle STRING, [returnJson])
+caplib::createPricingSettings(currency, pricingMethod, incCurrent, cashFlows, specificPricingRequests, modelHandle, pdeHandle, mcHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存定价设置。函数验证并转换字段，构造 `PricingSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
 创建并缓存定价设置对象。*specificPricingRequests* 对应 `PricingSettings.specific_pricing_requests`（repeated INT），服务端按 `BondSpecificPricingRequest` 枚举把对应指标填入定价结果的 `specific_pricing_results`：0=到期收益率（YIELD_TO_MATUIRTY_REQUEST）、1=全价（DIRTY_PRICE_REQUEST）、2=净价（CLEAN_PRICE_REQUEST）、3=应计利息（ACCRUED_INTEREST_REQUEST）、4=久期（SIMPLE_DURATION_REQUEST）、5=修正久期（MODIFIED_DURATION_REQUEST）、6=麦考利久期（MACAULAY_DURATION_REQUEST）、7=凸性（CONVEXITY_REQUEST）、8=基点价值（BASIS_POINT_VALUE_REQUEST）。主要用于债券类定价；空向量等价于不请求。**注意：请求列表不要包含 0（YTM 请求）**——服务端在请求含 0 时返回空 `specific_pricing_results`；不包含 0 时返回全量 9 项指标（YTM 值无需请求即出现在返回向量的首个元素）。
 
-**参数**
+参数
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 pricingMethod STRING 类型。定价方法。**有效性:** 可接受值：`ANALYTICAL`, `ANALYTICAL_SMILE_ON`, `PDE`, `MONTE_CARLO`, `BINOMIAL_TREE`, `MOMENT_MATCHING`。仅接受所示精确拼写。
 
@@ -759,19 +779,19 @@ cashFlows BOOL 类型。定价结果中是否包含详细现金流输出。**有
 
 specificPricingRequests INT 向量 类型。必填。具体定价请求列表，取值为 BondSpecificPricingRequest 枚举：0=到期收益率，1=全价，2=净价，3=应计利息，4=久期，5=修正久期，6=麦考利久期，7=凸性，8=基点价值。服务端把对应指标填入定价结果的 `specific_pricing_results`。空向量等价于不请求。**有效性:** 必须是不含空值的 INT 向量，元素取值 0–8。**注意：** 请求列表不要包含 0（YTM 请求），否则服务端返回空结果；YTM 值无需请求即出现在返回向量首元素。
 
-modelHandle STRING 类型。定价模型设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+modelHandle STRING 类型。定价模型设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pdeHandle STRING 类型。PDE 设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pdeHandle STRING 类型。PDE 设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-mcHandle STRING 类型。蒙特卡洛设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mcHandle STRING 类型。蒙特卡洛设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -785,17 +805,17 @@ caplib::createPricingSettings(
 
 #### createDividendCurveRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createDividendCurveRiskSettings(delta BOOL, gamma BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING, [returnJson])
+caplib::createDividendCurveRiskSettings(delta, gamma, shift, method, granularity, scaling, threading, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存股息曲线风险设置。函数验证并转换字段，构造 `DividendCurveRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 delta BOOL 类型。是否计算 Delta 风险或 Delta 数值。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
@@ -811,13 +831,13 @@ scaling DOUBLE 类型。风险扰动缩放因子。**有效性:** 必须严格�
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DividendCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DividendCurveRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -830,17 +850,17 @@ caplib::createDividendCurveRiskSettings(1, 1, 1.0e-4,
 
 #### createPriceRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPriceRiskSettings(delta BOOL, gamma BOOL, curvature BOOL, shift DOUBLE, curvatureShift DOUBLE, method INT, scaling DOUBLE, threading INT, handle STRING, [returnJson])
+caplib::createPriceRiskSettings(delta, gamma, curvature, shift, curvatureShift, method, scaling, threading, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存标的价格风险设置。函数验证并转换字段，构造 `PriceRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 delta BOOL 类型。是否计算 Delta 风险或 Delta 数值。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
@@ -858,13 +878,13 @@ scaling DOUBLE 类型。风险扰动缩放因子。**有效性:** 必须严格�
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PriceRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PriceRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -877,17 +897,17 @@ caplib::createPriceRiskSettings(
 
 #### createVolRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVolRiskSettings(vega BOOL, volga BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING, [returnJson])
+caplib::createVolRiskSettings(vega, volga, shift, method, granularity, scaling, threading, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存波动率风险设置。函数验证并转换字段，构造 `VolRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 vega BOOL 类型。是否计算 Vega 风险。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
@@ -903,13 +923,13 @@ scaling DOUBLE 类型。风险扰动缩放因子。**有效性:** 必须严格�
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -922,17 +942,17 @@ caplib::createVolRiskSettings(
 
 #### createPriceVolRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPriceVolRiskSettings(vanna BOOL, priceShift DOUBLE, volShift DOUBLE, method INT, granularity INT, priceScaling DOUBLE, volScaling DOUBLE, threading INT, handle STRING, [returnJson])
+caplib::createPriceVolRiskSettings(vanna, priceShift, volShift, method, granularity, priceScaling, volScaling, threading, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存价格-波动率交叉风险设置。函数验证并转换字段，构造 `PriceVolRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 vanna BOOL 类型。是否计算 Vanna 风险。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
@@ -950,13 +970,13 @@ volScaling DOUBLE 类型。波动率风险缩放因子。**有效性:** 必须�
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PriceVolRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PriceVolRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -969,17 +989,17 @@ caplib::createPriceVolRiskSettings(
 
 #### createThetaRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createThetaRiskSettings(theta BOOL, shift INT, scaling DOUBLE, handle STRING, [returnJson])
+caplib::createThetaRiskSettings(theta, shift, scaling, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存 Theta 风险设置。函数验证并转换字段，构造 `ThetaRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 theta BOOL 类型。是否计算 Theta 风险。**有效性:** 必须是非空 BOOL 标量；兼容旧示例的 INT `0/1`。字符串、空值及其他整数会抛错。
 
@@ -987,13 +1007,13 @@ shift INT 类型。风险或校准计算使用的扰动大小。**有效性:** �
 
 scaling DOUBLE 类型。风险扰动缩放因子。**有效性:** 必须严格为正且有限；包装器仅检查 DOUBLE 类型。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `ThetaRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 ThetaRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1005,33 +1025,33 @@ caplib::createThetaRiskSettings(1, 1, 1.0 / 365.0, "CR_THETA_RISK", false)
 
 #### createScnSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createScnSettings(min DOUBLE, max DOUBLE, size INT, scnGenType INT, handle STRING, [returnJson])
+caplib::createScnSettings(min, max, size, scnGenType, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存一维情景设置。函数验证并转换字段，构造 `ScnSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 min DOUBLE 类型。情景网格下界。**有效性:** 必须为有限、非空 DOUBLE 标量，且不得大于 *max*。建议使用严格递增的区间；包装器保留两端相等的兼容行为。
 
 max DOUBLE 类型。情景网格上界。**有效性:** 必须为有限、非空 DOUBLE 标量，且不得小于 *min*。
 
-size INT 类型。情景网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。**行为实测:** 传 0 或负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
+size INT 类型。情景网格点数量。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
 scnGenType INT 类型。情景生成类型。**有效性:** 定义代码为 `0` 和 `1`；包装器字段为 int32，不拒绝其他整数。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `ScnSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 ScnSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1043,33 +1063,33 @@ caplib::createScnSettings(-0.20, 0.20, 11, 1, "FX_PRICE_SCN", false)
 
 #### createScnAnalysisSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createScnAnalysisSettings(scnType STRING, priceHandle STRING, volHandle STRING, threading INT, handle STRING, [returnJson])
+caplib::createScnAnalysisSettings(scnType, priceHandle, volHandle, threading, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存情景分析设置。函数验证并转换字段，构造 `ScnAnalysisSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 scnType STRING 类型。情景分析类型。**有效性:** 可接受值：`NONE`, `NO_SCN_ANALYSIS`, `PRICE`, `PRICE_SCN_ANALYSIS`, `VOL`, `VOL_SCN_ANALYSIS`, `PRICE_VOL`, `PRICE_VOL_SCN_ANALYSIS`, `THETA`, `THETA_SCN_ANALYSIS`。仅接受所示精确拼写。
 
-priceHandle STRING 类型。价格情景设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+priceHandle STRING 类型。价格情景设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-volHandle STRING 类型。波动率设置或曲面 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传类型不匹配的对象句柄不抛异常、宽松接受（2026-10-15 全新容器实测）。
+volHandle STRING 类型。波动率设置或曲面 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `ScnAnalysisSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 ScnAnalysisSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1085,17 +1105,17 @@ caplib::createScnAnalysisSettings(
 
 #### createFlatDividendCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFlatDividendCurve(asOfDate DATE, dividend DOUBLE, curveName STRING, handle STRING, [returnJson])
+caplib::createFlatDividendCurve(asOfDate, dividend, curveName, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建一条连续复利的平坦股息收益率曲线，将同一股息率用于整个期限范围。函数验证并转换字段，构造 `DividendCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -1103,13 +1123,13 @@ dividend DOUBLE 类型。操作使用的数值。**有效性:** 必须有限；�
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DividendCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1124,17 +1144,17 @@ caplib::createFlatDividendCurve(
 
 #### createFlatVolCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFlatVolCurve(asOfDate DATE, volatility DOUBLE, underlying STRING, handle STRING, [returnJson])
+caplib::createFlatVolCurve(asOfDate, volatility, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建一条平坦的一维波动率曲线，其 1 日和 100 年支柱使用相同波动率。函数验证并转换字段，构造 `VolatilityCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -1142,13 +1162,13 @@ volatility DOUBLE 类型。操作使用的数值。**有效性:** 必须有限�
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilityCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilityCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1162,17 +1182,17 @@ caplib::createFlatVolCurve(asOfDate, 0.20, "AN_UNDERLYING", "AN_FLAT_VOL_CURVE",
 
 #### createVolatilitySmile
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVolatilitySmile(volSmileType STRING, asOfDate DATE, strikes DOUBLE 向量, vols DOUBLE 向量, smileMethod STRING, extrapMethod STRING, term DOUBLE, modelParams DOUBLE 向量, auxiliaryParams DOUBLE 向量, lower DOUBLE, upper DOUBLE, handle STRING, [returnJson])
+caplib::createVolatilitySmile(volSmileType, asOfDate, strikes, vols, smileMethod, extrapMethod, term, modelParams, auxiliaryParams, lower, upper, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 根据对齐的执行价与波动率创建波动率微笑，并设置微笑模型、外推方法、边界和校准参数。函数验证并转换字段，构造 `VolatilitySmile` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 volSmileType STRING 类型。波动率微笑类型。**有效性:** 可接受值：`STRIKE`, `STRIKE_VOL_SMILE`, `DELTA`, `DELTA_VOL_SMILE`, `LOG_STRIKE`, `LOG_STRIKE_VOL_SMILE`。仅接受所示精确拼写。
 
@@ -1184,7 +1204,7 @@ vols DOUBLE 向量 类型。波动率节点值数组。**有效性:** 必须具�
 
 smileMethod STRING 类型。微笑构建或插值方法。**有效性:** 可接受值：`SVI`, `SVI_SMILE_METHOD`, `SABR`, `SABR_SMILE_METHOD`, `LINEAR`, `LINEAR_SMILE_METHOD`, `CUBIC_SPLINE`, `CUBIC_SPLINE_SMILE_METHOD`。仅接受所示精确拼写。
 
-extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_EXTRAP_METHOD`, `FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。
 
 term DOUBLE 类型。赋给微笑的年化期限。**有效性:** 业务有效值须严格为正且有限；包装器仅检查 DOUBLE 类型。
 
@@ -1196,13 +1216,13 @@ lower DOUBLE 类型。下界参数。**有效性:** 必须有限且严格小于 
 
 upper DOUBLE 类型。上界参数。**有效性:** 必须有限且严格大于 *lower*；包装器不检查此关系。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySmile` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySmile 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1220,17 +1240,17 @@ caplib::createVolatilitySmile(
 
 #### createFlatVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFlatVolatilitySurface(asOfDate DATE, volatility DOUBLE, underlying STRING, handle STRING, [returnJson])
+caplib::createFlatVolatilitySurface(asOfDate, volatility, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 为指定标的创建平坦波动率曲面，在所有到期日和执行价上返回同一波动率。函数验证并转换字段，构造 `VolatilitySurface` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -1238,13 +1258,13 @@ volatility DOUBLE 类型。操作使用的数值。**有效性:** 必须有限�
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1259,17 +1279,17 @@ caplib::createFlatVolatilitySurface(
 
 #### createProxyOptionQuoteMatrix
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createProxyOptionQuoteMatrix(underlyingName STRING, refVolSurfaceHandle STRING, refUnderlyingPrice DOUBLE, underlyingPrice DOUBLE, handle STRING, [returnJson])
+caplib::createProxyOptionQuoteMatrix(underlyingName, refVolSurfaceHandle, refUnderlyingPrice, underlyingPrice, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 将缓存的参考波动率曲面从参考现货水平缩放到目标现货水平，为另一标的创建期权报价矩阵。函数验证并转换字段，构造 `OptionQuoteMatrix` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 underlyingName STRING 类型。操作使用的字符串。**有效性:** 除非明确标为可选，否则必须非空。
 
@@ -1279,13 +1299,13 @@ refUnderlyingPrice DOUBLE 类型。参考曲面对应的现货价格。**有效�
 
 underlyingPrice DOUBLE 类型。当前标的价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 OptionQuoteMatrix 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1299,31 +1319,31 @@ caplib::createProxyOptionQuoteMatrix(
 
 #### createModelFreePricingSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createModelFreePricingSettings(currency STRING, incCurrent INT, cashFlows INT, handle STRING, [returnJson])
+caplib::createModelFreePricingSettings(currency, incCurrent, cashFlows, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建分析法定价设置，内置 Black-Scholes-Merton、PDE 网格和 Sobol 蒙特卡洛默认值，无需独立设置句柄。函数验证并转换字段，构造 `PricingSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 incCurrent INT 类型。控制是否包含当日现金流的整数标志。**有效性:** 必须是 INT：`0` 为 false，任意非零值为 true。
 
 cashFlows INT 类型。控制详细现金流输出的整数标志。**有效性:** 必须是 INT：`0` 为 false，任意非零值为 true。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1336,17 +1356,17 @@ caplib::createModelFreePricingSettings(
 
 #### getVolatility
 
-**语法**
+语法
 
 ```dolphindb
-caplib::getVolatility(volSurfaceHandle STRING, termDates DATE 向量, strikes DOUBLE 向量)
+caplib::getVolatility(volSurfaceHandle, termDates, strikes)
 ```
 
-**详情**
+详情
 
 从缓存 VolatilitySurface 计算每个到期日与执行价组合的波动率，并保留服务矩阵。
 
-**参数**
+参数
 
 volSurfaceHandle STRING 类型。FxVolatilitySurface 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
@@ -1354,7 +1374,7 @@ termDates DATE 向量 类型。报价期限对应的到期日期数组。**有�
 
 strikes DOUBLE 向量 类型。操作使用的数值向量。**有效性:** 所有值须有限且形状与配对参数一致。
 
-**返回值**
+返回值
 
 DOUBLE 矩阵，对应到期日/执行价网格。
 
@@ -1371,39 +1391,39 @@ caplib::getVolatility(flatVolSurface, [2023.03.09], [100.0])
 
 #### impliedVolCalculator
 
-**语法**
+语法
 
 ```dolphindb
-caplib::impliedVolCalculator(asOfDate DATE, underlyingPrice DOUBLE, discountCurveHandle STRING, assetCurveHandle STRING, pricingSettingsHandle STRING, optionPrice DOUBLE, payoffType STRING, exerciseType STRING, expiryDate DATE, strike DOUBLE)
+caplib::impliedVolCalculator(asOfDate, underlyingPrice, discountCurveHandle, assetCurveHandle, pricingSettingsHandle, optionPrice, payoffType, exerciseType, expiryDate, strike)
 ```
 
-**详情**
+详情
 
 在所选收益与行权方式下，使用缓存贴现曲线、资产收益曲线和 PricingSettings 求解复现 optionPrice 的波动率。
 
-**参数**
+参数
 
 asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlyingPrice DOUBLE 类型。当前标的价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 assetCurveHandle STRING 类型。所引用具体类的 ObjectCache 句柄。**有效性:** 必须非空并解析为所需 protobuf 类的现有 ObjectCache 条目。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 optionPrice DOUBLE 类型。操作使用的数值。**有效性:** 必须有限；还须满足业务正值与跨参数约束。
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
-exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。
 
 expiryDate DATE 类型。该计算使用的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
 strike DOUBLE 类型。行权价。**有效性:** 利率行权价必须有限；允许负值、零或正值。包装器仅检查类型/形状。
 
-**返回值**
+返回值
 
 计算结果，DOUBLE 类型标量。
 
@@ -1430,25 +1450,25 @@ caplib::impliedVolCalculator(
 
 #### buildBondYieldCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildBondYieldCurve(asOfDate DATE, buildSettingsHandle STRING, curveName STRING, parCurveHandle STRING, dayCountConvention STRING, compoundingType STRING, frequency STRING, buildingMethod STRING, calcJacobian INT, forwardCurveHandle STRING, handle STRING, [returnJson])
+caplib::buildBondYieldCurve(asOfDate, buildSettingsHandle, curveName, parCurveHandle, dayCountConvention, compoundingType, frequency, buildingMethod, calcJacobian, forwardCurveHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建债券收益率曲线。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrYieldCurve`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-buildSettingsHandle STRING 类型。构建设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+buildSettingsHandle STRING 类型。构建设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
+curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-parCurveHandle STRING 类型。平价曲线输入对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+parCurveHandle STRING 类型。平价曲线输入对象 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
@@ -1460,15 +1480,15 @@ buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:*
 
 calcJacobian INT 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-forwardCurveHandle STRING 类型。远期曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+forwardCurveHandle STRING 类型。远期曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrYieldCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1502,25 +1522,25 @@ caplib::buildBondYieldCurve(
 ```
 #### calcYieldToMaturity
 
-**语法**
+语法
 
 ```dolphindb
-caplib::calcYieldToMaturity(asOfDate DATE, compoundingType STRING, bondHandle STRING, forwardCurveHandle STRING, price DOUBLE, priceType STRING, frequency STRING)
+caplib::calcYieldToMaturity(asOfDate, compoundingType, bondHandle, forwardCurveHandle, price, priceType, frequency)
 ```
 
-**详情**
+详情
 
 根据价格和报价约定求解缓存 VanillaBond 的收益率；远期曲线句柄为空时使用平坦零曲线。
 
-**参数**
+参数
 
-asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。**行为实测:** 传 DATE 向量也被宽松接受、不抛异常（2026-10-15 全新容器实测）。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
+asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-compoundingType STRING 类型。复利类型。**有效性:** 识别值：`SIMPLE`, `SIMPLE_COMPOUNDING`, `COMPOUNDED`, `DISCRETE`, `DISCRETE_COMPOUNDING`, `CONTINUOUS`, `CONTINUOUS_COMPOUNDING`。不区分大小写。空值或其他字符串回退为 DISCRETE_COMPOUNDING。**行为实测:** 传错误类型（非 STRING）或 NULL 也不抛异常、宽松接受（2026-10-15 全新容器实测）。
+compoundingType STRING 类型。复利类型。**有效性:** 识别值：`SIMPLE`, `SIMPLE_COMPOUNDING`, `COMPOUNDED`, `DISCRETE`, `DISCRETE_COMPOUNDING`, `CONTINUOUS`, `CONTINUOUS_COMPOUNDING`。不区分大小写。空值或其他字符串回退为 DISCRETE_COMPOUNDING。
 
-bondHandle STRING 类型。债券对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+bondHandle STRING 类型。债券对象 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-forwardCurveHandle STRING 类型。远期曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+forwardCurveHandle STRING 类型。远期曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 price DOUBLE 类型。价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -1528,7 +1548,7 @@ priceType STRING 类型。价格类型。**有效性:** 识别值：`YIELD`, `YI
 
 frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。任何其他字符串均回退到函数指定的默认频率。
 
-**返回值**
+返回值
 
 计算结果，DOUBLE 类型标量。
 
@@ -1561,29 +1581,29 @@ caplib::calcYieldToMaturity(
 ```
 #### calcFixedCpnBondParRate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::calcFixedCpnBondParRate(asOfDate DATE, bondHandle STRING, discountCurveHandle STRING, spreadCurveHandle STRING)
+caplib::calcFixedCpnBondParRate(asOfDate, bondHandle, discountCurveHandle, spreadCurveHandle)
 ```
 
-**详情**
+详情
 
 计算缓存固定利率债券（VanillaBond）的平价票面利率：以给定贴现曲线贴现（可叠加信用利差曲线），求得使债券按面值定价的票息率。*spreadCurveHandle* 传空字符串时按插件内部平坦零利差处理；传入其他类型曲线对象（如平坦信用曲线）会抛出异常。
 
-**参数**
+参数
 
-asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 传单元素 DATE 向量亦可宽松接受并返回结果（包装器不校验标量形式）（2026-10-15 全新容器实测）。
+asOfDate DATE 类型。执行计算的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-bondHandle STRING 类型。债券对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+bondHandle STRING 类型。债券对象 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-discountCurveHandle STRING 类型。贴现曲线（IrYieldCurve） 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线（IrYieldCurve） ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-spreadCurveHandle STRING 类型。信用利差曲线 内存对象 句柄。**有效性:** 传空字符串 `""` 时按内部平坦零利差处理；传非空值时必须是已存在的信用利差曲线 ObjectCache 键。
+spreadCurveHandle STRING 类型。信用利差曲线 ObjectCache 句柄。**有效性:** 传空字符串 `""` 时按内部平坦零利差处理；传非空值时必须是已存在的信用利差曲线 ObjectCache 键。
 
-**返回值**
+返回值
 
-DOUBLE 数值（小数形式的平价利率，如 0.0223）。
+计算得到的平价利率（小数形式，如 0.0223），DOUBLE 类型标量。
 
 **示例**
 
@@ -1614,37 +1634,37 @@ caplib::calcFixedCpnBondParRate(asOfDate, vanillaBond, discountCurve, "")
 
 #### priceVanillaBond
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceVanillaBond(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceVanillaBond(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价普通债券。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 传单元素 DATE 向量亦可宽松接受并完成定价（包装器不校验标量形式）（2026-10-15 全新容器实测）。
+asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传类型不符的对象句柄（如定价设置句柄）亦宽松接受并完成定价（包装器不校验句柄对象类型）（2026-10-15 全新容器实测）。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。**行为实测:** 传 NULL 同样按默认模式处理、不抛异常；传非字符串（如整数）亦宽松接受并完成定价（2026-10-15 全新容器实测）。
+mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1698,19 +1718,19 @@ caplib::priceVanillaBond(
 
 #### buildVanillaBond
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildVanillaBond(nominal DOUBLE, instTemplate STRING, fixings STRING, startDate DATE, tag STRING, [returnJson])
+caplib::buildVanillaBond(nominal, instTemplate, fixings, startDate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建普通债券工具。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `VanillaBond`。
 
-**参数**
+参数
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限。**行为实测:** 实测包装器校验该约束，传 0 或负数抛 IllegalArgumentException（2026-10-15 全新容器实测）。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限。
 
 instTemplate STRING 类型。工具模板对象或模板句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -1718,13 +1738,13 @@ fixings STRING 类型。历史定盘值对象或数组。**有效性:** 必须�
 
 startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VanillaBond` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VanillaBond 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1751,21 +1771,21 @@ caplib::buildVanillaBond(
 
 #### createBondParCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createBondParCurve(asOfDate DATE, currency STRING, instrumentNames STRING 向量, quotes DOUBLE 向量, quoteType STRING, curveName STRING, [returnJson])
+caplib::createBondParCurve(asOfDate, currency, instrumentNames, quotes, quoteType, curveName[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存债券平价曲线输入。函数验证并转换字段，构造 `BondParCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 instrumentNames STRING 向量 类型。市场工具名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
@@ -1775,11 +1795,11 @@ quoteType STRING 类型。市场报价类型。**有效性:** 可接受值：`YI
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `BondParCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 BondParCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1813,21 +1833,21 @@ caplib::createBondParCurve(
 
 #### createFixedLegDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFixedLegDefinition(currency STRING, calendar STRING or STRING 向量, freq STRING, dayCountConvention STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, notionalExchange STRING, tag STRING, [returnJson])
+caplib::createFixedLegDefinition(currency, calendar, freq, dayCountConvention, interestDayConvention, stubPolicy, brokenPeriodType, payDayOffset, payDayConvention, notionalExchange, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存固定利率腿定义。函数验证并转换字段，构造 `InterestRateLegDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendar STRING 或 STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
 freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
@@ -1835,23 +1855,23 @@ dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：
 
 interestDayConvention STRING 类型。计息日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。
 
-brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SHORT`, `LONG`。
 
 payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
 payDayConvention STRING 类型。付款日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-notionalExchange STRING 类型。是否交换名义本金。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_NOTIONAL_EXCHANGE`, `INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+notionalExchange STRING 类型。是否交换名义本金。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateLegDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1869,25 +1889,25 @@ caplib::createFixedLegDefinition(
 
 #### createFloatingLegDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFloatingLegDefinition(currency STRING, refIndex STRING, calendar STRING or STRING 向量, fixingCalendars STRING or STRING 向量, freq STRING, fixingFreq STRING, dayCountConvention STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, spread BOOL, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT[, notionalExchange STRING], tag STRING, [returnJson])
+caplib::createFloatingLegDefinition(currency, refIndex, calendar, fixingCalendars, freq, fixingFreq, dayCountConvention, paymentDiscountMethod, rateCalcMethod, spread, interestDayConvention, stubPolicy, brokenPeriodType, payDayOffset, payDayConvention, fixingDayConvention, fixingMode, fixingDayOffset[, notionalExchange], handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存浮动利率腿定义。函数验证并转换字段，构造 `InterestRateLegDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传不存在的句柄键不抛异常、宽松接受（2026-10-15 全新容器实测）。
+refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 与 fixingCalendars 长度不一致时不抛异常、宽松接受；也接受单个 STRING 标量配更长的 fixingCalendars 向量（2026-10-15 全新容器实测）。
+calendar STRING 或 STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-fixingCalendars STRING or STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+fixingCalendars STRING 或 STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
 freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
@@ -1895,17 +1915,17 @@ fixingFreq STRING 类型。定盘频率。**有效性:** 可接受值：`MONTHLY
 
 dayCountConvention STRING 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
 
-paymentDiscountMethod STRING 类型。付款金额贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+paymentDiscountMethod STRING 类型。付款金额贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。
 
-rateCalcMethod STRING 类型。利率计算方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTEREST_RATE_CALCULATION_METHOD`, `STANDARD`, `COMPOUND_AVERAGE`, `ARITHMETIC_AVERAGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+rateCalcMethod STRING 类型。利率计算方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`STANDARD`, `COMPOUND_AVERAGE`, `ARITHMETIC_AVERAGE`。
 
 spread BOOL 类型。利差。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
 interestDayConvention STRING 类型。计息日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。
 
-brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SHORT`, `LONG`。
 
 payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
@@ -1913,19 +1933,19 @@ payDayConvention STRING 类型。付款日调整约定。**有效性:** 可接�
 
 fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`IN_ADVANCE`, `IN_ARREAR`。
 
 fixingDayOffset INT 类型。定盘日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
-notionalExchange STRING, optional 类型。是否交换名义本金。省略时默认为 `INVALID_NOTIONAL_EXCHANGE`（不交换名义本金）。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_NOTIONAL_EXCHANGE`, `INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+notionalExchange STRING, optional 类型。是否交换名义本金。省略时默认为 `INVALID_NOTIONAL_EXCHANGE`（不交换名义本金）。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateLegDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -1950,25 +1970,25 @@ caplib::createFloatingLegDefinition(
 
 #### createDepoTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createDepoTemplate(instName STRING, currency STRING, calendar STRING or STRING 向量[, startDelay INT[, dayCountConvention STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, startConvention STRING]]]]]], [returnJson])
+caplib::createDepoTemplate(instName, currency, calendar[, startDelay[, dayCountConvention[, interestDayConvention[, payDayOffset[, payDayConvention[, startConvention]]]]]][, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存存款工具模板。函数验证并转换字段，构造 `InterestRateInstrumentTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendar STRING 或 STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-startDelay INT, optional 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+startDelay INT, optional 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。
 
 dayCountConvention STRING, optional 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
 
@@ -1978,13 +1998,13 @@ payDayOffset INT, optional 类型。付款日偏移天数。**有效性:** 必�
 
 payDayConvention STRING, optional 类型。付款日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-startConvention STRING, optional 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+startConvention STRING, optional 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateInstrumentTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2001,33 +2021,33 @@ caplib::createDepoTemplate(
 
 #### createFraTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFraTemplate(instName STRING, refIndex STRING, currency STRING, calendar STRING or STRING 向量, fixingCalendars STRING or STRING 向量, freq STRING[, dayCountConvention STRING[, paymentDiscountMethod STRING[, interestDayConvention STRING[, payDayOffset INT[, payDayConvention STRING[, fixingDayConvention STRING[, fixingDayOffset INT]]]]]]], [returnJson])
+caplib::createFraTemplate(instName, refIndex, currency, calendar, fixingCalendars, freq[, dayCountConvention[, paymentDiscountMethod[, interestDayConvention[, payDayOffset[, payDayConvention[, fixingDayConvention[, fixingDayOffset]]]]]]][, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存远期利率协议模板。函数验证并转换字段，构造 `InterestRateInstrumentTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传不存在的句柄键不抛异常、宽松接受（2026-10-15 全新容器实测）。
+refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendar STRING 或 STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-fixingCalendars STRING or STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+fixingCalendars STRING 或 STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
 freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
 dayCountConvention STRING, optional 类型。计息惯例。**有效性:** 可接受值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `ACT_ACT`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。其他字符串会回退到该函数的默认日计数，而不是报错。
 
-paymentDiscountMethod STRING, optional 类型。付款金额贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+paymentDiscountMethod STRING, optional 类型。付款金额贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。
 
 interestDayConvention STRING, optional 类型。计息日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
@@ -2039,11 +2059,11 @@ fixingDayConvention STRING, optional 类型。定盘日调整约定。**有效�
 
 fixingDayOffset INT, optional 类型。定盘日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateInstrumentTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2063,59 +2083,59 @@ caplib::createFraTemplate(
 
 #### createBondLegDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createBondLegDefinition(bondType STRING, settlementDays INT, currency STRING, dayCountConvention STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, instName STRING, [returnJson])
+caplib::createBondLegDefinition(bondType, settlementDays, currency, dayCountConvention, calendar, frequency, interestDayConvention, stubPolicy, brokenPeriodType, payDayOffset, payDayConvention, refIndex, fixingCalendars, fixingFreq, fixingDayConvention, fixingMode, fixingDayOffset, instName[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存债券现金流腿定义。函数验证并转换字段，构造 `InterestRateLegDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-bondType STRING 类型。债券类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`FIXED_COUPON_BOND`, `FLOATING_COUPON_BOND`, `ZERO_COUPON_BOND`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。
+bondType STRING 类型。债券类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`FIXED_COUPON_BOND`, `FLOATING_COUPON_BOND`, `ZERO_COUPON_BOND`。
 
 settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
 calendar STRING 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
+frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。
 
-interestDayConvention STRING 类型。计息日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+interestDayConvention STRING 类型。计息日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。
 
-brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SHORT`, `LONG`。
 
 payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
-payDayConvention STRING 类型。付款日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+payDayConvention STRING 类型。付款日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
 refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 fixingCalendars STRING 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-fixingFreq STRING 类型。定盘频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingFreq STRING 类型。定盘频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。
 
-fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`IN_ADVANCE`, `IN_ARREAR`。
 
 fixingDayOffset INT 类型。定盘日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateLegDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2133,21 +2153,21 @@ caplib::createBondLegDefinition(
 
 #### createVanillaBondTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVanillaBondTemplate(instName STRING, vanillaBondType STRING, issueDate DATE, settlementDays INT, startDate DATE, maturity STRING, rate DOUBLE, currency STRING, issuePrice DOUBLE, dayCountConvention STRING, calendar STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, refIndex STRING, fixingCalendars STRING or STRING 向量, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, exCouponPeriod STRING, exCouponCalendar STRING, exCouponDayConvention STRING, exCouponEndOfMonth BOOL[, notionalType STRING[, recoveryRate DOUBLE]], [returnJson])
+caplib::createVanillaBondTemplate(instName, vanillaBondType, issueDate, settlementDays, startDate, maturity, rate, currency, issuePrice, dayCountConvention, calendar, frequency, interestDayConvention, stubPolicy, brokenPeriodType, payDayOffset, payDayConvention, refIndex, fixingCalendars, fixingFreq, fixingDayConvention, fixingMode, fixingDayOffset, exCouponPeriod, exCouponCalendar, exCouponDayConvention, exCouponEndOfMonth[, notionalType[, recoveryRate]][, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存普通债券模板。函数验证并转换字段，构造 `VanillaBondTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-vanillaBondType STRING 类型。普通债券类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`FIXED_COUPON_BOND`, `FLOATING_COUPON_BOND`, `ZERO_COUPON_BOND`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+vanillaBondType STRING 类型。普通债券类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`FIXED_COUPON_BOND`, `FLOATING_COUPON_BOND`, `ZERO_COUPON_BOND`。
 
 issueDate DATE 类型。发行日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -2159,7 +2179,7 @@ maturity STRING 类型。到期期限或到期日。**有效性:** 值必须使�
 
 rate DOUBLE 类型。利率或票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 issuePrice DOUBLE 类型。发行价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -2167,13 +2187,13 @@ dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`AC
 
 calendar STRING 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。
 
 interestDayConvention STRING 类型。计息日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。
 
-brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SHORT`, `LONG`。
 
 payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
@@ -2181,17 +2201,17 @@ payDayConvention STRING 类型。付款日调整约定。**有效性:** 识别�
 
 refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-fixingCalendars STRING or STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+fixingCalendars STRING 或 STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-fixingFreq STRING 类型。定盘频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingFreq STRING 类型。定盘频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。
 
 fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`IN_ADVANCE`, `IN_ARREAR`。
 
 fixingDayOffset INT 类型。定盘日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
-exCouponPeriod STRING 类型。除息期长度。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+exCouponPeriod STRING 类型。除息期长度。**有效性:** INT 输入按天计，无需单位；STRING 输入为带可选正负号的整数和可选单位 `Y/M/W/D`（或完整英文单位），省略单位时按天计，负号会被保留。
 
 exCouponCalendar STRING 类型。除息日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
@@ -2199,15 +2219,15 @@ exCouponDayConvention STRING 类型。除息日调整约定。**有效性:** 识
 
 exCouponEndOfMonth BOOL 类型。除息期是否使用月末规则。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-notionalType STRING, optional 类型。名义本金类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`CONST_NOTIONAL`, `AMORTISING_NOTIONAL`, `ACCRETING_NOTIONAL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+notionalType STRING, optional 类型。名义本金类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`CONST_NOTIONAL`, `AMORTISING_NOTIONAL`, `ACCRETING_NOTIONAL`。
 
 recoveryRate DOUBLE, optional 类型。回收率。**有效性:** 必须有限且业务有效范围为 `[0,1]`；包装器仅检查类型。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VanillaBondTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VanillaBondTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2229,33 +2249,33 @@ caplib::createVanillaBondTemplate(
 
 #### createBondYieldCurveBuildSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createBondYieldCurveBuildSettings(curveName STRING, curveType STRING, interpMethod STRING, extrapMethod STRING, tag STRING, [returnJson])
+caplib::createBondYieldCurveBuildSettings(curveName, curveType, interpMethod, extrapMethod, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存债券收益率曲线构建设置。函数验证并转换字段，构造 `BondYieldCurveBuildSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-curveType STRING 类型。曲线值类型，例如零利率、贴现因子或利差。**有效性:** 值必须是以下完整 protobuf 标签之一：`ZERO_RATE`, `LOG_DISCOUNT`, `FORWARD_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+curveType STRING 类型。曲线值类型，例如零利率、贴现因子或利差。**有效性:** 值必须是以下完整 protobuf 标签之一：`ZERO_RATE`, `LOG_DISCOUNT`, `FORWARD_RATE`。
 
-interpMethod STRING 类型。插值方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTERP_METHOD`, `LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `SABR_INTERP`, `SVI_INTERP`, `LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `SABR_NORMAL_INTERP`, `QUADRATIC_POLYNOMIAL_INTERP`, `CUBIC_POLYNOMIAL_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+interpMethod STRING 类型。插值方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `SABR_INTERP`, `SVI_INTERP`, `LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `SABR_NORMAL_INTERP`, `QUADRATIC_POLYNOMIAL_INTERP`, `CUBIC_POLYNOMIAL_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。
 
-extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_EXTRAP_METHOD`, `FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `BondYieldCurveBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 BondYieldCurveBuildSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2274,39 +2294,39 @@ caplib::createBondYieldCurveBuildSettings(
 
 #### createFiMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFiMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, underlyingDiscountCurve STRING, underlyingIncomeCurve STRING, underlyingForwardCurve STRING, name STRING, tag STRING, [returnJson])
+caplib::createFiMktDataSet(asOfDate, discountCurve, creditCurve, underlyingDiscountCurve, underlyingIncomeCurve, underlyingForwardCurve, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存固定收益市场数据集。函数验证并转换字段，构造 `FiMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-discountCurve STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+discountCurve STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-creditCurve STRING 类型。信用曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+creditCurve STRING 类型。信用曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-underlyingDiscountCurve STRING 类型。标的贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+underlyingDiscountCurve STRING 类型。标的贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-underlyingIncomeCurve STRING 类型。标的收益曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+underlyingIncomeCurve STRING 类型。标的收益曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-underlyingForwardCurve STRING 类型。标的远期曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+underlyingForwardCurve STRING 类型。标的远期曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FiMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FiMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2328,35 +2348,35 @@ caplib::createFiMktDataSet(
 
 #### createBondMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createBondMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, forwardCurve STRING, name STRING, tag STRING, [returnJson])
+caplib::createBondMktDataSet(asOfDate, discountCurve, creditCurve, forwardCurve, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存债券市场数据集。函数验证并转换字段，构造 `FiMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-discountCurve STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+discountCurve STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-creditCurve STRING 类型。信用曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+creditCurve STRING 类型。信用曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-forwardCurve STRING 类型。远期曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+forwardCurve STRING 类型。远期曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FiMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FiMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2377,33 +2397,33 @@ caplib::createBondMktDataSet(
 
 #### createFiRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFiRiskSettings(irCurveSettings STRING, csCurveSettings STRING, thetaSettings STRING, name STRING, tag STRING, [returnJson])
+caplib::createFiRiskSettings(irCurveSettings, csCurveSettings, thetaSettings, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存固定收益风险设置。函数验证并转换字段，构造 `FiRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-irCurveSettings STRING 类型。利率曲线风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+irCurveSettings STRING 类型。利率曲线风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-csCurveSettings STRING 类型。信用利差曲线风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+csCurveSettings STRING 类型。信用利差曲线风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 thetaSettings STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FiRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FiRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2421,17 +2441,17 @@ caplib::createFiRiskSettings(
 
 #### createVanillaBondRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createVanillaBondRiskSettings(dv01 STRING, cs01 STRING, theta BOOL, name STRING, tag STRING, [returnJson])
+caplib::createVanillaBondRiskSettings(dv01, cs01, theta, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存普通债券风险设置。函数验证并转换字段，构造 `FiRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 dv01 STRING 类型。是否计算 DV01 利率风险。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -2441,13 +2461,13 @@ theta BOOL 类型。是否计算 Theta 风险。**有效性:** 必须是 BOOL �
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FiRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FiRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2460,17 +2480,17 @@ caplib::createVanillaBondRiskSettings(
 
 #### createAssetYieldCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createAssetYieldCurve(asOfDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, interp STRING, extrap STRING, dayCountConvention STRING, compounding STRING, pillarNames STRING 向量, curveName STRING, handle STRING, [returnJson])
+caplib::createAssetYieldCurve(asOfDate, pillarDates, pillarValues, interp, extrap, dayCountConvention, compounding, pillarNames, curveName, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 根据对齐的日期与命名支柱以及所选插值、外推、日计数和复利方式创建资产收益率曲线。函数验证并转换字段，构造 `AssetYieldCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -2490,13 +2510,13 @@ pillarNames STRING 向量 类型。操作使用的字符串向量。**有效性:
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `AssetYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 AssetYieldCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2516,54 +2536,54 @@ caplib::createAssetYieldCurve(
 ### 利率
 #### buildIrSingleCurrencyCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildIrSingleCurrencyCurve(asOfDate DATE, targetCurveNames STRING 向量, buildSettingsHandles STRING 向量, parCurveHandles STRING 向量, dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING 向量, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING 向量, outputHandle STRING, [returnJson])
+caplib::buildIrSingleCurrencyCurve(asOfDate, targetCurveNames, buildSettingsHandles, parCurveHandles, dayCountConvention, compoundingType, frequency, otherCurveHandles, buildingMethod, calcJacobian, shift, finiteDifferenceMethod, threadingMode, targetCurveHandles, outputHandle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建单币种利率曲线组。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrSingleCurrencyCurveBuildingOutput`。
 > **用法说明：** *targetCurveHandles* 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；*outputHandle* 指向构建输出容器本身。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 包装器不校验本参数的向量形式，传入字符串标量亦可宽松接受并完成调用（服务层按单条目标曲线处理）；建议按字符串向量传入。
+targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-buildSettingsHandles STRING 向量 类型。曲线构建设置 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+buildSettingsHandles STRING 向量 类型。曲线构建设置 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-parCurveHandles STRING 向量 类型。平价曲线输入对象 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+parCurveHandles STRING 向量 类型。平价曲线输入对象 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。
 
-compoundingType STRING 类型。复利类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_COMPOUNDING_TYPE`, `CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+compoundingType STRING 类型。复利类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。
 
-frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。
 
-otherCurveHandles STRING 向量 类型。构建所需的其他曲线 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+otherCurveHandles STRING 向量 类型。构建所需的其他曲线 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:** 值必须是以下完整 protobuf 标签之一：`BOOTSTRAPPING_METHOD`, `GLOBAL_OPTIMIZATION_METHOD`, `HYBRID_METHOD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:** 值必须是以下完整 protobuf 标签之一：`BOOTSTRAPPING_METHOD`, `GLOBAL_OPTIMIZATION_METHOD`, `HYBRID_METHOD`。
 
 calcJacobian BOOL 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常（2026-10-15 全新容器实测）。
+shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-finiteDifferenceMethod STRING 类型。有限差分方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+finiteDifferenceMethod STRING 类型。有限差分方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。
 
-threadingMode STRING 类型。线程模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`SINGLE_THREADING_MODE`, `MULTI_THREADING_MODE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+threadingMode STRING 类型。线程模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`SINGLE_THREADING_MODE`, `MULTI_THREADING_MODE`。
 
 targetCurveHandles STRING 向量 类型。构建输出的目标曲线句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 outputHandle STRING 类型。构建输出对象的缓存句柄。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrSingleCurrencyCurveBuildingOutput` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrSingleCurrencyCurveBuildingOutput 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2606,37 +2626,37 @@ caplib::buildIrSingleCurrencyCurve(asOfDate,
 ```
 #### priceIrVanillaInstrument
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceIrVanillaInstrument(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceIrVanillaInstrument(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 执行定价并返回定价结果。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 也接受 DATE 向量（非标量）（2026-10-15 全新容器实测）。
+asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。**行为实测:** 传 NULL 或错误类型同样按默认模式处理、不抛异常（2026-10-15 全新容器实测）。
+mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2699,19 +2719,19 @@ result = caplib::priceIrVanillaInstrument(
 ```
 #### buildIrVanillaInstrument
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildIrVanillaInstrument(payReceive STRING, cpnRate DOUBLE, spread DOUBLE, startDate DATE, maturityDate DATE, instTemplate STRING, nominal DOUBLE, legFixings STRING, tag STRING, [returnJson])
+caplib::buildIrVanillaInstrument(payReceive, cpnRate, spread, startDate, maturityDate, instTemplate, nominal, legFixings, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建标准利率工具。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrVanillaInstrument`。
 
-**参数**
+参数
 
-payReceive STRING 类型。支付或收取方向。**有效性:** 值必须是以下完整 protobuf 标签之一：`PAY`, `PAYER`, `RECEIVE`, `RECEIVER`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+payReceive STRING 类型。支付或收取方向。**有效性:** 值必须是以下完整 protobuf 标签之一：`PAY`, `PAYER`, `RECEIVE`, `RECEIVER`。
 
 cpnRate DOUBLE 类型。票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
@@ -2723,17 +2743,17 @@ maturityDate DATE 类型。到期日。**有效性:** 必须是非空 DolphinDB 
 
 instTemplate STRING 类型。工具模板对象或模板句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。**行为实测:** 传 0 不抛异常，包装器不做正数校验（2026-10-15 全新容器实测）。
+nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
 legFixings STRING 类型。各现金流腿使用的定盘值对象或数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrVanillaInstrument` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrVanillaInstrument 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2773,23 +2793,23 @@ swap = caplib::buildIrVanillaInstrument(
 ```
 #### getDiscountFactor
 
-**语法**
+语法
 
 ```dolphindb
-caplib::getDiscountFactor(irCurveHandle STRING, dates DATE 向量)
+caplib::getDiscountFactor(irCurveHandle, dates)
 ```
 
-**详情**
+详情
 
 根据缓存 IrYieldCurve 计算给定日期的贴现因子或多个日期的贴现因子。单日传单元素 DATE 向量，多日传更长向量；输出保持输入顺序。
 
-**参数**
+参数
 
 irCurveHandle STRING 类型。所引用具体类的 ObjectCache 句柄。**有效性:** 必须非空并解析为所需 protobuf 类的现有 ObjectCache 条目。
 
 dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对应 dates[i]。**有效性:** 必须是无空值 DATE 向量。单日使用单元素向量，多日使用更长向量；不接受 DATE 标量。
 
-**返回值**
+返回值
 
 对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
@@ -2809,23 +2829,23 @@ caplib::getDiscountFactor(irCurve, [2025.03.10])
 
 #### getZeroRate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::getZeroRate(irCurveHandle STRING, dates DATE 向量)
+caplib::getZeroRate(irCurveHandle, dates)
 ```
 
-**详情**
+详情
 
 根据缓存 IrYieldCurve 为每个输入日期计算零利率；输出保持输入顺序。
 
-**参数**
+参数
 
 irCurveHandle STRING 类型。所引用具体类的 ObjectCache 句柄。**有效性:** 必须非空并解析为所需 protobuf 类的现有 ObjectCache 条目。
 
 dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对应 dates[i]。**有效性:** 必须是无空值 DATE 向量。单日使用单元素向量，多日使用更长向量；不接受 DATE 标量。
 
-**返回值**
+返回值
 
 对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
@@ -2845,25 +2865,25 @@ caplib::getZeroRate(irCurve, [2025.03.10])
 
 #### getFwdRate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::getFwdRate(irCurveHandle STRING, dates DATE 向量, tenor DOUBLE)
+caplib::getFwdRate(irCurveHandle, dates, tenor)
 ```
 
-**详情**
+详情
 
 计算从每个输入日期开始、对应给定年化期限的远期利率；输出保持日期顺序。
 
-**参数**
+参数
 
 irCurveHandle STRING 类型。所引用具体类的 ObjectCache 句柄。**有效性:** 必须非空并解析为所需 protobuf 类的现有 ObjectCache 条目。
 
 dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对应 dates[i]。**有效性:** 必须是无空值 DATE 向量。单日使用单元素向量，多日使用更长向量；不接受 DATE 标量。
 
-tenor DOUBLE 类型。以年化比例表示的远期间隔。**有效性:** 业务有效值须严格为正且有限；包装器仅检查 DOUBLE 类型。**行为实测:** 传 0 或负数会被下游服务拒绝（tenor must be positive）（2026-10-15 全新容器实测）。
+tenor DOUBLE 类型。以年化比例表示的远期间隔。**有效性:** 业务有效值须严格为正且有限；包装器仅检查 DOUBLE 类型。
 
-**返回值**
+返回值
 
 对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
@@ -2883,17 +2903,17 @@ caplib::getFwdRate(irCurve, [2025.03.10], 0.25)
 
 #### createIrYieldCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrYieldCurve(asOfDate DATE, pillarDates DATE 向量, pillarValues DOUBLE 向量, curveType STRING, dayCountConvention STRING, interp STRING, extrap STRING, compounding STRING, currency STRING, name STRING, handle STRING, [returnJson])
+caplib::createIrYieldCurve(asOfDate, pillarDates, pillarValues, curveType, dayCountConvention, interp, extrap, compounding, currency, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率收益率曲线。函数验证并转换字段，构造 `IrYieldCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -2911,17 +2931,17 @@ extrap STRING 类型。外推方法。**有效性:** 可接受值：`FLAT_EXTRAP
 
 compounding STRING 类型。复利约定。**有效性:** 可接受值：`CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。仅接受所示精确拼写。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrYieldCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2940,17 +2960,17 @@ caplib::createIrYieldCurve(
 
 #### createIrCurveRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrCurveRiskSettings(delta BOOL, gamma BOOL, curvature BOOL, shift DOUBLE, curvatureShift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING, [returnJson])
+caplib::createIrCurveRiskSettings(delta, gamma, curvature, shift, curvatureShift, method, granularity, scaling, threading, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率曲线风险设置。函数验证并转换字段，构造 `IrCurveRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 delta BOOL 类型。是否计算 Delta 风险或 Delta 数值。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
@@ -2970,13 +2990,13 @@ scaling DOUBLE 类型。风险扰动缩放因子。**有效性:** 必须严格�
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传错误类型的标量不抛异常、宽松接受（2026-10-15 全新容器实测）。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrCurveRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -2988,27 +3008,27 @@ caplib::createIrCurveRiskSettings(
 ```
 #### createIrParRateCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrParRateCurve(asOfDate DATE, currency STRING, curveName STRING, instNames STRING 向量, instTypes STRING 向量, instTerms STRING 向量, factors DOUBLE 向量, quotes DOUBLE 向量, handle STRING, [returnJson])
+caplib::createIrParRateCurve(asOfDate, currency, curveName, instNames, instTypes, instTerms, factors, quotes, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率平价利率曲线输入。函数验证并转换字段，构造 `IrParRateCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-instNames STRING 向量 类型。与工具类型、期限和报价对齐的工具名称。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 也接受 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+instNames STRING 向量 类型。与工具类型、期限和报价对齐的工具名称。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-instTypes STRING 向量 类型。构建曲线使用的工具类型数组。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。
+instTypes STRING 向量 类型。构建曲线使用的工具类型数组。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。
 
 instTerms STRING 向量 类型。与工具名称对齐的工具期限。**有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
 
@@ -3016,13 +3036,13 @@ factors DOUBLE 向量 类型。与工具或报价对齐的缩放因子。**有�
 
 quotes DOUBLE 向量 类型。市场报价值数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrParRateCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrParRateCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3049,37 +3069,37 @@ caplib::createIrParRateCurve(
 
 #### createIrYieldCurveBuildSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrYieldCurveBuildSettings(curveName STRING, useOnTnFxSwap BOOL, discountCurrencyNames STRING 向量, discountCurveNames STRING 向量, forwardIndexNames STRING 向量, forwardCurveNames STRING 向量, handle STRING, [returnJson])
+caplib::createIrYieldCurveBuildSettings(curveName, useOnTnFxSwap, discountCurrencyNames, discountCurveNames, forwardIndexNames, forwardCurveNames, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率收益率曲线构建设置。函数验证并转换字段，构造 `IrYieldCurveBuildSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 useOnTnFxSwap BOOL 类型。是否使用 ON/TN 外汇掉期工具构建曲线。**有效性:** 必须是非空 BOOL 标量；兼容旧示例的 INT `0/1`。字符串、空值及其他整数会抛错。
 
-discountCurrencyNames STRING 向量 类型。币种代码。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。**行为实测:** 元素类型不符时不抛异常、宽松接受（2026-10-15 全新容器实测）。
+discountCurrencyNames STRING 向量 类型。币种代码。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
 
-discountCurveNames STRING 向量 类型。贴现曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 也接受 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+discountCurveNames STRING 向量 类型。贴现曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-forwardIndexNames STRING 向量 类型。远期指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。**行为实测:** 元素类型不符时不抛异常、宽松接受（2026-10-15 全新容器实测）。
+forwardIndexNames STRING 向量 类型。远期指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
 
-forwardCurveNames STRING 向量 类型。远期曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 元素类型不符时不抛异常、宽松接受（2026-10-15 全新容器实测）。
+forwardCurveNames STRING 向量 类型。远期曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传错误类型的标量不抛异常、宽松接受（2026-10-15 全新容器实测）。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrYieldCurveBuildSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrYieldCurveBuildSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3095,56 +3115,56 @@ caplib::createIrYieldCurveBuildSettings(
 
 #### buildIrCrossCurrencyCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildIrCrossCurrencyCurve(asOfDate DATE, targetCurveNames STRING 向量, buildSettingsHandles STRING 向量, parCurveHandles STRING 向量, dayCountConvention STRING, compoundingType STRING, frequency STRING, otherCurveHandles STRING 向量, fxSpotHandle STRING, buildingMethod STRING, calcJacobian BOOL, shift DOUBLE, finiteDifferenceMethod STRING, threadingMode STRING, targetCurveHandles STRING 向量, outputHandle STRING, [returnJson])
+caplib::buildIrCrossCurrencyCurve(asOfDate, targetCurveNames, buildSettingsHandles, parCurveHandles, dayCountConvention, compoundingType, frequency, otherCurveHandles, fxSpotHandle, buildingMethod, calcJacobian, shift, finiteDifferenceMethod, threadingMode, targetCurveHandles, outputHandle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建跨币种利率曲线组。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `IrCrossCurrencyCurveBuildingOutput`。
 > **用法说明：** *targetCurveHandles* 为每个目标曲线提供输出句柄——构建完成后每条曲线以 `IrYieldCurve` 对象存入 ObjectCache，可直接传给 `getZeroRate`、`getDiscountFactor`、`getFwdRate` 等单曲线访问器使用；*outputHandle* 指向构建输出容器本身。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 包装器不校验本参数的向量形式，传入字符串标量亦可宽松接受并完成调用（服务层按单条目标曲线处理）；建议按字符串向量传入。
+targetCurveNames STRING 向量 类型。待构建目标曲线名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-buildSettingsHandles STRING 向量 类型。曲线构建设置 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+buildSettingsHandles STRING 向量 类型。曲线构建设置 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-parCurveHandles STRING 向量 类型。平价曲线输入对象 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+parCurveHandles STRING 向量 类型。平价曲线输入对象 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。
 
-compoundingType STRING 类型。复利类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_COMPOUNDING_TYPE`, `CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+compoundingType STRING 类型。复利类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`CONTINUOUS_COMPOUNDING`, `DISCRETE_COMPOUNDING`, `SIMPLE_COMPOUNDING`。
 
-frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_FREQUENCY`, `ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+frequency STRING 类型。频率。**有效性:** 值必须是以下完整 protobuf 标签之一：`ANNUAL`, `SEMIANNUAL`, `EVERY_FOURTH_MONTH`, `QUARTERLY`, `BIMONTHLY`, `MONTHLY`, `EVERY_FOURTH_WEEK`, `BIWEEKLY`, `WEEKLY`, `DAILY`, `ONCE`, `OTHER_FREQUENCY`。
 
-otherCurveHandles STRING 向量 类型。构建所需的其他曲线 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+otherCurveHandles STRING 向量 类型。构建所需的其他曲线 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-fxSpotHandle STRING 类型。外汇即期汇率 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+fxSpotHandle STRING 类型。外汇即期汇率 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:** 值必须是以下完整 protobuf 标签之一：`BOOTSTRAPPING_METHOD`, `GLOBAL_OPTIMIZATION_METHOD`, `HYBRID_METHOD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:** 值必须是以下完整 protobuf 标签之一：`BOOTSTRAPPING_METHOD`, `GLOBAL_OPTIMIZATION_METHOD`, `HYBRID_METHOD`。
 
 calcJacobian BOOL 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常（2026-10-15 全新容器实测）。
+shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-finiteDifferenceMethod STRING 类型。有限差分方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+finiteDifferenceMethod STRING 类型。有限差分方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。
 
-threadingMode STRING 类型。线程模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`SINGLE_THREADING_MODE`, `MULTI_THREADING_MODE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+threadingMode STRING 类型。线程模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`SINGLE_THREADING_MODE`, `MULTI_THREADING_MODE`。
 
 targetCurveHandles STRING 向量 类型。构建输出的目标曲线句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 outputHandle STRING 类型。构建输出对象的缓存句柄。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrCrossCurrencyCurveBuildingOutput` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrCrossCurrencyCurveBuildingOutput 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3193,33 +3213,33 @@ result = caplib::buildIrCrossCurrencyCurve(
 ```
 #### createIrMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrMktDataSet(asOfDate DATE, discountCurveHandle STRING, underlyingInterestRates STRING 向量, forwardCurveHandles STRING 向量, handle STRING, [returnJson])
+caplib::createIrMktDataSet(asOfDate, discountCurveHandle, underlyingInterestRates, forwardCurveHandles, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率市场数据集。函数验证并转换字段，构造 `IrMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-underlyingInterestRates STRING 向量 类型。标的利率指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。**行为实测:** 也接受 DOUBLE 标量（非向量）（2026-10-15 全新容器实测）。
+underlyingInterestRates STRING 向量 类型。标的利率指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-forwardCurveHandles STRING 向量 类型。远期曲线 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+forwardCurveHandles STRING 向量 类型。远期曲线 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3247,37 +3267,37 @@ mktData = caplib::createIrMktDataSet(
 
 #### createIrCrossCcyMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrCrossCcyMktDataSet(asOfDate DATE, baseDiscountCurveHandle STRING, underlyingInterestRates STRING 向量, forwardCurveHandles STRING 向量, crossCcyDiscountCurveHandle STRING, fxSpotHandle STRING, handle STRING, [returnJson])
+caplib::createIrCrossCcyMktDataSet(asOfDate, baseDiscountCurveHandle, underlyingInterestRates, forwardCurveHandles, crossCcyDiscountCurveHandle, fxSpotHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存跨币种利率市场数据集。函数验证并转换字段，构造 `IrCrossCcyMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 也接受 DATE 向量（非标量）（2026-10-15 全新容器实测）。
+asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-baseDiscountCurveHandle STRING 类型。基准币种贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+baseDiscountCurveHandle STRING 类型。基准币种贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 underlyingInterestRates STRING 向量 类型。标的利率指数名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-forwardCurveHandles STRING 向量 类型。远期曲线 内存对象 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+forwardCurveHandles STRING 向量 类型。远期曲线 ObjectCache 句柄数组。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-crossCcyDiscountCurveHandle STRING 类型。跨币种贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+crossCcyDiscountCurveHandle STRING 类型。跨币种贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-fxSpotHandle STRING 类型。外汇即期汇率 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+fxSpotHandle STRING 类型。外汇即期汇率 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrCrossCcyMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrCrossCcyMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3314,29 +3334,29 @@ mktData = caplib::createIrCrossCcyMktDataSet(
 
 #### createIrRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrRiskSettings(irCurveRiskSettingsHandle STRING, thetaRiskSettingsHandle STRING, handle STRING, [returnJson])
+caplib::createIrRiskSettings(irCurveRiskSettingsHandle, thetaRiskSettingsHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率风险设置。函数验证并转换字段，构造 `IrRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-irCurveRiskSettingsHandle STRING 类型。利率曲线风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+irCurveRiskSettingsHandle STRING 类型。利率曲线风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-thetaRiskSettingsHandle STRING 类型。Theta 风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+thetaRiskSettingsHandle STRING 类型。Theta 风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3354,31 +3374,31 @@ riskSettings = caplib::createIrRiskSettings(irCurveRisk, thetaRisk, "IR_RISK", f
 
 #### createXccyIrRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createXccyIrRiskSettings(irCurveRiskSettingsHandle STRING, fxRiskSettingsHandle STRING, thetaRiskSettingsHandle STRING, handle STRING, [returnJson])
+caplib::createXccyIrRiskSettings(irCurveRiskSettingsHandle, fxRiskSettingsHandle, thetaRiskSettingsHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存跨币种利率风险设置。函数验证并转换字段，构造 `XccyIrRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-irCurveRiskSettingsHandle STRING 类型。利率曲线风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+irCurveRiskSettingsHandle STRING 类型。利率曲线风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-fxRiskSettingsHandle STRING 类型。外汇风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+fxRiskSettingsHandle STRING 类型。外汇风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-thetaRiskSettingsHandle STRING 类型。Theta 风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+thetaRiskSettingsHandle STRING 类型。Theta 风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `XccyIrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 XccyIrRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3399,37 +3419,37 @@ riskSettings = caplib::createXccyIrRiskSettings(
 
 #### priceIrCrossCurrencySwap
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceIrCrossCurrencySwap(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceIrCrossCurrencySwap(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 执行定价并返回定价结果。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3498,17 +3518,17 @@ result = caplib::priceIrCrossCurrencySwap(
 ```
 #### createInterestCalcScheduleDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createInterestCalcScheduleDefinition(calendars STRING, frequency STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, dateRollConvention STRING, tag STRING, [returnJson])
+caplib::createInterestCalcScheduleDefinition(calendars, frequency, interestDayConvention, stubPolicy, brokenPeriodType, dateRollConvention, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存计息日程定义。函数验证并转换字段，构造 `InterestCaculationScheduleDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 calendars STRING 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
@@ -3516,19 +3536,19 @@ frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTE
 
 interestDayConvention STRING 类型。计息日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。
+stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。
 
-brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SHORT`, `LONG`。
 
-dateRollConvention STRING 类型。日期或日期数组。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_ROLL_CONVENTION`, `EOM`, `FRN`, `IMM`, `IMM_CAD`, `IMM_AUD`, `IMM_NZD`, `SFE`, `NONE`, `TBILL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dateRollConvention STRING 类型。日期或日期数组。**有效性:** 值必须是以下完整 protobuf 标签之一：`EOM`, `FRN`, `IMM`, `IMM_CAD`, `IMM_AUD`, `IMM_NZD`, `SFE`, `NONE`, `TBILL`。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestCaculationScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestCaculationScheduleDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3541,35 +3561,35 @@ caplib::createInterestCalcScheduleDefinition(
 
 #### createInterestPaymentScheduleDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createInterestPaymentScheduleDefinition(calendars STRING, frequency STRING, payDayMode STRING, payDayOffset INT, payDayConvention STRING, tag STRING, [returnJson])
+caplib::createInterestPaymentScheduleDefinition(calendars, frequency, payDayMode, payDayOffset, payDayConvention, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存付息日程定义。函数验证并转换字段，构造 `InterestPaymentScheduleDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 calendars STRING 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
 frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。任何其他字符串均回退到函数指定的默认频率。
 
-payDayMode STRING 类型。付款日生成模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。
+payDayMode STRING 类型。付款日生成模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`IN_ADVANCE`, `IN_ARREAR`。
 
-payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。**行为实测:** 传 0、正数或负数均不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
+payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
 payDayConvention STRING 类型。付款日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestPaymentScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestPaymentScheduleDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3582,17 +3602,17 @@ caplib::createInterestPaymentScheduleDefinition(
 
 #### createInterestRateFixingScheduleDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createInterestRateFixingScheduleDefinition(calendars STRING, frequency STRING, frequencyRatio INT, fixingDayMode STRING, fixingDayOffset INT, fixingDayConvention STRING, tag STRING, [returnJson])
+caplib::createInterestRateFixingScheduleDefinition(calendars, frequency, frequencyRatio, fixingDayMode, fixingDayOffset, fixingDayConvention, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率定盘日程定义。函数验证并转换字段，构造 `InterestRateFixingScheduleDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 calendars STRING 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
@@ -3600,19 +3620,19 @@ frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTE
 
 frequencyRatio INT 类型。频率换算比例。**有效性:** 必须严格为正；包装器通常仅检查类型。
 
-fixingDayMode STRING 类型。定盘日生成模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。
+fixingDayMode STRING 类型。定盘日生成模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`IN_ADVANCE`, `IN_ARREAR`。
 
 fixingDayOffset INT 类型。定盘日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
 fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateFixingScheduleDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateFixingScheduleDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3625,41 +3645,41 @@ caplib::createInterestRateFixingScheduleDefinition(
 
 #### createIborIndex
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIborIndex(indexName STRING, indexTenor STRING, indexCcy STRING, calendarList STRING or STRING 向量, startDelay INT[, dayCountConvention STRING[, interestDayConvention STRING[, dateRollConvention STRING[, iborType STRING]]]], [returnJson])
+caplib::createIborIndex(indexName, indexTenor, indexCcy, calendarList, startDelay[, dayCountConvention[, interestDayConvention[, dateRollConvention[, iborType]]]][, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存 IBOR 指数定义。函数验证并转换字段，构造 `IborIndex` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 indexName STRING 类型。利率指数名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 indexTenor STRING 类型。利率指数期限。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-indexCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+indexCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-calendarList STRING or STRING 向量 类型。业务日历名称列表。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendarList STRING 或 STRING 向量 类型。业务日历名称列表。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。
 
-dayCountConvention STRING, optional 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。**行为实测:** 传错误类型（非 STRING）不抛异常、宽松接受（2026-10-15 全新容器实测）。
+dayCountConvention STRING, optional 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
-interestDayConvention STRING, optional 类型。计息日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。**行为实测:** 传错误类型（非 STRING）不抛异常、宽松接受（2026-10-15 全新容器实测）。
+interestDayConvention STRING, optional 类型。计息日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-dateRollConvention STRING, optional 类型。日期或日期数组。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_ROLL_CONVENTION`, `EOM`, `FRN`, `IMM`, `IMM_CAD`, `IMM_AUD`, `IMM_NZD`, `SFE`, `NONE`, `TBILL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dateRollConvention STRING, optional 类型。日期或日期数组。**有效性:** 值必须是以下完整 protobuf 标签之一：`EOM`, `FRN`, `IMM`, `IMM_CAD`, `IMM_AUD`, `IMM_NZD`, `SFE`, `NONE`, `TBILL`。
 
-iborType STRING, optional 类型。IBOR 指数类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`STANDARD_IBOR_INDEX`, `OVERNIGHT_INDEX`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+iborType STRING, optional 类型。IBOR 指数类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`STANDARD_IBOR_INDEX`, `OVERNIGHT_INDEX`。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IborIndex` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IborIndex 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3678,31 +3698,31 @@ iborIndex = caplib::createIborIndex(
 
 #### createIrLegDefinition
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrLegDefinition(legType STRING, currency STRING, dayCountConvention STRING, refIndex STRING, paymentDiscountMethod STRING, rateCalcMethod STRING, notionalExchange STRING, spread BOOL, fxConvert BOOL, fxReset BOOL, calendar STRING or STRING 向量, freq STRING, interestDayConvention STRING, stubPolicy STRING, brokenPeriodType STRING, payDayOffset INT, payDayConvention STRING, fixingCalendars STRING or STRING 向量, fixingFreq STRING, fixingDayConvention STRING, fixingMode STRING, fixingDayOffset INT, tag STRING, [returnJson])
+caplib::createIrLegDefinition(legType, currency, dayCountConvention, refIndex, paymentDiscountMethod, rateCalcMethod, notionalExchange, spread, fxConvert, fxReset, calendar, freq, interestDayConvention, stubPolicy, brokenPeriodType, payDayOffset, payDayConvention, fixingCalendars, fixingFreq, fixingDayConvention, fixingMode, fixingDayOffset, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存利率现金流腿定义。函数验证并转换字段，构造 `InterestRateLegDefinition` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-legType STRING 类型。现金流腿类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTEREST_RATE_LEG_TYPE`, `FIXED_LEG`, `FLOATING_LEG`, `FRA_LEG`, `STRUCTURED_LEG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+legType STRING 类型。现金流腿类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`FIXED_LEG`, `FLOATING_LEG`, `FRA_LEG`, `STRUCTURED_LEG`。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
-refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 固定腿传空字符串即可；浮动腿/FRA 腿须为可解析的参考指数。包装器不验证业务标识的字符集或成员资格。**行为实测:** 传不存在的句柄键不抛异常、宽松接受（2026-10-15 全新容器实测）。
+refIndex STRING 类型。参考利率指数名称或句柄。**有效性:** 固定腿传空字符串即可；浮动腿/FRA 腿须为可解析的参考指数。包装器不验证业务标识的字符集或成员资格。
 
-paymentDiscountMethod STRING 类型。支付现金流贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_PAYMENT_DISCOUNT_METHOD`, `NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+paymentDiscountMethod STRING 类型。支付现金流贴现方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`NO_DISCOUNT`, `DISCOUNT_AT_FLOATING_RATE`。
 
-rateCalcMethod STRING 类型。利率计算方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTEREST_RATE_CALCULATION_METHOD`, `STANDARD`, `COMPOUND_AVERAGE`, `ARITHMETIC_AVERAGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+rateCalcMethod STRING 类型。利率计算方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`STANDARD`, `COMPOUND_AVERAGE`, `ARITHMETIC_AVERAGE`。
 
-notionalExchange STRING 类型。是否交换名义本金。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_NOTIONAL_EXCHANGE`, `INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+notionalExchange STRING 类型。是否交换名义本金。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL_EXCHANGE`, `INTERMEDIATE_EXCHANGE`, `INITIAL_INTERMEDIATE_EXCHANGE`, `FINAL_EXCHANGE`, `INITIAL_FINAL_EXCHANGE`, `INTERMEDIATE_FINAL_EXCHANGE`, `INITIAL_INTERMEDIATE_FINAL_EXCHANGE`。
 
 spread BOOL 类型。是否将输入利率作为利差处理。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
@@ -3710,37 +3730,37 @@ fxConvert BOOL 类型。是否进行外汇折算。**有效性:** 必须是 BOOL
 
 fxReset BOOL 类型。是否使用外汇重置。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-calendar STRING or STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 与 fixingCalendars 长度不一致时不抛异常、宽松接受；也接受单个 STRING 标量配更长的 fixingCalendars 向量（2026-10-15 全新容器实测）。
+calendar STRING 或 STRING 向量 类型。业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
 freq STRING 类型。支付或计息频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
 interestDayConvention STRING 类型。计息日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_STUB_POLICY`, `INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+stubPolicy STRING 类型。短长首末期处理规则。**有效性:** 值必须是以下完整 protobuf 标签之一：`INITIAL`, `FINAL`, `INITIAL_FINAL_FORWARD`, `INITIAL_FINAL_BACKWARD`。
 
-brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BROKEN_PERIOD_TYPE`, `SHORT`, `LONG`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+brokenPeriodType STRING 类型。不规则首末期处理类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`SHORT`, `LONG`。
 
 payDayOffset INT 类型。付款日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
 payDayConvention STRING 类型。付款日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-fixingCalendars STRING or STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+fixingCalendars STRING 或 STRING 向量 类型。定盘日业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
 fixingFreq STRING 类型。定盘频率。**有效性:** 可接受值：`MONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `SEMI_ANNUAL`, `ANNUAL`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
 fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 可接受值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。其他字符串会回退到该函数的默认/无效哨兵。
 
-fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DATE_GENERATION_MODE`, `IN_ADVANCE`, `IN_ARREAR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingMode STRING 类型。定盘值处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`IN_ADVANCE`, `IN_ARREAR`。
 
 fixingDayOffset INT 类型。定盘日偏移天数。**有效性:** 必须是 INT；除非另有说明，可为负、零或正。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateLegDefinition` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateLegDefinition 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3758,36 +3778,36 @@ caplib::createIrLegDefinition(
 
 #### createIrVanillaInstrumentTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrVanillaInstrumentTemplate(instType STRING, instName STRING, startConvention STRING, startDelay INT, legDefinitions STRING 向量, tag STRING, [returnJson])
+caplib::createIrVanillaInstrumentTemplate(instType, instName, startConvention, startDelay, legDefinitions, handle[, returnJson])
 ```
 
-**详情**
+详情
 > **服务端支持范围（实测）：** 下列 25 个类型会被静态数据服务拒收（`not find value`），不能用于本接口：FX_TIME_OPTION、FX_DIGITAL_OPTION、FX_QUANTO_OPTION、FX_TOUCH_OPTION、FX_BARRIER_OPTION、FX_VANILLA_STRATEGY、FX_TOUCH_QUANTO_OPTION、FX_DIGITAL_QUANTO_OPTION（FX 期权族）；EQ_EUROPEAN_OPTION、EQ_AMERICAN_OPTION、EQ_SPOT、EQ_VANILLA_OPTION、EQ_DIGITAL_OPTION、EQ_BARRIER_OPTION、EQ_RANGE_ACCRUAL_OPTION、EQ_TOUCH_OPTION、EQ_QUANTO_OPTION（权益）；CM_EUROPEAN_OPTION、CM_AMERICAN_OPTION、CM_VANILLA_OPTION、CM_ASIAN_OPTION、CM_DIGITAL_OPTION、CM_DIGITAL_ASIAN_OPTION（商品期权）；PM_SPOT、PM_SWAP（贵金属）。其余 IR 域类型（DEPOSIT、FRA、IR_VANILLA_SWAP、IR_CAP_FLOOR、IR_BOND、IR_FUTURE*、IR_EUROPEAN_SWAPTION 等）与 FX 即期/远期/掉期/NDF 均可注册。
 
 创建并缓存标准利率工具模板。函数验证并转换字段，构造 `InterestRateInstrumentTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-instType STRING 类型。工具类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `EQ_INDEX_FUTURE`, `CM_SPOT`, `CM_FUTURE`, `CM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。
+instType STRING 类型。工具类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `EQ_INDEX_FUTURE`, `CM_SPOT`, `CM_FUTURE`, `CM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startConvention STRING 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+startConvention STRING 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。
 
-startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。
 
-legDefinitions STRING 向量 类型。现金流腿定义对象或句柄数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。**行为实测:** 也接受 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+legDefinitions STRING 向量 类型。现金流腿定义对象或句柄数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateInstrumentTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3824,33 +3844,33 @@ swapTemplate = caplib::createIrVanillaInstrumentTemplate(
 
 #### createIrVanillaSwapTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createIrVanillaSwapTemplate(instName STRING, startDelay INT or STRING, leg1Definition STRING, leg2Definition STRING, startConvention STRING, [returnJson])
+caplib::createIrVanillaSwapTemplate(instName, startDelay INT or, leg1Definition, leg2Definition, startConvention[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存标准利率互换模板。函数验证并转换字段，构造 `InterestRateInstrumentTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startDelay INT or STRING 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 传 0 不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+startDelay INT 或 STRING 类型。起息或交割延迟天数。**有效性:** INT 输入按天计，无需单位；STRING 输入为带可选正负号的整数和可选单位 `Y/M/W/D`（或完整英文单位），省略单位时按天计，负号会被保留。
 
 leg1Definition STRING 类型。第一条现金流腿定义对象或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 leg2Definition STRING 类型。第二条现金流腿定义对象或句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startConvention STRING 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+startConvention STRING 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `InterestRateInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 InterestRateInstrumentTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3881,31 +3901,31 @@ caplib::createIrVanillaSwapTemplate(
 
 #### createFlatIrYieldCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFlatIrYieldCurve(asOfDate DATE, currency STRING, rate DOUBLE, handle STRING, [returnJson])
+caplib::createFlatIrYieldCurve(asOfDate, currency, rate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建零利率 IR 曲线，在整个期限范围应用同一连续复利年利率。函数验证并转换字段，构造 `IrYieldCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。**行为实测:** 传晚于到期日的参考日期不抛异常（包装器不检查此关系，与上文说明一致）（2026-10-15 全新容器实测）。
+asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-rate DOUBLE 类型。利率或票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 或负数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+rate DOUBLE 类型。利率或票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `IrYieldCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 IrYieldCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -3920,19 +3940,19 @@ caplib::createFlatIrYieldCurve(asOfDate, "CNY", 0.02, "AN_FLAT_IR_CURVE", false)
 ### 外汇
 #### calcFxAtmStrike
 
-**语法**
+语法
 
 ```dolphindb
-caplib::calcFxAtmStrike(atmType STRING, expiryDate DATE, volSurfaceHandle STRING, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)
+caplib::calcFxAtmStrike(atmType, expiryDate, volSurfaceHandle, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)
 ```
 
-**详情**
+详情
 
 根据缓存 FX 波动率曲面、现货报价和两条贴现曲线计算到期日 atmType 执行价。
 
-**参数**
+参数
 
-atmType STRING 类型。ATM 行权价约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_ATM_TYPE`, `ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+atmType STRING 类型。ATM 行权价约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。
 
 expiryDate DATE 类型。该计算使用的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
@@ -3944,7 +3964,7 @@ domesticDiscountCurveHandle STRING 类型。domestic IrYieldCurve 的 ObjectCach
 
 foreignDiscountCurveHandle STRING 类型。foreign IrYieldCurve 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-**返回值**
+返回值
 
 计算结果，DOUBLE 类型标量。
 
@@ -4003,33 +4023,33 @@ caplib::calcFxAtmStrike(
 
 #### calcFxDeltaToStrike
 
-**语法**
+语法
 
 ```dolphindb
-caplib::calcFxDeltaToStrike(deltaType STRING, delta DOUBLE, expiryDate DATE, volSurfaceHandle STRING, fxSpotRateHandle STRING, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING)
+caplib::calcFxDeltaToStrike(deltaType, delta, expiryDate, volSurfaceHandle, fxSpotRateHandle, domesticDiscountCurveHandle, foreignDiscountCurveHandle)
 ```
 
-**详情**
+详情
 
 反解所选 FX Delta 约定得到执行价；负 Delta 选择 PUT，非负 Delta 选择 CALL。
 
-**参数**
+参数
 
-deltaType STRING 类型。外汇 Delta 约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 包装器接受全部字符串标签，但 `SIMPLE_DELTA` 会被下游定价服务拒绝（抛异常）；实测可用的业务标签为 `PIPS_SPOT_DELTA`、`PERCENTAGE_SPOT_DELTA`、`PIPS_FORWARD_DELTA`、`PERCENTAGE_FORWARD_DELTA` 四个（2026-10-15 全新容器实测）。
+deltaType STRING 类型。外汇 Delta 约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。
 
-delta DOUBLE 类型。带符号的期权 Delta；负值选择 PUT，非负值选择 CALL。**有效性:** 必须为有限数，业务有效范围为 `(-1,0) ∪ (0,1)`；包装器仅检查 DOUBLE 类型。**行为实测:** 传负数不抛异常，包装器不做取值范围校验（2026-10-15 全新容器实测）。
+delta DOUBLE 类型。带符号的期权 Delta；负值选择 PUT，非负值选择 CALL。**有效性:** 必须为有限数，业务有效范围为 `(-1,0) ∪ (0,1)`；包装器仅检查 DOUBLE 类型。
 
 expiryDate DATE 类型。该计算使用的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
 volSurfaceHandle STRING 类型。FxVolatilitySurface 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-fxSpotRateHandle STRING 类型。FxSpotRate 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传类型不匹配的对象句柄不抛异常、宽松接受（2026-10-15 全新容器实测）。
+fxSpotRateHandle STRING 类型。FxSpotRate 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 domesticDiscountCurveHandle STRING 类型。domestic IrYieldCurve 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 foreignDiscountCurveHandle STRING 类型。foreign IrYieldCurve 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-**返回值**
+返回值
 
 计算结果，DOUBLE 类型标量。
 
@@ -4088,21 +4108,21 @@ caplib::calcFxDeltaToStrike(
 
 #### createFxOptionQuoteMatrix
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxOptionQuoteMatrix(leftCcy STRING, rightCcy STRING, asOfDate DATE, terms STRING 向量, quoteNames STRING 向量, quotes DOUBLE matrix, handle STRING, [returnJson])
+caplib::createFxOptionQuoteMatrix(leftCcy, rightCcy, asOfDate, terms, quoteNames, quotes, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇期权报价矩阵。函数验证并转换字段，构造 `FxOptionQuoteMatrix` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-leftCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+leftCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-rightCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+rightCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -4110,15 +4130,15 @@ terms STRING 向量 类型。报价期限数组。**有效性:** 每个元素必
 
 quoteNames STRING 向量 类型。报价名称或微笑报价标签。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-quotes DOUBLE matrix 类型。市场报价值数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+quotes DOUBLE 矩阵 类型。市场报价值数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxOptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxOptionQuoteMatrix 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4135,17 +4155,17 @@ optionQuotes = caplib::createFxOptionQuoteMatrix(
 
 #### createFlatFxVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFlatFxVolatilitySurface(asOfDate DATE, currencyPair STRING, vol DOUBLE, tag STRING, [returnJson])
+caplib::createFlatFxVolatilitySurface(asOfDate, currencyPair, vol, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存平坦外汇波动率曲面。函数验证并转换字段，构造 `FxVolatilitySurface` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -4153,13 +4173,13 @@ currencyPair STRING 类型。货币对标识，通常为基准币种/目标币�
 
 vol DOUBLE 类型。波动率数值。**有效性:** 必须非负且有限；包装器通常仅检查类型。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxVolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4174,41 +4194,41 @@ caplib::createFlatFxVolatilitySurface(
 
 #### createFxVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxVolatilitySurface(asOfDate DATE, leftCcy STRING, rightCcy STRING, termDates DATE 向量, strikes DOUBLE matrix/vector, volatilities DOUBLE matrix/vector, definitionHandle STRING, marketConventionsHandle STRING, handle STRING, [returnJson])
+caplib::createFxVolatilitySurface(asOfDate, leftCcy, rightCcy, termDates, strikes, volatilities, definitionHandle, marketConventionsHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇波动率曲面。函数验证并转换字段，构造 `FxVolatilitySurface` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-leftCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+leftCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-rightCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+rightCcy STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 termDates DATE 向量 类型。报价期限对应的到期日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
-strikes DOUBLE matrix/vector 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。**行为实测:** 与 vols 形状（向量/矩阵）不一致时也接受（2026-10-15 全新容器实测）。
+strikes DOUBLE 矩阵/向量 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。
 
-volatilities DOUBLE matrix/vector 类型。波动率数组或矩阵。**有效性:** 必须具有所列元素类型和形状；数值必须非负且有限；除明确说明外包装器不强制非空。**行为实测:** 与 strikes 形状（向量/矩阵）不一致时也接受（2026-10-15 全新容器实测）。
+volatilities DOUBLE 矩阵/向量 类型。波动率数组或矩阵。**有效性:** 必须具有所列元素类型和形状；数值必须非负且有限；除明确说明外包装器不强制非空。
 
-definitionHandle STRING 类型。波动率曲面定义 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+definitionHandle STRING 类型。波动率曲面定义 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-marketConventionsHandle STRING 类型。市场惯例 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+marketConventionsHandle STRING 类型。市场惯例 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxVolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4238,27 +4258,27 @@ fxVolSurface = caplib::createFxVolatilitySurface(
 
 #### buildFxVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildFxVolatilitySurface(asOfDate DATE, leftCcy STRING, rightCcy STRING, marketConventionsHandle STRING, quoteMatrixHandle STRING, spotRate DOUBLE, spotRefDate DATE, spotDate DATE, domesticDiscountCurveHandle STRING, foreignDiscountCurveHandle STRING, definitionHandle STRING, buildSettingsHandle STRING, handle STRING, [returnJson])
+caplib::buildFxVolatilitySurface(asOfDate, leftCcy, rightCcy, marketConventionsHandle, quoteMatrixHandle, spotRate, spotRefDate, spotDate, domesticDiscountCurveHandle, foreignDiscountCurveHandle, definitionHandle, buildSettingsHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建外汇波动率曲面。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `FxVolatilitySurface`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。该计算使用的日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-leftCcy STRING 类型。货币对的左侧币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+leftCcy STRING 类型。货币对的左侧币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-rightCcy STRING 类型。货币对的右侧币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+rightCcy STRING 类型。货币对的右侧币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 marketConventionsHandle STRING 类型。FxMarketConventions 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-quoteMatrixHandle STRING 类型。OptionQuoteMatrix 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+quoteMatrixHandle STRING 类型。FxOptionQuoteMatrix 的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 spotRate DOUBLE 类型。外汇即期汇率。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -4276,11 +4296,11 @@ buildSettingsHandle STRING 类型。VolatilitySurfaceBuildSettings 的 ObjectCac
 
 handle STRING 类型。所构建曲面的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选返回形状标志。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。是否同时返回 JSON 的标志。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxVolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxVolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4336,37 +4356,37 @@ fxVolSurface = caplib::buildFxVolatilitySurface(
 
 #### priceFxForward
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxForward(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxForward(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇远期工具。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4420,37 +4440,37 @@ result = caplib::priceFxForward(
 
 #### priceFxSwap
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxSwap(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxSwap(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇掉期工具。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4505,37 +4525,37 @@ result = caplib::priceFxSwap(
 
 #### priceFxNonDeliverableForward
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxNonDeliverableForward(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxNonDeliverableForward(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇无本金交割远期工具。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。**行为实测:** 传不存在的键或类型不匹配的对象不抛异常、宽松接受（2026-10-15 全新容器实测）。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4588,37 +4608,37 @@ result = caplib::priceFxNonDeliverableForward(
 ```
 #### priceFxEuropeanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxEuropeanOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxEuropeanOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇欧式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4695,37 +4715,37 @@ result = caplib::priceFxEuropeanOption(
 
 #### priceFxAmericanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxAmericanOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxAmericanOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇美式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4802,37 +4822,37 @@ result = caplib::priceFxAmericanOption(
 
 #### priceFxAsianOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxAsianOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxAsianOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇亚式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -4916,37 +4936,37 @@ result = caplib::priceFxAsianOption(
 
 #### priceFxDigitalOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxDigitalOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxDigitalOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇数字期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5023,37 +5043,37 @@ result = caplib::priceFxDigitalOption(
 
 #### priceFxOneTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxOneTouchOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxOneTouchOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇单触碰期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5131,37 +5151,37 @@ result = caplib::priceFxOneTouchOption(
 
 #### priceFxDoubleTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxDoubleTouchOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxDoubleTouchOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇双触碰期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5240,37 +5260,37 @@ result = caplib::priceFxDoubleTouchOption(
 
 #### priceFxSingleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxSingleBarrierOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxSingleBarrierOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇单障碍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5348,37 +5368,37 @@ result = caplib::priceFxSingleBarrierOption(
 
 #### priceFxDoubleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxDoubleBarrierOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxDoubleBarrierOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇双障碍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5458,37 +5478,37 @@ result = caplib::priceFxDoubleBarrierOption(
 
 #### priceFxSingleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxSingleSharkFinOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxSingleSharkFinOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇单鲨鱼鳍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5575,37 +5595,37 @@ result = caplib::priceFxSingleSharkFinOption(
 
 #### priceFxDoubleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxDoubleSharkFinOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxDoubleSharkFinOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇双鲨鱼鳍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5692,37 +5712,37 @@ result = caplib::priceFxDoubleSharkFinOption(
 
 #### priceFxPingPongOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxPingPongOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxPingPongOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇乒乓期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5808,37 +5828,37 @@ result = caplib::priceFxPingPongOption(
 
 #### priceFxAirbagOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxAirbagOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxAirbagOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇安全气囊期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -5924,37 +5944,37 @@ result = caplib::priceFxAirbagOption(
 
 #### priceFxRangeAccrualOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxRangeAccrualOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxRangeAccrualOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇区间累计期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6038,37 +6058,37 @@ result = caplib::priceFxRangeAccrualOption(
 
 #### priceFxPhoenixAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxPhoenixAutoCallableNote(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxPhoenixAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇凤凰自动赎回票据。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6158,37 +6178,37 @@ result = caplib::priceFxPhoenixAutoCallableNote(
 
 #### priceFxSnowballAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceFxSnowballAutoCallableNote(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceFxSnowballAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价外汇雪球自动赎回票据。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6278,35 +6298,35 @@ result = caplib::priceFxSnowballAutoCallableNote(
 
 #### createFxSpotTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxSpotTemplate(instName STRING, currencyPair STRING, spotDayConvention STRING, calendars STRING or STRING 向量, spotDelay STRING or INT[, handle STRING], [returnJson])
+caplib::createFxSpotTemplate(instName, currencyPair, spotDayConvention, calendars, spotDelay[, handle][, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇即期模板。函数验证并转换字段，构造 `FxSpotTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 currencyPair STRING 类型。货币对标识，通常为基准币种/目标币种格式。**有效性:** 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。
 
-spotDayConvention STRING 类型。即期日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+spotDayConvention STRING 类型。即期日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+calendars STRING 或 STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-spotDelay STRING or INT 类型。即期结算延迟。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+spotDelay STRING 或 INT 类型。即期结算延迟。**有效性:** INT 输入按天计，无需单位；STRING 输入为带可选正负号的整数和可选单位 `Y/M/W/D`（或完整英文单位），省略单位时按天计，负号会被保留。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键；本接口 handle 为可选，省略时自动生成句柄键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键；本接口 handle 为可选，省略时自动生成句柄键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxSpotTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxSpotTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6324,37 +6344,35 @@ spotTemplate = caplib::createFxSpotTemplate(
 
 #### createFxSpotRate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxSpotRate(value DOUBLE, baseCurrency STRING, targetCurrency STRING, refDate DATE, spotDate DATE, tag STRING, [returnJson])
+caplib::createFxSpotRate(value, baseCurrency, targetCurrency, refDate, spotDate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
-创建并缓存外汇即期汇率。函数验证并转换字段，构造 `FxSpotRate` protobuf 并存入 ObjectCache，供后续分析使用。
+创建并缓存外汇即期汇率，构造 `FxSpotRate` 对象并写入 ObjectCache，供后续定价与风险分析使用。
 
-对象的静态数据键为 `FX_SPOT/<targetCurrency><baseCurrency>`；buildIrCrossCurrencyCurve 等接口按该键解析静态数据，跨币种曲线构建前需用 createFxSpotTemplate 注册对应货币对的模板。注意 protobuf 的 base/target 字段序与 python 包装器相反：python `create_foreign_exchange_rate(value, left, right)` 生成 base=right、target=left。
+参数
 
-**参数**
+value DOUBLE 类型。报价、利率或即期汇率数值。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-value DOUBLE 类型。报价、利率或即期汇率数值。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常，包装器不做正数校验（2026-10-15 全新容器实测）。
+baseCurrency STRING 类型。外汇货币对中的基准币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-baseCurrency STRING 类型。外汇货币对中的基准币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
-
-targetCurrency STRING 类型。外汇货币对中的目标币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+targetCurrency STRING 类型。外汇货币对中的目标币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 refDate DATE 类型。参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 spotDate DATE 类型。即期结算日。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxSpotRate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxSpotRate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6370,35 +6388,35 @@ eurusdSpotRate = caplib::createFxSpotRate(
 
 #### createFxForwardTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxForwardTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING 向量, [returnJson])
+caplib::createFxForwardTemplate(instName, fixingOffset, currencyPair, deliveryDayConvention, fixingDayConvention, calendars[, returnJson])
 ```
 
-**详情**
+详情
 
-创建并缓存外汇远期模板。函数验证并转换字段，构造 `FxForwardTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
+创建并缓存外汇远期模板，构造 `FxForwardTemplate` 对象并写入 ObjectCache。`instName` 同时用作缓存句柄，本接口没有独立的 handle 参数。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-fixingOffset STRING or INT 类型。定盘偏移期限。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+fixingOffset STRING 或 INT 类型。定盘偏移期限。**有效性:** INT 输入按天计，无需单位；STRING 输入为带可选正负号的整数和可选单位 `Y/M/W/D`（或完整英文单位），省略单位时按天计，负号会被保留。
 
 currencyPair STRING 类型。货币对标识，通常为基准币种/目标币种格式。**有效性:** 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。
 
-deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+calendars STRING 或 STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxForwardTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxForwardTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6417,39 +6435,39 @@ forwardTemplate = caplib::createFxForwardTemplate(
 
 #### createFxSwapTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxSwapTemplate(instName STRING, startConvention STRING, currencyPair STRING, calendars STRING or STRING 向量, startDayConvention STRING, endDayConvention STRING, fixingOffset STRING or INT, fixingDayConvention STRING, [returnJson])
+caplib::createFxSwapTemplate(instName, startConvention, currencyPair, calendars, startDayConvention, endDayConvention, fixingOffset, fixingDayConvention[, returnJson])
 ```
 
-**详情**
+详情
 
-创建并缓存外汇掉期模板。函数验证并转换字段，构造 `FxSwapTemplate` protobuf 并存入 ObjectCache，供后续分析使用。另支持两种 6 参简写形式，按第二个参数的类型区分：传入 STRING *startConvention* 时为文档签名的前 6 参（`instName, startConvention, currencyPair, calendars, startDayConvention, endDayConvention`），此时 *fixingOffset* 取 `0d`、*fixingDayConvention* 由 *startDayConvention* 派生；传入 INT *startDelay* 时为旧式 `currencyPair, startDelay, deliveryDayConvention, calendar, instName, tag` 形式。
+创建并缓存外汇掉期模板，构造 `FxSwapTemplate` 对象并写入 ObjectCache，供后续构建外汇掉期使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startConvention STRING 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+startConvention STRING 类型。工具起息约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。
 
 currencyPair STRING 类型。货币对标识，通常为基准币种/目标币种格式。**有效性:** 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+calendars STRING 或 STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-startDayConvention STRING 类型。起始日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+startDayConvention STRING 类型。起始日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-endDayConvention STRING 类型。结束日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+endDayConvention STRING 类型。结束日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-fixingOffset STRING or INT 类型。定盘偏移期限。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+fixingOffset STRING 或 INT 类型。定盘偏移期限。**有效性:** INT 输入按天计，无需单位；STRING 输入为带可选正负号的整数和可选单位 `Y/M/W/D`（或完整英文单位），省略单位时按天计，负号会被保留。
 
-fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxSwapTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxSwapTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6468,37 +6486,37 @@ swapTemplate = caplib::createFxSwapTemplate(
 
 #### createFxNdfTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxNdfTemplate(instName STRING, fixingOffset STRING or INT, currencyPair STRING, deliveryDayConvention STRING, fixingDayConvention STRING, calendars STRING or STRING 向量, settlementCurrency STRING, [returnJson])
+caplib::createFxNdfTemplate(instName, fixingOffset, currencyPair, deliveryDayConvention, fixingDayConvention, calendars, settlementCurrency[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇无本金交割远期模板。函数验证并转换字段，构造 `FxNdfTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-fixingOffset STRING or INT 类型。定盘偏移期限。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+fixingOffset STRING 或 INT 类型。定盘偏移期限。**有效性:** INT 输入按天计，无需单位；STRING 输入为带可选正负号的整数和可选单位 `Y/M/W/D`（或完整英文单位），省略单位时按天计，负号会被保留。
 
 currencyPair STRING 类型。货币对标识，通常为基准币种/目标币种格式。**有效性:** 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。
 
-deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_BUSINESS_DAY_CONVENTION`, `FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fixingDayConvention STRING 类型。定盘日调整约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+calendars STRING 或 STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-settlementCurrency STRING 类型。结算币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+settlementCurrency STRING 类型。结算币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxNdfTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxNdfTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6517,23 +6535,23 @@ ndfTemplate = caplib::createFxNdfTemplate(
 
 #### createFxForward
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, deliveryDate DATE, expiryDate DATE, tag STRING, [returnJson])
+caplib::createFxForward(buyCurrency, buyAmount, sellCurrency, sellAmount, deliveryDate, expiryDate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇远期工具。函数验证并转换字段，构造 `FxForward` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-buyCurrency STRING 类型。买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+buyCurrency STRING 类型。买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 buyAmount DOUBLE 类型。买入金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-sellCurrency STRING 类型。卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+sellCurrency STRING 类型。卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 sellAmount DOUBLE 类型。卖出金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -6541,13 +6559,13 @@ deliveryDate DATE 类型。交割或结算日期。**有效性:** 必须是非�
 
 expiryDate DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxForward` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxForward 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6561,23 +6579,23 @@ caplib::createFxForward(
 
 #### createFxSwap
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxSwap(nearBuyCurrency STRING, nearBuyAmount DOUBLE, nearSellCurrency STRING, nearSellAmount DOUBLE, nearDeliveryDate DATE, nearExpiryDate DATE, farBuyCurrency STRING, farBuyAmount DOUBLE, farSellCurrency STRING, farSellAmount DOUBLE, farDeliveryDate DATE, farExpiryDate DATE, tag STRING, [returnJson])
+caplib::createFxSwap(nearBuyCurrency, nearBuyAmount, nearSellCurrency, nearSellAmount, nearDeliveryDate, nearExpiryDate, farBuyCurrency, farBuyAmount, farSellCurrency, farSellAmount, farDeliveryDate, farExpiryDate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇掉期工具。函数验证并转换字段，构造 `FxSwap` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-nearBuyCurrency STRING 类型。近端买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+nearBuyCurrency STRING 类型。近端买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 nearBuyAmount DOUBLE 类型。近端买入金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-nearSellCurrency STRING 类型。近端卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+nearSellCurrency STRING 类型。近端卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 nearSellAmount DOUBLE 类型。近端卖出金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -6585,11 +6603,11 @@ nearDeliveryDate DATE 类型。日期或日期数组。**有效性:** 必须是�
 
 nearExpiryDate DATE 类型。日期或日期数组。**有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。
 
-farBuyCurrency STRING 类型。远端买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+farBuyCurrency STRING 类型。远端买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 farBuyAmount DOUBLE 类型。远端买入金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-farSellCurrency STRING 类型。远端卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+farSellCurrency STRING 类型。远端卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 farSellAmount DOUBLE 类型。远端卖出金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
@@ -6597,13 +6615,13 @@ farDeliveryDate DATE 类型。日期或日期数组。**有效性:** 必须是�
 
 farExpiryDate DATE 类型。日期或日期数组。**有效性:** 必须是非空 DolphinDB DATE 标量。必须满足函数所述的业务日期关系；包装器不检查先后顺序。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxSwap` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxSwap 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6618,39 +6636,39 @@ caplib::createFxSwap(
 
 #### createFxNonDeliverableForward
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxNonDeliverableForward(buyCurrency STRING, buyAmount DOUBLE, sellCurrency STRING, sellAmount DOUBLE, settlementCurrency STRING, deliveryDate DATE, expiryDate DATE, tag STRING, [returnJson])
+caplib::createFxNonDeliverableForward(buyCurrency, buyAmount, sellCurrency, sellAmount, settlementCurrency, deliveryDate, expiryDate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇无本金交割远期工具。函数验证并转换字段，构造 `FxNonDeliverableForward` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-buyCurrency STRING 类型。买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+buyCurrency STRING 类型。买入币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 buyAmount DOUBLE 类型。买入金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-sellCurrency STRING 类型。卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+sellCurrency STRING 类型。卖出币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 sellAmount DOUBLE 类型。卖出金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-settlementCurrency STRING 类型。结算币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+settlementCurrency STRING 类型。结算币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 deliveryDate DATE 类型。交割或结算日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关交易、参考或到期日；包装器不检查此关系。
 
 expiryDate DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxNonDeliverableForward` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxNonDeliverableForward 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6664,39 +6682,39 @@ caplib::createFxNonDeliverableForward(
 
 #### createFxMktConventions
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxMktConventions(ccyPair STRING, atmType STRING, shortDeltaType STRING, longDeltaType STRING, deltaCutoff STRING, riskReversal STRING, smileQuoteType STRING, tag STRING, [returnJson])
+caplib::createFxMktConventions(ccyPair, atmType, shortDeltaType, longDeltaType, deltaCutoff, riskReversal, smileQuoteType, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇市场惯例。函数验证并转换字段，构造 `FxMarketConventions` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 ccyPair STRING 类型。货币对标识。**有效性:** 必须标识两个非空且不同的币种；包装器不验证 ISO 代码。
 
-atmType STRING 类型。ATM 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_ATM_TYPE`, `ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+atmType STRING 类型。ATM 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。
 
-shortDeltaType STRING 类型。短期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+shortDeltaType STRING 类型。短期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。
 
-longDeltaType STRING 类型。长期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+longDeltaType STRING 类型。长期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。
 
-deltaCutoff STRING 类型。Delta 报价切换阈值。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+deltaCutoff STRING 类型。Delta 报价切换阈值。**有效性:** 值必须是以下完整 protobuf 标签之一：`PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。
 
-riskReversal STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 值必须是以下完整 protobuf 标签之一：`RR_CALL_PUT`, `RR_PUT_CALL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+riskReversal STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 值必须是以下完整 protobuf 标签之一：`RR_CALL_PUT`, `RR_PUT_CALL`。
 
-smileQuoteType STRING 类型。波动率微笑报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`BUTTERFLY_QUOTE`, `MARKET_STRANGLE_QUOTE`, `WINGS_RATIO_BF_QUOTE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+smileQuoteType STRING 类型。波动率微笑报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`BUTTERFLY_QUOTE`, `MARKET_STRANGLE_QUOTE`, `WINGS_RATIO_BF_QUOTE`。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxMarketConventions` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxMarketConventions 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6712,37 +6730,37 @@ caplib::createFxMktConventions(
 
 #### createFxMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxMktDataSet(asOfDate DATE, domDiscountCurve STRING, forDiscountCurve STRING, spot STRING, volSurface STRING, name STRING, tag STRING, [returnJson])
+caplib::createFxMktDataSet(asOfDate, domDiscountCurve, forDiscountCurve, spot, volSurface, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇市场数据集。函数验证并转换字段，构造 `FxMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-domDiscountCurve STRING 类型。本币贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+domDiscountCurve STRING 类型。本币贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-forDiscountCurve STRING 类型。外币贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+forDiscountCurve STRING 类型。外币贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 spot STRING 类型。当前现货价格。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-volSurface STRING 类型。波动率曲面 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+volSurface STRING 类型。波动率曲面 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6778,37 +6796,37 @@ mktData = caplib::createFxMktDataSet(
 
 #### createFxRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFxRiskSettings(irCurveSettings STRING, priceSettings STRING, volSettings STRING, priceVolSettings STRING, thetaSettings STRING, name STRING, tag STRING, [returnJson])
+caplib::createFxRiskSettings(irCurveSettings, priceSettings, volSettings, priceVolSettings, thetaSettings, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存外汇风险设置。函数验证并转换字段，构造 `FxRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-irCurveSettings STRING 类型。利率曲线风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+irCurveSettings STRING 类型。利率曲线风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-priceSettings STRING 类型。价格风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+priceSettings STRING 类型。价格风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-volSettings STRING 类型。波动率风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+volSettings STRING 类型。波动率风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-priceVolSettings STRING 类型。价格-波动率联合风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+priceVolSettings STRING 类型。价格-波动率联合风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 thetaSettings STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `FxRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 FxRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6835,17 +6853,17 @@ riskSettings = caplib::createFxRiskSettings(
 
 #### buildEqIndexDividendCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildEqIndexDividendCurve(asOfDate DATE, termDates DATE 向量, futurePrices DOUBLE 向量, optionPrices TABLE, spot DOUBLE, discountCurveHandle STRING, handle STRING, [returnJson])
+caplib::buildEqIndexDividendCurve(asOfDate, termDates, futurePrices, optionPrices TABLE, spot, discountCurveHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建股指股息收益率曲线。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `DividendCurve`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -6855,17 +6873,17 @@ futurePrices DOUBLE 向量 类型。期货价格数组。**有效性:** 所有�
 
 optionPrices TABLE 类型。期权价格矩阵或表。**有效性:** 所有元素必须非负且有限，并与配对行权价/期限参数形状一致；包装器主要检查类型/形状。
 
-spot DOUBLE 类型。当前现货价格。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。**行为实测:** 传 0 不抛异常，包装器不做正数校验（2026-10-15 全新容器实测）。
+spot DOUBLE 类型。当前现货价格。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DividendCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6900,43 +6918,43 @@ result = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBL
 
 #### buildEqVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildEqVolatilitySurface(asOfDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE 向量, discountCurveHandle STRING, dividendCurveHandle STRING, buildSettingsHandle STRING, pricingSettingsHandle STRING, handle STRING, [returnJson])
+caplib::buildEqVolatilitySurface(asOfDate, underlying, definitionHandle, quoteMatrixHandle, underlyingPrices, discountCurveHandle, dividendCurveHandle, buildSettingsHandle, pricingSettingsHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建权益波动率曲面。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `VolatilitySurface`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-definitionHandle STRING 类型。波动率曲面定义 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+definitionHandle STRING 类型。波动率曲面定义 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-quoteMatrixHandle STRING 类型。期权报价矩阵 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+quoteMatrixHandle STRING 类型。期权报价矩阵 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 underlyingPrices DOUBLE 向量 类型。与报价期限或校准行对齐的标的价格数组。**有效性:** 所有元素必须有限并与配对日期等长；通常应为正，但可出现负价格的市场由下游业务规则决定。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-dividendCurveHandle STRING 类型。股息曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+dividendCurveHandle STRING 类型。股息曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-buildSettingsHandle STRING 类型。构建设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+buildSettingsHandle STRING 类型。构建设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -6995,41 +7013,41 @@ result = caplib::buildEqVolatilitySurface(asOfDate, underlying, volDef, optionQu
 
 #### createEqOptionQuoteMatrix
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createEqOptionQuoteMatrix(exerciseType STRING, underlyingType STRING, asOfDate DATE, termDates DATE 向量, payoffTypes STRING matrix/vector, optionPrices DOUBLE matrix/vector, optionStrikes DOUBLE matrix/vector, underlying STRING, handle STRING, [returnJson])
+caplib::createEqOptionQuoteMatrix(exerciseType, underlyingType, asOfDate, termDates, payoffTypes, optionPrices, optionStrikes, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存权益期权报价矩阵。函数验证并转换字段，构造 `OptionQuoteMatrix` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。
 
-underlyingType STRING 类型。标的类型枚举。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOT_UNDERLYING_TYPE`, `FUTURE_UNDERLYING_TYPE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+underlyingType STRING 类型。标的类型枚举。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOT_UNDERLYING_TYPE`, `FUTURE_UNDERLYING_TYPE`。
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 termDates DATE 向量 类型。报价期限对应的到期日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
-payoffTypes STRING matrix/vector 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+payoffTypes STRING 矩阵/向量 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。
 
-optionPrices DOUBLE matrix/vector 类型。期权价格矩阵或表。**有效性:** 所有元素必须非负且有限，并与配对行权价/期限参数形状一致；包装器主要检查类型/形状。
+optionPrices DOUBLE 矩阵/向量 类型。期权价格矩阵或表。**有效性:** 所有元素必须非负且有限，并与配对行权价/期限参数形状一致；包装器主要检查类型/形状。
 
-optionStrikes DOUBLE matrix/vector 类型。期权行权价矩阵或向量。**有效性:** 必须非负且有限；包装器仅检查类型/形状。
+optionStrikes DOUBLE 矩阵/向量 类型。期权行权价矩阵或向量。**有效性:** 必须非负且有限；包装器仅检查类型/形状。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 OptionQuoteMatrix 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7065,37 +7083,37 @@ caplib::createEqOptionQuoteMatrix(
 
 #### priceEqEuropeanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqEuropeanOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqEuropeanOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益欧式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7170,17 +7188,17 @@ result = caplib::priceEqEuropeanOption(europeanOption, asOfDate, mktData,
 
 #### createEqMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createEqMktDataSet(asOfDate DATE, underlying STRING, underlyingPrice DOUBLE, dcHandle STRING, divHandle STRING, volHandle STRING, quantoDcHandle STRING, quantoFxVolHandle STRING, quantoCorrelation DOUBLE, handle STRING, [returnJson])
+caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice, dcHandle, divHandle, volHandle, quantoDcHandle, quantoFxVolHandle, quantoCorrelation, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存权益市场数据集。函数验证并转换字段，构造 `EqMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -7188,25 +7206,25 @@ underlying STRING 类型。标的资产、指数、商品或货币对标识。**
 
 underlyingPrice DOUBLE 类型。当前标的价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-dcHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+dcHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-divHandle STRING 类型。股息曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+divHandle STRING 类型。股息曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-volHandle STRING 类型。波动率设置或曲面 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+volHandle STRING 类型。波动率设置或曲面 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-quantoDcHandle STRING 类型。Quanto 贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+quantoDcHandle STRING 类型。Quanto 贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-quantoFxVolHandle STRING 类型。Quanto 外汇波动率曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+quantoFxVolHandle STRING 类型。Quanto 外汇波动率曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 quantoCorrelation DOUBLE 类型。Quanto 调整相关系数。**有效性:** 必须有限且业务有效范围为 `[-1,1]`；包装器仅检查类型。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `EqMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 EqMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7273,19 +7291,19 @@ result = caplib::createEqMktDataSet(asOfDate, underlying, underlyingPrice,
 
 #### createEqRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createEqRiskSettings(irDelta INT, priceDelta INT, volVega INT, theta INT, handle STRING, [returnJson])
+caplib::createEqRiskSettings(irDelta, priceDelta, volVega, theta, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存权益风险设置。函数验证并转换字段，构造 `EqRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-irDelta INT 类型。是否计算利率 Delta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。**行为实测:** 传负数不抛异常（非零即 true）（2026-10-15 全新容器实测）。
+irDelta INT 类型。是否计算利率 Delta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
 priceDelta INT 类型。是否计算标的价格 Delta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
@@ -7293,13 +7311,13 @@ volVega INT 类型。是否计算波动率 Vega 风险。**有效性:** 必须�
 
 theta INT 类型。是否计算 Theta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `EqRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 EqRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7311,17 +7329,17 @@ caplib::createEqRiskSettings(1, 1, 1, 1, "EQ_RISK", true)
 
 #### createEuropeanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createEuropeanOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, [returnJson])
+caplib::createEuropeanOption(payoffType, strike, expiry, delivery, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存欧式期权。函数验证并转换字段，构造 `EuropeanOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7333,21 +7351,21 @@ delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 Do
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `EuropeanOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 EuropeanOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7365,17 +7383,17 @@ caplib::createEuropeanOption(
 
 #### createAmericanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createAmericanOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, [returnJson])
+caplib::createAmericanOption(payoffType, strike, expiry, delivery, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存美式期权。函数验证并转换字段，构造 `AmericanOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7389,21 +7407,21 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `AmericanOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 AmericanOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7421,17 +7439,17 @@ caplib::createAmericanOption(
 
 #### createDigitalOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createDigitalOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, cash DOUBLE, asset DOUBLE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, [returnJson])
+caplib::createDigitalOption(payoffType, strike, expiry, delivery, cash, asset, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存数字期权。函数验证并转换字段，构造 `DigitalOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7447,21 +7465,21 @@ asset DOUBLE 类型。资产收益或资产返还金额。**有效性:** 必须�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DigitalOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DigitalOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7479,17 +7497,17 @@ caplib::createDigitalOption(
 
 #### createAsianOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createAsianOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, strikeType STRING, avgMethod STRING, obsType STRING, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createAsianOption(payoffType, strike, expiry, delivery, strikeType, avgMethod, obsType, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存亚式期权。函数验证并转换字段，构造 `AsianOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7507,15 +7525,15 @@ obsType STRING 类型。观察方式。**有效性:** 可接受值：``, `CONTIN
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -7523,11 +7541,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `AsianOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 AsianOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7550,17 +7568,17 @@ caplib::createAsianOption(
 
 #### createOneTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createOneTouchOption(expiry DATE, delivery DATE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createOneTouchOption(expiry, delivery, barrierType, barrierValue, barrierObsType, paymentType, cash, asset, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存单触碰期权。函数验证并转换字段，构造 `OneTouchOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 expiry DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
@@ -7582,15 +7600,15 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -7598,11 +7616,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `OneTouchOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 OneTouchOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7621,17 +7639,17 @@ caplib::createOneTouchOption(
 
 #### createDoubleTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createDoubleTouchOption(expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createDoubleTouchOption(expiry, delivery, lowerBarrierType, lowerBarrierValue, upperBarrierType, upperBarrierValue, barrierObsType, paymentType, cash, asset, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存双触碰期权。函数验证并转换字段，构造 `DoubleTouchOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 expiry DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
@@ -7657,15 +7675,15 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -7673,11 +7691,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DoubleTouchOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DoubleTouchOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7697,17 +7715,17 @@ caplib::createDoubleTouchOption(
 
 #### createSingleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createSingleBarrierOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cashRebate DOUBLE, assetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createSingleBarrierOption(payoffType, strike, expiry, delivery, barrierType, barrierValue, barrierObsType, paymentType, cashRebate, assetRebate, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存单障碍期权。函数验证并转换字段，构造 `SingleBarrierOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7729,19 +7747,19 @@ cashRebate DOUBLE 类型。现金返还金额。**有效性:** 必须非负且�
 
 assetRebate DOUBLE 类型。资产返还金额。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -7749,11 +7767,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `SingleBarrierOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 SingleBarrierOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7773,17 +7791,17 @@ caplib::createSingleBarrierOption(
 
 #### createDoubleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createDoubleBarrierOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, lowerCashRebate DOUBLE, lowerAssetRebate DOUBLE, upperCashRebate DOUBLE, upperAssetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createDoubleBarrierOption(payoffType, strike, expiry, delivery, lowerBarrierType, lowerBarrierValue, upperBarrierType, upperBarrierValue, barrierObsType, paymentType, lowerCashRebate, lowerAssetRebate, upperCashRebate, upperAssetRebate, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存双障碍期权。函数验证并转换字段，构造 `DoubleBarrierOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7807,25 +7825,25 @@ paymentType STRING 类型。返还或障碍支付时点类型。**有效性:** �
 
 lowerCashRebate DOUBLE 类型。下障碍现金返还金额。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-lowerAssetRebate DOUBLE 类型。下障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。**行为实测:** 传负数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+lowerAssetRebate DOUBLE 类型。下障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
 
 upperCashRebate DOUBLE 类型。上障碍现金返还金额。**有效性:** 必须非负且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-upperAssetRebate DOUBLE 类型。上障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。**行为实测:** 传负数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+upperAssetRebate DOUBLE 类型。上障碍资产返还金额。**有效性:** 必须非负且有限；包装器通常仅检查类型。
 
-settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+settlementDays INT 类型。交易或行权到结算的工作日天数。**有效性:** 必须非负；包装器通常仅检查类型。
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -7833,11 +7851,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DoubleBarrierOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DoubleBarrierOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7857,17 +7875,17 @@ caplib::createDoubleBarrierOption(
 
 #### createCollarOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCollarOption(payoffType STRING, lowerGearing DOUBLE, upperGearing DOUBLE, lowerStrike DOUBLE, upperStrike DOUBLE, expiry DATE, delivery DATE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, [returnJson])
+caplib::createCollarOption(payoffType, lowerGearing, upperGearing, lowerStrike, upperStrike, expiry, delivery, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存领口期权。函数验证并转换字段，构造 `CollarOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7885,21 +7903,21 @@ delivery DATE 类型。交割或结算日期。**有效性:** 必须是非空 Do
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CollarOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CollarOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7914,17 +7932,17 @@ result = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice * 0.9, und
 
 #### createSingleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createSingleSharkFinOption(payoffType STRING, strike DOUBLE, expiry DATE, delivery DATE, gearing DOUBLE, performanceType STRING, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cashRebate DOUBLE, assetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createSingleSharkFinOption(payoffType, strike, expiry, delivery, gearing, performanceType, barrierType, barrierValue, barrierObsType, paymentType, cashRebate, assetRebate, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存单鲨鱼鳍期权。函数验证并转换字段，构造 `SingleSharkFinOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -7954,15 +7972,15 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -7970,11 +7988,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `SingleSharkFinOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 SingleSharkFinOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -7998,17 +8016,17 @@ caplib::createSingleSharkFinOption(
 
 #### createDoubleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createDoubleSharkFinOption(lowerStrike DOUBLE, upperStrike DOUBLE, expiry DATE, delivery DATE, lowerParticipation DOUBLE, upperParticipation DOUBLE, performanceType STRING, lowerBarrier DOUBLE, upperBarrier DOUBLE, barrierObsType STRING, paymentType STRING, lowerCashRebate DOUBLE, lowerAssetRebate DOUBLE, upperCashRebate DOUBLE, upperAssetRebate DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createDoubleSharkFinOption(lowerStrike, upperStrike, expiry, delivery, lowerParticipation, upperParticipation, performanceType, lowerBarrier, upperBarrier, barrierObsType, paymentType, lowerCashRebate, lowerAssetRebate, upperCashRebate, upperAssetRebate, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存双鲨鱼鳍期权。函数验证并转换字段，构造 `DoubleSharkFinOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 lowerStrike DOUBLE 类型。下行权价。**有效性:** 必须非负且有限；包装器仅检查类型/形状。
 
@@ -8044,15 +8062,15 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -8060,11 +8078,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DoubleSharkFinOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DoubleSharkFinOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8089,17 +8107,17 @@ caplib::createDoubleSharkFinOption(
 
 #### createRangeAccrualOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createRangeAccrualOption(expiry DATE, delivery DATE, asset DOUBLE, cash DOUBLE, lowerBarrier DOUBLE, upperBarrier DOUBLE, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createRangeAccrualOption(expiry, delivery, asset, cash, lowerBarrier, upperBarrier, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存区间累计期权。函数验证并转换字段，构造 `RangeAccrualOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 expiry DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
@@ -8115,15 +8133,15 @@ upperBarrier DOUBLE 类型。上障碍水平。**有效性:** 必须非负且有
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -8131,11 +8149,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `RangeAccrualOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 RangeAccrualOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8158,17 +8176,17 @@ caplib::createRangeAccrualOption(
 
 #### createAirbagOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createAirbagOption(payoffType STRING, expiry DATE, delivery DATE, lowerStrike DOUBLE, upperStrike DOUBLE, lowerGearing DOUBLE, upperGearing DOUBLE, knockInStrike DOUBLE, barrierType STRING, barrierValue DOUBLE, barrierObsType STRING, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createAirbagOption(payoffType, expiry, delivery, lowerStrike, upperStrike, lowerGearing, upperGearing, knockInStrike, barrierType, barrierValue, barrierObsType, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存安全气囊期权。函数验证并转换字段，构造 `AirbagOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 payoffType STRING 类型。收益类型，例如 CALL 或 PUT。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -8194,15 +8212,15 @@ barrierObsType STRING 类型。障碍观察约定。**有效性:** 可接受值�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -8210,11 +8228,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `AirbagOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 AirbagOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8238,17 +8256,17 @@ caplib::createAirbagOption(
 
 #### createPingPongOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPingPongOption(expiry DATE, delivery DATE, lowerBarrierType STRING, lowerBarrierValue DOUBLE, upperBarrierType STRING, upperBarrierValue DOUBLE, barrierObsType STRING, paymentType STRING, cash DOUBLE, asset DOUBLE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, fixingDates DATE 向量, fixingValues DOUBLE 向量, fixingWeights DOUBLE 向量, [returnJson])
+caplib::createPingPongOption(expiry, delivery, lowerBarrierType, lowerBarrierValue, upperBarrierType, upperBarrierValue, barrierObsType, paymentType, cash, asset, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, fixingDates, fixingValues, fixingWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存乒乓期权。函数验证并转换字段，构造 `PingPongOption` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 expiry DATE 类型。到期日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得早于相关开始、发行或参考日；包装器不检查此关系。
 
@@ -8274,15 +8292,15 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 fixingDates DATE 向量 类型。观察或定盘日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -8290,11 +8308,11 @@ fixingValues DOUBLE 向量 类型。与观察日期对齐的定盘值数组。**
 
 fixingWeights DOUBLE 向量 类型。观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PingPongOption` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PingPongOption 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8318,17 +8336,17 @@ caplib::createPingPongOption(
 
 #### createPhoenixAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPhoenixAutoCallableNote(couponPayoffType STRING, couponStrike DOUBLE, couponRate DOUBLE, dayCountConvention STRING, startDate DATE, couponDates DATE 向量, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE 向量, knockOutValues DOUBLE 向量, knockOutWeights DOUBLE 向量, knockInDates DATE 向量, knockInValues DOUBLE 向量, knockInWeights DOUBLE 向量, [returnJson])
+caplib::createPhoenixAutoCallableNote(couponPayoffType, couponStrike, couponRate, dayCountConvention, startDate, couponDates, knockOutBarrierType, knockOutBarrierValue, knockInBarrierType, knockInBarrierValue, longShort, knockInPayoffType, knockInPayoffStrike, expiry, delivery, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, knockOutDates, knockOutValues, knockOutWeights, knockInDates, knockInValues, knockInWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存凤凰自动赎回票据。函数验证并转换字段，构造 `PhoenixAutoCallableNote` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 couponPayoffType STRING 类型。票息收益类型。**有效性:** 可接受值：`CALL`, `call`, `PUT`, `put`。仅接受所示精确拼写。
 
@@ -8336,11 +8354,11 @@ couponStrike DOUBLE 类型。票息条件使用的行权价。**有效性:** 必
 
 couponRate DOUBLE 类型。票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。
 
 startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。**行为实测:** 包装器不校验本参数的向量形式，传入 DATE 标量亦可宽松接受并完成调用（按单日期票息处理）；建议按日期向量传入。
+couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
 knockOutBarrierType STRING 类型。敲出障碍类型。**有效性:** 可接受值：`DOWN_IN`, `UAI`, `DOWN_AND_IN`, `UP_IN`, `DAO`, `UP_AND_IN`, `DOWN_OUT`, `DAI`, `DOWN_AND_OUT`, `UP_OUT`, `UAO`, `UP_AND_OUT`。仅接受所示精确拼写。
 
@@ -8364,15 +8382,15 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 knockOutDates DATE 向量 类型。敲出观察日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -8386,11 +8404,11 @@ knockInValues DOUBLE 向量 类型。与敲入日期对齐的敲入观察值数�
 
 knockInWeights DOUBLE 向量 类型。敲入观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PhoenixAutoCallableNote` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PhoenixAutoCallableNote 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8418,25 +8436,25 @@ caplib::createPhoenixAutoCallableNote(
 
 #### createSnowballAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createSnowballAutoCallableNote(couponRate DOUBLE, startDate DATE, couponDates DATE 向量, dayCountConvention STRING, knockOutBarrierType STRING, knockOutBarrierValue DOUBLE, knockInBarrierType STRING, knockInBarrierValue DOUBLE, longShort STRING, knockInPayoffType STRING, knockInPayoffStrike DOUBLE, knockInPayoffGearing DOUBLE, referencePrice DOUBLE, expiry DATE, delivery DATE, settlementDays INT, nominal DOUBLE, payoffCurrency STRING, underlyingType STRING, underlyingCurrency STRING, underlying STRING, handle STRING, knockOutDates DATE 向量, knockOutValues DOUBLE 向量, knockOutWeights DOUBLE 向量, knockInDates DATE 向量, knockInValues DOUBLE 向量, knockInWeights DOUBLE 向量, [returnJson])
+caplib::createSnowballAutoCallableNote(couponRate, startDate, couponDates, dayCountConvention, knockOutBarrierType, knockOutBarrierValue, knockInBarrierType, knockInBarrierValue, longShort, knockInPayoffType, knockInPayoffStrike, knockInPayoffGearing, referencePrice, expiry, delivery, settlementDays, nominal, payoffCurrency, underlyingType, underlyingCurrency, underlying, handle, knockOutDates, knockOutValues, knockOutWeights, knockInDates, knockInValues, knockInWeights[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存雪球自动赎回票据。函数验证并转换字段，构造 `SnowballAutoCallableNote` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 couponRate DOUBLE 类型。票息率。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
 startDate DATE 类型。起始日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。**行为实测:** 包装器不校验本参数的向量形式，传入 DATE 标量亦可宽松接受并完成调用（按单日期票息处理）；建议按日期向量传入。
+couponDates DATE 向量 类型。票息支付日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
-dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。
 
 knockOutBarrierType STRING 类型。敲出障碍类型。**有效性:** 可接受值：`DOWN_IN`, `UAI`, `DOWN_AND_IN`, `UP_IN`, `DAO`, `UP_AND_IN`, `DOWN_OUT`, `DAI`, `DOWN_AND_OUT`, `UP_OUT`, `UAO`, `UP_AND_OUT`。仅接受所示精确拼写。
 
@@ -8464,15 +8482,15 @@ settlementDays INT 类型。交易或行权到结算的工作日天数。**有�
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；实测包装器校验该约束，违规值抛 IllegalArgumentException（2026-10-15 全新容器实测）。
 
-payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+payoffCurrency STRING 类型。收益支付币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlyingType STRING 类型。标的类型枚举。**有效性:** 可接受值：`SPOT`、`FUTURE`、`FORWARD`。仅接受这三个大写精确拼写；空字符串和别名均无效。
 
-underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+underlyingCurrency STRING 类型。标的资产币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
 knockOutDates DATE 向量 类型。敲出观察日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
@@ -8486,11 +8504,11 @@ knockInValues DOUBLE 向量 类型。与敲入日期对齐的敲入观察值数�
 
 knockInWeights DOUBLE 向量 类型。敲入观察权重数组。**有效性:** 所有权重必须非负且有限，向量须与配对日期/数值等长，并且总权重必须大于零；包装器不强制归一化。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `SnowballAutoCallableNote` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 SnowballAutoCallableNote 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8519,37 +8537,37 @@ caplib::createSnowballAutoCallableNote(
 
 #### priceEqAmericanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqAmericanOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqAmericanOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益美式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8624,37 +8642,37 @@ result = caplib::priceEqAmericanOption(americanOption, asOfDate, mktData,
 
 #### priceEqAsianOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqAsianOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqAsianOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益亚式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8737,37 +8755,37 @@ result = caplib::priceEqAsianOption(asianOption, asOfDate, mktData,
 
 #### priceEqDigitalOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqDigitalOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqDigitalOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益数字期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8842,37 +8860,37 @@ result = caplib::priceEqDigitalOption(digitalOption, asOfDate, mktData,
 
 #### priceEqOneTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqOneTouchOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqOneTouchOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益单触碰期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -8948,37 +8966,37 @@ result = caplib::priceEqOneTouchOption(oneTouchOption, asOfDate, mktData,
 
 #### priceEqDoubleTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqDoubleTouchOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqDoubleTouchOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益双触碰期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9055,37 +9073,37 @@ result = caplib::priceEqDoubleTouchOption(doubleTouchOption, asOfDate, mktData,
 
 #### priceEqSingleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqSingleBarrierOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqSingleBarrierOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益单障碍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9162,37 +9180,37 @@ result = caplib::priceEqSingleBarrierOption(singleBarrierOption, asOfDate, mktDa
 
 #### priceEqDoubleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqDoubleBarrierOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqDoubleBarrierOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益双障碍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9270,37 +9288,37 @@ result = caplib::priceEqDoubleBarrierOption(doubleBarrierOption, asOfDate, mktDa
 
 #### priceEqSingleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqSingleSharkFinOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqSingleSharkFinOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益单鲨鱼鳍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9385,37 +9403,37 @@ result = caplib::priceEqSingleSharkFinOption(singleSharkFinOption, asOfDate, mkt
 
 #### priceEqDoubleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqDoubleSharkFinOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqDoubleSharkFinOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益双鲨鱼鳍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9501,37 +9519,37 @@ result = caplib::priceEqDoubleSharkFinOption(doubleSharkFinOption, asOfDate, mkt
 
 #### priceEqPingPongOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqPingPongOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqPingPongOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益乒乓期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9615,37 +9633,37 @@ result = caplib::priceEqPingPongOption(pingPongOption, asOfDate, mktData,
 
 #### priceEqAirbagOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqAirbagOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqAirbagOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益安全气囊期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9730,37 +9748,37 @@ result = caplib::priceEqAirbagOption(airbagOption, asOfDate, mktData,
 
 #### priceEqRangeAccrualOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqRangeAccrualOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqRangeAccrualOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益区间累计期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9840,37 +9858,37 @@ result = caplib::priceEqRangeAccrualOption(rangeAccrualOption, asOfDate, mktData
 
 #### priceEqPhoenixAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqPhoenixAutoCallableNote(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqPhoenixAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益凤凰自动赎回票据。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -9958,37 +9976,37 @@ result = caplib::priceEqPhoenixAutoCallableNote(phoenixNote, asOfDate, mktData,
 
 #### priceEqSnowballAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceEqSnowballAutoCallableNote(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceEqSnowballAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价权益雪球自动赎回票据。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10078,41 +10096,41 @@ result = caplib::priceEqSnowballAutoCallableNote(snowballNote, asOfDate, mktData
 
 #### buildCmVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildCmVolatilitySurface(asOfDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrices DOUBLE 向量, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, handle STRING, [returnJson])
+caplib::buildCmVolatilitySurface(asOfDate, underlying, definitionHandle, quoteMatrixHandle, underlyingPrices, discountCurveHandle, fwdCurveHandle, buildSettingsHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建商品波动率曲面。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `VolatilitySurface`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-definitionHandle STRING 类型。波动率曲面定义 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+definitionHandle STRING 类型。波动率曲面定义 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-quoteMatrixHandle STRING 类型。期权报价矩阵 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+quoteMatrixHandle STRING 类型。期权报价矩阵 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 underlyingPrices DOUBLE 向量 类型。与报价期限或校准行对齐的标的价格数组。**有效性:** 所有元素必须有限并与配对日期等长；通常应为正，但可出现负价格的市场由下游业务规则决定。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-fwdCurveHandle STRING 类型。远期曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+fwdCurveHandle STRING 类型。远期曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-buildSettingsHandle STRING 类型。构建设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+buildSettingsHandle STRING 类型。构建设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10157,53 +10175,53 @@ result = caplib::buildCmVolatilitySurface(asOfDate, underlying, volDef, optionQu
 
 #### buildPmYieldCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildPmYieldCurve(asOfDate DATE, parCurveHandle STRING, discountCurveHandle STRING, pmTemplateHandle STRING, spotPrice DOUBLE, calcJacobian INT, dayCountConvention STRING, interpMethod STRING, extrapMethod STRING, curveType STRING, curveName STRING, shift DOUBLE, method STRING, mode STRING, handle STRING, [returnJson])
+caplib::buildPmYieldCurve(asOfDate, parCurveHandle, discountCurveHandle, pmTemplateHandle, spotPrice, calcJacobian, dayCountConvention, interpMethod, extrapMethod, curveType, curveName, shift, method, mode, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建贵金属收益率曲线。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `DividendCurve`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-parCurveHandle STRING 类型。平价曲线输入对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+parCurveHandle STRING 类型。平价曲线输入对象 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pmTemplateHandle STRING 类型。贵金属模板 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pmTemplateHandle STRING 类型。贵金属模板 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 spotPrice DOUBLE 类型。标的或贵金属的即期价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
 calcJacobian INT 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DAY_COUNT_CONVENTION`, `ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+dayCountConvention STRING 类型。计息惯例。**有效性:** 值必须是以下完整 protobuf 标签之一：`ACT_360`, `ACTUAL_360`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT_ACT_ICMA`, `ACTUAL_ACTUAL_ICMA`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `ACT_ACT_ISDA`, `ACTUAL_ACTUAL_ISDA`, `THIRTY_360`, `BOND_BASIS`, `THIRTY_E_360`, `EUROBOND_BASIS`, `THIRTY_E_360_ISDA`, `ONE_ONE`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `BUSINESS_252`。
 
-interpMethod STRING 类型。插值方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_INTERP_METHOD`, `LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `SABR_INTERP`, `SVI_INTERP`, `LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `SABR_NORMAL_INTERP`, `QUADRATIC_POLYNOMIAL_INTERP`, `CUBIC_POLYNOMIAL_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 构建服务端仅接受 LINEAR/CUBIC_SPLINE/LEFT_CONTINUOUS_FLAT/QUADRATIC_POLYNOMIAL/CUBIC_POLYNOMIAL/CUBIC_HERMITE_SPLINE 子集，传 SABR/SVI/LOG_MONEYNESS/SABR_NORMAL 会被服务端拒绝（2026-10-15 全新容器实测）。
+interpMethod STRING 类型。插值方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`LINEAR_INTERP`, `CUBIC_SPLINE_INTERP`, `LEFT_CONTINUOUS_FLAT_INTERP`, `SABR_INTERP`, `SVI_INTERP`, `LOG_MONEYNESS_CUBIC_SPLINE_INTERP`, `SABR_NORMAL_INTERP`, `QUADRATIC_POLYNOMIAL_INTERP`, `CUBIC_POLYNOMIAL_INTERP`, `CUBIC_HERMITE_SPLINE_INTERP`。
 
-extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_EXTRAP_METHOD`, `FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 构建服务端仅接受 FLAT/LINEAR/ADJ_FLAT 子集，传 NATURAL 会被服务端拒绝（2026-10-15 全新容器实测）。
+extrapMethod STRING 类型。外推方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`FLAT_EXTRAP`, `LINEAR_EXTRAP`, `NATURAL_EXTRAP`, `ADJ_FLAT_EXTRAP`。
 
-curveType STRING 类型。曲线值类型，例如零利率、贴现因子或利差。**有效性:** 值必须是以下完整 protobuf 标签之一：`ZERO_RATE`, `LOG_DISCOUNT`, `FORWARD_RATE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 构建服务端仅接受 ZERO_RATE/LOG_DISCOUNT 子集，传 FORWARD_RATE 会被服务端拒绝（2026-10-15 全新容器实测）。
+curveType STRING 类型。曲线值类型，例如零利率、贴现因子或利差。**有效性:** 值必须是以下完整 protobuf 标签之一：`ZERO_RATE`, `LOG_DISCOUNT`, `FORWARD_RATE`。
 
-curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
+curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 shift DOUBLE 类型。风险或校准计算使用的扰动大小。**有效性:** 必须是有限 DOUBLE；除非另有说明，可为负、零或正，包装器不拒绝 NaN/无穷。
 
-method STRING 类型。计算、校准或有限差分方法选择器。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+method STRING 类型。计算、校准或有限差分方法选择器。**有效性:** 值必须是以下完整 protobuf 标签之一：`CENTRAL_DIFFERENCE_METHOD`, `ONE_SIDE_DOWN_METHOD`, `ONE_SIDE_UP_METHOD`。
 
-mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`SINGLE_THREADING_MODE`, `MULTI_THREADING_MODE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 值必须是以下完整 protobuf 标签之一：`SINGLE_THREADING_MODE`, `MULTI_THREADING_MODE`。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `DividendCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 DividendCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10239,45 +10257,45 @@ result = caplib::buildPmYieldCurve(asOfDate, parCurve, discountCurve, pmCashTemp
 
 #### buildPmVolatilitySurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildPmVolatilitySurface(asOfDate DATE, underlying STRING, definitionHandle STRING, quoteMatrixHandle STRING, underlyingPrice DOUBLE, discountCurveHandle STRING, fwdCurveHandle STRING, buildSettingsHandle STRING, marketConventionsHandle STRING, spotTemplateHandle STRING, handle STRING, [returnJson])
+caplib::buildPmVolatilitySurface(asOfDate, underlying, definitionHandle, quoteMatrixHandle, underlyingPrice, discountCurveHandle, fwdCurveHandle, buildSettingsHandle, marketConventionsHandle, spotTemplateHandle, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建贵金属波动率曲面。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `VolatilitySurface`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-definitionHandle STRING 类型。波动率曲面定义 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+definitionHandle STRING 类型。波动率曲面定义 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-quoteMatrixHandle STRING 类型。期权报价矩阵 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+quoteMatrixHandle STRING 类型。期权报价矩阵 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 underlyingPrice DOUBLE 类型。当前标的价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-fwdCurveHandle STRING 类型。远期曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+fwdCurveHandle STRING 类型。远期曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-buildSettingsHandle STRING 类型。构建设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+buildSettingsHandle STRING 类型。构建设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-marketConventionsHandle STRING 类型。市场惯例 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+marketConventionsHandle STRING 类型。市场惯例 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-spotTemplateHandle STRING 类型。即期模板 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+spotTemplateHandle STRING 类型。即期模板 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `VolatilitySurface` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 VolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10327,17 +10345,17 @@ result = caplib::buildPmVolatilitySurface(asOfDate, underlying, volDef, "PM_QUOT
 
 #### createCmMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCmMktDataSet(asOfDate DATE, underlying STRING, underlyingPrice DOUBLE, discountCurve STRING, dividendCurve STRING, volSurface STRING, quantoDiscountCurve STRING, quantoFxVolCurve STRING, quantoCorrelation DOUBLE, handle STRING, [returnJson])
+caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice, discountCurve, dividendCurve, volSurface, quantoDiscountCurve, quantoFxVolCurve, quantoCorrelation, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存商品市场数据集。函数验证并转换字段，构造 `CmMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -10345,25 +10363,25 @@ underlying STRING 类型。标的资产、指数、商品或货币对标识。**
 
 underlyingPrice DOUBLE 类型。当前标的价格。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-discountCurve STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+discountCurve STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-dividendCurve STRING 类型。股息或远期收益曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+dividendCurve STRING 类型。股息或远期收益曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-volSurface STRING 类型。波动率曲面 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+volSurface STRING 类型。波动率曲面 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-quantoDiscountCurve STRING 类型。Quanto 贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+quantoDiscountCurve STRING 类型。Quanto 贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-quantoFxVolCurve STRING 类型。Quanto 外汇波动率曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+quantoFxVolCurve STRING 类型。Quanto 外汇波动率曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-quantoCorrelation DOUBLE 类型。Quanto 调整相关系数。**有效性:** 必须有限且业务有效范围为 `[-1,1]`；包装器仅检查类型。**行为实测:** 传超出 [-1,1] 的值（如 1.5、-1.5）不抛异常，包装器不做边界校验；-1 与 1 为合法值（2026-10-15 全新容器实测）。
+quantoCorrelation DOUBLE 类型。Quanto 调整相关系数。**有效性:** 必须有限且业务有效范围为 `[-1,1]`；包装器仅检查类型。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CmMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CmMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10414,17 +10432,17 @@ result = caplib::createCmMktDataSet(asOfDate, underlying, underlyingPrice,
 
 #### createCmRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCmRiskSettings(irDelta INT, priceDelta INT, volVega INT, theta INT, handle STRING, [returnJson])
+caplib::createCmRiskSettings(irDelta, priceDelta, volVega, theta, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存商品风险设置。函数验证并转换字段，构造 `CmRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 irDelta INT 类型。是否计算利率 Delta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
@@ -10434,13 +10452,13 @@ volVega INT 类型。是否计算波动率 Vega 风险。**有效性:** 必须�
 
 theta INT 类型。是否计算 Theta 风险。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传 NULL 不抛异常、宽松接受（2026-10-15 全新容器实测）。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CmRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CmRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10452,37 +10470,37 @@ caplib::createCmRiskSettings(1, 1, 1, 1, "CM_RISK", true)
 
 #### priceCmEuropeanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmEuropeanOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmEuropeanOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品欧式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10545,37 +10563,37 @@ result = caplib::priceCmEuropeanOption(europeanOption, asOfDate, mktData,
 
 #### priceCmAmericanOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmAmericanOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmAmericanOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品美式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10638,37 +10656,37 @@ result = caplib::priceCmAmericanOption(americanOption, asOfDate, mktData,
 
 #### priceCmAsianOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmAsianOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmAsianOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品亚式期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10736,37 +10754,37 @@ result = caplib::priceCmAsianOption(asianOption, asOfDate, mktData,
 
 #### priceCmDigitalOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmDigitalOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmDigitalOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品数字期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10829,37 +10847,37 @@ result = caplib::priceCmDigitalOption(digitalOption, asOfDate, mktData,
 
 #### priceCmOneTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmOneTouchOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmOneTouchOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品单触碰期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -10923,37 +10941,37 @@ result = caplib::priceCmOneTouchOption(oneTouchOption, asOfDate, mktData,
 
 #### priceCmDoubleTouchOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmDoubleTouchOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmDoubleTouchOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品双触碰期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11018,37 +11036,37 @@ result = caplib::priceCmDoubleTouchOption(doubleTouchOption, asOfDate, mktData,
 
 #### priceCmSingleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmSingleBarrierOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmSingleBarrierOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品单障碍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11112,37 +11130,37 @@ result = caplib::priceCmSingleBarrierOption(singleBarrierOption, asOfDate, mktDa
 
 #### priceCmDoubleBarrierOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmDoubleBarrierOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmDoubleBarrierOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品双障碍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11207,37 +11225,37 @@ result = caplib::priceCmDoubleBarrierOption(doubleBarrierOption, asOfDate, mktDa
 
 #### priceCmSingleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmSingleSharkFinOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmSingleSharkFinOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品单鲨鱼鳍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11307,37 +11325,37 @@ result = caplib::priceCmSingleSharkFinOption(singleSharkFinOption, asOfDate, mkt
 
 #### priceCmDoubleSharkFinOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmDoubleSharkFinOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmDoubleSharkFinOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品双鲨鱼鳍期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11409,37 +11427,37 @@ result = caplib::priceCmDoubleSharkFinOption(doubleSharkFinOption, asOfDate, mkt
 
 #### priceCmPingPongOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmPingPongOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmPingPongOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品乒乓期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11509,37 +11527,37 @@ result = caplib::priceCmPingPongOption(pingPongOption, asOfDate, mktData,
 
 #### priceCmAirbagOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmAirbagOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmAirbagOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品安全气囊期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。**行为实测:** 传 NULL 同样按默认模式处理、不抛异常（2026-10-15 全新容器实测）。
+mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11610,37 +11628,37 @@ result = caplib::priceCmAirbagOption(airbagOption, asOfDate, mktData,
 
 #### priceCmRangeAccrualOption
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmRangeAccrualOption(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmRangeAccrualOption(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品区间累计期权。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11708,37 +11726,37 @@ result = caplib::priceCmRangeAccrualOption(rangeAccrualOption, asOfDate, mktData
 
 #### priceCmPhoenixAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmPhoenixAutoCallableNote(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmPhoenixAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品凤凰自动赎回票据。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11811,37 +11829,37 @@ result = caplib::priceCmPhoenixAutoCallableNote(phoenixNote, asOfDate, mktData,
 
 #### priceCmSnowballAutoCallableNote
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCmSnowballAutoCallableNote(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCmSnowballAutoCallableNote(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价商品雪球自动赎回票据。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11914,33 +11932,33 @@ result = caplib::priceCmSnowballAutoCallableNote(snowballNote, asOfDate, mktData
 
 #### createPmCashTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPmCashTemplate(instName STRING, startDelay INT, deliveryDayConvention STRING, calendars STRING or STRING 向量, dayCountConvention STRING, [returnJson])
+caplib::createPmCashTemplate(instName, startDelay, deliveryDayConvention, calendars, dayCountConvention[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存贵金属现金工具模板。函数验证并转换字段，构造 `PmCashTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。**行为实测:** 传 0 或负整数不抛异常，包装器不做非负校验（2026-10-15 全新容器实测）。
+startDelay INT 类型。起息或交割延迟天数。**有效性:** 非负整数（天数）。
 
 deliveryDayConvention STRING 类型。交割日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。**行为实测:** 也接受单个 STRING 标量（非向量）（2026-10-15 全新容器实测）。
+calendars STRING 或 STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
 dayCountConvention STRING 类型。计息惯例。**有效性:** 识别值：`ACT_360`, `ACTUAL_360`, `ACT/360`, `ACT_365`, `ACT_365_FIXED`, `ACTUAL_365_FIXED`, `ACT/365`, `THIRTY_360`, `30_360`, `30/360`, `BOND_BASIS`。不区分大小写。任何其他字符串均回退到函数指定的默认日计数。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PmCashTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PmCashTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11954,33 +11972,33 @@ result = caplib::createPmCashTemplate("XAUUSD", 2, "FOLLOWING", ["CAL_CFETS"], "
 
 #### createPmParRateCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPmParRateCurve(asOfDate DATE, currency STRING, curveName STRING, pillarsTable MATRIX/TABLE, tag STRING, [returnJson])
+caplib::createPmParRateCurve(asOfDate, currency, curveName, pillarsTable MATRIX/TABLE, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存贵金属平价利率曲线输入。函数验证并转换字段，构造 `PmParRateCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 pillarsTable MATRIX/TABLE 类型。曲线节点输入表。**有效性:** 必须具有所列元素类型和形状；元素不得为空；除明确说明外包装器不强制非空。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传空字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PmParRateCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PmParRateCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -11998,39 +12016,39 @@ result = caplib::createPmParRateCurve(asOfDate, "USD", "XAU_XAUUSD", pillarsTabl
 
 #### createPmMktConventions
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPmMktConventions(atmType STRING, shortDeltaType STRING, longDeltaType STRING, deltaCutoff STRING, riskReversal STRING, smileQuoteType STRING, underlying STRING, tag STRING, [returnJson])
+caplib::createPmMktConventions(atmType, shortDeltaType, longDeltaType, deltaCutoff, riskReversal, smileQuoteType, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存贵金属市场惯例。函数验证并转换字段，构造 `PmMarketConventions` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-atmType STRING 类型。ATM 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_ATM_TYPE`, `ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串会映射为 INVALID 哨兵并继续执行，不会抛出异常（2026-09-16 实测）。
+atmType STRING 类型。ATM 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`ATM_FORWARD`, `ATM_DNS_PIPS`, `ATM_DNS_PERCENTAGE`, `ATM_SPOT`。
 
-shortDeltaType STRING 类型。短期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+shortDeltaType STRING 类型。短期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。
 
-longDeltaType STRING 类型。长期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+longDeltaType STRING 类型。长期限 Delta 报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。
 
-deltaCutoff STRING 类型。Delta 报价切换阈值。**有效性:** 值必须是以下完整 protobuf 标签之一：`INVALID_DELTA_TYPE`, `PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串映射为 INVALID 哨兵并继续执行，不抛异常（2026-10-15 全新容器实测）。
+deltaCutoff STRING 类型。Delta 报价切换阈值。**有效性:** 值必须是以下完整 protobuf 标签之一：`PIPS_SPOT_DELTA`, `PERCENTAGE_SPOT_DELTA`, `PIPS_FORWARD_DELTA`, `PERCENTAGE_FORWARD_DELTA`, `SIMPLE_DELTA`。
 
-riskReversal STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 值必须是以下完整 protobuf 标签之一：`RR_CALL_PUT`, `RR_PUT_CALL`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串映射为 INVALID 哨兵并继续执行，不抛异常（2026-10-15 全新容器实测）。
+riskReversal STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 值必须是以下完整 protobuf 标签之一：`RR_CALL_PUT`, `RR_PUT_CALL`。
 
-smileQuoteType STRING 类型。波动率微笑报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`BUTTERFLY_QUOTE`, `MARKET_STRANGLE_QUOTE`, `WINGS_RATIO_BF_QUOTE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。**行为实测:** 未识别的字符串映射为 INVALID 哨兵并继续执行，不抛异常（2026-10-15 全新容器实测）。
+smileQuoteType STRING 类型。波动率微笑报价类型。**有效性:** 值必须是以下完整 protobuf 标签之一：`BUTTERFLY_QUOTE`, `MARKET_STRANGLE_QUOTE`, `WINGS_RATIO_BF_QUOTE`。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传空字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PmMarketConventions` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PmMarketConventions 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12043,17 +12061,17 @@ result = caplib::createPmMktConventions("ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS
 
 #### createPmOptionQuoteMatrix
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createPmOptionQuoteMatrix(underlying STRING, asOfDate DATE, terms STRING 向量, payoffTypes STRING matrix/vector, deltas DOUBLE matrix/vector, quotes DOUBLE matrix/vector, handle STRING, [returnJson])
+caplib::createPmOptionQuoteMatrix(underlying, asOfDate, terms, payoffTypes, deltas, quotes, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存贵金属期权报价矩阵。函数验证并转换字段，构造 `OptionQuoteMatrix` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
@@ -12061,19 +12079,19 @@ asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:
 
 terms STRING 向量 类型。报价期限数组。**有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
 
-payoffTypes STRING matrix/vector 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+payoffTypes STRING 矩阵/向量 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。
 
-deltas DOUBLE matrix/vector 类型。Delta 行权价矩阵或向量。**有效性:** 所有元素必须有限且位于 `[-1,1]`，形状须与配对报价矩阵一致；包装器仅强制形状/类型。
+deltas DOUBLE 矩阵/向量 类型。Delta 行权价矩阵或向量。**有效性:** 所有元素必须有限且位于 `[-1,1]`，形状须与配对报价矩阵一致；包装器仅强制形状/类型。
 
-quotes DOUBLE matrix/vector 类型。市场报价值数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
+quotes DOUBLE 矩阵/向量 类型。市场报价值数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。**行为实测:** 传空字符串不抛异常、宽松接受（2026-10-15 全新容器实测）。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 OptionQuoteMatrix 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12090,41 +12108,41 @@ result = caplib::createPmOptionQuoteMatrix("AU.SHFE", asOfDate, terms, payoffTyp
 
 #### createCmOptionQuoteMatrix
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCmOptionQuoteMatrix(exerciseType STRING, underlyingType STRING, asOfDate DATE, termDates DATE 向量, payoffTypes STRING matrix/vector, strikes DOUBLE matrix/vector, prices DOUBLE matrix/vector, underlying STRING, handle STRING, [returnJson])
+caplib::createCmOptionQuoteMatrix(exerciseType, underlyingType, asOfDate, termDates, payoffTypes, strikes, prices, underlying, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存商品期权报价矩阵。函数验证并转换字段，构造 `OptionQuoteMatrix` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+exerciseType STRING 类型。期权行权风格。**有效性:** 值必须是以下完整 protobuf 标签之一：`EUROPEAN`, `AMERICAN`, `BERMUDAN`。
 
-underlyingType STRING 类型。标的类型枚举。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOT_UNDERLYING_TYPE`, `FUTURE_UNDERLYING_TYPE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+underlyingType STRING 类型。标的类型枚举。**有效性:** 值必须是以下完整 protobuf 标签之一：`SPOT_UNDERLYING_TYPE`, `FUTURE_UNDERLYING_TYPE`。
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 termDates DATE 向量 类型。报价期限对应的到期日期数组。**有效性:** 必须是不含空值的 DATE/INT 日期向量，长度须与配对参数一致。表示日程或期限序列时通常应严格递增；包装器不检查排序或日期先后关系。
 
-payoffTypes STRING matrix/vector 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+payoffTypes STRING 矩阵/向量 类型。与报价值对齐的收益类型矩阵或向量。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`CALL`, `PUT`, `STRADDLE`, `STRANGLE`, `RISK_REVERSAL`, `BUTTERFLY`, `ATM_STRADDLE`。
 
-strikes DOUBLE matrix/vector 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。
+strikes DOUBLE 矩阵/向量 类型。行权价数组或矩阵。**有效性:** 必须有限；价格型标的通常要求非负，利率型标的可为负。包装器仅检查类型/形状。
 
-prices DOUBLE matrix/vector 类型。期权价格矩阵或报价数组。**有效性:** 所有元素必须非负且有限，并与配对行权价/期限参数形状一致；包装器主要检查类型/形状。
+prices DOUBLE 矩阵/向量 类型。期权价格矩阵或报价数组。**有效性:** 所有元素必须非负且有限，并与配对行权价/期限参数形状一致；包装器主要检查类型/形状。
 
 underlying STRING 类型。标的资产、指数、商品或货币对标识。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `OptionQuoteMatrix` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 OptionQuoteMatrix 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12149,17 +12167,17 @@ result = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE",
 
 #### createCreditCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCreditCurve(asOfDate DATE, pillarDates DATE 向量, spreads DOUBLE 向量, dayCountConvention STRING, interp STRING, extrap STRING, name STRING, handle STRING, [returnJson])
+caplib::createCreditCurve(asOfDate, pillarDates, spreads, dayCountConvention, interp, extrap, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存信用曲线。函数验证并转换字段，构造 `CreditCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -12175,13 +12193,13 @@ extrap STRING 类型。外推方法。**有效性:** 可接受值：`FLAT_EXTRAP
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12200,17 +12218,17 @@ caplib::createCreditCurve(
 
 #### createCreditCurveRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCreditCurveRiskSettings(delta BOOL, gamma BOOL, shift DOUBLE, method INT, granularity INT, scaling DOUBLE, threading INT, handle STRING, [returnJson])
+caplib::createCreditCurveRiskSettings(delta, gamma, shift, method, granularity, scaling, threading, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存信用曲线风险设置。函数验证并转换字段，构造 `CreditCurveRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 delta BOOL 类型。是否计算 Delta 风险或 Delta 数值。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
@@ -12226,13 +12244,13 @@ scaling DOUBLE 类型。风险扰动缩放因子。**有效性:** 必须严格�
 
 threading INT 类型。线程模式选择器。**有效性:** 仅 `1` 选择多线程；其他整数均为单线程。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditCurveRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditCurveRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12245,39 +12263,39 @@ caplib::createCreditCurveRiskSettings(
 
 #### buildBondCreditSpreadCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildBondCreditSpreadCurve(asOfDate DATE, curveName STRING, parCurveHandle STRING, discountCurveHandle STRING, forwardCurveHandle STRING, buildingMethod STRING, calcJacobian INT, handle STRING, [returnJson])
+caplib::buildBondCreditSpreadCurve(asOfDate, curveName, parCurveHandle, discountCurveHandle, forwardCurveHandle, buildingMethod, calcJacobian, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建债券信用利差曲线。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `CreditCurve`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-parCurveHandle STRING 类型。平价曲线输入对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+parCurveHandle STRING 类型。平价曲线输入对象 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-forwardCurveHandle STRING 类型。远期曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+forwardCurveHandle STRING 类型。远期曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 buildingMethod STRING 类型。曲线或曲面构建算法名称。**有效性:** 识别值：`BOOTSTRAP`, `BOOTSTRAPPING`, `BOOTSTRAPPING_METHOD`, `GLOBAL_OPTIMIZATION`, `GLOBAL_OPTIMIZATION_METHOD`, `HYBRID`, `HYBRID_METHOD`。不区分大小写。空值或其他字符串回退为 BOOTSTRAPPING_METHOD。
 
 calcJacobian INT 类型。是否计算并返回校准雅可比信息。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12348,41 +12366,41 @@ cnyMtnAaaSprdStdCfets = caplib::buildBondCreditSpreadCurve(
 
 #### createCreditParCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCreditParCurve(asOfDate DATE, currency STRING, curveName STRING, instrumentNames STRING 向量, instrumentTypes STRING 向量, maturities STRING 向量, quotes DOUBLE 向量, startConventions STRING 向量, handle STRING, [returnJson])
+caplib::createCreditParCurve(asOfDate, currency, curveName, instrumentNames, instrumentTypes, maturities, quotes, startConventions, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存信用平价曲线输入。函数验证并转换字段，构造 `CreditParCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 instrumentNames STRING 向量 类型。市场工具名称数组。**有效性:** 必须具有所列元素类型和形状；元素不得为空，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-instrumentTypes STRING 向量 类型。市场工具类型数组。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。这些是规范拼写；为保证兼容性请按所示使用。
+instrumentTypes STRING 向量 类型。市场工具类型数组。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`DEPOSIT`, `FORWARD_RATE_AGREEMENT`, `IR_VANILLA_SWAP`, `OVERNIGHT_INDEX_SWAP`, `CROSS_CURRENCY_SWAP`, `MTM_CROSS_CURRENCY_SWAP`, `STD_CROSS_CURRENCY_SWAP`, `IR_BOND`, `NON_DELIVERABLE_SWAP`, `IR_EUROPEAN_SWAPTION`, `IR_CAP_FLOOR`, `IR_FUTURE`, `IR_FUTURE_IMM`, `IR_FUTURE_ASX`, `IR_VANILLA_BOND`, `IMM_FORWARD_RATE_AGREEMENT`, `IR_BOND_OPTION`, `IR_RANGEACCRUAL_SWAP`, `IR_STRUCTURED_SWAP`, `FX_SPOT`, `FX_FORWARD`, `FX_NON_DELIVERABLE_FORWARD`, `FX_SWAP`, `FX_SWAP_ON`, `FX_SWAP_TN`, `FX_EUROPEAN_OPTION`, `FX_TIME_OPTION`, `FX_DIGITAL_OPTION`, `FX_QUANTO_OPTION`, `FX_TOUCH_OPTION`, `FX_BARRIER_OPTION`, `FX_VANILLA_STRATEGY`, `FX_TOUCH_QUANTO_OPTION`, `FX_DIGITAL_QUANTO_OPTION`, `EQ_INDEX_FUTURE`, `EQ_EUROPEAN_OPTION`, `EQ_AMERICAN_OPTION`, `EQ_SPOT`, `EQ_VANILLA_OPTION`, `EQ_DIGITAL_OPTION`, `EQ_BARRIER_OPTION`, `EQ_RANGE_ACCRUAL_OPTION`, `EQ_TOUCH_OPTION`, `EQ_QUANTO_OPTION`, `CM_SPOT`, `CM_FUTURE`, `CM_EUROPEAN_OPTION`, `CM_AMERICAN_OPTION`, `CM_VANILLA_OPTION`, `CM_ASIAN_OPTION`, `CM_DIGITAL_OPTION`, `CM_SWAP`, `CM_DIGITAL_ASIAN_OPTION`, `PM_SPOT`, `PM_SWAP`, `CREDIT_DEFAULT_SWAP`, `SPOT`, `FUTURE`, `FORWARD`, `SWAP`, `EUROPEAN_OPTION`, `AMERICAN_OPTION`。
 
 maturities STRING 向量 类型。工具到期期限数组。**有效性:** 每个元素必须使用正整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
 
 quotes DOUBLE 向量 类型。市场报价值数组。**有效性:** 必须具有所列元素类型和形状；数值必须有限，长度/维度须与配对参数一致；除明确说明外包装器不强制非空。
 
-startConventions STRING 向量 类型。工具起息日约定数组。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+startConventions STRING 向量 类型。工具起息日约定数组。**有效性:** 每个元素必须是以下完整 protobuf 标签之一：`INVALID_INSTRUMENT_START_CONVENTION`, `SPOTSTART`, `TODAYSTART`, `TOMORROWSTART`。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditParCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditParCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12404,35 +12422,35 @@ caplib::createCreditParCurve(
 
 #### buildCreditCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildCreditCurve(asOfDate DATE, parCurveHandle STRING, discountCurveHandle STRING, curveName STRING, method STRING, handle STRING, [returnJson])
+caplib::buildCreditCurve(asOfDate, parCurveHandle, discountCurveHandle, curveName, method, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建信用曲线。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `CreditCurve`。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-parCurveHandle STRING 类型。平价曲线输入对象 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+parCurveHandle STRING 类型。平价曲线输入对象 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-discountCurveHandle STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+discountCurveHandle STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 curveName STRING 类型。曲线业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 method STRING 类型。计算、校准或有限差分方法选择器。**有效性:** 必须为非空 STRING；值会原样传给信用曲线服务，插件未定义本地枚举。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12473,37 +12491,37 @@ caplib::buildCreditCurve(
 
 #### priceCreditDefaultSwap
 
-**语法**
+语法
 
 ```dolphindb
-caplib::priceCreditDefaultSwap(instrumentHandle STRING, asOfDate DATE, mktDataHandle STRING, pricingSettingsHandle STRING, riskSettingsHandle STRING, scnSettingsHandle STRING, mode STRING, [returnJson])
+caplib::priceCreditDefaultSwap(instrumentHandle, asOfDate, mktDataHandle, pricingSettingsHandle, riskSettingsHandle, scnSettingsHandle, mode[, returnJson])
 ```
 
-**详情**
+详情
 
 定价信用违约互换。函数组装工具、市场数据、定价、风险和可选情景输入，调用相应定价服务并缓存返回的 `PricingResults`。
 
-**参数**
+参数
 
-instrumentHandle STRING 类型。被定价工具的 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+instrumentHandle STRING 类型。被定价工具的 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 asOfDate DATE 类型。定价请求使用的估值日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-mktDataHandle STRING 类型。定价使用的市场数据集 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+mktDataHandle STRING 类型。定价使用的市场数据集 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-pricingSettingsHandle STRING 类型。定价设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+pricingSettingsHandle STRING 类型。定价设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-riskSettingsHandle STRING 类型。风险设置 内存对象 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
+riskSettingsHandle STRING 类型。风险设置 ObjectCache 句柄。**有效性:** 必须是非空、已存在且 protobuf 类型匹配的 ObjectCache 键。
 
-scnSettingsHandle STRING 类型。情景分析设置 内存对象 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
+scnSettingsHandle STRING 类型。情景分析设置 ObjectCache 句柄；未使用时传空字符串。**有效性:** 可为空以省略；非空时必须是已存在且 protobuf 类型匹配的 ObjectCache 键。
 
 mode STRING 类型。远程执行模式或服务端点；传空字符串使用默认模式。**有效性:** 可为空以使用默认模式；非空值会原样传给下游服务，插件未定义本地枚举或字符范围。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingResults` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingResults 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12570,21 +12588,21 @@ cdsPricingResult = caplib::priceCreditDefaultSwap(
 
 #### createCdsTemplate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCdsTemplate(instName STRING, startDelay STRING or INT, settlementType STRING, referencePrice DOUBLE, leverage DOUBLE, creditProtectionType STRING, recoveryRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING or STRING 向量, rebateAccrual BOOL or INT, [returnJson])
+caplib::createCdsTemplate(instName, startDelay, settlementType, referencePrice, leverage, creditProtectionType, recoveryRate, creditPremiumType, dayCountConvention, frequency, businessDayConvention, calendars, rebateAccrual BOOL or[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存信用违约互换模板。函数验证并转换字段，构造 `CreditInstrumentTemplate` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 instName STRING 类型。工具或模板名称，通常也作为缓存句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-startDelay STRING or INT 类型。起息或交割延迟天数。**有效性:** 值必须使用非负整数加 `Y/M/W/D`（或完整英文单位）；不支持小数，字符串解析不保留负号。
+startDelay STRING 或 INT 类型。起息或交割延迟天数。**有效性:** INT 输入按天计，无需单位；STRING 输入为带可选正负号的整数和可选单位 `Y/M/W/D`（或完整英文单位），省略单位时按天计，负号会被保留。
 
 settlementType STRING 类型。结算类型。**有效性:** 可接受值：`PHYSICAL`, `PHYSICAL_SETTLEMENT`, `CASH`, `CASH_SETTLEMENT`, `CASH_ZERO_COUPON_SETTLEMENT`。不区分大小写。空字符串或 NAN 回退为 PHYSICAL_SETTLEMENT；其他未知值报错。
 
@@ -12604,15 +12622,15 @@ frequency STRING 类型。频率。**有效性:** 识别值：`MONTHLY`, `QUARTE
 
 businessDayConvention STRING 类型。营业日调整约定。**有效性:** 识别值：`FOLLOWING`, `MODIFIED_FOLLOWING`, `PRECEDING`, `MODIFIED_PRECEDING`, `UNADJUSTED`。不区分大小写。任何其他字符串均回退到函数指定的默认营业日约定。
 
-calendars STRING or STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
+calendars STRING 或 STRING 向量 类型。日期调整使用的业务日历名称。**有效性:** 每个名称必须是已注册的非空日历标识。
 
-rebateAccrual BOOL or INT 类型。是否返还应计利息。**有效性:** 接受 BOOL 或 INT；0 为 false，非零为 true。
+rebateAccrual BOOL 或 INT 类型。是否返还应计利息。**有效性:** 接受 BOOL 或 INT；0 为 false，非零为 true。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditInstrumentTemplate` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditInstrumentTemplate 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12627,21 +12645,21 @@ caplib::createCdsTemplate(
 
 #### buildCreditDefaultSwap
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildCreditDefaultSwap(nominal DOUBLE, currency STRING, issueDate DATE, maturity DATE, protectionLegPayReceive STRING, protectionLegSettlementType STRING, protectionLegReferencePrice DOUBLE, protectionLegLeverage DOUBLE, creditProtectionType STRING, protectionLegRecoveryRate DOUBLE, couponRate DOUBLE, creditPremiumType STRING, dayCountConvention STRING, frequency STRING, businessDayConvention STRING, calendars STRING, upfrontRate DOUBLE, rebateAccrual INT, name STRING, tag STRING, [returnJson])
+caplib::buildCreditDefaultSwap(nominal, currency, issueDate, maturity, protectionLegPayReceive, protectionLegSettlementType, protectionLegReferencePrice, protectionLegLeverage, creditProtectionType, protectionLegRecoveryRate, couponRate, creditPremiumType, dayCountConvention, frequency, businessDayConvention, calendars, upfrontRate, rebateAccrual, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 构建信用违约互换工具。函数解析引用的 ObjectCache 条目，调用相关构建服务并缓存返回的 `CreditDefaultSwap`。
 
-**参数**
+参数
 
 nominal DOUBLE 类型。工具名义金额。**有效性:** 必须严格为正且有限；包装器通常仅检查类型。
 
-currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+currency STRING 类型。币种代码。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 issueDate DATE 类型。发行日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
@@ -12677,13 +12695,13 @@ rebateAccrual INT 类型。是否返还应计利息。**有效性:** 必须是 I
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditDefaultSwap` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditDefaultSwap 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12702,19 +12720,19 @@ caplib::buildCreditDefaultSwap(
 
 #### createCdsPricingSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCdsPricingSettings(pricingCurrency STRING, includeCurrentFlow INT, cashFlows INT, includeSettlementFlow INT, numericalFix STRING, accrualBias STRING, fwdsInCpnPeriod STRING, name STRING, tag STRING, [returnJson])
+caplib::createCdsPricingSettings(pricingCurrency, includeCurrentFlow, cashFlows, includeSettlementFlow, numericalFix, accrualBias, fwdsInCpnPeriod, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存 CDS 定价设置。函数验证并转换字段，构造 `PricingSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-pricingCurrency STRING 类型。定价输出使用的币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不验证 ISO 成员资格。
+pricingCurrency STRING 类型。定价输出使用的币种。**有效性:** 必须是非空币种标识，通常为三个大写 ISO 字母；包装器不校验币种代码是否为有效 ISO 代码。
 
 includeCurrentFlow INT 类型。估值输出中是否包含当前现金流。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
@@ -12722,21 +12740,21 @@ cashFlows INT 类型。定价结果中是否包含详细现金流输出。**有�
 
 includeSettlementFlow INT 类型。估值输出中是否包含结算现金流。**有效性:** 必须是 INT 标量；0 为 false，非零为 true；传 BOOL 值会被插件拒绝。
 
-numericalFix STRING 类型。数值稳定性修正方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`NONE_FIX`, `TAYLOR`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+numericalFix STRING 类型。数值稳定性修正方法。**有效性:** 值必须是以下完整 protobuf 标签之一：`NONE_FIX`, `TAYLOR`。
 
-accrualBias STRING 类型。应计利息偏差处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`HALFDAYBIAS`, `NOBIAS`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+accrualBias STRING 类型。应计利息偏差处理方式。**有效性:** 值必须是以下完整 protobuf 标签之一：`HALFDAYBIAS`, `NOBIAS`。
 
-fwdsInCpnPeriod STRING 类型。控制票息期间内远期利率处理方式的约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FLAT`, `PIECEWISE`。这些是规范拼写；为保证兼容性请按所示使用。包含 `INVALID` 的标签是解析器可识别的哨兵，通常不是有效业务输入。
+fwdsInCpnPeriod STRING 类型。控制票息期间内远期利率处理方式的约定。**有效性:** 值必须是以下完整 protobuf 标签之一：`FLAT`, `PIECEWISE`。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `PricingSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 PricingSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12752,33 +12770,33 @@ caplib::createCdsPricingSettings(
 
 #### createCrMktDataSet
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCrMktDataSet(asOfDate DATE, discountCurve STRING, creditCurve STRING, name STRING, tag STRING, [returnJson])
+caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存信用市场数据集。函数验证并转换字段，构造 `CrMktDataSet` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。市场数据基准日或估值参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
-discountCurve STRING 类型。贴现曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+discountCurve STRING 类型。贴现曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-creditCurve STRING 类型。信用曲线 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+creditCurve STRING 类型。信用曲线 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CrMktDataSet` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CrMktDataSet 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12821,33 +12839,33 @@ caplib::createCrMktDataSet(
 
 #### createCrRiskSettings
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createCrRiskSettings(irCurveSettings STRING, csCurveSettings STRING, thetaSettings STRING, name STRING, tag STRING, [returnJson])
+caplib::createCrRiskSettings(irCurveSettings, csCurveSettings, thetaSettings, name, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 创建并缓存信用风险设置。函数验证并转换字段，构造 `CrRiskSettings` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
-irCurveSettings STRING 类型。利率曲线风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+irCurveSettings STRING 类型。利率曲线风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-csCurveSettings STRING 类型。信用利差曲线风险设置 内存对象 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
+csCurveSettings STRING 类型。信用利差曲线风险设置 ObjectCache 句柄。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 thetaSettings STRING 类型。设置对象的缓存句柄或配置值。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
 name STRING 类型。写入创建对象的业务名称。**有效性:** 必须是非空 STRING；包装器不验证业务标识的字符集或成员资格。
 
-tag STRING 类型。用于后续获取创建对象的 内存对象 键或标签。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。用于后续获取创建对象的 ObjectCache 键或标签。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。**行为实测:** 传非 BOOL 标量时插件不抛异常、宽松接受（2026-10-15 全新容器实测）。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 应为 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CrRiskSettings` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CrRiskSettings 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12866,29 +12884,29 @@ caplib::createCrRiskSettings(
 
 #### createFlatCreditCurve
 
-**语法**
+语法
 
 ```dolphindb
-caplib::createFlatCreditCurve(asOfDate DATE, hazardRate DOUBLE, handle STRING, [returnJson])
+caplib::createFlatCreditCurve(asOfDate, hazardRate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
 在生成期限结构的两端应用同一风险率/利差值，创建平坦 CreditCurve。函数验证并转换字段，构造 `CreditCurve` protobuf 并存入 ObjectCache，供后续分析使用。
 
-**参数**
+参数
 
 asOfDate DATE 类型。曲线、曲面或构建请求的参考日期。**有效性:** 必须是非空 DolphinDB DATE 标量。不得晚于相关结束、到期、交割或结算日；包装器不检查此关系。
 
 hazardRate DOUBLE 类型。平坦 CreditCurve 的常量风险率/利差。**有效性:** 业务有效值须有限且非负；包装器仅检查 DOUBLE 类型。
 
-handle STRING 类型。分配给创建对象并由函数返回的 内存对象 键。**有效性:** 必须是非空 ObjectCache 键。
+handle STRING 类型。分配给创建对象并由函数返回的 ObjectCache 键。**有效性:** 必须是非空 ObjectCache 键。
 
-returnJson BOOL 类型。可选。省略或为 false 时仅返回 内存对象 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
+returnJson BOOL 类型。可选。省略或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 [handle, protobufJson]。**有效性:** 必须是 BOOL 标量，仅可为 false 或 true。
 
-**返回值**
+返回值
 
-成功时创建 `CreditCurve` 对象。CAPLIB 返回其 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
+创建的 CreditCurve 对象对应的 ObjectCache 句柄，STRING 类型标量；`returnJson=true` 时返回 `[handle, protobufJson]`。
 
 **示例**
 
@@ -12902,23 +12920,23 @@ caplib::createFlatCreditCurve(asOfDate, 0.002, "AN_FLAT_CREDIT_CURVE", false)
 
 #### getSurvivalProbability
 
-**语法**
+语法
 
 ```dolphindb
-caplib::getSurvivalProbability(creditCurveHandle STRING, dates DATE 向量)
+caplib::getSurvivalProbability(creditCurveHandle, dates)
 ```
 
-**详情**
+详情
 
 根据缓存 CreditCurve 为每个输入日期计算存活概率；输出保持输入顺序。
 
-**参数**
+参数
 
 creditCurveHandle STRING 类型。所引用具体类的 ObjectCache 句柄。**有效性:** 必须非空并解析为所需 protobuf 类的现有 ObjectCache 条目。
 
 dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对应 dates[i]。**有效性:** 必须是无空值 DATE 向量。单日使用单元素向量，多日使用更长向量；不接受 DATE 标量。
 
-**返回值**
+返回值
 
 对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
@@ -12935,23 +12953,23 @@ caplib::getSurvivalProbability(flatCreditCurve, [2020.02.21, 2021.02.20])
 
 #### getCreditSpread
 
-**语法**
+语法
 
 ```dolphindb
-caplib::getCreditSpread(creditCurveHandle STRING, dates DATE 向量)
+caplib::getCreditSpread(creditCurveHandle, dates)
 ```
 
-**详情**
+详情
 
 根据缓存 CreditCurve 为每个输入日期计算信用利差；输出保持输入顺序。
 
-**参数**
+参数
 
 creditCurveHandle STRING 类型。所引用具体类的 ObjectCache 句柄。**有效性:** 必须非空并解析为所需 protobuf 类的现有 ObjectCache 条目。
 
 dates DATE 向量 类型。请求曲线值的日期；结果第 i 个元素对应 dates[i]。**有效性:** 必须是无空值 DATE 向量。单日使用单元素向量，多日使用更长向量；不接受 DATE 标量。
 
-**返回值**
+返回值
 
 对应向量，DOUBLE 类型向量，元素顺序与输入一致。
 
@@ -12973,17 +12991,17 @@ caplib::getCreditSpread(flatCreditCurve, [2020.05.21, 2021.02.20])
 
 #### buildHistSimFxSpotRate
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildHistSimFxSpotRate(simDate, referenceSpot, histStart, histEnd, useTemplate, fxSpotTemplate, handle, [returnJson])
+caplib::buildHistSimFxSpotRate(simDate, referenceSpot, histStart, histEnd, useTemplate, fxSpotTemplate, handle[, returnJson])
 ```
 
-**详情**
+详情
 
-基于历史模拟生成 FX 即期汇率情景（服务 `HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR`），可选应用 FX 即期模板。
+基于历史模拟生成 FX 即期汇率情景，可选应用 FX 即期模板。
 
-**参数**
+参数
 
 simDate DATE 类型。模拟基准日。**有效性:** 必须是非空 DolphinDB DATE 标量。
 
@@ -13001,7 +13019,7 @@ handle STRING 类型。结果 FxSpotRate 的缓存键。**有效性:** 必须是
 
 returnJson BOOL 类型，可选。默认为 false。**有效性:** 必须是 BOOL 标量。
 
-**返回值**
+返回值
 
 结果 FxSpotRate 句柄，STRING 类型标量。对象存入 ObjectCache。
 
@@ -13021,17 +13039,17 @@ sim = caplib::buildHistSimFxSpotRate(asOfDate, refSpot, startSpot, endSpot,
 
 #### buildHistSimFxVolSurface
 
-**语法**
+语法
 
 ```dolphindb
-caplib::buildHistSimFxVolSurface(simDate, referenceVolSurf, histStart, histEnd, volSurfaceDates, volSurfaceStrikes, spot, domCurve, forCurve, settings, handle, [returnJson])
+caplib::buildHistSimFxVolSurface(simDate, referenceVolSurf, histStart, histEnd, volSurfaceDates, volSurfaceStrikes, spot, domCurve, forCurve, settings, handle[, returnJson])
 ```
 
-**详情**
+详情
 
-基于历史模拟生成一个 FX 波动率曲面情景（服务 `HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR`），需参考/历史曲面、目标日期与行权价网格、即期汇率及本币/外币贴现曲线。
+基于历史模拟生成一个 FX 波动率曲面情景，需参考/历史曲面、目标日期与行权价网格、即期汇率及本币/外币贴现曲线。
 
-**参数**
+参数
 
 simDate DATE 类型。模拟基准日。**有效性:** 必须是非空 DolphinDB DATE 标量。
 
@@ -13057,7 +13075,7 @@ handle STRING 类型。结果 FxVolatilitySurface 的缓存键。**有效性:** 
 
 returnJson BOOL 类型，可选。默认为 false。**有效性:** 必须是 BOOL 标量。
 
-**返回值**
+返回值
 
 结果 FxVolatilitySurface 句柄，STRING 类型标量。服务端支持时对象存入 ObjectCache。
 
@@ -13089,17 +13107,17 @@ sim = caplib::buildHistSimFxVolSurface(asOfDate, refSurf, refSurf, refSurf,
 
 #### calcVaR
 
-**语法**
+语法
 
 ```dolphindb
 caplib::calcVaR(profitLossSamples, probability, antithetic)
 ```
 
-**详情**
+详情
 
-计算盈亏样本的 VaR 风险价值（服务 `CALCULATE_VALUE_AT_RISK`）。
+计算盈亏样本的 VaR 风险价值。
 
-**参数**
+参数
 
 profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。**有效性:** 必须是无空值且非空的 DOUBLE 向量。
 
@@ -13107,7 +13125,7 @@ probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。**有效性:**
 
 antithetic BOOL 类型。是否同时计算对偶样本的镜像 VaR。**有效性:** 必须是 BOOL 标量。
 
-**返回值**
+返回值
 
 字典，包含两个键：`value_at_risk`（VaR 值）与 `value_at_risk_mirrored`（对偶样本镜像 VaR），值均为 DOUBLE 类型标量。
 
@@ -13124,17 +13142,17 @@ print(v.value_at_risk_mirrored) // 镜像 VaR
 
 #### calcExpectedShortfall
 
-**语法**
+语法
 
 ```dolphindb
 caplib::calcExpectedShortfall(profitLossSamples, probability, antithetic)
 ```
 
-**详情**
+详情
 
-计算盈亏样本的期望损失（服务 `CALCULATE_EXPECTED_SHORT_FALL`），参数同 `calcVaR`。
+计算盈亏样本的期望损失，参数同 `calcVaR`。
 
-**参数**
+参数
 
 profitLossSamples DOUBLE 向量类型。盈亏样本序列，不能为空。**有效性:** 必须是无空值且非空的 DOUBLE 向量。
 
@@ -13142,7 +13160,7 @@ probability DOUBLE 类型。置信水平，严格在 (0, 1) 内。**有效性:**
 
 antithetic BOOL 类型。是否同时计算对偶样本的镜像期望损失。**有效性:** 必须是 BOOL 标量。
 
-**返回值**
+返回值
 
 字典，包含两个键：`expected_shortfall`（期望损失值）与 `expected_shortfall_mirrored`（对偶样本镜像期望损失），值均为 DOUBLE 类型标量。
 
@@ -13244,13 +13262,12 @@ print(vanillaBondPricingResult)
 
 仅包装器执行的操作不提供状态标量；所有错误都表现为异常。
 
-各接口「参数」小节中带 **行为实测:** 标注的条目，记录了 2026-10-15 在全新容器（官方 dolphindb/dolphindb:v3.00.5 镜像 + 本插件）中逐用例验证到的实际行为；其中与常规校验规则不符的宽松行为（如传非 BOOL 的 returnJson、越界数值、不存在的句柄键不抛异常、部分向量参数传标量仍可完成调用）均为实测结论，调用方不应依赖这些宽松行为——后续版本可能收紧校验。
 
 ## 附录
 
 ### Docker 部署
 
-Docker 镜像构建、目录布局、启动、健康检查和故障排查见 [`docker/README.md`](../docker/README.md)。
+Docker 镜像构建、目录布局、启动、健康检查和故障排查见 [Docker 部署说明](https://github.com/CapRiskTech/caplib-plugin-dolphindb/blob/main/docker/README.md)。
 
 ```bash
 bash docker/build.sh --test
@@ -13258,7 +13275,7 @@ bash docker/build.sh --test
 
 ### 编译说明
 
-源码编译所需的 DolphinDB Plugin SDK、ABI0 版本 `dqlibc`、Boost、log4cplus、Protobuf、CMake 和 GCC 版本及命令见 [`BUILD_REQUIREMENTS.md`](../BUILD_REQUIREMENTS.md)。
+源码编译所需的 DolphinDB Plugin SDK、ABI0 版本 `dqlibc`、Boost、log4cplus、Protobuf、CMake 和 GCC 版本及命令随源码仓提供。
 
 ### License 说明
 

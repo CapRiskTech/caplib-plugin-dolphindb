@@ -68,8 +68,8 @@ caplib::createBondLegDefinition("NOT_A_VALID_ENUM_LABEL", 1, "CNY", "ACT_365_FIX
 @testing:case="createBondLegDefinition optional returnJson null uses default"
 result = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_NRJ", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：supports all enums (review)（预期：插件按文档行为执行）
-@testing:case="createBondLegDefinition supports all enums (review)"
+// 用例目的：遍历 bondType 的全部文档枚举取值，逐一调用验证均被接受（其余枚举参数 round-3 已逐值单独覆盖，见文件末尾）
+@testing:case="createBondLegDefinition supports all bondType enums"
 labelEnum = ["FIXED_COUPON_BOND", "FLOATING_COUPON_BOND", "ZERO_COUPON_BOND"]
 okEnum = true;
 for (i in 0..(size(labelEnum)-1)) {
@@ -150,3 +150,249 @@ caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", 
 @testing:case="createBondLegDefinition rejects BOOL fixingDayOffset", exception=1
 caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", true, "TF_FI_LEG", true)
 
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: 字符串参数自身校验 + 各枚举参数文档取值逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 calendar 传入错误类型（该传字符串的传整数），验证类型校验（实测抛异常）
+@testing:case="createBondLegDefinition rejects wrong type for calendar", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", 1, "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+// 用例目的：参数 calendar 传入对应类型的空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="createBondLegDefinition accepts null calendar (no validation)"
+rBldR3Nc = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", string(), "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3_NC", true)
+assert 1, typestr(rBldR3Nc) != "VOID"
+// 用例目的：参数 fixingCalendars 传入错误类型（该传字符串的传整数），验证类型校验（实测抛异常）
+@testing:case="createBondLegDefinition rejects wrong type for fixingCalendars", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", 1, "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+// 用例目的：参数 fixingCalendars 传入对应类型的空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="createBondLegDefinition accepts null fixingCalendars (no validation)"
+rBldR3Nfc = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", string(), "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3_NFC", true)
+assert 1, typestr(rBldR3Nfc) != "VOID"
+// 用例目的：参数 refIndex 传入错误类型（该传字符串的传整数），验证类型校验（实测抛异常）
+@testing:case="createBondLegDefinition rejects wrong type for refIndex", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", 1, "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+// 用例目的：参数 refIndex 传入对应类型的空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="createBondLegDefinition accepts null refIndex (no validation)"
+rBldR3Nri = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", string(), "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3_NRI", true)
+assert 1, typestr(rBldR3Nri) != "VOID"
+// 用例目的：参数 instName 传入错误类型（该传字符串的传整数），验证类型校验（实测抛异常）
+@testing:case="createBondLegDefinition rejects wrong type for instName", exception=1
+caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, 1, true)
+
+// 用例目的：dayCountConvention 传入文档取值 ACT_360，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention ACT_360"
+rBldR3D1 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_360", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D1) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 ACTUAL_360，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention ACTUAL_360"
+rBldR3D2 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACTUAL_360", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D2) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 ACT/360，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention ACT/360"
+rBldR3D3 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT/360", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D3) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 ACT_365，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention ACT_365"
+rBldR3D4 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D4) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 ACT_365_FIXED，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention ACT_365_FIXED"
+rBldR3D5 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D5) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 ACTUAL_365_FIXED，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention ACTUAL_365_FIXED"
+rBldR3D6 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACTUAL_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D6) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 ACT/365，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention ACT/365"
+rBldR3D7 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT/365", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D7) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 THIRTY_360，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention THIRTY_360"
+rBldR3D8 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "THIRTY_360", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D8) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 30_360，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention 30_360"
+rBldR3D9 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "30_360", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D9) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 30/360，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention 30/360"
+rBldR3D10 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "30/360", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D10) != "VOID"
+// 用例目的：dayCountConvention 传入文档取值 BOND_BASIS，逐值验证被接受
+@testing:case="createBondLegDefinition supports dayCountConvention BOND_BASIS"
+rBldR3D11 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "BOND_BASIS", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3D11) != "VOID"
+
+// 用例目的：frequency 传入文档取值 ANNUAL，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency ANNUAL"
+rBldR3Fq1 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq1) != "VOID"
+// 用例目的：frequency 传入文档取值 SEMIANNUAL，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency SEMIANNUAL"
+rBldR3Fq2 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "SEMIANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq2) != "VOID"
+// 用例目的：frequency 传入文档取值 EVERY_FOURTH_MONTH，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency EVERY_FOURTH_MONTH"
+rBldR3Fq3 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "EVERY_FOURTH_MONTH", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq3) != "VOID"
+// 用例目的：frequency 传入文档取值 QUARTERLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency QUARTERLY"
+rBldR3Fq4 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq4) != "VOID"
+// 用例目的：frequency 传入文档取值 BIMONTHLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency BIMONTHLY"
+rBldR3Fq5 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "BIMONTHLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq5) != "VOID"
+// 用例目的：frequency 传入文档取值 MONTHLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency MONTHLY"
+rBldR3Fq6 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "MONTHLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq6) != "VOID"
+// 用例目的：frequency 传入文档取值 EVERY_FOURTH_WEEK，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency EVERY_FOURTH_WEEK"
+rBldR3Fq7 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "EVERY_FOURTH_WEEK", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq7) != "VOID"
+// 用例目的：frequency 传入文档取值 BIWEEKLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency BIWEEKLY"
+rBldR3Fq8 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "BIWEEKLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq8) != "VOID"
+// 用例目的：frequency 传入文档取值 WEEKLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency WEEKLY"
+rBldR3Fq9 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "WEEKLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq9) != "VOID"
+// 用例目的：frequency 传入文档取值 DAILY，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency DAILY"
+rBldR3Fq10 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "DAILY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq10) != "VOID"
+// 用例目的：frequency 传入文档取值 ONCE，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency ONCE"
+rBldR3Fq11 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ONCE", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq11) != "VOID"
+// 用例目的：frequency 传入文档取值 OTHER_FREQUENCY，逐值验证被接受
+@testing:case="createBondLegDefinition supports frequency OTHER_FREQUENCY"
+rBldR3Fq12 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "OTHER_FREQUENCY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fq12) != "VOID"
+
+// 用例目的：interestDayConvention 传入文档取值 FOLLOWING，逐值验证被接受
+@testing:case="createBondLegDefinition supports interestDayConvention FOLLOWING"
+rBldR3I1 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3I1) != "VOID"
+// 用例目的：interestDayConvention 传入文档取值 PRECEDING，逐值验证被接受
+@testing:case="createBondLegDefinition supports interestDayConvention PRECEDING"
+rBldR3I2 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3I2) != "VOID"
+// 用例目的：interestDayConvention 传入文档取值 MODIFIED_PRECEDING，逐值验证被接受
+@testing:case="createBondLegDefinition supports interestDayConvention MODIFIED_PRECEDING"
+rBldR3I3 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3I3) != "VOID"
+// 用例目的：interestDayConvention 传入文档取值 UNADJUSTED，逐值验证被接受
+@testing:case="createBondLegDefinition supports interestDayConvention UNADJUSTED"
+rBldR3I4 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "UNADJUSTED", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3I4) != "VOID"
+
+// 用例目的：stubPolicy 传入文档取值 FINAL，逐值验证被接受
+@testing:case="createBondLegDefinition supports stubPolicy FINAL"
+rBldR3S1 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "FINAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3S1) != "VOID"
+// 用例目的：stubPolicy 传入文档取值 INITIAL_FINAL_FORWARD，逐值验证被接受
+@testing:case="createBondLegDefinition supports stubPolicy INITIAL_FINAL_FORWARD"
+rBldR3S2 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL_FINAL_FORWARD", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3S2) != "VOID"
+// 用例目的：stubPolicy 传入文档取值 INITIAL_FINAL_BACKWARD，逐值验证被接受
+@testing:case="createBondLegDefinition supports stubPolicy INITIAL_FINAL_BACKWARD"
+rBldR3S3 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL_FINAL_BACKWARD", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3S3) != "VOID"
+
+// 用例目的：brokenPeriodType 传入文档取值 SHORT，逐值验证被接受
+@testing:case="createBondLegDefinition supports brokenPeriodType SHORT"
+rBldR3Bpt = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "SHORT", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Bpt) != "VOID"
+
+// 用例目的：payDayConvention 传入文档取值 FOLLOWING，逐值验证被接受
+@testing:case="createBondLegDefinition supports payDayConvention FOLLOWING"
+rBldR3P1 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3P1) != "VOID"
+// 用例目的：payDayConvention 传入文档取值 PRECEDING，逐值验证被接受
+@testing:case="createBondLegDefinition supports payDayConvention PRECEDING"
+rBldR3P2 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "PRECEDING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3P2) != "VOID"
+// 用例目的：payDayConvention 传入文档取值 MODIFIED_PRECEDING，逐值验证被接受
+@testing:case="createBondLegDefinition supports payDayConvention MODIFIED_PRECEDING"
+rBldR3P3 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_PRECEDING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3P3) != "VOID"
+// 用例目的：payDayConvention 传入文档取值 UNADJUSTED，逐值验证被接受
+@testing:case="createBondLegDefinition supports payDayConvention UNADJUSTED"
+rBldR3P4 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "UNADJUSTED", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3P4) != "VOID"
+
+// 用例目的：fixingFreq 传入文档取值 ANNUAL，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq ANNUAL"
+rBldR3Ff1 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff1) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 SEMIANNUAL，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq SEMIANNUAL"
+rBldR3Ff2 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "SEMIANNUAL", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff2) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 EVERY_FOURTH_MONTH，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq EVERY_FOURTH_MONTH"
+rBldR3Ff3 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "EVERY_FOURTH_MONTH", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff3) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 QUARTERLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq QUARTERLY"
+rBldR3Ff4 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "QUARTERLY", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff4) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 BIMONTHLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq BIMONTHLY"
+rBldR3Ff5 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "BIMONTHLY", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff5) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 MONTHLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq MONTHLY"
+rBldR3Ff6 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "MONTHLY", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff6) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 EVERY_FOURTH_WEEK，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq EVERY_FOURTH_WEEK"
+rBldR3Ff7 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "EVERY_FOURTH_WEEK", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff7) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 BIWEEKLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq BIWEEKLY"
+rBldR3Ff8 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "BIWEEKLY", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff8) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 WEEKLY，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq WEEKLY"
+rBldR3Ff9 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "WEEKLY", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff9) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 DAILY，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq DAILY"
+rBldR3Ff10 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "DAILY", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff10) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 ONCE，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq ONCE"
+rBldR3Ff11 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ONCE", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff11) != "VOID"
+// 用例目的：fixingFreq 传入文档取值 OTHER_FREQUENCY，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingFreq OTHER_FREQUENCY"
+rBldR3Ff12 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "OTHER_FREQUENCY", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Ff12) != "VOID"
+
+// 用例目的：fixingDayConvention 传入文档取值 FOLLOWING，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingDayConvention FOLLOWING"
+rBldR3Fd1 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "FOLLOWING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fd1) != "VOID"
+// 用例目的：fixingDayConvention 传入文档取值 PRECEDING，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingDayConvention PRECEDING"
+rBldR3Fd2 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "PRECEDING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fd2) != "VOID"
+// 用例目的：fixingDayConvention 传入文档取值 MODIFIED_PRECEDING，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingDayConvention MODIFIED_PRECEDING"
+rBldR3Fd3 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fd3) != "VOID"
+// 用例目的：fixingDayConvention 传入文档取值 UNADJUSTED，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingDayConvention UNADJUSTED"
+rBldR3Fd4 = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "UNADJUSTED", "IN_ADVANCE", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fd4) != "VOID"
+
+// 用例目的：fixingMode 传入文档取值 IN_ARREAR，逐值验证被接受
+@testing:case="createBondLegDefinition supports fixingMode IN_ARREAR"
+rBldR3Fm = caplib::createBondLegDefinition("FIXED_COUPON_BOND", 1, "CNY", "ACT_365_FIXED", "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "", "", "ANNUAL", "MODIFIED_FOLLOWING", "IN_ARREAR", -1, "TF_FI_LEG_R3", true)
+assert 1, typestr(rBldR3Fm) != "VOID"

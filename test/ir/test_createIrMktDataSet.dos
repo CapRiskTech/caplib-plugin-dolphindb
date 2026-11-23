@@ -85,11 +85,10 @@ caplib::createIrMktDataSet(irAsOfDate, irCurve, [string(), string(), string()], 
 @testing:case="createIrMktDataSet optional returnJson null uses default"
 result = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：句柄参数 forwardCurveHandles 传入类型不符的对象句柄（向量内含 IborIndex 而非曲线）——
-//            实测插件不校验句柄对象类型、不抛异常，记录实际行为
+// 用例目的：forwardCurveHandles 向量内含 IborIndex 而非曲线 —— 3.00.5.2 实测不抛异常，记录当前宽松行为
 @testing:case="createIrMktDataSet accepts wrong object type for forwardCurveHandles (no type validation)"
-mktFwd = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [iborIndex[0]], "TF_IRMKT", false)
-assert 1, typestr(mktFwd) != "VOID"
+mktFwd = caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [iborIndex[0]], "TF_IRMKT_WRONG_FWD_TYPE", false)
+assert 1, mktFwd == "TF_IRMKT_WRONG_FWD_TYPE"
 
 // ----------------------------------------------------------------------------
 // 用例目的：两个成对数组参数长度不一致（forwardCurveHandles 多一个元素），验证参数间关系校验（预期：抛异常）
@@ -100,11 +99,10 @@ caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve, "EXTRA
 // Review gap-fill-2: 句柄不存在/类型不匹配 + returnJson 类型 + 日期场景
 // ----------------------------------------------------------------------------
 
-// 用例目的：句柄参数 discountCurveHandle 传入类型不符的真实句柄（IborIndex 而非曲线）——
-//            实测插件不校验句柄对象类型、不抛异常，记录实际行为
+// 用例目的：discountCurveHandle 传入 IborIndex 而非曲线 —— 3.00.5.2 实测不抛异常，记录当前宽松行为
 @testing:case="createIrMktDataSet accepts wrong object type for discountCurveHandle (no type validation)"
-mktDC = caplib::createIrMktDataSet(irAsOfDate, iborIndex[0], [iborIndex[0]], [irCurve], "TF_IRMKT", false)
-assert 1, typestr(mktDC) != "VOID"
+mktDC = caplib::createIrMktDataSet(irAsOfDate, iborIndex[0], [iborIndex[0]], [irCurve], "TF_IRMKT_WRONG_DC_TYPE", false)
+assert 1, mktDC == "TF_IRMKT_WRONG_DC_TYPE"
 
 // 用例目的：句柄参数 forwardCurveHandles 向量内传入不存在的句柄，验证句柄存在性校验（预期：抛异常）
 @testing:case="createIrMktDataSet rejects nonexistent handle in forwardCurveHandles", exception=1
@@ -117,7 +115,7 @@ caplib::createIrMktDataSet(irAsOfDate, irCurve, [iborIndex[0]], [irCurve], "TF_I
 // 用例目的：asOfDate 晚于曲线结束日，文档说明包装器不检查此关系，记录实际行为
 @testing:case="createIrMktDataSet asOfDate later than curve stop (wrapper does not check)"
 resLateMkt = caplib::createIrMktDataSet(2099.12.31, irCurve, [iborIndex[0]], [irCurve], "TF_IRMKT_LATE", false)
-assert 1, true
+assert 1, typestr(resLateMkt) != "VOID"
 
 // ----------------------------------------------------------------------------
 // Review gap-fill (round 2 续): 输出名 handle 错型

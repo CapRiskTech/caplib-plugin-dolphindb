@@ -76,8 +76,8 @@ caplib::createAsianOption("X", 0.02, 2024.01.01, 2024.01.01, "X", "X", "X", 0.02
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createAsianOption rejects keyword arguments", syntaxError=1
 caplib::createAsianOption(payoffType="X", strike=0.02, expiry=2024.01.01, delivery=2024.01.01, strikeType="X", avgMethod="X", obsType="X", nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createAsianOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createAsianOption accepts all-null vector fixingDates", exception=1
+// 用例目的：fixingDates 传入全空值向量，验证向量空值校验（预期：抛异常；第三轮 review 修正用例名与预期一致）
+@testing:case="createAsianOption rejects all-null vector fixingDates", exception=1
 caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createAsianOption optional returnJson null uses default"
@@ -92,8 +92,8 @@ caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXE
 caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 
 // ----------------------------------------------------------------------------
-// 用例目的：两个数组参数长度不一致（fixingDates 多一个元素），实测插件宽松接受——记录实际行为
-@testing:case="createAsianOption fixingDates length mismatch", exception=1
+// 用例目的：fixingDates 比配对数组多一个元素，验证长度关系校验（预期：抛异常）
+@testing:case="createAsianOption rejects fixingDates length mismatch", exception=1
 caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", join(dailyObsDates, dailyObsDates[0]), dailyObsValues, dailyObsWeights, false);
 
 // ----------------------------------------------------------------------------
@@ -128,47 +128,74 @@ caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXE
 @testing:case="createAsianOption accepts all valid payoffType values"
 for (pt in ["CALL", "call", "PUT", "put"]) {
     h = caplib::createAsianOption(pt, underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_pay_" + pt, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：遍历 strikeType 合法值列表，全部应被接受
 @testing:case="createAsianOption accepts all valid strikeType values"
 for (st in ["FIXED", "FIXED_STRIKE", "FLOATING", "FLOATING_STRIKE"]) {
     h = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, st, "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_st_" + st, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：遍历 avgMethod 合法值列表（含空串），全部应被接受
 @testing:case="createAsianOption accepts all valid avgMethod values"
 for (am in ["", "ARITHMETIC", "ARITHMETIC_AVERAGE_METHOD", "GEOMETRIC", "GEOMETRIC_AVERAGE_METHOD"]) {
     h = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", am, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_am_" + am, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：遍历 obsType 合法值列表（含空串），全部应被接受
 @testing:case="createAsianOption accepts all valid obsType values"
 for (ot in ["", "CONTINUOUS", "CONTINUOUS_OBSERVATION_TYPE", "DISCRETE", "DISCRETE_OBSERVATION_TYPE"]) {
     h = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", ot, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_ot_" + ot, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：遍历 underlyingType 合法值列表，全部应被接受
 @testing:case="createAsianOption accepts all valid underlyingType values"
 for (ut in ["SPOT", "FUTURE", "FORWARD"]) {
     h = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", ut, "CNY", "50ETF.SSE", "f_AS_ut_" + ut, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：strike 传入门检价 0，记录实际行为（包装器仅检查类型/形状，预期宽松接受）
 @testing:case="createAsianOption strike zero behavior record"
 h = caplib::createAsianOption("CALL", 0.0, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_strike0", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-assert 1, true
+assert 1, typestr(h) != "VOID"
 
 // 用例目的：strike 传入负值，记录实际行为（包装器仅检查类型/形状，预期宽松接受）
 @testing:case="createAsianOption strike negative behavior record"
 h = caplib::createAsianOption("CALL", -0.5, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_strike_neg", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-assert 1, true
+assert 1, typestr(h) != "VOID"
 
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createAsianOption rejects wrong type for handle", exception=1
 caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / fixing 向量长度与权重行为
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createAsianOption delivery before expiry (no validation)"
+result = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.18, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_dbe", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：单独改变 fixingValues 长度（比 fixingDates 少一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createAsianOption rejects fixingValues length mismatch", exception=1
+caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", dailyObsDates, dailyObsValues[0:(size(dailyObsValues)-1)], dailyObsWeights, false)
+
+// 用例目的：单独改变 fixingWeights 长度（比 fixingDates 多一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createAsianOption rejects fixingWeights length mismatch", exception=1
+caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS", dailyObsDates, dailyObsValues, join(dailyObsWeights, 1.0), false)
+
+// 用例目的：fixingWeights 全零，验证权重取值行为（实测记录行为）
+@testing:case="createAsianOption accepts all-zero fixingWeights (no validation)"
+result = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_w0", dailyObsDates, dailyObsValues, take(0.0, size(dailyObsDates)), false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：fixingWeights 全负值，验证权重取值行为（实测记录行为）
+@testing:case="createAsianOption accepts negative fixingWeights (no validation)"
+result = caplib::createAsianOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AS_wneg", dailyObsDates, dailyObsValues, take(-1.0, size(dailyObsDates)), false)
+assert 1, typestr(result) != "VOID"

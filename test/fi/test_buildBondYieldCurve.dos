@@ -220,9 +220,9 @@ r2 = caplib::getZeroRate(cnyTreasStdCfets[0], [(asOfDate + 30)]);
 assert 1, max(abs(r1 - r2)) > 1.0e-12
 
 // ----------------------------------------------------------------------------
-// 用例目的：遍历 dayCountConvention / compoundingType / frequency / buildingMethod 已确认合法的枚举取值，逐一调用验证均被接受
-// 注：这四个枚举参数在文档语义下均为「非法取值回退默认」而非拒绝，故遍历其文档识别子集即可保证成功
-@testing:case="buildBondYieldCurve supports accepted enum values"
+// 用例目的：遍历 dayCountConvention / compoundingType / frequency / buildingMethod 已确认合法的枚举取值子集，逐一调用验证均被接受
+// 注：这四个枚举参数在文档语义下均为「非法取值回退默认」而非拒绝；本用例仅覆盖 round-1 确认的子集，其余文档取值 round-3 已逐值单独覆盖（见文件末尾）
+@testing:case="buildBondYieldCurve supports accepted enum subset"
 enumDay = ["ACT_360", "ACT_365_FIXED", "THIRTY_360", "BOND_BASIS"]
 enumComp = ["SIMPLE_COMPOUNDING", "CONTINUOUS_COMPOUNDING", "DISCRETE_COMPOUNDING"]
 enumFreq = ["ANNUAL", "QUARTERLY"]
@@ -270,3 +270,120 @@ assert 1, typestr(rBycBm) != "VOID"
 // 用例目的：INT 参数 calcJacobian 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
 @testing:case="buildBondYieldCurve rejects BOOL calcJacobian", exception=1
 caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", true, "", "TF_FI_YC", true)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate 与平价曲线期限关系行为 + 四个枚举参数文档取值逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate 与 parCurveHandle 所引用平价曲线的 asOfDate 不一致（晚一天，仍早于全部期限）——
+// 实测插件/包装器不校验该关系、宽松接受，记录实际行为
+@testing:case="buildBondYieldCurve accepts asOfDate differing from par curve asOfDate (no validation)"
+rBycA1 = caplib::buildBondYieldCurve(2021.07.23, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_A1", true)
+assert 1, typestr(rBycA1) != "VOID"
+
+// 用例目的：asOfDate 晚于平价曲线中最短期限债券的到期日（1M 债券 2021.08.22 到期）——
+// 实测插件/包装器不校验该关系、宽松接受，记录实际行为
+@testing:case="buildBondYieldCurve accepts asOfDate after shortest maturity (no validation)"
+rBycA2 = caplib::buildBondYieldCurve(2021.09.15, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_A2", true)
+assert 1, typestr(rBycA2) != "VOID"
+
+// 用例目的：asOfDate 晚于平价曲线全部期限（最长期限 30Y，2051.07.22 到期）——
+// 实测插件/包装器不校验该关系、宽松接受，记录实际行为
+@testing:case="buildBondYieldCurve accepts asOfDate after all maturities (no validation)"
+rBycA3 = caplib::buildBondYieldCurve(2052.07.23, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_A3", true)
+assert 1, typestr(rBycA3) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACTUAL_360，逐值验证被接受
+@testing:case="buildBondYieldCurve supports dayCountConvention ACTUAL_360"
+rBycD1 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACTUAL_360", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_D", true)
+assert 1, typestr(rBycD1) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT/360，逐值验证被接受
+@testing:case="buildBondYieldCurve supports dayCountConvention ACT/360"
+rBycD2 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT/360", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_D", true)
+assert 1, typestr(rBycD2) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT_365，逐值验证被接受
+@testing:case="buildBondYieldCurve supports dayCountConvention ACT_365"
+rBycD3 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_D", true)
+assert 1, typestr(rBycD3) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACTUAL_365_FIXED，逐值验证被接受
+@testing:case="buildBondYieldCurve supports dayCountConvention ACTUAL_365_FIXED"
+rBycD4 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACTUAL_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_D", true)
+assert 1, typestr(rBycD4) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT/365，逐值验证被接受
+@testing:case="buildBondYieldCurve supports dayCountConvention ACT/365"
+rBycD5 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT/365", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_D", true)
+assert 1, typestr(rBycD5) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 30_360，逐值验证被接受
+@testing:case="buildBondYieldCurve supports dayCountConvention 30_360"
+rBycD6 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "30_360", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_D", true)
+assert 1, typestr(rBycD6) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 30/360，逐值验证被接受
+@testing:case="buildBondYieldCurve supports dayCountConvention 30/360"
+rBycD7 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "30/360", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_D", true)
+assert 1, typestr(rBycD7) != "VOID"
+
+// 用例目的：compoundingType 传入文档取值 SIMPLE，逐值验证被接受
+@testing:case="buildBondYieldCurve supports compoundingType SIMPLE"
+rBycC1 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "SIMPLE", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_C", true)
+assert 1, typestr(rBycC1) != "VOID"
+
+// 用例目的：compoundingType 传入文档取值 COMPOUNDED，逐值验证被接受
+@testing:case="buildBondYieldCurve supports compoundingType COMPOUNDED"
+rBycC2 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "COMPOUNDED", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_C", true)
+assert 1, typestr(rBycC2) != "VOID"
+
+// 用例目的：compoundingType 传入文档取值 DISCRETE，逐值验证被接受
+@testing:case="buildBondYieldCurve supports compoundingType DISCRETE"
+rBycC3 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "DISCRETE", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_C", true)
+assert 1, typestr(rBycC3) != "VOID"
+
+// 用例目的：compoundingType 传入文档取值 CONTINUOUS，逐值验证被接受
+@testing:case="buildBondYieldCurve supports compoundingType CONTINUOUS"
+rBycC4 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS", "ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_C", true)
+assert 1, typestr(rBycC4) != "VOID"
+
+// 用例目的：frequency 传入文档取值 MONTHLY，逐值验证被接受
+@testing:case="buildBondYieldCurve supports frequency MONTHLY"
+rBycF1 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "MONTHLY", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_F", true)
+assert 1, typestr(rBycF1) != "VOID"
+
+// 用例目的：frequency 传入文档取值 SEMIANNUAL，逐值验证被接受
+@testing:case="buildBondYieldCurve supports frequency SEMIANNUAL"
+rBycF2 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "SEMIANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_F", true)
+assert 1, typestr(rBycF2) != "VOID"
+
+// 用例目的：frequency 传入文档取值 SEMI_ANNUAL，逐值验证被接受
+@testing:case="buildBondYieldCurve supports frequency SEMI_ANNUAL"
+rBycF3 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "SEMI_ANNUAL", "BOOTSTRAPPING_METHOD", 0, "", "TF_FI_YC_R3_F", true)
+assert 1, typestr(rBycF3) != "VOID"
+
+// 用例目的：buildingMethod 传入文档取值 BOOTSTRAP，逐值验证被接受
+@testing:case="buildBondYieldCurve supports buildingMethod BOOTSTRAP"
+rBycB1 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAP", 0, "", "TF_FI_YC_R3_B", true)
+assert 1, typestr(rBycB1) != "VOID"
+
+// 用例目的：buildingMethod 传入文档取值 BOOTSTRAPPING，逐值验证被接受
+@testing:case="buildBondYieldCurve supports buildingMethod BOOTSTRAPPING"
+rBycB2 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "BOOTSTRAPPING", 0, "", "TF_FI_YC_R3_B", true)
+assert 1, typestr(rBycB2) != "VOID"
+
+// 用例目的：buildingMethod 传入文档取值 GLOBAL_OPTIMIZATION，逐值验证被接受
+@testing:case="buildBondYieldCurve supports buildingMethod GLOBAL_OPTIMIZATION"
+rBycB3 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "GLOBAL_OPTIMIZATION", 0, "", "TF_FI_YC_R3_B", true)
+assert 1, typestr(rBycB3) != "VOID"
+
+// 用例目的：buildingMethod 传入文档取值 GLOBAL_OPTIMIZATION_METHOD，逐值验证被接受
+@testing:case="buildBondYieldCurve supports buildingMethod GLOBAL_OPTIMIZATION_METHOD"
+rBycB4 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "GLOBAL_OPTIMIZATION_METHOD", 0, "", "TF_FI_YC_R3_B", true)
+assert 1, typestr(rBycB4) != "VOID"
+
+// 用例目的：buildingMethod 传入文档取值 HYBRID，逐值验证被接受
+@testing:case="buildBondYieldCurve supports buildingMethod HYBRID"
+rBycB5 = caplib::buildBondYieldCurve(asOfDate, cnyTreasBuildSettings[0], "TF_FI_YC", parCnyTreasStdCfets[0], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", "HYBRID", 0, "", "TF_FI_YC_R3_B", true)
+assert 1, typestr(rBycB5) != "VOID"

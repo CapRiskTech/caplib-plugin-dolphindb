@@ -51,6 +51,15 @@ h = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
                                    false, string(), "MR_SPOT_TPL_NULL")
 assert 1, h == "MR_SPOT_TPL_NULL"
 
+// 用例目的：useTemplate=false 但传入非空模板句柄（线上中文文档要求此时传空串）。
+// 实测（3.00.5.1 容器）：不抛异常，模板被忽略，仍按无模板路径生成，
+// 模拟值与无模板结果一致（7.00 * 7.01/6.99 = 7.0200286123032907）。
+@testing:case="buildHistSimFxSpotRate ignores template handle when disabled"
+h = caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,
+                                   false, tplSpot, "MR_SPOT_TPL_IGN")
+j = caplib::getObjectCacheJson("FxSpotRate", "MR_SPOT_TPL_IGN")[1]
+assert 1, h == "MR_SPOT_TPL_IGN" && strpos(j, "7.0200286123032907") > -1
+
 // 用例目的：useTemplate=true，模板为空串，拒绝
 @testing:case="buildHistSimFxSpotRate requires template when enabled", exception=1
 caplib::buildHistSimFxSpotRate(simDate, refSpot, startSpot, endSpot,

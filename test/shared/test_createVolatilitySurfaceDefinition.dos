@@ -113,3 +113,172 @@ caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METH
 // 用例目的：枚举参数 wingStrikeType 传入非法值，验证枚举校验（预期：抛异常）
 @testing:case="createVolatilitySurfaceDefinition rejects invalid enum for wingStrikeType", exception=1
 caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "NOT_A_REAL_ENUM", 90.0, 110.0, "TF_VSDEF", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：smileMethod 逐值验证：SVI（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod SVI"
+rVSD_s1 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S1", false)
+assert 1, typestr(rVSD_s1) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：SVI_SMILE_METHOD（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod SVI_SMILE_METHOD"
+rVSD_s2 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SVI_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S2", false)
+assert 1, typestr(rVSD_s2) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：SABR（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod SABR"
+rVSD_s3 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SABR", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S3", false)
+assert 1, typestr(rVSD_s3) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：SABR_SMILE_METHOD（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod SABR_SMILE_METHOD"
+rVSD_s4 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "SABR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S4", false)
+assert 1, typestr(rVSD_s4) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：LINEAR（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod LINEAR"
+rVSD_s5 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S5", false)
+assert 1, typestr(rVSD_s5) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：LINEAR_SMILE_METHOD（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod LINEAR_SMILE_METHOD"
+rVSD_s6 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S6", false)
+assert 1, typestr(rVSD_s6) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：CUBIC_SPLINE（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod CUBIC_SPLINE"
+rVSD_s7 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "CUBIC_SPLINE", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S7", false)
+assert 1, typestr(rVSD_s7) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：CUBIC_SPLINE_SMILE_METHOD（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileMethod CUBIC_SPLINE_SMILE_METHOD"
+rVSD_s8 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "CUBIC_SPLINE_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_S8", false)
+assert 1, typestr(rVSD_s8) != "VOID"
+
+// 用例目的：smileExtrapMethod 逐值验证：LINEAR_EXTRAP（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts smileExtrapMethod LINEAR_EXTRAP"
+rVSD_e1 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "LINEAR_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_E1", false)
+assert 1, typestr(rVSD_e1) != "VOID"
+
+// 用例目的：timeInterpMethod 逐值验证：LINEAR_IN_VARIANCE（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts timeInterpMethod LINEAR_IN_VARIANCE"
+rVSD_t1 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VARIANCE", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_T1", false)
+assert 1, typestr(rVSD_t1) != "VOID"
+
+// 用例目的：timeInterpMethod 逐值验证：LINEAR_IN_PARAM（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts timeInterpMethod LINEAR_IN_PARAM"
+rVSD_t2 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_PARAM", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_T2", false)
+assert 1, typestr(rVSD_t2) != "VOID"
+
+// 用例目的：volType 逐值验证：NORMAL_VOL_TYPE（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts volType NORMAL_VOL_TYPE"
+rVSD_v1 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_V1", false)
+assert 1, typestr(rVSD_v1) != "VOID"
+
+// 用例目的：volType 逐值验证：LOG_NORMAL（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts volType LOG_NORMAL"
+rVSD_v2 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_V2", false)
+assert 1, typestr(rVSD_v2) != "VOID"
+
+// 用例目的：volType 逐值验证：NORMAL（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts volType NORMAL"
+rVSD_v3 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "NORMAL", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_V3", false)
+assert 1, typestr(rVSD_v3) != "VOID"
+
+// 用例目的：wingStrikeType 逐值验证：RELATIVE_RATIO_STRIKE（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts wingStrikeType RELATIVE_RATIO_STRIKE"
+rVSD_w1 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "RELATIVE_RATIO_STRIKE", 90.0, 110.0, "TF_VSD_R3_W1", false)
+assert 1, typestr(rVSD_w1) != "VOID"
+
+// 用例目的：wingStrikeType 逐值验证：RELATIVE_SPREAD_STRIKE（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts wingStrikeType RELATIVE_SPREAD_STRIKE"
+rVSD_w2 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "RELATIVE_SPREAD_STRIKE", 90.0, 110.0, "TF_VSD_R3_W2", false)
+assert 1, typestr(rVSD_w2) != "VOID"
+
+// 用例目的：wingStrikeType 逐值验证：DELTA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts wingStrikeType DELTA"
+rVSD_w3 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "DELTA", 90.0, 110.0, "TF_VSD_R3_W3", false)
+assert 1, typestr(rVSD_w3) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT_360"
+rVSD_d1 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_360", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D1", false)
+assert 1, typestr(rVSD_d1) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACTUAL_360"
+rVSD_d2 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACTUAL_360", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D2", false)
+assert 1, typestr(rVSD_d2) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT/360"
+rVSD_d3 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT/360", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D3", false)
+assert 1, typestr(rVSD_d3) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT_365"
+rVSD_d4 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D4", false)
+assert 1, typestr(rVSD_d4) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365_FIXED（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT_365_FIXED"
+rVSD_d5 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D5", false)
+assert 1, typestr(rVSD_d5) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_365_FIXED（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACTUAL_365_FIXED"
+rVSD_d6 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACTUAL_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D6", false)
+assert 1, typestr(rVSD_d6) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/365（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT/365"
+rVSD_d7 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT/365", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D7", false)
+assert 1, typestr(rVSD_d7) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT_ACT"
+rVSD_d8 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_ACT", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D8", false)
+assert 1, typestr(rVSD_d8) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ISDA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT_ACT_ISDA"
+rVSD_d9 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_ACT_ISDA", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D9", false)
+assert 1, typestr(rVSD_d9) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ISDA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACTUAL_ACTUAL_ISDA"
+rVSD_d10 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACTUAL_ACTUAL_ISDA", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D10", false)
+assert 1, typestr(rVSD_d10) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ICMA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACT_ACT_ICMA"
+rVSD_d11 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_ACT_ICMA", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D11", false)
+assert 1, typestr(rVSD_d11) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ICMA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention ACTUAL_ACTUAL_ICMA"
+rVSD_d12 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACTUAL_ACTUAL_ICMA", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D12", false)
+assert 1, typestr(rVSD_d12) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：THIRTY_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention THIRTY_360"
+rVSD_d13 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "THIRTY_360", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D13", false)
+assert 1, typestr(rVSD_d13) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention 30_360"
+rVSD_d14 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "30_360", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D14", false)
+assert 1, typestr(rVSD_d14) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30/360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention 30/360"
+rVSD_d15 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "30/360", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D15", false)
+assert 1, typestr(rVSD_d15) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：BOND_BASIS（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySurfaceDefinition accepts dayCountConvention BOND_BASIS"
+rVSD_d16 = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "BOND_BASIS", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "TF_VSD_R3_D16", false)
+assert 1, typestr(rVSD_d16) != "VOID"

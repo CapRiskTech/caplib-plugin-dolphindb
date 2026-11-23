@@ -44,7 +44,7 @@ caplib::createCalendar("X", [date(), date(), date()], [2024.01.01])
 @testing:case="createCalendar rejects missing argument", exception=1
 caplib::createCalendar()
 
-// 用例目的：参数 calName 传入对应类型的空值，实测插件宽松接受、不抛异常——记录实际行为
+// 用例目的：参数 calName 传入空值，验证日历名称非空校验（预期：抛异常）
 @testing:case="createCalendar rejects null calName", exception=1
 caplib::createCalendar(string(), [2024.01.01], [2024.01.01])
 
@@ -57,3 +57,20 @@ caplib::createCalendar("X", date(), [2024.01.01])
 @testing:case="createCalendar holidays length mismatch (lenient validation, does not raise)"
 result = caplib::createCalendar("X", [2024.01.01, 2024.01.01], [2024.01.01]);
 assert 1, typestr(result) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: specialBusinessDays negative coverage (wrong type / null elements / empty vector)
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 specialBusinessDays 传入错误类型（字符串标量），验证类型校验（预期：抛异常）
+@testing:case="createCalendar rejects wrong type for specialBusinessDays", exception=1
+caplib::createCalendar("X", [2024.01.01], "bad")
+
+// 用例目的：参数 specialBusinessDays 传入全部空值的向量，验证向量空值校验（预期：抛异常）
+@testing:case="createCalendar rejects all-null vector specialBusinessDays", exception=1
+caplib::createCalendar("X", [2024.01.01], [date(), date()])
+
+// 用例目的：参数 specialBusinessDays 传入长度为 0 的空向量 —— 文档声明默认即空向量，显式空向量应宽松接受，记录实际行为
+@testing:case="createCalendar accepts empty vector specialBusinessDays (no validation)"
+rCal_empty = caplib::createCalendar("X", [2024.01.01], take(date, 0))
+assert 1, typestr(rCal_empty) != "VOID"

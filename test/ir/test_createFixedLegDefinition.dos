@@ -175,3 +175,123 @@ caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED
 // 验证类型校验（预期：抛异常）
 @testing:case="createFixedLegDefinition rejects BOOL payDayOffset", exception=1
 caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", true, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 3): tag 自身校验 + 枚举逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 tag 传入错误类型（数值而非字符串），验证类型校验（预期：抛异常）
+@testing:case="createFixedLegDefinition rejects wrong type for tag", exception=1
+caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", 123, false)
+
+// 用例目的：参数 tag 传入对应类型的空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createFixedLegDefinition null tag (no validation)"
+r3_tag_null = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", string(), false)
+assert 1, typestr(r3_tag_null) != "VOID"
+
+// 用例目的：dayCountConvention 枚举逐值验证 —— 文档 15+ 合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFixedLegDefinition dayCountConvention=ACT_360 accepted"
+r3_dcc_1 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_360", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_1) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACTUAL_360 accepted"
+r3_dcc_2 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACTUAL_360", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_2) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACT/360 accepted"
+r3_dcc_3 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT/360", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_3) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACT_365 accepted"
+r3_dcc_4 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_4) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACT_365_FIXED accepted"
+r3_dcc_5 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_5) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACTUAL_365_FIXED accepted"
+r3_dcc_6 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACTUAL_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_6) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACT/365 accepted"
+r3_dcc_7 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT/365", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_7) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACT_ACT accepted"
+r3_dcc_8 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_ACT", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_8) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACT_ACT_ISDA accepted"
+r3_dcc_9 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_ACT_ISDA", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_9) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACTUAL_ACTUAL_ISDA accepted"
+r3_dcc_10 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACTUAL_ACTUAL_ISDA", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_10) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACT_ACT_ICMA accepted"
+r3_dcc_11 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_ACT_ICMA", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_11) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=ACTUAL_ACTUAL_ICMA accepted"
+r3_dcc_12 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACTUAL_ACTUAL_ICMA", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_12) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=THIRTY_360 accepted"
+r3_dcc_13 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "THIRTY_360", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_13) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=30_360 accepted"
+r3_dcc_14 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "30_360", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_14) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=30/360 accepted"
+r3_dcc_15 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "30/360", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_15) != "VOID"
+@testing:case="createFixedLegDefinition dayCountConvention=BOND_BASIS accepted"
+r3_dcc_16 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "BOND_BASIS", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_dcc_16) != "VOID"
+
+// 用例目的：interestDayConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFixedLegDefinition interestDayConvention=FOLLOWING accepted"
+r3_idc_1 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_idc_1) != "VOID"
+@testing:case="createFixedLegDefinition interestDayConvention=MODIFIED_FOLLOWING accepted"
+r3_idc_2 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_idc_2) != "VOID"
+@testing:case="createFixedLegDefinition interestDayConvention=PRECEDING accepted"
+r3_idc_3 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_idc_3) != "VOID"
+@testing:case="createFixedLegDefinition interestDayConvention=MODIFIED_PRECEDING accepted"
+r3_idc_4 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_idc_4) != "VOID"
+@testing:case="createFixedLegDefinition interestDayConvention=UNADJUSTED accepted"
+r3_idc_5 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "UNADJUSTED", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_idc_5) != "VOID"
+
+// 用例目的：payDayConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFixedLegDefinition payDayConvention=FOLLOWING accepted"
+r3_pdc_1 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_pdc_1) != "VOID"
+@testing:case="createFixedLegDefinition payDayConvention=MODIFIED_FOLLOWING accepted"
+r3_pdc_2 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_pdc_2) != "VOID"
+@testing:case="createFixedLegDefinition payDayConvention=PRECEDING accepted"
+r3_pdc_3 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "PRECEDING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_pdc_3) != "VOID"
+@testing:case="createFixedLegDefinition payDayConvention=MODIFIED_PRECEDING accepted"
+r3_pdc_4 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_PRECEDING", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_pdc_4) != "VOID"
+@testing:case="createFixedLegDefinition payDayConvention=UNADJUSTED accepted"
+r3_pdc_5 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "UNADJUSTED", "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_pdc_5) != "VOID"
+
+// 用例目的：notionalExchange 枚举逐值验证 —— 文档 7 个合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFixedLegDefinition notionalExchange=INITIAL_EXCHANGE accepted"
+r3_ne_1 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INITIAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_ne_1) != "VOID"
+@testing:case="createFixedLegDefinition notionalExchange=INTERMEDIATE_EXCHANGE accepted"
+r3_ne_2 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INTERMEDIATE_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_ne_2) != "VOID"
+@testing:case="createFixedLegDefinition notionalExchange=INITIAL_INTERMEDIATE_EXCHANGE accepted"
+r3_ne_3 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INITIAL_INTERMEDIATE_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_ne_3) != "VOID"
+@testing:case="createFixedLegDefinition notionalExchange=FINAL_EXCHANGE accepted"
+r3_ne_4 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "FINAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_ne_4) != "VOID"
+@testing:case="createFixedLegDefinition notionalExchange=INITIAL_FINAL_EXCHANGE accepted"
+r3_ne_5 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INITIAL_FINAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_ne_5) != "VOID"
+@testing:case="createFixedLegDefinition notionalExchange=INTERMEDIATE_FINAL_EXCHANGE accepted"
+r3_ne_6 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INTERMEDIATE_FINAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_ne_6) != "VOID"
+@testing:case="createFixedLegDefinition notionalExchange=INITIAL_INTERMEDIATE_FINAL_EXCHANGE accepted"
+r3_ne_7 = caplib::createFixedLegDefinition("CNY", "CAL_CFETS", "QUARTERLY", "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "INITIAL_INTERMEDIATE_FINAL_EXCHANGE", "TF_IR_FIXED_LEG", false)
+assert 1, typestr(r3_ne_7) != "VOID"

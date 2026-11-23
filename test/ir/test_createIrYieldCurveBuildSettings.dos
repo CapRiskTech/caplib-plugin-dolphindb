@@ -129,3 +129,11 @@ assert 1, typestr(rB1) != "VOID"
 // 用例目的：useOnTnFxSwap 传其他整数（INT 2），验证文档所述「其他整数会抛错」（预期：抛异常）
 @testing:case="createIrYieldCurveBuildSettings rejects INT 2 useOnTnFxSwap", exception=1
 caplib::createIrYieldCurveBuildSettings("X", 2, ["X"], ["X"], ["X"], ["X"], "TF_createIrYieldCurveBuildSettings_H", false)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 3): 远端成对数组长度不一致（此前仅覆盖折现曲线对）
+// ----------------------------------------------------------------------------
+
+// 用例目的：forwardCurveNames 多一个元素、与 forwardIndexNames 长度不一致，验证参数间关系校验（预期：抛异常）
+@testing:case="createIrYieldCurveBuildSettings rejects forwardCurveNames length mismatch", exception=1
+caplib::createIrYieldCurveBuildSettings("X", false, ["X"], ["X"], ["X"], ["X", "EXTRA"], "TF_createIrYieldCurveBuildSettings_H", false)

@@ -246,3 +246,196 @@ caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFET
 // 用例目的：INT 参数 fixingDayOffset 传入 BOOL true —— 源码 requireIntScalar(args[17]) 严格判型拒绝 DT_BOOL（预期：抛异常）
 @testing:case="createFloatingLegDefinition rejects BOOL fixingDayOffset", exception=1
 caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", true, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", true)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 3): tag 自身校验 + 枚举逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 tag 传入错误类型（数值而非字符串），验证类型校验（预期：抛异常）
+@testing:case="createFloatingLegDefinition rejects wrong type for tag", exception=1
+caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", 123, false)
+
+// 用例目的：参数 tag 传入对应类型的空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="accepts createFloatingLegDefinition null tag (no validation)"
+r3_tag_null = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", string(), false)
+assert 1, typestr(r3_tag_null) != "VOID"
+
+// 用例目的：freq 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition freq=MONTHLY accepted"
+r3_freq_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "MONTHLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_freq_1) != "VOID"
+@testing:case="createFloatingLegDefinition freq=QUARTERLY accepted"
+r3_freq_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_freq_2) != "VOID"
+@testing:case="createFloatingLegDefinition freq=SEMIANNUAL accepted"
+r3_freq_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "SEMIANNUAL", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_freq_3) != "VOID"
+@testing:case="createFloatingLegDefinition freq=SEMI_ANNUAL accepted"
+r3_freq_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "SEMI_ANNUAL", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_freq_4) != "VOID"
+@testing:case="createFloatingLegDefinition freq=ANNUAL accepted"
+r3_freq_5 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "ANNUAL", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_freq_5) != "VOID"
+
+// 用例目的：fixingFreq 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition fixingFreq=MONTHLY accepted"
+r3_ffreq_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "MONTHLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ffreq_1) != "VOID"
+@testing:case="createFloatingLegDefinition fixingFreq=QUARTERLY accepted"
+r3_ffreq_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ffreq_2) != "VOID"
+@testing:case="createFloatingLegDefinition fixingFreq=SEMIANNUAL accepted"
+r3_ffreq_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "SEMIANNUAL", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ffreq_3) != "VOID"
+@testing:case="createFloatingLegDefinition fixingFreq=SEMI_ANNUAL accepted"
+r3_ffreq_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "SEMI_ANNUAL", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ffreq_4) != "VOID"
+@testing:case="createFloatingLegDefinition fixingFreq=ANNUAL accepted"
+r3_ffreq_5 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ANNUAL", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ffreq_5) != "VOID"
+
+// 用例目的：dayCountConvention 枚举逐值验证 —— 文档 15+ 合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT_360 accepted"
+r3_dcc_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_1) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACTUAL_360 accepted"
+r3_dcc_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACTUAL_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_2) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT/360 accepted"
+r3_dcc_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT/360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_3) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT_365 accepted"
+r3_dcc_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_365", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_4) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT_365_FIXED accepted"
+r3_dcc_5 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_365_FIXED", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_5) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACTUAL_365_FIXED accepted"
+r3_dcc_6 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACTUAL_365_FIXED", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_6) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT/365 accepted"
+r3_dcc_7 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT/365", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_7) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT_ACT accepted"
+r3_dcc_8 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_ACT", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_8) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT_ACT_ISDA accepted"
+r3_dcc_9 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_ACT_ISDA", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_9) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACTUAL_ACTUAL_ISDA accepted"
+r3_dcc_10 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACTUAL_ACTUAL_ISDA", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_10) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACT_ACT_ICMA accepted"
+r3_dcc_11 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_ACT_ICMA", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_11) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=ACTUAL_ACTUAL_ICMA accepted"
+r3_dcc_12 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACTUAL_ACTUAL_ICMA", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_12) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=THIRTY_360 accepted"
+r3_dcc_13 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "THIRTY_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_13) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=30_360 accepted"
+r3_dcc_14 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "30_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_14) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=30/360 accepted"
+r3_dcc_15 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "30/360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_15) != "VOID"
+@testing:case="createFloatingLegDefinition dayCountConvention=BOND_BASIS accepted"
+r3_dcc_16 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "BOND_BASIS", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_dcc_16) != "VOID"
+
+// 用例目的：interestDayConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition interestDayConvention=FOLLOWING accepted"
+r3_idc_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_idc_1) != "VOID"
+@testing:case="createFloatingLegDefinition interestDayConvention=MODIFIED_FOLLOWING accepted"
+r3_idc_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_idc_2) != "VOID"
+@testing:case="createFloatingLegDefinition interestDayConvention=PRECEDING accepted"
+r3_idc_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_idc_3) != "VOID"
+@testing:case="createFloatingLegDefinition interestDayConvention=MODIFIED_PRECEDING accepted"
+r3_idc_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_idc_4) != "VOID"
+@testing:case="createFloatingLegDefinition interestDayConvention=UNADJUSTED accepted"
+r3_idc_5 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "UNADJUSTED", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_idc_5) != "VOID"
+
+// 用例目的：stubPolicy 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition stubPolicy=INITIAL accepted"
+r3_stub_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_stub_1) != "VOID"
+@testing:case="createFloatingLegDefinition stubPolicy=FINAL accepted"
+r3_stub_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "FINAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_stub_2) != "VOID"
+@testing:case="createFloatingLegDefinition stubPolicy=INITIAL_FINAL_FORWARD accepted"
+r3_stub_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL_FINAL_FORWARD", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_stub_3) != "VOID"
+@testing:case="createFloatingLegDefinition stubPolicy=INITIAL_FINAL_BACKWARD accepted"
+r3_stub_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL_FINAL_BACKWARD", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_stub_4) != "VOID"
+
+// 用例目的：brokenPeriodType 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition brokenPeriodType=SHORT accepted"
+r3_bpt_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "SHORT", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_bpt_1) != "VOID"
+@testing:case="createFloatingLegDefinition brokenPeriodType=LONG accepted"
+r3_bpt_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_bpt_2) != "VOID"
+
+// 用例目的：payDayConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition payDayConvention=FOLLOWING accepted"
+r3_pdc_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_pdc_1) != "VOID"
+@testing:case="createFloatingLegDefinition payDayConvention=MODIFIED_FOLLOWING accepted"
+r3_pdc_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_pdc_2) != "VOID"
+@testing:case="createFloatingLegDefinition payDayConvention=PRECEDING accepted"
+r3_pdc_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "PRECEDING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_pdc_3) != "VOID"
+@testing:case="createFloatingLegDefinition payDayConvention=MODIFIED_PRECEDING accepted"
+r3_pdc_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_PRECEDING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_pdc_4) != "VOID"
+@testing:case="createFloatingLegDefinition payDayConvention=UNADJUSTED accepted"
+r3_pdc_5 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "UNADJUSTED", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_pdc_5) != "VOID"
+
+// 用例目的：fixingDayConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition fixingDayConvention=FOLLOWING accepted"
+r3_fdc_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "FOLLOWING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_fdc_1) != "VOID"
+@testing:case="createFloatingLegDefinition fixingDayConvention=MODIFIED_FOLLOWING accepted"
+r3_fdc_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_FOLLOWING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_fdc_2) != "VOID"
+@testing:case="createFloatingLegDefinition fixingDayConvention=PRECEDING accepted"
+r3_fdc_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_fdc_3) != "VOID"
+@testing:case="createFloatingLegDefinition fixingDayConvention=MODIFIED_PRECEDING accepted"
+r3_fdc_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_fdc_4) != "VOID"
+@testing:case="createFloatingLegDefinition fixingDayConvention=UNADJUSTED accepted"
+r3_fdc_5 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "UNADJUSTED", "IN_ADVANCE", -1, "INVALID_NOTIONAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_fdc_5) != "VOID"
+
+// 用例目的：notionalExchange 枚举逐值验证 —— 文档 7 个合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createFloatingLegDefinition notionalExchange=INITIAL_EXCHANGE accepted"
+r3_ne_1 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INITIAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ne_1) != "VOID"
+@testing:case="createFloatingLegDefinition notionalExchange=INTERMEDIATE_EXCHANGE accepted"
+r3_ne_2 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INTERMEDIATE_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ne_2) != "VOID"
+@testing:case="createFloatingLegDefinition notionalExchange=INITIAL_INTERMEDIATE_EXCHANGE accepted"
+r3_ne_3 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INITIAL_INTERMEDIATE_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ne_3) != "VOID"
+@testing:case="createFloatingLegDefinition notionalExchange=FINAL_EXCHANGE accepted"
+r3_ne_4 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "FINAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ne_4) != "VOID"
+@testing:case="createFloatingLegDefinition notionalExchange=INITIAL_FINAL_EXCHANGE accepted"
+r3_ne_5 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INITIAL_FINAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ne_5) != "VOID"
+@testing:case="createFloatingLegDefinition notionalExchange=INTERMEDIATE_FINAL_EXCHANGE accepted"
+r3_ne_6 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INTERMEDIATE_FINAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ne_6) != "VOID"
+@testing:case="createFloatingLegDefinition notionalExchange=INITIAL_INTERMEDIATE_FINAL_EXCHANGE accepted"
+r3_ne_7 = caplib::createFloatingLegDefinition("CNY", iborIndex[0], "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "QUARTERLY", "ACT_360", "NO_DISCOUNT", "STANDARD", false, "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", "IN_ADVANCE", -1, "INITIAL_INTERMEDIATE_FINAL_EXCHANGE", "TF_IR_FLOATING_LEG", false)
+assert 1, typestr(r3_ne_7) != "VOID"

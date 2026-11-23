@@ -207,3 +207,164 @@ assert 1, typestr(r2_irleg_ffreq) != "VOID"
 @testing:case="accepts createIrLegDefinition invalid enum for fixingDayConvention (falls back to default)"
 r2_irleg_fdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "NOT_A_REAL_ENUM", "IN_ADVANCE", 0, "TF_IR_LEG", false)
 assert 1, typestr(r2_irleg_fdc) != "VOID"
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：tag 异常校验 + 9 个枚举参数逐值覆盖
+// 实测：dayCountConvention/freq/interestDayConvention/payDayConvention/fixingFreq/
+//       fixingDayConvention 回退默认（接受全部文档标签）；notionalExchange/stubPolicy/
+//       brokenPeriodType 文档标签均接受（严格解析仅在未知值时抛异常）。
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 tag 传入 INT 标量，验证类型校验（预期：抛异常）
+@testing:case="createIrLegDefinition rejects wrong type for tag", exception=1
+caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, 1, false)
+
+// 用例目的：句柄参数 tag 传入向量而非标量，验证形式校验（预期：抛异常）
+@testing:case="createIrLegDefinition rejects vector for scalar tag", exception=1
+caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, ["TF_IR_LEG"], false)
+
+// 用例目的：句柄参数 tag 传入空值 string()，实测包装器不校验空值，返回 NULL 字符串句柄
+@testing:case="createIrLegDefinition accepts null tag (no validation, returns null handle)"
+rIrLegNullTag = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, string(), false)
+assert 1, typestr(rIrLegNullTag) == "STRING" && isNull(rIrLegNullTag)
+
+// 用例目的：dayCountConvention 逐值覆盖（文档 11 个标签，实测回退默认、全部接受）
+@testing:case="createIrLegDefinition accepts dayCountConvention value ACT_360 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_360", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value ACTUAL_360 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACTUAL_360", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value ACT/360 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT/360", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value ACT_365 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value ACTUAL_365_FIXED (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACTUAL_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value ACT/365 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT/365", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value THIRTY_360 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "THIRTY_360", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value 30_360 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "30_360", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value 30/360 (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "30/360", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIrLegDefinition accepts dayCountConvention value BOND_BASIS (fallback accepted)"
+rDcc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "BOND_BASIS", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rDcc) != "VOID"
+
+// 用例目的：notionalExchange 逐值覆盖（文档 7 个标签，实测全部接受）
+@testing:case="createIrLegDefinition accepts notionalExchange value INITIAL_EXCHANGE"
+rNe = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INITIAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rNe) != "VOID"
+@testing:case="createIrLegDefinition accepts notionalExchange value INTERMEDIATE_EXCHANGE"
+rNe = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INTERMEDIATE_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rNe) != "VOID"
+@testing:case="createIrLegDefinition accepts notionalExchange value INITIAL_INTERMEDIATE_EXCHANGE"
+rNe = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INITIAL_INTERMEDIATE_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rNe) != "VOID"
+@testing:case="createIrLegDefinition accepts notionalExchange value FINAL_EXCHANGE"
+rNe = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "FINAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rNe) != "VOID"
+@testing:case="createIrLegDefinition accepts notionalExchange value INITIAL_FINAL_EXCHANGE"
+rNe = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INITIAL_FINAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rNe) != "VOID"
+@testing:case="createIrLegDefinition accepts notionalExchange value INTERMEDIATE_FINAL_EXCHANGE"
+rNe = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INTERMEDIATE_FINAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rNe) != "VOID"
+@testing:case="createIrLegDefinition accepts notionalExchange value INITIAL_INTERMEDIATE_FINAL_EXCHANGE"
+rNe = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INITIAL_INTERMEDIATE_FINAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rNe) != "VOID"
+
+// 用例目的：freq 逐值覆盖（MONTHLY/SEMIANNUAL/SEMI_ANNUAL/ANNUAL，实测回退默认、全部接受）
+@testing:case="createIrLegDefinition accepts freq value MONTHLY (fallback accepted)"
+rFreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "MONTHLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFreq) != "VOID"
+@testing:case="createIrLegDefinition accepts freq value SEMIANNUAL (fallback accepted)"
+rFreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "SEMIANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFreq) != "VOID"
+@testing:case="createIrLegDefinition accepts freq value SEMI_ANNUAL (fallback accepted)"
+rFreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "SEMI_ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFreq) != "VOID"
+@testing:case="createIrLegDefinition accepts freq value ANNUAL (fallback accepted)"
+rFreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "ANNUAL", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFreq) != "VOID"
+
+// 用例目的：interestDayConvention 逐值覆盖（FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createIrLegDefinition accepts interestDayConvention value FOLLOWING (fallback accepted)"
+rIdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rIdc) != "VOID"
+@testing:case="createIrLegDefinition accepts interestDayConvention value PRECEDING (fallback accepted)"
+rIdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rIdc) != "VOID"
+@testing:case="createIrLegDefinition accepts interestDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rIdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rIdc) != "VOID"
+@testing:case="createIrLegDefinition accepts interestDayConvention value UNADJUSTED (fallback accepted)"
+rIdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "UNADJUSTED", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rIdc) != "VOID"
+
+// 用例目的：stubPolicy 逐值覆盖（FINAL/INITIAL_FINAL_FORWARD/INITIAL_FINAL_BACKWARD，实测全部接受）
+@testing:case="createIrLegDefinition accepts stubPolicy value FINAL"
+rStub = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "FINAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rStub) != "VOID"
+@testing:case="createIrLegDefinition accepts stubPolicy value INITIAL_FINAL_FORWARD"
+rStub = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL_FINAL_FORWARD", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rStub) != "VOID"
+@testing:case="createIrLegDefinition accepts stubPolicy value INITIAL_FINAL_BACKWARD"
+rStub = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL_FINAL_BACKWARD", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rStub) != "VOID"
+
+// 用例目的：brokenPeriodType 逐值覆盖（SHORT，实测接受）
+@testing:case="createIrLegDefinition accepts brokenPeriodType value SHORT"
+rBpt = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "SHORT", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rBpt) != "VOID"
+
+// 用例目的：payDayConvention 逐值覆盖（FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createIrLegDefinition accepts payDayConvention value FOLLOWING (fallback accepted)"
+rPdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rPdc) != "VOID"
+@testing:case="createIrLegDefinition accepts payDayConvention value PRECEDING (fallback accepted)"
+rPdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "PRECEDING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rPdc) != "VOID"
+@testing:case="createIrLegDefinition accepts payDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rPdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_PRECEDING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rPdc) != "VOID"
+@testing:case="createIrLegDefinition accepts payDayConvention value UNADJUSTED (fallback accepted)"
+rPdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "UNADJUSTED", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rPdc) != "VOID"
+
+// 用例目的：fixingFreq 逐值覆盖（MONTHLY/SEMIANNUAL/SEMI_ANNUAL/ANNUAL，实测全部接受）
+@testing:case="createIrLegDefinition accepts fixingFreq value MONTHLY (fallback accepted)"
+rFfreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "MONTHLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFfreq) != "VOID"
+@testing:case="createIrLegDefinition accepts fixingFreq value SEMIANNUAL (fallback accepted)"
+rFfreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "SEMIANNUAL", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFfreq) != "VOID"
+@testing:case="createIrLegDefinition accepts fixingFreq value SEMI_ANNUAL (fallback accepted)"
+rFfreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "SEMI_ANNUAL", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFfreq) != "VOID"
+@testing:case="createIrLegDefinition accepts fixingFreq value ANNUAL (fallback accepted)"
+rFfreq = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "ANNUAL", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFfreq) != "VOID"
+
+// 用例目的：fixingDayConvention 逐值覆盖（FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createIrLegDefinition accepts fixingDayConvention value FOLLOWING (fallback accepted)"
+rFdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "FOLLOWING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFdc) != "VOID"
+@testing:case="createIrLegDefinition accepts fixingDayConvention value PRECEDING (fallback accepted)"
+rFdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFdc) != "VOID"
+@testing:case="createIrLegDefinition accepts fixingDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rFdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "MODIFIED_PRECEDING", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFdc) != "VOID"
+@testing:case="createIrLegDefinition accepts fixingDayConvention value UNADJUSTED (fallback accepted)"
+rFdc = caplib::createIrLegDefinition("FIXED_LEG", "CNY", "ACT_365_FIXED", "", "NO_DISCOUNT", "STANDARD", "INVALID_NOTIONAL_EXCHANGE", false, false, false, "CAL_CFETS", "QUARTERLY", "MODIFIED_FOLLOWING", "INITIAL", "LONG", 0, "MODIFIED_FOLLOWING", "CAL_CFETS", "QUARTERLY", "UNADJUSTED", "IN_ADVANCE", 0, "TF_IR_LEG", false)
+assert 1, typestr(rFdc) != "VOID"

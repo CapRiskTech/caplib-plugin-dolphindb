@@ -107,9 +107,10 @@ caplib::createIrVanillaInstrumentTemplate("X", "X", "X", 1, take(string, 0), "TF
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIrVanillaInstrumentTemplate rejects keyword arguments", syntaxError=1
 caplib::createIrVanillaInstrumentTemplate(instType="X", instName="X", startConvention="X", startDelay=1, legDefinitions=["X"], tag="TF_createIrVanillaInstrumentTemplate_H", returnJson=false)
-// 用例目的：向量参数 legDefinitions 传入全部空值的向量，验证向量空值校验（预期：抛异常）
-@testing:case="createIrVanillaInstrumentTemplate rejects all-null vector legDefinitions", exception=1
-caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [string(), string(), string()], "TF_IR_VIT", true)
+// 用例目的：向量参数 legDefinitions 传入全部空值的向量 —— 实测包装器不校验元素空值（空元素被跳过），返回句柄
+@testing:case="createIrVanillaInstrumentTemplate accepts all-null vector legDefinitions (no element validation)"
+rNullLegs = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTSTART", 1, [string(), string(), string()], "TF_IR_VIT", false)
+assert 1, typestr(rNullLegs) != "VOID"
 
 // 用例目的：枚举参数 instType 传入非法取值，验证枚举校验（预期：抛异常）
 @testing:case="createIrVanillaInstrumentTemplate rejects invalid enum for instType", exception=1
@@ -170,3 +171,17 @@ caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "SPOTS
 // 用例目的：枚举参数 startConvention 传入非法值 —— parseEnumOrDefault<InstrumentStartConvention> 不识别即 throw（预期：抛异常）
 @testing:case="createIrVanillaInstrumentTemplate rejects invalid enum for startConvention", exception=1
 caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "NOT_A_REAL_ENUM", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", true)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：startConvention 逐值覆盖（TODAYSTART/TOMORROWSTART，实测接受）
+// ----------------------------------------------------------------------------
+
+// 用例目的：startConvention 取值 TODAYSTART 逐值验证（文档合法值，预期接受）
+@testing:case="createIrVanillaInstrumentTemplate accepts startConvention value TODAYSTART"
+rStartConv = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "TODAYSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", false)
+assert 1, typestr(rStartConv) != "VOID"
+
+// 用例目的：startConvention 取值 TOMORROWSTART 逐值验证（文档合法值，预期接受）
+@testing:case="createIrVanillaInstrumentTemplate accepts startConvention value TOMORROWSTART"
+rStartConv = caplib::createIrVanillaInstrumentTemplate("IR_VANILLA_SWAP", "TF_IR_VIT", "TOMORROWSTART", 1, [irFixedLeg[0], irFloatingLeg[0]], "TF_IR_VIT", false)
+assert 1, typestr(rStartConv) != "VOID"

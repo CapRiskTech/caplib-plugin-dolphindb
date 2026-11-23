@@ -84,9 +84,9 @@ caplib::createIrParRateCurve([2024.01.01], "X", "X", ["X"], ["X"], ["X"], [0.02]
 rT_rinstNames = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, "X", ["DEPOSIT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_BAD", true)
 assert 1, typestr(rT_rinstNames) != "VOID"
 
-// 用例目的：向量参数 instNames 传入部分空值的向量，验证向量空值校验（预期：抛异常）
+// 用例目的：instNames 与其他四组向量保持等长但包含空元素，验证空元素校验（预期：抛异常；此前各向量长度同时不一致，无法证明空元素命中）
 @testing:case="createIrParRateCurve rejects partially-null vector instNames", exception=1
-caplib::createIrParRateCurve(2024.01.01, "X", "X", ["X", string()], ["X"], ["X"], [0.02], [0.02], "TF_createIrParRateCurve_H", false)
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], string()], ["DEPOSIT", "IR_VANILLA_SWAP"], ["3M", "6M"], [100.0, 100.0], [0.023, 0.024], "TF_IR_PAR_BAD", false)
 
 // 用例目的：向量参数 instNames 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createIrParRateCurve rejects empty vector instNames", exception=1
@@ -95,8 +95,8 @@ caplib::createIrParRateCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"]
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createIrParRateCurve rejects keyword arguments", syntaxError=1
 caplib::createIrParRateCurve(asOfDate=2024.01.01, currency="X", curveName="X", instNames=["X"], instTypes=["X"], instTerms=["X"], factors=[0.02], quotes=[0.02], handle="TF_createIrParRateCurve_H", returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createIrParRateCurve accepts all-null vector instNames", exception=1
+// 用例目的：instNames 五组向量等长但全部为空值 —— requireNoNullElements 校验命中（预期：抛异常；此前用例名与预期矛盾，按实测统一）
+@testing:case="createIrParRateCurve rejects all-null vector instNames (no-null-elements check)", exception=1
 caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [string(), string(), string()], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR", true)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createIrParRateCurve optional returnJson null uses default"
@@ -127,7 +127,7 @@ caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCu
 // 用例目的：asOfDate 取晚于工具到期/结束日，文档说明包装器不检查此关系，记录实际行为
 @testing:case="createIrParRateCurve asOfDate later than maturity (wrapper does not check)"
 resLatePRC = caplib::createIrParRateCurve(2099.12.31, "CNY", irCurveName, [iborIndex[0]], ["DEPOSIT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_LATE", true)
-assert 1, true
+assert 1, resLatePRC[0] == "TF_IR_PAR_LATE"
 
 // ----------------------------------------------------------------------------
 // Review gap-fill (round 2 续): 输出名 handle 错型
@@ -139,3 +139,190 @@ assert 1, true
 @testing:case="accepts createIrParRateCurve wrong type for handle (no validation)"
 r2_irPRC_handle = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], 123, true)
 assert 1, typestr(r2_irPRC_handle) != "VOID"
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：配对向量长度独立校验 + instTypes 逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：仅缩短 instTerms，其余四组向量保持原长度，验证配对长度校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects instTerms length mismatch", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M"], [100.0, 100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR_BAD", false)
+
+// 用例目的：仅缩短 factors，其余四组向量保持原长度，验证配对长度校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects factors length mismatch", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0], [0.023, 0.024, 0.026], "TF_IR_PAR_BAD", false)
+
+// 用例目的：仅缩短 quotes，其余四组向量保持原长度，验证配对长度校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects quotes length mismatch", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0], irCurveName, irCurveName], ["DEPOSIT", "IR_VANILLA_SWAP", "IR_VANILLA_SWAP"], ["3M", "6M", "1Y"], [100.0, 100.0, 100.0], [0.023, 0.024], "TF_IR_PAR_BAD", false)
+
+// 用例目的：instTerms 传入错误类型向量（数值而非字符串），验证向量类型校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects wrong type for instTerms", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["DEPOSIT"], [1], [100.0], [0.023], "TF_IR_PAR_BAD", false)
+
+// 用例目的：factors 传入错误类型向量（字符串而非 DOUBLE），验证向量类型校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects wrong type for factors", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["DEPOSIT"], ["3M"], ["bad"], [0.023], "TF_IR_PAR_BAD", false)
+
+// 用例目的：quotes 传入错误类型向量（字符串而非 DOUBLE），验证向量类型校验（预期：抛异常）
+@testing:case="createIrParRateCurve rejects wrong type for quotes", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["DEPOSIT"], ["3M"], [100.0], ["bad"], "TF_IR_PAR_BAD", false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review：instTypes 文档 59 个标签逐值验证（接受 / 预期拒绝均按实测）
+// 实测：服务层支持 IR 曲线/利率工具、FX 现金类、CM 现货期货/CM_SWAP、PM_SWAP、
+// CREDIT_DEFAULT_SWAP 及通用 SPOT/FUTURE/FORWARD/SWAP/EUROPEAN/AMERICAN_OPTION；
+// 期权/策略/指数期货等输入会由服务层拒绝（expect exception）。
+// ----------------------------------------------------------------------------
+
+@testing:case="createIrParRateCurve accepts instTypes value OVERNIGHT_INDEX_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["OVERNIGHT_INDEX_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value CROSS_CURRENCY_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CROSS_CURRENCY_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value MTM_CROSS_CURRENCY_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["MTM_CROSS_CURRENCY_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value STD_CROSS_CURRENCY_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["STD_CROSS_CURRENCY_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_BOND"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_BOND"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value NON_DELIVERABLE_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["NON_DELIVERABLE_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_EUROPEAN_SWAPTION"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_EUROPEAN_SWAPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_CAP_FLOOR"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_CAP_FLOOR"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_FUTURE"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_FUTURE"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_FUTURE_IMM"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_FUTURE_IMM"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_FUTURE_ASX"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_FUTURE_ASX"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_VANILLA_BOND"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_VANILLA_BOND"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve rejects instTypes value IMM_FORWARD_RATE_AGREEMENT (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IMM_FORWARD_RATE_AGREEMENT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve accepts instTypes value IR_BOND_OPTION"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_BOND_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_RANGEACCRUAL_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_RANGEACCRUAL_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value IR_STRUCTURED_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["IR_STRUCTURED_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FX_SPOT"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_SPOT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FX_FORWARD"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_FORWARD"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FX_NON_DELIVERABLE_FORWARD"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_NON_DELIVERABLE_FORWARD"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FX_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FX_SWAP_ON"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_SWAP_ON"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FX_SWAP_TN"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_SWAP_TN"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve rejects instTypes value FX_EUROPEAN_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_EUROPEAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve accepts instTypes value FX_TIME_OPTION"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_TIME_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve rejects instTypes value FX_DIGITAL_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_DIGITAL_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value FX_QUANTO_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_QUANTO_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value FX_TOUCH_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_TOUCH_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value FX_BARRIER_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_BARRIER_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value FX_VANILLA_STRATEGY (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_VANILLA_STRATEGY"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value FX_TOUCH_QUANTO_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_TOUCH_QUANTO_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value FX_DIGITAL_QUANTO_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FX_DIGITAL_QUANTO_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_INDEX_FUTURE (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_INDEX_FUTURE"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_EUROPEAN_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_EUROPEAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_AMERICAN_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_AMERICAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_SPOT (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_SPOT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_VANILLA_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_VANILLA_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_DIGITAL_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_DIGITAL_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_BARRIER_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_BARRIER_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_RANGE_ACCRUAL_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_RANGE_ACCRUAL_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_TOUCH_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_TOUCH_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value EQ_QUANTO_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EQ_QUANTO_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve accepts instTypes value CM_SPOT"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_SPOT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value CM_FUTURE"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_FUTURE"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve rejects instTypes value CM_EUROPEAN_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_EUROPEAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value CM_AMERICAN_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_AMERICAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value CM_VANILLA_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_VANILLA_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value CM_ASIAN_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_ASIAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value CM_DIGITAL_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_DIGITAL_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve accepts instTypes value CM_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve rejects instTypes value CM_DIGITAL_ASIAN_OPTION (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CM_DIGITAL_ASIAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve rejects instTypes value PM_SPOT (service rejects)", exception=1
+caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["PM_SPOT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+@testing:case="createIrParRateCurve accepts instTypes value PM_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["PM_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value CREDIT_DEFAULT_SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["CREDIT_DEFAULT_SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value SPOT"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["SPOT"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FUTURE"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FUTURE"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value FORWARD"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["FORWARD"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value SWAP"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["SWAP"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value EUROPEAN_OPTION"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["EUROPEAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"
+@testing:case="createIrParRateCurve accepts instTypes value AMERICAN_OPTION"
+rParEnum = caplib::createIrParRateCurve(irAsOfDate, "CNY", irCurveName, [iborIndex[0]], ["AMERICAN_OPTION"], ["3M"], [100.0], [0.023], "TF_IR_PAR_ENUM", false)
+assert 1, typestr(rParEnum) != "VOID"

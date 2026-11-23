@@ -332,3 +332,67 @@ caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate
 @testing:case="createCmOptionQuoteMatrix rejects wrong type for handle", exception=1
 caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, prices, underlying, 123, true)
 
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: underlying / returnJson 校验、asOfDate 与 termDates
+// 的日期先后关系、termDates 排序/重复、逐行元素数量形状异常
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 underlying 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCmOptionQuoteMatrix rejects wrong type for underlying", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, prices, 99, "TF_CM_OQ", true)
+
+// 用例目的：参数 underlying 传入对应类型的空值 —— 实测插件不校验、正常创建报价矩阵
+//（宽松行为，记录实际行为，不抛异常）
+@testing:case="createCmOptionQuoteMatrix accepts null underlying (no validation)"
+rNullU = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, prices, string(), "TF_CM_OQ_NULLU", true)
+assert 1, isHandleJson(rNullU, "TF_CM_OQ_NULLU")
+
+// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createCmOptionQuoteMatrix rejects wrong type for returnJson", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, prices, underlying, "TF_CM_OQ", "bad")
+
+// 用例目的：asOfDate（2021.01.01）晚于 termDates 中最晚到期日（2020.09.11）。
+// 文档说明日期先后关系不由包装器检查 —— 实测服务层也不校验该关系、正常创建报价矩阵
+//（宽松行为，记录实际行为，不抛异常）
+@testing:case="createCmOptionQuoteMatrix accepts asOfDate after termDates (no service-level validation)"
+rLate = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", 2021.01.01, termDates, payoffTypes, strikes, prices, underlying, "TF_CM_OQ_LATE", true)
+assert 1, isHandleJson(rLate, "TF_CM_OQ_LATE")
+
+// 用例目的：termDates 非递增（前两个日期交换）。文档说明排序关系不由包装器检查
+// —— 实测服务层也不校验该关系、正常创建报价矩阵（宽松行为，记录实际行为，不抛异常）
+termDatesUnsorted = [2020.04.13, 2020.03.12, 2020.05.12, 2020.06.12, 2020.07.10, 2020.08.12, 2020.09.11]
+@testing:case="createCmOptionQuoteMatrix accepts non-increasing termDates (no service-level validation)"
+rUnsorted = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDatesUnsorted, payoffTypes, strikes, prices, underlying, "TF_CM_OQ_UNSORTED", true)
+assert 1, isHandleJson(rUnsorted, "TF_CM_OQ_UNSORTED")
+
+// 用例目的：termDates 包含重复日期（第二个期限与第一个相同）。文档说明排序关系不由包装器检查
+// —— 实测服务层也不校验该关系、正常创建报价矩阵（宽松行为，记录实际行为，不抛异常）
+termDatesDup = [2020.03.12, 2020.03.12, 2020.05.12, 2020.06.12, 2020.07.10, 2020.08.12, 2020.09.11]
+@testing:case="createCmOptionQuoteMatrix accepts duplicate termDates (no service-level validation)"
+rDup = caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDatesDup, payoffTypes, strikes, prices, underlying, "TF_CM_OQ_DUP", true)
+assert 1, isHandleJson(rDup, "TF_CM_OQ_DUP")
+
+// 行数与 termDates 保持一致（7 行），仅第 0 行比 strikes/prices 对应行少一个元素，确保抛错原因确为逐行元素数量不一致
+strikesRagged = [strikes[0][0:(size(strikes[0])-1)], strikes[1], strikes[2], strikes[3], strikes[4], strikes[5], strikes[6]]
+
+// 用例目的：strikes 行数与 termDates 一致但第 0 行元素数量少于 payoffTypes/prices 对应行，
+// 验证逐行元素数量形状校验（预期：抛异常）
+@testing:case="createCmOptionQuoteMatrix rejects per-row size mismatch for strikes", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikesRagged, prices, underlying, "TF_CM_OQ_RAGGED_S", true)
+
+// 行数与 termDates 保持一致（7 行），仅第 0 行比 strikes/prices 对应行少一个元素
+payoffTypesRagged = [payoffTypes[0][0:(size(payoffTypes[0])-1)], payoffTypes[1], payoffTypes[2], payoffTypes[3], payoffTypes[4], payoffTypes[5], payoffTypes[6]]
+
+// 用例目的：payoffTypes 行数与 termDates 一致但第 0 行元素数量少于 strikes/prices 对应行，
+// 验证逐行元素数量形状校验（预期：抛异常）
+@testing:case="createCmOptionQuoteMatrix rejects per-row size mismatch for payoffTypes", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypesRagged, strikes, prices, underlying, "TF_CM_OQ_RAGGED_P", true)
+
+// 行数与 termDates 保持一致（7 行），仅第 0 行比 payoffTypes/strikes 对应行少一个元素
+pricesRagged = [prices[0][0:(size(prices[0])-1)], prices[1], prices[2], prices[3], prices[4], prices[5], prices[6]]
+
+// 用例目的：prices 行数与 termDates 一致但第 0 行元素数量少于 payoffTypes/strikes 对应行，
+// 验证逐行元素数量形状校验（预期：抛异常）
+@testing:case="createCmOptionQuoteMatrix rejects per-row size mismatch for prices", exception=1
+caplib::createCmOptionQuoteMatrix("AMERICAN", "FUTURE_UNDERLYING_TYPE", asOfDate, termDates, payoffTypes, strikes, pricesRagged, underlying, "TF_CM_OQ_RAGGED_Q", true)
+

@@ -80,8 +80,8 @@ caplib::createPhoenixAutoCallableNote("X", 0.02, 0.02, "X", 2024.01.01, take(dat
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPhoenixAutoCallableNote rejects keyword arguments", syntaxError=1
 caplib::createPhoenixAutoCallableNote(couponPayoffType="X", couponStrike=0.02, couponRate=0.02, dayCountConvention="X", startDate=2024.01.01, couponDates=[2024.01.01], knockOutBarrierType="X", knockOutBarrierValue=0.02, knockInBarrierType="X", knockInBarrierValue=0.02, longShort="X", knockInPayoffType="X", knockInPayoffStrike=0.02, expiry=2024.01.01, delivery=2024.01.01, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createPhoenixAutoCallableNote_H", knockOutDates=[2024.01.01], knockOutValues=[0.02], knockOutWeights=[0.02], knockInDates=[2024.01.01], knockInValues=[0.02], knockInWeights=[0.02], returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createPhoenixAutoCallableNote accepts all-null vector couponDates", exception=1
+// 用例目的：向量 couponDates 传入全空值，验证向量空值校验（预期：抛异常；第三轮 review 修正用例名与预期一致）
+@testing:case="createPhoenixAutoCallableNote rejects all-null vector couponDates", exception=1
 caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, [date(), date(), date()], "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
 
 // 用例目的：枚举参数 dayCountConvention 传入非法取值，验证枚举校验（预期：抛异常）
@@ -98,7 +98,7 @@ caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FI
 // ----------------------------------------------------------------------------
 // 用例目的：遍历参数 dayCountConvention 的全部文档枚举取值，逐一调用验证均被接受
 // 注：标签 `INVALID_DAY_COUNT_CONVENTION`, `ACT_ACT_ISMA`, `ACTUAL_ACTUAL_ISMA`, `THIRTY_U_360`, `THIRTY_U_360_EOM`, `THIRTY_360_PSA`, `THIRTY_E_360_PLUS`, `THIRTY_360_IT`, `ACT_ACT_AFB`, `ACTUAL_ACTUAL_AFB`, `ACT_364`, `ACTUAL_364`, `ACT_365_25`, `ACTUAL_365_25`, `ACT_365_ACT`, `ACTUAL_365_ACTUAL`, `ACT_365_L`, `ACTUAL_365_LONG`, `ACT_365_NL`, `ACTUAL_365_NO_LEAP`, `ACT_ACT_YEAR`, `ACTUAL_ACTUAL_YEAR`, `INVALID` 在本上下文中被插件拒绝，未纳入遍历（与文档标签集不一致，实测为准）
-@testing:case="createPhoenixAutoCallableNote supports all dayCountConvention enums"
+@testing:case="createPhoenixAutoCallableNote supports accepted dayCountConvention subset"
 labelEnum = ["ACT_360", "ACTUAL_360", "ACT_365_FIXED", "ACTUAL_365_FIXED", "ACT_ACT_ICMA", "ACTUAL_ACTUAL_ICMA", "ACT_ACT_ISDA", "ACTUAL_ACTUAL_ISDA", "THIRTY_360", "BOND_BASIS", "THIRTY_E_360", "EUROBOND_BASIS", "THIRTY_E_360_ISDA", "ONE_ONE", "BUSINESS_252"]
 okEnum = true;
 for (i in 0..(size(labelEnum)-1)) {
@@ -145,3 +145,243 @@ caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FI
 // 用例目的：INT 参数 settlementDays 传入 BOOL 值，验证类型校验（预期：抛异常）
 @testing:case="createPhoenixAutoCallableNote rejects BOOL settlementDays", exception=1
 caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / knockOut 与 knockIn 向量长度 / 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：startDate（2020.09.01）晚于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createPhoenixAutoCallableNote startDate after expiry (no validation)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.09.01, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_sdae", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：couponDates 晚于 expiry（2020.09.22 起的派息日），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createPhoenixAutoCallableNote couponDates after expiry (no validation)"
+lateCouponDates = [2020.09.23, 2020.10.23, 2020.11.23, 2020.12.23, 2021.01.22, 2021.02.22]
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, lateCouponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_cdae", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createPhoenixAutoCallableNote delivery before expiry (no validation)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.18, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dbe", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：单独改变 knockOutDates 长度（与 knockOutValues/knockOutWeights 不一致），验证配对长度校验（预期：抛异常）
+@testing:case="createPhoenixAutoCallableNote rejects knockOutDates length mismatch", exception=1
+caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", join(couponDates, couponDates[0]), couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：单独改变 knockOutValues 长度（比 knockOutDates 少一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createPhoenixAutoCallableNote rejects knockOutValues length mismatch", exception=1
+caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues[0:(size(couponObsValues)-1)], couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：单独改变 knockOutWeights 长度（比 knockOutDates 多一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createPhoenixAutoCallableNote rejects knockOutWeights length mismatch", exception=1
+caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, join(couponObsWeights, 1.0), dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：单独改变 knockInDates 长度（与 knockInValues/knockInWeights 不一致），验证配对长度校验（预期：抛异常）
+@testing:case="createPhoenixAutoCallableNote rejects knockInDates length mismatch", exception=1
+caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, join(dailyObsDates, dailyObsDates[0]), dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：单独改变 knockInValues 长度（比 knockInDates 少一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createPhoenixAutoCallableNote rejects knockInValues length mismatch", exception=1
+caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues[0:(size(dailyObsValues)-1)], dailyObsWeights, false)
+
+// 用例目的：单独改变 knockInWeights 长度（比 knockInDates 多一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createPhoenixAutoCallableNote rejects knockInWeights length mismatch", exception=1
+caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, join(dailyObsWeights, 1.0), false)
+
+// 用例目的：couponPayoffType 枚举取值 PUT 逐值验证（文档合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports couponPayoffType value PUT"
+r = caplib::createPhoenixAutoCallableNote("PUT", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_cpt_put", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：couponPayoffType 枚举取值 call 逐值验证（文档合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports couponPayoffType value call"
+r = caplib::createPhoenixAutoCallableNote("call", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_cpt_call", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：couponPayoffType 枚举取值 put 逐值验证（文档合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports couponPayoffType value put"
+r = caplib::createPhoenixAutoCallableNote("put", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_cpt_put2", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：dayCountConvention 逐值覆盖（实测：包装器接受全部 21 个文档标签，回退映射由底层解析器处理）
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_ACT_ISMA (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_ACT_ISMA", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc1", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_ACTUAL_ISMA (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_ACTUAL_ISMA", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc2", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value THIRTY_U_360 (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "THIRTY_U_360", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc3", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value THIRTY_U_360_EOM (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "THIRTY_U_360_EOM", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc4", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value THIRTY_360_PSA (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "THIRTY_360_PSA", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc5", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value THIRTY_E_360_PLUS (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "THIRTY_E_360_PLUS", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc6", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value THIRTY_360_IT (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "THIRTY_360_IT", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc7", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_ACT_AFB (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_ACT_AFB", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc8", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_ACTUAL_AFB (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_ACTUAL_AFB", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc9", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_364 (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_364", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc10", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_364 (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_364", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc11", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_365_25 (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_25", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc12", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_365_25 (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_365_25", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc13", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_365_ACT (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_ACT", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc14", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_365_ACTUAL (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_365_ACTUAL", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc15", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_365_L (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_L", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc16", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_365_LONG (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_365_LONG", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc17", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_365_NL (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_NL", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc18", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_365_NO_LEAP (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_365_NO_LEAP", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc19", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACT_ACT_YEAR (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_ACT_YEAR", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc20", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote accepts dayCountConvention value ACTUAL_ACTUAL_YEAR (wrapper accepts all documented labels)"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACTUAL_ACTUAL_YEAR", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_dcc21", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false);
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：longShort 枚举逐值验证（BUY/Buy/buy/SELL/Sell/sell，文档合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports longShort value BUY"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "BUY", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_ls_buy", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports longShort value Buy"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "Buy", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_ls_buy2", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports longShort value buy"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "buy", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_ls_buy3", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports longShort value SELL"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_ls_sell", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports longShort value Sell"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "Sell", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_ls_sell2", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports longShort value sell"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "sell", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_ls_sell3", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：knockInPayoffType 枚举逐值验证（CALL/call/put，文档合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports knockInPayoffType value CALL"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "CALL", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kipt_call", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInPayoffType value call"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "call", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kipt_call2", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInPayoffType value put"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "put", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kipt_put", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：underlyingType 枚举逐值验证（FUTURE/FORWARD，文档合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports underlyingType value FUTURE"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "FUTURE", "CNY", "50ETF.SSE", "f_PH_ut_fut", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports underlyingType value FORWARD"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "FORWARD", "CNY", "50ETF.SSE", "f_PH_ut_fwd", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：knockOutBarrierType 枚举逐值验证（文档 12 个合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value DOWN_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "DOWN_IN", underlyingPrice*0.95, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_1", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value UAI"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UAI", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_2", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value DOWN_AND_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "DOWN_AND_IN", underlyingPrice*0.95, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_3", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value UP_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_IN", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_4", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value DAO"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "DAO", underlyingPrice*0.95, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_5", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value UP_AND_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_AND_IN", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_6", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value DOWN_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "DOWN_OUT", underlyingPrice*0.95, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_7", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value DAI"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "DAI", underlyingPrice*0.95, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_8", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value DOWN_AND_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "DOWN_AND_OUT", underlyingPrice*0.95, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_9", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value UP_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_10", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value UAO"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UAO", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_11", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockOutBarrierType value UP_AND_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_AND_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kobt_12", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：knockInBarrierType 枚举逐值验证（文档 12 个合法值，预期接受）
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value DOWN_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_1", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value UAI"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "UAI", underlyingPrice*1.1, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_2", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value DOWN_AND_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_AND_IN", underlyingPrice*0.9, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_3", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value UP_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "UP_IN", underlyingPrice*1.1, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_4", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value DAO"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DAO", underlyingPrice*0.95, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_5", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value UP_AND_IN"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "UP_AND_IN", underlyingPrice*1.1, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_6", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value DOWN_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_OUT", underlyingPrice*0.95, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_7", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value DAI"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DAI", underlyingPrice*0.95, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_8", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value DOWN_AND_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "DOWN_AND_OUT", underlyingPrice*0.95, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_9", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value UP_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "UP_OUT", underlyingPrice*1.1, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_10", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value UAO"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "UAO", underlyingPrice*1.1, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_11", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+@testing:case="createPhoenixAutoCallableNote supports knockInBarrierType value UP_AND_OUT"
+r = caplib::createPhoenixAutoCallableNote("CALL", underlyingPrice, 0.12, "ACT_365_FIXED", 2020.02.22, couponDates, "UP_OUT", underlyingPrice*1.1, "UP_AND_OUT", underlyingPrice*1.1, "SELL", "PUT", underlyingPrice*0.85, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_PH_kibt_12", couponDates, couponObsValues, couponObsWeights, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID";
+assert 1, typestr(r) != "VOID"

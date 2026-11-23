@@ -82,8 +82,8 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects wrong type for returnJson", exception=1
 caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, "bad")
-// 用例目的：参数 referencePrice 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createCdsTemplate rejects zero referencePrice (lenient validation, does not raise)"
+// 用例目的：参数 referencePrice 传入 0，实测允许零值、正常创建模板（预期：不抛异常）
+@testing:case="createCdsTemplate accepts zero referencePrice"
 result = caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
 assert 1, typestr(result) != "VOID"
 
@@ -95,7 +95,7 @@ caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", -1.0, 1.0, "PAY
 // Review gap-fill: null-vector / boundary / enum / handle-type coverage
 // ----------------------------------------------------------------------------
 
-// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+// 用例目的：calendars 传入全部空值的向量，验证空元素校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects all-null vector calendars", exception=1
 caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [string(), string(), string()], false, true)
 
@@ -103,7 +103,7 @@ caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, 
 @testing:case="createCdsTemplate rejects empty vector calendars", exception=1
 caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", take(string, 0), false, true)
 
-// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+// 用例目的：calendars 传入部分空值的向量，验证空元素校验（预期：抛异常）
 @testing:case="createCdsTemplate rejects partially-null vector calendars", exception=1
 caplib::createCdsTemplate("CFETS-SHCH-GTJA", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", [calCfets, string()], false, true)
 
@@ -133,3 +133,193 @@ assert 1, typestr(rCdsTFreq) != "VOID"
 @testing:case="createCdsTemplate accepts invalid enum for businessDayConvention (falls back to default)"
 rCdsTBdc = caplib::createCdsTemplate("TF_CDS_TPL_FB_BDC", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "NOT_A_REAL_ENUM", ["CAL_CFETS"], false, true)
 assert 1, typestr(rCdsTBdc) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: leverage/recoveryRate/rebateAccrual 校验 / 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 leverage 传入 0 —— 实测包装器宽松接受，记录实际行为
+@testing:case="createCdsTemplate accepts zero leverage (no validation)"
+rCdsTR3Lev0 = caplib::createCdsTemplate("TF_CDS_TPL_R3_LEV0", "1d", "CASH_SETTLEMENT", 0.0, 0.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Lev0) != "VOID"
+
+// 用例目的：参数 leverage 传入负值 —— 实测包装器宽松接受，记录实际行为
+@testing:case="createCdsTemplate accepts negative leverage (no validation)"
+rCdsTR3LevN = caplib::createCdsTemplate("TF_CDS_TPL_R3_LEVN", "1d", "CASH_SETTLEMENT", 0.0, -1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3LevN) != "VOID"
+
+// 用例目的：参数 leverage 传入错误类型（该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects wrong type for leverage", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, "bad", "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+// 用例目的：参数 leverage 传入空值，验证空值校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects null leverage", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, double(), "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+// 用例目的：参数 recoveryRate 传入低于业务下界 0 的 -0.1 —— 文档业务范围为 [0,1] 但包装器仅检查类型，实测宽松接受，记录实际行为
+@testing:case="createCdsTemplate accepts recoveryRate below 0 (no business range validation)"
+rCdsTR3RecLo = caplib::createCdsTemplate("TF_CDS_TPL_R3_RECLO", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", -0.1, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3RecLo) != "VOID"
+
+// 用例目的：参数 recoveryRate 传入高于业务上界 1 的 1.5 —— 实测包装器宽松接受，记录实际行为
+@testing:case="createCdsTemplate accepts recoveryRate above 1 (no business range validation)"
+rCdsTR3RecHi = caplib::createCdsTemplate("TF_CDS_TPL_R3_RECHI", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 1.5, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3RecHi) != "VOID"
+
+// 用例目的：参数 recoveryRate 传入下边界 0.0，验证边界值被接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts recoveryRate boundary 0.0"
+rCdsTR3RecB0 = caplib::createCdsTemplate("TF_CDS_TPL_R3_RECB0", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.0, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3RecB0) != "VOID"
+
+// 用例目的：参数 recoveryRate 传入上边界 1.0，验证边界值被接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts recoveryRate boundary 1.0"
+rCdsTR3RecB1 = caplib::createCdsTemplate("TF_CDS_TPL_R3_RECB1", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 1.0, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3RecB1) != "VOID"
+
+// 用例目的：参数 recoveryRate 传入错误类型（该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects wrong type for recoveryRate", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", "bad", "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+
+// 用例目的：参数 rebateAccrual 传入错误类型（该传 BOOL/INT 的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createCdsTemplate rejects STRING rebateAccrual", exception=1
+caplib::createCdsTemplate("TF_CDS_TPL", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], "bad", true)
+
+// 用例目的：参数 rebateAccrual 传入 INT 1 —— 文档接受 BOOL 或 INT，验证 INT 形式被接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts INT rebateAccrual"
+rCdsTR3RebI = caplib::createCdsTemplate("TF_CDS_TPL_R3_REBI", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], 1, true)
+assert 1, typestr(rCdsTR3RebI) != "VOID"
+
+// 用例目的：参数 rebateAccrual 传入空值 —— 实测包装器宽松接受，记录实际行为
+@testing:case="createCdsTemplate accepts null rebateAccrual (no validation)"
+rCdsTR3RebN = caplib::createCdsTemplate("TF_CDS_TPL_R3_REBN", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], bool(), true)
+assert 1, typestr(rCdsTR3RebN) != "VOID"
+
+// 用例目的：枚举参数 settlementType 传入文档取值 PHYSICAL（正常用例已覆盖 CASH_SETTLEMENT），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts settlementType PHYSICAL"
+rCdsTR3St1 = caplib::createCdsTemplate("TF_CDS_TPL_R3_ST1", "1d", "PHYSICAL", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3St1) != "VOID"
+
+// 用例目的：枚举参数 settlementType 传入文档取值 PHYSICAL_SETTLEMENT，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts settlementType PHYSICAL_SETTLEMENT"
+rCdsTR3St2 = caplib::createCdsTemplate("TF_CDS_TPL_R3_ST2", "1d", "PHYSICAL_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3St2) != "VOID"
+
+// 用例目的：枚举参数 settlementType 传入文档取值 CASH，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts settlementType CASH"
+rCdsTR3St3 = caplib::createCdsTemplate("TF_CDS_TPL_R3_ST3", "1d", "CASH", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3St3) != "VOID"
+
+// 用例目的：枚举参数 settlementType 传入文档取值 CASH_ZERO_COUPON_SETTLEMENT，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts settlementType CASH_ZERO_COUPON_SETTLEMENT"
+rCdsTR3St4 = caplib::createCdsTemplate("TF_CDS_TPL_R3_ST4", "1d", "CASH_ZERO_COUPON_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3St4) != "VOID"
+
+// 用例目的：枚举参数 creditProtectionType 传入文档取值 PAY_PROTECTION_AT_DEFAULT（正常用例已覆盖 PAY_PROTECTION_AT_MATURITY），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts creditProtectionType PAY_PROTECTION_AT_DEFAULT"
+rCdsTR3Cpt = caplib::createCdsTemplate("TF_CDS_TPL_R3_CPT", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_DEFAULT", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Cpt) != "VOID"
+
+// 用例目的：枚举参数 creditPremiumType 传入文档取值 PAY_PREMIUM_AT_DEFAULT（正常用例已覆盖 PAY_PREMIUM_UPTO_CURRENT_PERIOD），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts creditPremiumType PAY_PREMIUM_AT_DEFAULT"
+rCdsTR3Cpm1 = caplib::createCdsTemplate("TF_CDS_TPL_R3_CPM1", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_AT_DEFAULT", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Cpm1) != "VOID"
+
+// 用例目的：枚举参数 creditPremiumType 传入文档取值 PAY_PREMIUM_UPTO_MATURITY，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts creditPremiumType PAY_PREMIUM_UPTO_MATURITY"
+rCdsTR3Cpm2 = caplib::createCdsTemplate("TF_CDS_TPL_R3_CPM2", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_MATURITY", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Cpm2) != "VOID"
+
+// 用例目的：枚举参数 creditPremiumType 传入文档取值 PAY_NOTHING_AFTER_DEFAULT，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts creditPremiumType PAY_NOTHING_AFTER_DEFAULT"
+rCdsTR3Cpm3 = caplib::createCdsTemplate("TF_CDS_TPL_R3_CPM3", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_NOTHING_AFTER_DEFAULT", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Cpm3) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_360（正常用例已覆盖 ACTUAL_360），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention ACT_360"
+rCdsTR3Dcc1 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC1", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc1) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_360 之外的同义拼写 ACT/360，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention ACT/360"
+rCdsTR3Dcc2 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC2", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACT/360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc2) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_365，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention ACT_365"
+rCdsTR3Dcc3 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC3", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACT_365", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc3) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_365_FIXED，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention ACT_365_FIXED"
+rCdsTR3Dcc4 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC4", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACT_365_FIXED", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc4) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_365_FIXED，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention ACTUAL_365_FIXED"
+rCdsTR3Dcc5 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC5", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_365_FIXED", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc5) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT/365，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention ACT/365"
+rCdsTR3Dcc6 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC6", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACT/365", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc6) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 THIRTY_360，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention THIRTY_360"
+rCdsTR3Dcc7 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC7", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "THIRTY_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc7) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 30_360，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention 30_360"
+rCdsTR3Dcc8 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC8", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "30_360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc8) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 30/360，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention 30/360"
+rCdsTR3Dcc9 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC9", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "30/360", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc9) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 BOND_BASIS，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts dayCountConvention BOND_BASIS"
+rCdsTR3Dcc10 = caplib::createCdsTemplate("TF_CDS_TPL_R3_DCC10", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "BOND_BASIS", "QUARTERLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Dcc10) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 MONTHLY（正常用例已覆盖 QUARTERLY），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts frequency MONTHLY"
+rCdsTR3Fq1 = caplib::createCdsTemplate("TF_CDS_TPL_R3_FQ1", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "MONTHLY", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Fq1) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 SEMIANNUAL，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts frequency SEMIANNUAL"
+rCdsTR3Fq2 = caplib::createCdsTemplate("TF_CDS_TPL_R3_FQ2", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "SEMIANNUAL", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Fq2) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 SEMI_ANNUAL，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts frequency SEMI_ANNUAL"
+rCdsTR3Fq3 = caplib::createCdsTemplate("TF_CDS_TPL_R3_FQ3", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "SEMI_ANNUAL", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Fq3) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 ANNUAL，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts frequency ANNUAL"
+rCdsTR3Fq4 = caplib::createCdsTemplate("TF_CDS_TPL_R3_FQ4", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "ANNUAL", "MODIFIED_FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Fq4) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 FOLLOWING（正常用例已覆盖 MODIFIED_FOLLOWING），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts businessDayConvention FOLLOWING"
+rCdsTR3Bdc1 = caplib::createCdsTemplate("TF_CDS_TPL_R3_BDC1", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "FOLLOWING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Bdc1) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 PRECEDING，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts businessDayConvention PRECEDING"
+rCdsTR3Bdc2 = caplib::createCdsTemplate("TF_CDS_TPL_R3_BDC2", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "PRECEDING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Bdc2) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 MODIFIED_PRECEDING，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts businessDayConvention MODIFIED_PRECEDING"
+rCdsTR3Bdc3 = caplib::createCdsTemplate("TF_CDS_TPL_R3_BDC3", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "MODIFIED_PRECEDING", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Bdc3) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 UNADJUSTED，验证逐值接受（预期：不抛异常）
+@testing:case="createCdsTemplate accepts businessDayConvention UNADJUSTED"
+rCdsTR3Bdc4 = caplib::createCdsTemplate("TF_CDS_TPL_R3_BDC4", "1d", "CASH_SETTLEMENT", 0.0, 1.0, "PAY_PROTECTION_AT_MATURITY", 0.4, "PAY_PREMIUM_UPTO_CURRENT_PERIOD", "ACTUAL_360", "QUARTERLY", "UNADJUSTED", ["CAL_CFETS"], false, true)
+assert 1, typestr(rCdsTR3Bdc4) != "VOID"

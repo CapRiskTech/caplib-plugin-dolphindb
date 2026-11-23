@@ -111,3 +111,20 @@ caplib::createCrMktDataSet(asOfDate, discountCurve, "TF_NO_SUCH_HANDLE_createCrM
 // 用例目的：句柄参数 creditCurve 传入类型不符的对象句柄（discountCurve），验证句柄类型校验（预期：抛异常）
 @testing:case="createCrMktDataSet rejects wrong object type for creditCurve", exception=1
 caplib::createCrMktDataSet(asOfDate, discountCurve, discountCurve, "TF_CRMKT", "TF_CRMKT", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: name/tag 校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 name 传入空值 —— 实测包装器宽松接受并返回句柄，记录实际行为
+@testing:case="createCrMktDataSet accepts null name (no validation)"
+rCmkR3NmN = caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve[0], string(), "TF_CRMKT_R3_NMN", false)
+assert 1, typestr(rCmkR3NmN) != "VOID"
+
+// 用例目的：参数 name 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCrMktDataSet rejects wrong type for name", exception=1
+caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve[0], 123, "TF_CRMKT", false)
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCrMktDataSet rejects wrong type for tag", exception=1
+caplib::createCrMktDataSet(asOfDate, discountCurve, creditCurve[0], "TF_CRMKT_NAME", 123, false)

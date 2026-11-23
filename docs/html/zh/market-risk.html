@@ -5,20 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>市场风险 | CAPLIB</title>
   <link rel="stylesheet" href="../styles.css">
-  <link rel="alternate" hreflang="en" href="../shared.html">
+  <link rel="alternate" hreflang="en" href="../market-risk.html">
 </head>
 <body>
-  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../shared.html">English</a><span class="lang-active">中文</span></span></nav>
+  <nav class="top-nav"><a class="brand" href="index.html">CAPLIB</a><span class="top-label">用户指南与 API 参考</span><span class="lang-switch"><a href="../market-risk.html">English</a><span class="lang-active">中文</span></span></nav>
   <div class="shell">
     <aside class="side-nav"><div class="side-title">文档</div><div class="nav-group"><div class="nav-heading">用户指南</div><a class="nav-child" href="index.html#user-guide">介绍</a><a class="nav-child" href="fixed-income.html#user-guide">固定收益</a><a class="nav-child" href="currency.html#user-guide">外汇</a><a class="nav-child" href="commodity.html#user-guide">商品</a><a class="nav-child" href="equity.html#user-guide">权益</a></div><div class="nav-group"><div class="nav-heading">API 参考</div><a class="nav-child" href="../shared.html#api-reference">通用 <span>28</span></a><a class="nav-child" href="fixed-income.html#api-reference">固定收益 <span>56</span></a><a class="nav-child" href="currency.html#api-reference">外汇 <span>35</span></a><a class="nav-child" href="commodity.html#api-reference">商品 <span>25</span></a><a class="nav-child" href="equity.html#api-reference">权益 <span>36</span></a><a class="nav-child active" href="../market-risk.html#api-reference">市场风险 <span>4</span></a></div></aside>
     <main class="content">
       <header class="page-header">
         <p class="kicker">DolphinDB caplib 插件</p>
-        <h1>通用</h1>
-        <p class="lede">跨资产工具、定价设置、风险设置、情景设置以及共享 protobuf 工具。</p>
+        <h1>市场风险</h1>
+        <p class="lede">历史模拟情景生成、风险价值（VaR）与期望损失（ES）。</p>
       </header>
-      <section id="user-guide" class="panel"><p class="validity-guide">📘 完整规范文档（含参数取值、错误行为）见 Markdown 版 <a href="../../DQLIB_DOCUMENTATION.md">DQLIB_DOCUMENTATION.md</a>。</p><h2>用户指南</h2><p>市场风险：历史模拟情景生成器（FX 即期、FX 波动率）与 VaR / 期望损失（ES）度量。本页包含 4 个函数。</p><p class="validity-guide"><strong>错误行为：</strong>所有接口失败时抛出 DolphinDB <code>RuntimeException</code>，不返回备用标量或部分对象。服务调用返回 <code>success=false</code> 时，其 <code>err_msg</code> 写入异常消息；参数验证、缓存类 / 句柄、解析和序列化错误同样抛出异常。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;caplib&quot;)
-vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
+      <section id="user-guide" class="panel"><h2>用户指南</h2><p>市场风险：历史模拟情景生成器（FX 即期、FX 波动率）与 VaR / 期望损失（ES）度量。本页包含 4 个函数。</p><p class="validity-guide"><strong>错误行为：</strong>所有接口失败时抛出 DolphinDB <code>RuntimeException</code>，不返回备用标量或部分对象。服务调用返回 <code>success=false</code> 时，其 <code>err_msg</code> 写入异常消息；参数验证、缓存类 / 句柄、解析和序列化错误同样抛出异常。</p></section><section class="panel example"><h2>示例</h2><pre><code>loadPlugin(&quot;caplib&quot;)
+samples = [-100.0, -50.0, 0.0, 50.0, 100.0]
+vaR = caplib::calcVaR(samples, 0.95, false)
+print(vaR.value_at_risk)</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="筛选本页函数"><span id="count"></span></div>
 <section class="api-group"><h2>市场风险</h2>
 
 
@@ -28,19 +30,27 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="buildhistsimfxspotrate"></a>
       <h3><code>buildHistSimFxSpotRate</code></h3>
       <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::buildHistSimFxSpotRate(simDate DATE, referenceSpot STRING, histStart STRING, histEnd STRING, useTemplate BOOL, fxSpotTemplate STRING, handle STRING[, returnJson BOOL])</code></p>
+      <p class="full-signature"><code>caplib::buildHistSimFxSpotRate(simDate, referenceSpot, histStart, histEnd, useTemplate, fxSpotTemplate, handle[, returnJson])</code></p>
       <h4 class="api-subheading">详情</h4>
-      <p class="api-description">通过历史模拟构建 FX 即期汇率情景（服务 HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR）。可选应用 FxSpotTemplate。</p>
+      <p class="api-description">通过历史模拟构建 FX 即期汇率情景。可选应用 FxSpotTemplate。</p>
     </div>
-    <span class="return-pill">FxSpotRate 句柄</span>
+
   </div>
   <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong>FxSpotRate 句柄 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <p class="return-description">创建的 FxSpotRate 对象对应的 ObjectCache 句柄，STRING 类型标量；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
   <details open>
     <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>模拟基准日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。</span></td></tr><tr><td><code>referenceSpot</code></td><td>STRING</td><td>参考 FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>历史起始 FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>历史结束 FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></td></tr><tr><td><code>useTemplate</code></td><td>BOOL</td><td>是否应用 FX 即期模板；为 true 时 fxSpotTemplate 必填。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。为 true 时 <code>fxSpotTemplate</code> 须为有效的 FxSpotTemplate 句柄；为 false 时须传空串。</span></td></tr><tr><td><code>fxSpotTemplate</code></td><td>STRING</td><td>FxSpotTemplate 句柄；useTemplate 为 false 时传空串。<br><span class="validity-note"><strong>有效性:</strong> <code>useTemplate</code> 为 true 时必须是已存在的 FxSpotTemplate 对象的非空 ObjectCache 键；否则传空串。</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>结果 FxSpotRate 的 ObjectCache 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。缺省或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 <code>[handle, protobufJson]</code>。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>simDate</code> DATE 类型。模拟基准日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。</span></p>
+<p class="param-item"><code>referenceSpot</code> STRING 类型。参考 FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>histStart</code> STRING 类型。历史起始 FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>histEnd</code> STRING 类型。历史结束 FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>useTemplate</code> BOOL 类型。是否应用 FX 即期模板；为 true 时 fxSpotTemplate 必填。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。为 true 时 <code>fxSpotTemplate</code> 须为有效的 FxSpotTemplate 句柄；为 false 时须传空串。</span></p>
+<p class="param-item"><code>fxSpotTemplate</code> STRING 类型。FxSpotTemplate 句柄；useTemplate 为 false 时传空串。<br><span class="validity-note"><strong>有效性:</strong> <code>useTemplate</code> 为 true 时必须是已存在的 FxSpotTemplate 对象的非空 ObjectCache 键；否则传空串。</span></p>
+<p class="param-item"><code>handle</code> STRING 类型。结果 FxSpotRate 的 ObjectCache 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>returnJson</code> BOOL 类型。可选。缺省或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 <code>[handle, protobufJson]</code>。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></p></div>
   </details>
 
+<div class="api-example"><h4>示例</h4><p>完整可执行示例见<a href="index.html#example">文档首页“使用示例”</a>。</p></div>
 </article>
 
 <article class="api-card" data-search="buildhistsimfxvolsurface 基于历史模拟生成 FX 波动率曲面情景">
@@ -49,19 +59,31 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="buildhistsimfxvolsurface"></a>
       <h3><code>buildHistSimFxVolSurface</code></h3>
       <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::buildHistSimFxVolSurface(simDate DATE, referenceVolSurf STRING, histStart STRING, histEnd STRING, volSurfaceDates DATE 向量, volSurfaceStrikes ANY, spot STRING, domCurve STRING, forCurve STRING, settings STRING, handle STRING[, returnJson BOOL])</code></p>
+      <p class="full-signature"><code>caplib::buildHistSimFxVolSurface(simDate, referenceVolSurf, histStart, histEnd, volSurfaceDates, volSurfaceStrikes, spot, domCurve, forCurve, settings, handle[, returnJson])</code></p>
       <h4 class="api-subheading">详情</h4>
-      <p class="api-description">基于历史模拟生成一个 FX 波动率曲面情景（服务 HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR），需参考/历史曲面、行权价网格、即期及本币/外币贴现曲线。</p>
+      <p class="api-description">基于历史模拟生成一个 FX 波动率曲面情景，需参考/历史曲面、行权价网格、即期及本币/外币贴现曲线。</p>
     </div>
-    <span class="return-pill">FxVolatilitySurface 句柄</span>
+
   </div>
   <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong>FxVolatilitySurface 句柄 存入 ObjectCache；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
+  <p class="return-description">创建的 FxVolatilitySurface 对象对应的 ObjectCache 句柄，STRING 类型标量；returnJson=true 时返回 <code>[handle, protobufJson]</code>。</p>
   <details open>
     <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>模拟基准日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。</span></td></tr><tr><td><code>referenceVolSurf / histStart / histEnd</code></td><td>STRING</td><td>参考/历史起始/历史结束 FxVolatilitySurface 句柄。<br><span class="validity-note"><strong>有效性:</strong> 各自必须是已存在的 FxVolatilitySurface 对象的非空 ObjectCache 键。</span></td></tr><tr><td><code>volSurfaceDates</code></td><td>DATE 向量</td><td>目标曲面日期，至少两个。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值的 DATE 向量，且至少两个日期；长度须与 <code>volSurfaceStrikes</code> 的行权价集个数一致。</span></td></tr><tr><td><code>volSurfaceStrikes</code></td><td>ANY</td><td>每个目标日期一行权价集（DOUBLE 向量 的向量）；形状须与日期数匹配。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值的 DOUBLE 向量的向量；长度须与 <code>volSurfaceDates</code> 的日期个数一致。</span></td></tr><tr><td><code>spot</code></td><td>STRING</td><td>FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></td></tr><tr><td><code>domCurve</code></td><td>STRING</td><td>本币 IrYieldCurve 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 IrYieldCurve 对象的非空 ObjectCache 键。</span></td></tr><tr><td><code>forCurve</code></td><td>STRING</td><td>外币 IrYieldCurve 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 IrYieldCurve 对象的非空 ObjectCache 键。</span></td></tr><tr><td><code>settings</code></td><td>STRING</td><td>VolatilitySurfaceBuildSettings 句柄，可传空串。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 VolatilitySurfaceBuildSettings 对象的 ObjectCache 键，或空串。</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>结果 FxVolatilitySurface 的 ObjectCache 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>可选。缺省或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 <code>[handle, protobufJson]</code>。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>simDate</code> DATE 类型。模拟基准日期。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 DolphinDB DATE 标量。</span></p>
+<p class="param-item"><code>referenceVolSurf</code> STRING 类型。参考 FxVolatilitySurface 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxVolatilitySurface 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>histStart</code> STRING 类型。历史起始 FxVolatilitySurface 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxVolatilitySurface 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>histEnd</code> STRING 类型。历史结束 FxVolatilitySurface 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxVolatilitySurface 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>volSurfaceDates</code> DATE 向量 类型。目标曲面日期，至少两个。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值的 DATE 向量，且至少两个日期；长度须与 <code>volSurfaceStrikes</code> 的行权价集个数一致。</span></p>
+<p class="param-item"><code>volSurfaceStrikes</code> ANY 类型。每个目标日期一行权价集（DOUBLE 向量 的向量）；形状须与日期数匹配。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值的 DOUBLE 向量的向量；长度须与 <code>volSurfaceDates</code> 的日期个数一致。</span></p>
+<p class="param-item"><code>spot</code> STRING 类型。FxSpotRate 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 FxSpotRate 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>domCurve</code> STRING 类型。本币 IrYieldCurve 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 IrYieldCurve 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>forCurve</code> STRING 类型。外币 IrYieldCurve 句柄。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 IrYieldCurve 对象的非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>settings</code> STRING 类型。VolatilitySurfaceBuildSettings 句柄，可传空串。<br><span class="validity-note"><strong>有效性:</strong> 必须是已存在的 VolatilitySurfaceBuildSettings 对象的 ObjectCache 键，或空串。</span></p>
+<p class="param-item"><code>handle</code> STRING 类型。结果 FxVolatilitySurface 的 ObjectCache 键。<br><span class="validity-note"><strong>有效性:</strong> 必须是非空 ObjectCache 键。</span></p>
+<p class="param-item"><code>returnJson</code> BOOL 类型。可选。缺省或为 false 时仅返回 ObjectCache 句柄；为 true 时返回 <code>[handle, protobufJson]</code>。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></p></div>
   </details>
 
+<div class="api-example"><h4>示例</h4><p>完整可执行示例见<a href="index.html#example">文档首页“使用示例”</a>。</p></div>
 </article>
 <article class="api-card" data-search="calcvar 计算盈亏样本的风险价值 var">
   <div class="api-card-head">
@@ -69,19 +91,22 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="calcvar"></a>
       <h3><code>calcVaR</code></h3>
       <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::calcVaR(profitLossSamples DOUBLE 向量, probability DOUBLE, antithetic BOOL)</code></p>
+      <p class="full-signature"><code>caplib::calcVaR(profitLossSamples, probability, antithetic)</code></p>
       <h4 class="api-subheading">详情</h4>
-      <p class="api-description">计算盈亏样本的 VaR 风险价值（服务 CALCULATE_VALUE_AT_RISK）。</p>
+      <p class="api-description">计算盈亏样本的 VaR 风险价值。</p>
     </div>
-    <span class="return-pill">DICTIONARY</span>
+
   </div>
   <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong>字典，含键 <code>value_at_risk</code>（VaR 值）与 <code>value_at_risk_mirrored</code>（对偶样本镜像 VaR），值均为 DOUBLE 标量。</p>
+  <p class="return-description">字典，含键 <code>value_at_risk</code>（VaR 值）与 <code>value_at_risk_mirrored</code>（对偶样本镜像 VaR），值均为 DOUBLE 标量。</p>
   <details open>
     <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE 向量</td><td>盈亏样本序列。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值且非空的 DOUBLE 向量。</span></td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>置信水平，严格在 (0,1) 内。<br><span class="validity-note"><strong>有效性:</strong> 必须是严格在 (0,1) 内的 DOUBLE 标量。</span></td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>是否同时计算对偶镜像 VaR。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>profitLossSamples</code> DOUBLE 向量 类型。盈亏样本序列。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值且非空的 DOUBLE 向量。</span></p>
+<p class="param-item"><code>probability</code> DOUBLE 类型。置信水平，严格在 (0,1) 内。<br><span class="validity-note"><strong>有效性:</strong> 必须是严格在 (0,1) 内的 DOUBLE 标量。</span></p>
+<p class="param-item"><code>antithetic</code> BOOL 类型。是否同时计算对偶镜像 VaR。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></p></div>
   </details>
 
+<div class="api-example"><h4>示例</h4><p>完整可执行示例见<a href="index.html#example">文档首页“使用示例”</a>。</p></div>
 </article>
 <article class="api-card" data-search="calcexpectedshortfall 计算盈亏样本的期望损失 es">
   <div class="api-card-head">
@@ -89,19 +114,22 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="calcexpectedshortfall"></a>
       <h3><code>calcExpectedShortfall</code></h3>
       <h4 class="api-subheading">语法</h4>
-      <p class="full-signature"><code>caplib::calcExpectedShortfall(profitLossSamples DOUBLE 向量, probability DOUBLE, antithetic BOOL)</code></p>
+      <p class="full-signature"><code>caplib::calcExpectedShortfall(profitLossSamples, probability, antithetic)</code></p>
       <h4 class="api-subheading">详情</h4>
-      <p class="api-description">计算盈亏样本的 ES 期望损失（服务 CALCULATE_EXPECTED_SHORT_FALL）。</p>
+      <p class="api-description">计算盈亏样本的 ES 期望损失。</p>
     </div>
-    <span class="return-pill">DICTIONARY</span>
+
   </div>
   <h4 class="api-subheading">返回值</h4>
-  <p class="return-description"><strong>返回：</strong>字典，含键 <code>expected_shortfall</code>（期望损失值）与 <code>expected_shortfall_mirrored</code>（对偶样本镜像期望损失），值均为 DOUBLE 标量。</p>
+  <p class="return-description">字典，含键 <code>expected_shortfall</code>（期望损失值）与 <code>expected_shortfall_mirrored</code>（对偶样本镜像期望损失），值均为 DOUBLE 标量。</p>
   <details open>
     <summary>参数</summary>
-    <table class="param-table"><thead><tr><th>参数</th><th>类型 / 形状</th><th>说明</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE 向量</td><td>盈亏样本序列。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值且非空的 DOUBLE 向量。</span></td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>置信水平，严格在 (0,1) 内。<br><span class="validity-note"><strong>有效性:</strong> 必须是严格在 (0,1) 内的 DOUBLE 标量。</span></td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>是否同时计算对偶镜像期望损失。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>profitLossSamples</code> DOUBLE 向量 类型。盈亏样本序列。<br><span class="validity-note"><strong>有效性:</strong> 必须是无空值且非空的 DOUBLE 向量。</span></p>
+<p class="param-item"><code>probability</code> DOUBLE 类型。置信水平，严格在 (0,1) 内。<br><span class="validity-note"><strong>有效性:</strong> 必须是严格在 (0,1) 内的 DOUBLE 标量。</span></p>
+<p class="param-item"><code>antithetic</code> BOOL 类型。是否同时计算对偶镜像期望损失。<br><span class="validity-note"><strong>有效性:</strong> 必须是 BOOL 标量。</span></p></div>
   </details>
 
+<div class="api-example"><h4>示例</h4><p>完整可执行示例见<a href="index.html#example">文档首页“使用示例”</a>。</p></div>
 </article>
 </section>
 <script>

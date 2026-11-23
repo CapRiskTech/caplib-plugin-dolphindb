@@ -91,27 +91,41 @@ caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPric
 @testing:case="createCollarOption accepts all legal payoffType values"
 for (payoffVal in ["CALL", "call", "PUT", "put"]) {
     tmpH = caplib::createCollarOption(payoffVal, 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_" + payoffVal, false);
+    assert 1, tmpH == "f_CL_" + payoffVal
 }
-assert 1, true
 
 // 用例目的：遍历 underlyingType 全部合法枚举值，验证均被接受
 @testing:case="createCollarOption accepts all legal underlyingType values"
 for (utVal in ["SPOT", "FUTURE", "FORWARD"]) {
     tmpH = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", utVal, "CNY", "50ETF.SSE", "f_CL_" + utVal, false);
+    assert 1, tmpH == "f_CL_" + utVal
 }
-assert 1, true
 
 // 用例目的：参数 lowerStrike 传入负值，记录实际行为（文档注包装器仅检查类型，故用普通用例）
 @testing:case="createCollarOption negative lowerStrike"
 observeResult = caplib::createCollarOption("CALL", 0.9, 1.1, -0.1, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_nls", false)
-assert 1, true
+assert 1, observeResult == "f_CL_nls"
 
 // 用例目的：参数 upperStrike 传入负值，记录实际行为（文档注包装器仅检查类型，故用普通用例）
 @testing:case="createCollarOption negative upperStrike"
 observeResult = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, -0.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_nus", false)
-assert 1, true
+assert 1, observeResult == "f_CL_nus"
 
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createCollarOption rejects wrong type for handle", exception=1
 caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / 行权价关联
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createCollarOption delivery before expiry (no validation)"
+result = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*0.9, underlyingPrice*1.1, 2020.08.19, 2020.08.18, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_dbe", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：lowerStrike 高于 upperStrike，验证行权价关联校验（实测记录行为）
+@testing:case="createCollarOption lowerStrike above upperStrike (no validation)"
+result = caplib::createCollarOption("CALL", 0.9, 1.1, underlyingPrice*1.1, underlyingPrice*0.9, 2020.08.19, 2020.08.20, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_CL_ls_gt_us", false)
+assert 1, typestr(result) != "VOID"
 

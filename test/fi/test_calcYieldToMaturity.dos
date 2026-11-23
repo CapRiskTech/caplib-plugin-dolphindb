@@ -119,8 +119,9 @@ r2 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond
 assert 1, max(abs(r1 - r2)) < 1.0e-12
 
 // ----------------------------------------------------------------------------
-// 用例目的：遍历 compoundingType / priceType / frequency 已确认合法的枚举取值，逐一调用验证均被接受
-@testing:case="calcYieldToMaturity supports accepted enum values"
+// 用例目的：遍历 compoundingType / priceType / frequency 已确认合法的枚举取值子集，逐一调用验证均被接受
+// 注：仅覆盖 round-1 确认的子集；其余文档取值 round-3 已逐值单独覆盖（见文件末尾）
+@testing:case="calcYieldToMaturity supports accepted enum subset"
 compLabels = ["SIMPLE_COMPOUNDING", "CONTINUOUS_COMPOUNDING", "DISCRETE_COMPOUNDING"]
 priceTypeLabels = ["CLEAN_PRICE", "DIRTY_PRICE"]
 freqLabels = ["ANNUAL", "QUARTERLY"]
@@ -137,12 +138,12 @@ assert 1, okEnum
 // 用例目的：计算日取值晚于债券到期日（maturity 2025-10-10 之后），记录插件/包装器是否校验该关系（不预设抛异常）
 @testing:case="calcYieldToMaturity asOfDate after maturity (behaviour recorded)"
 rLate = caplib::calcYieldToMaturity(2026.01.01, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL");
-assert 1, true
+assert 1, typestr(rLate) != "VOID"
 
 // 用例目的：价格取极大正值，记录数值边界行为（不预设抛异常）
 @testing:case="calcYieldToMaturity extreme high price (behaviour recorded)"
 rExt = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 1.0e12, "CLEAN_PRICE", "ANNUAL");
-assert 1, true
+assert 1, typestr(rExt) != "VOID"
 
 // ----------------------------------------------------------------------------
 // Review round-2 gap-fill: 枚举非法值回退
@@ -162,3 +163,67 @@ assert 1, typestr(rCytPt) != "VOID"
 @testing:case="calcYieldToMaturity accepts invalid enum for frequency (falls back to default)"
 rCytFq = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "NOT_A_REAL_ENUM")
 assert 1, typestr(rCytFq) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: compoundingType / priceType / frequency 文档取值逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：compoundingType 传入文档取值 SIMPLE，逐值验证被接受
+@testing:case="calcYieldToMaturity supports compoundingType SIMPLE"
+rCytR1 = caplib::calcYieldToMaturity(asOfDate, "SIMPLE", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCytR1) != "VOID"
+
+// 用例目的：compoundingType 传入文档取值 COMPOUNDED，逐值验证被接受
+@testing:case="calcYieldToMaturity supports compoundingType COMPOUNDED"
+rCytR2 = caplib::calcYieldToMaturity(asOfDate, "COMPOUNDED", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCytR2) != "VOID"
+
+// 用例目的：compoundingType 传入文档取值 DISCRETE，逐值验证被接受
+@testing:case="calcYieldToMaturity supports compoundingType DISCRETE"
+rCytR3 = caplib::calcYieldToMaturity(asOfDate, "DISCRETE", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCytR3) != "VOID"
+
+// 用例目的：compoundingType 传入文档取值 CONTINUOUS，逐值验证被接受
+@testing:case="calcYieldToMaturity supports compoundingType CONTINUOUS"
+rCytR4 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS", vanillaBond, "", 99.5, "CLEAN_PRICE", "ANNUAL")
+assert 1, typestr(rCytR4) != "VOID"
+
+// 用例目的：priceType 传入文档取值 YIELD，逐值验证被接受
+@testing:case="calcYieldToMaturity supports priceType YIELD"
+rCytR5 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "YIELD", "ANNUAL")
+assert 1, typestr(rCytR5) != "VOID"
+
+// 用例目的：priceType 传入文档取值 YIELD_TO_MATURITY，逐值验证被接受
+@testing:case="calcYieldToMaturity supports priceType YIELD_TO_MATURITY"
+rCytR6 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "YIELD_TO_MATURITY", "ANNUAL")
+assert 1, typestr(rCytR6) != "VOID"
+
+// 用例目的：priceType 传入文档取值 YTM，逐值验证被接受
+@testing:case="calcYieldToMaturity supports priceType YTM"
+rCytR7 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "YTM", "ANNUAL")
+assert 1, typestr(rCytR7) != "VOID"
+
+// 用例目的：priceType 传入文档取值 CLEAN，逐值验证被接受
+@testing:case="calcYieldToMaturity supports priceType CLEAN"
+rCytR8 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN", "ANNUAL")
+assert 1, typestr(rCytR8) != "VOID"
+
+// 用例目的：priceType 传入文档取值 DIRTY，逐值验证被接受
+@testing:case="calcYieldToMaturity supports priceType DIRTY"
+rCytR9 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "DIRTY", "ANNUAL")
+assert 1, typestr(rCytR9) != "VOID"
+
+// 用例目的：frequency 传入文档取值 MONTHLY，逐值验证被接受
+@testing:case="calcYieldToMaturity supports frequency MONTHLY"
+rCytR10 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "MONTHLY")
+assert 1, typestr(rCytR10) != "VOID"
+
+// 用例目的：frequency 传入文档取值 SEMIANNUAL，逐值验证被接受
+@testing:case="calcYieldToMaturity supports frequency SEMIANNUAL"
+rCytR11 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "SEMIANNUAL")
+assert 1, typestr(rCytR11) != "VOID"
+
+// 用例目的：frequency 传入文档取值 SEMI_ANNUAL，逐值验证被接受
+@testing:case="calcYieldToMaturity supports frequency SEMI_ANNUAL"
+rCytR12 = caplib::calcYieldToMaturity(asOfDate, "CONTINUOUS_COMPOUNDING", vanillaBond, "", 99.5, "CLEAN_PRICE", "SEMI_ANNUAL")
+assert 1, typestr(rCytR12) != "VOID"

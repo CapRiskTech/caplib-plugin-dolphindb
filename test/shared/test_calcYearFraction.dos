@@ -80,11 +80,95 @@ assert 1, abs(r1 - r2) > 0.0
 @testing:case="calcYearFraction rejects invalid dayCountConvention", exception=1
 yf = caplib::calcYearFraction(2025.01.01, 2025.12.31, "BOGUS_DCC")
 
-// 用例目的：遍历参数 dayCountConvention 的合法取值，逐一调用验证均被接受
-@testing:case="calcYearFraction supports dayCountConvention enums"
-labelEnum = ["ACTUAL_360", "ACT_365_FIXED"]
-okEnum = true;
-for (i in 0..(size(labelEnum)-1)) {
-    try { caplib::calcYearFraction(2025.01.01, 2025.12.31, labelEnum[i]); } catch(ex) { okEnum = false; }
-}
-assert 1, okEnum
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: startDate/endDate date-relationship behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：startDate 晚于 endDate —— 文档声明包装器不检查先后关系，实测宽松接受并返回负的年化因子，记录实际行为
+@testing:case="calcYearFraction accepts startDate after endDate (no validation)"
+yfRev = caplib::calcYearFraction(2025.12.31, 2025.01.01, "ACTUAL_360");
+assert 1, typestr(yfRev) != "VOID" && yfRev < 0.0
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: dayCountConvention per-value enum coverage (16 documented values)
+// ----------------------------------------------------------------------------
+
+// 用例目的：dayCountConvention 逐值验证：ACT_360（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT_360"
+yfDcc1 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_360");
+assert 1, typestr(yfDcc1) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_360（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACTUAL_360"
+yfDcc2 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_360");
+assert 1, typestr(yfDcc2) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/360（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT/360"
+yfDcc3 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT/360");
+assert 1, typestr(yfDcc3) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT_365"
+yfDcc4 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_365");
+assert 1, typestr(yfDcc4) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365_FIXED（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT_365_FIXED"
+yfDcc5 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_365_FIXED");
+assert 1, typestr(yfDcc5) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_365_FIXED（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACTUAL_365_FIXED"
+yfDcc6 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_365_FIXED");
+assert 1, typestr(yfDcc6) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/365（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT/365"
+yfDcc7 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT/365");
+assert 1, typestr(yfDcc7) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT_ACT"
+yfDcc8 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_ACT");
+assert 1, typestr(yfDcc8) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ISDA（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT_ACT_ISDA"
+yfDcc9 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_ACT_ISDA");
+assert 1, typestr(yfDcc9) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ISDA（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACTUAL_ACTUAL_ISDA"
+yfDcc10 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_ACTUAL_ISDA");
+assert 1, typestr(yfDcc10) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ICMA（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACT_ACT_ICMA"
+yfDcc11 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACT_ACT_ICMA");
+assert 1, typestr(yfDcc11) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ICMA（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention ACTUAL_ACTUAL_ICMA"
+yfDcc12 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "ACTUAL_ACTUAL_ICMA");
+assert 1, typestr(yfDcc12) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：THIRTY_360（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention THIRTY_360"
+yfDcc13 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "THIRTY_360");
+assert 1, typestr(yfDcc13) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30_360（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention 30_360"
+yfDcc14 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "30_360");
+assert 1, typestr(yfDcc14) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30/360（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention 30/360"
+yfDcc15 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "30/360");
+assert 1, typestr(yfDcc15) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：BOND_BASIS（预期：被接受，返回非空 DOUBLE）
+@testing:case="calcYearFraction accepts dayCountConvention BOND_BASIS"
+yfDcc16 = caplib::calcYearFraction(2025.01.01, 2025.12.31, "BOND_BASIS");
+assert 1, typestr(yfDcc16) != "VOID"

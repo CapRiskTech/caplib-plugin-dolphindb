@@ -171,17 +171,17 @@ caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], ["TF_NO_
 @testing:case="buildIrSingleCurrencyCurve rejects nonexistent handle otherCurveHandles", exception=1
 caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", ["TF_NO_SUCH_HANDLE_OTHER"], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
 
-// 用例目的：数值参数 shift 传 0，文档允许 0/负/正，记录实际行为（不抛异常即通过）
+// 用例目的：数值参数 shift 传 0，文档允许 0/负/正；实测插件宽松接受（calcJacobian=false 时
+// shift 不参与计算），固定回归预期为接受
 @testing:case="buildIrSingleCurrencyCurve accepts zero shift"
-zsOut = "";
-try { rzs = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 0.0, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT_Z", true); zsOut = "accepted"; } catch(ex) { zsOut = "rejected"; }
-assert 1, true
+rzs = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 0.0, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT_Z", true)
+assert 1, typestr(rzs) != "VOID"
 
-// 用例目的：asOfDate 晚于到期/结束日，文档注明包装器不检查此关系，记录实际行为
-@testing:case="buildIrSingleCurrencyCurve late asOfDate records behavior"
-lateSingle = "skip";
-try { rss = caplib::buildIrSingleCurrencyCurve(2026.01.01, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT_LATE", true); lateSingle = "accepted"; } catch(ex) { lateSingle = "rejected"; }
-assert 1, true
+// 用例目的：asOfDate 晚于平价曲线最后期限（2026.01.01 晚于 3Y 支柱），文档注明包装器不检查此关系；
+// 实测插件宽松接受，固定回归预期为接受
+@testing:case="buildIrSingleCurrencyCurve accepts late asOfDate (wrapper does not check)"
+rss = caplib::buildIrSingleCurrencyCurve(2026.01.01, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT_LATE", true)
+assert 1, typestr(rss) != "VOID"
 
 // ----------------------------------------------------------------------------
 // Review gap-fill (round 2 续): targetCurveHandles / otherCurveHandles / outputHandle / 枚举校验
@@ -220,4 +220,211 @@ caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]]
 // 用例目的：枚举参数 threadingMode 传入非法值，验证枚举校验（预期：抛异常）
 @testing:case="buildIrSingleCurrencyCurve rejects invalid enum for threadingMode", exception=1
 caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "NOT_A_REAL_ENUM", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 3): 数组长度关联校验 + 枚举逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：buildSettingsHandles 长度（2）与 targetCurveNames 长度（1）不一致，验证参数间长度校验（预期：抛异常）
+@testing:case="buildIrSingleCurrencyCurve rejects buildSettingsHandles length mismatch", exception=1
+caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0], "EXTRA"], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+
+// 用例目的：parCurveHandles 长度（2）与 targetCurveNames 长度（1）不一致，验证参数间长度校验（预期：抛异常）
+@testing:case="buildIrSingleCurrencyCurve rejects parCurveHandles length mismatch", exception=1
+caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0], "EXTRA"], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+
+// 用例目的：targetCurveHandles 长度（2）与 targetCurveNames 长度（1）不一致，验证参数间长度校验（预期：抛异常）
+@testing:case="buildIrSingleCurrencyCurve rejects targetCurveHandles length mismatch", exception=1
+caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE", "EXTRA"], "TF_IR_BUILT", true)
+
+// 用例目的：dayCountConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_360 accepted"
+r3_dcc_1 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_360", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_1) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_360 accepted"
+r3_dcc_2 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_360", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_2) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_365_FIXED accepted"
+r3_dcc_3 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_3) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_365_FIXED accepted"
+r3_dcc_4 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_4) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_ACT_ICMA accepted"
+r3_dcc_5 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_ACT_ICMA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_5) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_ACTUAL_ICMA accepted"
+r3_dcc_6 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_ACTUAL_ICMA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_6) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_ACT_ISMA accepted"
+r3_dcc_7 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_ACT_ISMA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_7) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_ACTUAL_ISMA accepted"
+r3_dcc_8 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_ACTUAL_ISMA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_8) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_ACT_ISDA accepted"
+r3_dcc_9 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_ACT_ISDA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_9) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_ACTUAL_ISDA accepted"
+r3_dcc_10 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_ACTUAL_ISDA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_10) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_360 accepted"
+r3_dcc_11 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_360", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_11) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=BOND_BASIS accepted"
+r3_dcc_12 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "BOND_BASIS", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_12) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_E_360 accepted"
+r3_dcc_13 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_E_360", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_13) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=EUROBOND_BASIS accepted"
+r3_dcc_14 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "EUROBOND_BASIS", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_14) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_E_360_ISDA accepted"
+r3_dcc_15 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_E_360_ISDA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_15) != "VOID"
+// 用例目的：dayCountConvention=ONE_ONE 使不同支柱的年化时间退化相同，服务层报
+// 「abscissas are not in ascending order」—— 实测拒绝，固定回归预期（预期：抛异常）
+@testing:case="buildIrSingleCurrencyCurve rejects dayCountConvention=ONE_ONE (degenerate time fractions)", exception=1
+caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ONE_ONE", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_U_360 accepted"
+r3_dcc_17 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_U_360", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_17) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_U_360_EOM accepted"
+r3_dcc_18 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_U_360_EOM", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_18) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_360_PSA accepted"
+r3_dcc_19 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_360_PSA", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_19) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_E_360_PLUS accepted"
+r3_dcc_20 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_E_360_PLUS", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_20) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=THIRTY_360_IT accepted"
+r3_dcc_21 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "THIRTY_360_IT", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_21) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_ACT_AFB accepted"
+r3_dcc_22 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_ACT_AFB", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_22) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_ACTUAL_AFB accepted"
+r3_dcc_23 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_ACTUAL_AFB", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_23) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_364 accepted"
+r3_dcc_24 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_364", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_24) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_364 accepted"
+r3_dcc_25 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_364", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_25) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_365_25 accepted"
+r3_dcc_26 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_25", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_26) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_365_25 accepted"
+r3_dcc_27 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_365_25", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_27) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_365_ACT accepted"
+r3_dcc_28 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_ACT", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_28) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_365_ACTUAL accepted"
+r3_dcc_29 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_365_ACTUAL", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_29) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_365_L accepted"
+r3_dcc_30 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_L", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_30) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_365_LONG accepted"
+r3_dcc_31 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_365_LONG", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_31) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_365_NL accepted"
+r3_dcc_32 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_NL", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_32) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_365_NO_LEAP accepted"
+r3_dcc_33 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_365_NO_LEAP", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_33) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACT_ACT_YEAR accepted"
+r3_dcc_34 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_ACT_YEAR", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_34) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve dayCountConvention=ACTUAL_ACTUAL_YEAR accepted"
+r3_dcc_35 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACTUAL_ACTUAL_YEAR", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_dcc_35) != "VOID"
+// 用例目的：dayCountConvention=BUSINESS_252 依赖交易日历（CAL_CFETS 为节假日表日历），
+// 服务层构建失败抛异常 —— 实测拒绝，固定回归预期（预期：抛异常）
+@testing:case="buildIrSingleCurrencyCurve rejects dayCountConvention=BUSINESS_252 (requires business-day calendar)", exception=1
+caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "BUSINESS_252", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+
+// 用例目的：compoundingType 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="buildIrSingleCurrencyCurve compoundingType=CONTINUOUS_COMPOUNDING accepted"
+r3_comp_1 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_comp_1) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve compoundingType=DISCRETE_COMPOUNDING accepted"
+r3_comp_2 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "DISCRETE_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_comp_2) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve compoundingType=SIMPLE_COMPOUNDING accepted"
+r3_comp_3 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "SIMPLE_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_comp_3) != "VOID"
+
+// 用例目的：frequency 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="buildIrSingleCurrencyCurve frequency=ANNUAL accepted"
+r3_freq_1 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_1) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=SEMIANNUAL accepted"
+r3_freq_2 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "SEMIANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_2) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=EVERY_FOURTH_MONTH accepted"
+r3_freq_3 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "EVERY_FOURTH_MONTH", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_3) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=QUARTERLY accepted"
+r3_freq_4 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "QUARTERLY", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_4) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=BIMONTHLY accepted"
+r3_freq_5 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "BIMONTHLY", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_5) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=MONTHLY accepted"
+r3_freq_6 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "MONTHLY", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_6) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=EVERY_FOURTH_WEEK accepted"
+r3_freq_7 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "EVERY_FOURTH_WEEK", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_7) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=BIWEEKLY accepted"
+r3_freq_8 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "BIWEEKLY", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_8) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=WEEKLY accepted"
+r3_freq_9 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "WEEKLY", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_9) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=DAILY accepted"
+r3_freq_10 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "DAILY", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_10) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=ONCE accepted"
+r3_freq_11 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ONCE", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_11) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve frequency=OTHER_FREQUENCY accepted"
+r3_freq_12 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "OTHER_FREQUENCY", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_freq_12) != "VOID"
+
+// 用例目的：buildingMethod 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="buildIrSingleCurrencyCurve buildingMethod=BOOTSTRAPPING_METHOD accepted"
+r3_bm_1 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_bm_1) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve buildingMethod=GLOBAL_OPTIMIZATION_METHOD accepted"
+r3_bm_2 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "GLOBAL_OPTIMIZATION_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_bm_2) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve buildingMethod=HYBRID_METHOD accepted"
+r3_bm_3 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "HYBRID_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_bm_3) != "VOID"
+
+// 用例目的：finiteDifferenceMethod 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="buildIrSingleCurrencyCurve finiteDifferenceMethod=CENTRAL_DIFFERENCE_METHOD accepted"
+r3_fdm_1 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_fdm_1) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve finiteDifferenceMethod=ONE_SIDE_DOWN_METHOD accepted"
+r3_fdm_2 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "ONE_SIDE_DOWN_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_fdm_2) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve finiteDifferenceMethod=ONE_SIDE_UP_METHOD accepted"
+r3_fdm_3 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "ONE_SIDE_UP_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_fdm_3) != "VOID"
+
+// 用例目的：threadingMode 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="buildIrSingleCurrencyCurve threadingMode=SINGLE_THREADING_MODE accepted"
+r3_tm_1 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_tm_1) != "VOID"
+@testing:case="buildIrSingleCurrencyCurve threadingMode=MULTI_THREADING_MODE accepted"
+r3_tm_2 = caplib::buildIrSingleCurrencyCurve(irAsOfDate, [irCurveName], [cbs[0]], [bpc[0]], "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", "ANNUAL", [], "BOOTSTRAPPING_METHOD", false, 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "MULTI_THREADING_MODE", ["TF_IR_BUILT_CURVE"], "TF_IR_BUILT", true)
+assert 1, typestr(r3_tm_2) != "VOID"
 

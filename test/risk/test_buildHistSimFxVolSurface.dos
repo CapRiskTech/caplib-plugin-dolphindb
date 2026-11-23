@@ -11,8 +11,11 @@
 // wrong dtype / scalar form / nulls / arg-count / parameter relations
 // (dates vs strikes shape) / wrong-handle and wrong-TYPE handle / keyword /
 // matrix empty and null-cell coverage / repeat / multithreading.
-// NOTE: the positive path is server-dependent (see cases below): current
-// dqlibc builds raise on this generator; the plugin passes the error through.
+// NOTE: the positive path is deterministic in the current environment
+// (plugin 3.00.5.1 on dolphindb v3.00.5): the server-side
+// HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR fails on this input set and the
+// plugin passes the error through as "[PLUGIN::CAPLIB]
+// buildHistSimFxVolSurface failed" — asserted below as the fixed expectation.
 
 simDate = 2021.03.30;
 caplib::createCalendar("CAL_CFETS");
@@ -45,27 +48,30 @@ forCurve = caplib::createFlatIrYieldCurve(simDate, "USD", 0.010, "MR_SURF_FOR");
 volDates = termDates;
 volStrikes = [[1.00, 1.1761, 1.35], [1.00, 1.1761, 1.35]];
 
-// 用例目的：正常调用（settings 传空串）。服务端对 HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR
-// 的当前实现返回空错误（其历史/参考曲面插值路径未收敛），故该正向用例受服务端实现制约：
-// 服务端支持时成功返回句柄；当前实现抛异常亦视为合法（插件透传正确，见其它 5 个 mr 接口）。
-@testing:case="buildHistSimFxVolSurface -> handle (server-dependent)"
+// 用例目的：正常调用（settings 传空串）。当前环境（插件 3.00.5.1 + 官方 v3.00.5 镜像）
+// 实测：服务端 HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR 对该输入组构建失败，
+// 插件透传异常，错误特征为 "[PLUGIN::CAPLIB] buildHistSimFxVolSurface failed"。
+// 此为该输入组的确定预期（成功返回句柄则本用例失败，可发现行为退化/变化）。
+@testing:case="buildHistSimFxVolSurface fails: server generator error passed through"
+msg1 = "NO-EXCEPTION";
 try {
-    h = caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
-                                         volDates, volStrikes, spotRate, domCurve,
-                                         forCurve, "", "MR_SURF_RESULT");
-    assert 1, h == "MR_SURF_RESULT";
+    caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf,
+                                     volDates, volStrikes, spotRate, domCurve,
+                                     forCurve, "", "MR_SURF_RESULT");
 } catch(ex) {
-    assert 1, true;  // 服务端该 generator 未收敛:允许抛,记为观察
+    msg1 = string(ex[1]);
 }
+assert 1, strpos(msg1, "buildHistSimFxVolSurface failed") > -1
 
-// 用例目的：结果对象已入缓存
-@testing:case="buildHistSimFxVolSurface result cached (server-dependent)"
+// 用例目的：构建失败时结果对象不应入缓存（getObjectCacheJson 对缺失键抛异常）
+@testing:case="buildHistSimFxVolSurface result not cached on failure"
+surfMiss = false;
 try {
-    r = caplib::getObjectCacheJson("FxVolatilitySurface", "MR_SURF_RESULT");
-    assert 1, size(r)==2 && r[0]=="MR_SURF_RESULT";
-} catch(ex) {
-    assert 1, true;  // 与正向用例一致:服务端未产生可缓存曲面
+    caplib::getObjectCacheJson("FxVolatilitySurface", "MR_SURF_RESULT");
+} catch(cx) {
+    surfMiss = true;
 }
+assert 1, surfMiss
 
 // 用例目的：参考曲面传不存在句柄，拒绝
 @testing:case="buildHistSimFxVolSurface rejects bad ref handle", exception=1
@@ -263,17 +269,25 @@ caplib::buildHistSimFxVolSurface(simDate=simDate, referenceVolSurf=refSurf,
     volSurfaceStrikes=volStrikes, spot=spotRate, domCurve=domCurve,
     forCurve=forCurve, settings="", handle="MR_SURF_KW")
 
-// 用例目的：相同输入连续调用两次（server-dependent），异常路径也透传一致
-@testing:case="buildHistSimFxVolSurface deterministic repeat"
+// 用例目的：相同输入连续调用两次，两次均以相同错误特征失败（确定性/可重复性）。
+// 实测（3.00.5.1）：两次异常消息完全一致，均含 "buildHistSimFxVolSurface failed"。
+@testing:case="buildHistSimFxVolSurface deterministic repeat -> identical failure"
+repMsg1 = "NO-EXCEPTION";
+repMsg2 = "NO-EXCEPTION";
 try {
     caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "MR_SURF_DET");
-    caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "MR_SURF_DET");
-    assert 1, true;
 } catch(ex) {
-    assert 1, true;
+    repMsg1 = string(ex[1]);
 }
+try {
+    caplib::buildHistSimFxVolSurface(simDate, refSurf, startSurf, endSurf, volDates, volStrikes, spotRate, domCurve, forCurve, "", "MR_SURF_DET");
+} catch(ex) {
+    repMsg2 = string(ex[1]);
+}
+assert 1, repMsg1 == repMsg2 && strpos(repMsg1, "buildHistSimFxVolSurface failed") > -1
 
-// 用例目的：submitJob 单 job（job 内捕获服务端未收敛错误），返回 0/1 状态
+// 用例目的：submitJob 单 job（job 内捕获服务端构建失败），返回 0/1 状态。
+// 实测（3.00.5.1）：该输入组在 job 内同样构建失败，期望状态固定为 0。
 @testing:case="buildHistSimFxVolSurface submitJob -> status"
 mrJobVol = def(d, idx) {
     sfx = string(idx);
@@ -300,9 +314,9 @@ mrJobVol = def(d, idx) {
 }
 jid = submitJob("MR_VOL_JOB", "", mrJobVol, simDate, 0)
 st = getJobReturn(jid, true)
-assert 1, st == 0 || st == 1
+assert 1, st == 0
 
-// 用例目的：submitJob 并发 4 job，均返回 0/1 状态
+// 用例目的：submitJob 并发 4 job，该输入组期望状态固定为 0（构建失败透传）
 @testing:case="buildHistSimFxVolSurface submitJob x4 concurrent"
 jids = array(STRING, 0);
 for(i in 0..3)
@@ -310,6 +324,6 @@ for(i in 0..3)
 ok = true;
 for(i in 0..3) {
     sti = getJobReturn(jids[i], true);
-    ok = ok && (sti == 0 || sti == 1);
+    ok = ok && sti == 0;
 }
 assert 1, ok

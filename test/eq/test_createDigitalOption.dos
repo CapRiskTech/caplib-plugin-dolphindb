@@ -112,7 +112,7 @@ assert 1, ok
 // 用例目的：参数 cash 传入0，记录实际行为（文档：cash 可为负、零或正）
 @testing:case="createDigitalOption cash zero boundary"
 result = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_cash0", false)
-assert 1, true
+assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 cash 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
 @testing:case="createDigitalOption rejects negative cash", exception=1
@@ -121,14 +121,23 @@ caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, -1.
 // 用例目的：参数 strike 传入0，记录实际行为（文档：strike 非负；包装器通常仅检查类型）
 @testing:case="createDigitalOption strike zero boundary"
 result = caplib::createDigitalOption("CALL", 0.0, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_strike0", false)
-assert 1, true
+assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 strike 传入负值，记录实际行为（文档未明确 wrapper 是否拒绝负值）
 @testing:case="createDigitalOption strike negative boundary"
 result = caplib::createDigitalOption("CALL", -1.0, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_strike_neg", false)
-assert 1, true
+assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createDigitalOption rejects wrong type for handle", exception=1
 caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：delivery 早于 expiry 的日期先后关系
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createDigitalOption delivery before expiry (no validation)"
+result = caplib::createDigitalOption("CALL", underlyingPrice, 2020.08.19, 2020.08.18, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DG_dbe", false)
+assert 1, typestr(result) != "VOID"
 

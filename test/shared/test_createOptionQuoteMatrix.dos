@@ -77,9 +77,9 @@ caplib::createOptionQuoteMatrix("X", "X", "X", "X", "X", 2024.01.01, take(string
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createOptionQuoteMatrix rejects keyword arguments", syntaxError=1
 caplib::createOptionQuoteMatrix(quoteValueType="X", quoteTermType="X", quoteStrikeType="X", exerciseType="X", optionUnderlyingType="X", asOfDate=2024.01.01, terms=["X"], termDates=[2024.01.01], payoffTypes=matrix([0.2]), values=matrix([0.2]), strikes=matrix([0.2]), assetName="X", handle="TF_createOptionQuoteMatrix_H", returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createOptionQuoteMatrix accepts all-null vector terms", exception=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [string(), string(), string()], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+// 用例目的：向量参数 terms 传入全部空值的向量，实测插件抛异常（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects all-null vector terms", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [string(), string()], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
 // 用例目的：矩阵参数 payoffTypes 传入0 行矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects zero-row matrix payoffTypes", exception=1
@@ -118,9 +118,9 @@ assert 1, okEnum
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(STRING, 3, 0), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
 
 // ----------------------------------------------------------------------------
-// 用例目的：两个数组参数长度不一致（terms 多一个元素），实测插件宽松接受——记录实际行为
-@testing:case="createOptionQuoteMatrix terms length mismatch", exception=1
-caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [, "EXTRA"], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false);
+// 用例目的：terms 与 termDates 长度不一致（terms 为 3 个非空、格式合法的期限字符串，termDates 仅 2 个），验证长度校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects terms length mismatch", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, ["1Y", "2Y", "3Y"], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false);
 
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects wrong type for handle", exception=1
@@ -169,3 +169,170 @@ caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLU
 // 用例目的：枚举参数 payoffTypes 传入非法取值矩阵，验证枚举校验（预期：抛异常）
 @testing:case="createOptionQuoteMatrix rejects invalid enum for payoffTypes", exception=1
 caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["NOT_A_REAL_ENUM", "NOT_A_REAL_ENUM"], ["NOT_A_REAL_ENUM", "NOT_A_REAL_ENUM"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: paired-parameter shape mismatch coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：termDates 比 2 列矩阵多一个元素（3 个日期），验证形状校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects termDates length mismatch", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.09.09, 2022.12.09], quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+
+// 用例目的：payoffTypes 行数与配对矩阵不一致（3 行 vs 2 行），验证形状校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects payoffTypes row mismatch", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["CALL", "PUT", "CALL"], ["CALL", "PUT", "CALL"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+
+// 用例目的：payoffTypes 列数与配对矩阵不一致（3 列 vs 2 列），验证形状校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects payoffTypes col mismatch", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["CALL", "PUT"], ["CALL", "PUT"], ["CALL", "PUT"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+
+// 用例目的：values/payoffTypes/strikes 均为 3 行且形状一致，仅 termDates 保持 2 项，隔离 values 与期限的行数校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects values row mismatch with termDates", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["CALL", "PUT", "CALL"], ["CALL", "PUT", "CALL"]), matrix([10.5, 8.5, 7.5], [11.0, 9.0, 8.0]), matrix([95.0, 95.0, 95.0], [105.0, 105.0, 105.0]), "TF_UNDERLYING", "TF_OQ", false)
+
+// 用例目的：values 列数与配对矩阵不一致（3 列 vs 2 列），验证形状校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects values col mismatch", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, matrix([10.5, 8.5], [11.0, 9.0], [12.0, 10.0]), quoteStrikes, "TF_UNDERLYING", "TF_OQ", false)
+
+// 用例目的：strikes 行数与配对矩阵不一致（3 行 vs 2 行），验证形状校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects strikes row mismatch", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, matrix([95.0, 95.0, 95.0], [105.0, 105.0, 105.0]), "TF_UNDERLYING", "TF_OQ", false)
+
+// 用例目的：strikes 列数与配对矩阵不一致（3 列 vs 2 列），验证形状校验（预期：抛异常）
+@testing:case="createOptionQuoteMatrix rejects strikes col mismatch", exception=1
+caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, matrix([95.0, 95.0], [105.0, 105.0], [115.0, 115.0]), "TF_UNDERLYING", "TF_OQ", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate / termDates date-relationship behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate 晚于全部 termDates —— 文档声明包装器不检查先后关系，实测宽松接受，记录实际行为
+@testing:case="createOptionQuoteMatrix accepts asOfDate after termDates (no validation)"
+rOQM_aot = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2023.06.09, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_AOT", false)
+assert 1, typestr(rOQM_aot) != "VOID"
+
+// 用例目的：termDates 非递增（倒序）—— 实测插件宽松接受、不抛异常，记录实际行为
+@testing:case="createOptionQuoteMatrix accepts non-increasing termDates (no validation)"
+rOQM_ni = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.09.09, 2022.06.09], quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_NI", false)
+assert 1, typestr(rOQM_ni) != "VOID"
+
+// 用例目的：termDates 含重复日期 —— 实测插件宽松接受、不抛异常，记录实际行为
+@testing:case="createOptionQuoteMatrix accepts duplicate termDates (no validation)"
+rOQM_dup = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], [2022.06.09, 2022.06.09], quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_DUP", false)
+assert 1, typestr(rOQM_dup) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: quoteTermType per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：quoteTermType 逐值验证：OQTT_INVALID（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts quoteTermType OQTT_INVALID"
+rOQM_tt1 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_INVALID", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_TT1", false)
+assert 1, typestr(rOQM_tt1) != "VOID"
+
+// 用例目的：quoteTermType 逐值验证：OQTT_ABSOLUTE_TERM（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts quoteTermType OQTT_ABSOLUTE_TERM"
+rOQM_tt2 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_TT2", false)
+assert 1, typestr(rOQM_tt2) != "VOID"
+
+// 用例目的：quoteTermType 逐值验证：OQTT_RELATIVE_TERM —— 相对期限要求 terms 向量非空，
+// 传入与 termDates 等长的合法期限字符串（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts quoteTermType OQTT_RELATIVE_TERM"
+rOQM_tt3 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_RELATIVE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, ["1Y", "2Y"], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_TT3", false)
+assert 1, typestr(rOQM_tt3) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: quoteStrikeType per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：quoteStrikeType 逐值验证：OQST_INVALID（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts quoteStrikeType OQST_INVALID"
+rOQM_st1 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_INVALID", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_ST1", false)
+assert 1, typestr(rOQM_st1) != "VOID"
+
+// 用例目的：quoteStrikeType 逐值验证：OQST_ABSOLUTE_STRIKE（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts quoteStrikeType OQST_ABSOLUTE_STRIKE"
+rOQM_st2 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_ST2", false)
+assert 1, typestr(rOQM_st2) != "VOID"
+
+// 用例目的：quoteStrikeType 逐值验证：OQST_RELATIVE_STRIKE（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts quoteStrikeType OQST_RELATIVE_STRIKE"
+rOQM_st3 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_RELATIVE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_ST3", false)
+assert 1, typestr(rOQM_st3) != "VOID"
+
+// 用例目的：quoteStrikeType 逐值验证：OQST_DELTA_STRIKE（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts quoteStrikeType OQST_DELTA_STRIKE"
+rOQM_st4 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_DELTA_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_ST4", false)
+assert 1, typestr(rOQM_st4) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: exerciseType per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：exerciseType 逐值验证：EUROPEAN（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts exerciseType EUROPEAN"
+rOQM_ex1 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_EX1", false)
+assert 1, typestr(rOQM_ex1) != "VOID"
+
+// 用例目的：exerciseType 逐值验证：AMERICAN（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts exerciseType AMERICAN"
+rOQM_ex2 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "AMERICAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_EX2", false)
+assert 1, typestr(rOQM_ex2) != "VOID"
+
+// 用例目的：exerciseType 逐值验证：BERMUDAN（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts exerciseType BERMUDAN"
+rOQM_ex3 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "BERMUDAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_EX3", false)
+assert 1, typestr(rOQM_ex3) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: optionUnderlyingType per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：optionUnderlyingType 逐值验证：SPOT_UNDERLYING_TYPE（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts optionUnderlyingType SPOT_UNDERLYING_TYPE"
+rOQM_ut1 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_UT1", false)
+assert 1, typestr(rOQM_ut1) != "VOID"
+
+// 用例目的：optionUnderlyingType 逐值验证：FUTURE_UNDERLYING_TYPE（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts optionUnderlyingType FUTURE_UNDERLYING_TYPE"
+rOQM_ut2 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "FUTURE_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, quotePayoffTypes, quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_UT2", false)
+assert 1, typestr(rOQM_ut2) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: payoffTypes per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：payoffTypes 逐值验证：CALL（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts payoffTypes CALL"
+rOQM_pt1 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["CALL", "CALL"], ["CALL", "CALL"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_PT1", false)
+assert 1, typestr(rOQM_pt1) != "VOID"
+
+// 用例目的：payoffTypes 逐值验证：PUT（预期：被接受，返回非空句柄）
+@testing:case="createOptionQuoteMatrix accepts payoffTypes PUT"
+rOQM_pt2 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["PUT", "PUT"], ["PUT", "PUT"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_PT2", false)
+assert 1, typestr(rOQM_pt2) != "VOID"
+
+// 用例目的：payoffTypes 逐值验证：STRADDLE（预期：被接受或按实际行为拒绝）
+@testing:case="createOptionQuoteMatrix accepts payoffTypes STRADDLE"
+rOQM_pt3 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["STRADDLE", "STRADDLE"], ["STRADDLE", "STRADDLE"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_PT3", false)
+assert 1, typestr(rOQM_pt3) != "VOID"
+
+// 用例目的：payoffTypes 逐值验证：STRANGLE（预期：被接受或按实际行为拒绝）
+@testing:case="createOptionQuoteMatrix accepts payoffTypes STRANGLE"
+rOQM_pt4 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["STRANGLE", "STRANGLE"], ["STRANGLE", "STRANGLE"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_PT4", false)
+assert 1, typestr(rOQM_pt4) != "VOID"
+
+// 用例目的：payoffTypes 逐值验证：RISK_REVERSAL（预期：被接受或按实际行为拒绝）
+@testing:case="createOptionQuoteMatrix accepts payoffTypes RISK_REVERSAL"
+rOQM_pt5 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["RISK_REVERSAL", "RISK_REVERSAL"], ["RISK_REVERSAL", "RISK_REVERSAL"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_PT5", false)
+assert 1, typestr(rOQM_pt5) != "VOID"
+
+// 用例目的：payoffTypes 逐值验证：BUTTERFLY（预期：被接受或按实际行为拒绝）
+@testing:case="createOptionQuoteMatrix accepts payoffTypes BUTTERFLY"
+rOQM_pt6 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["BUTTERFLY", "BUTTERFLY"], ["BUTTERFLY", "BUTTERFLY"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_PT6", false)
+assert 1, typestr(rOQM_pt6) != "VOID"
+
+// 用例目的：payoffTypes 逐值验证：ATM_STRADDLE（预期：被接受或按实际行为拒绝）
+@testing:case="createOptionQuoteMatrix accepts payoffTypes ATM_STRADDLE"
+rOQM_pt7 = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", asOfDate, [], quoteTermDates, matrix(["ATM_STRADDLE", "ATM_STRADDLE"], ["ATM_STRADDLE", "ATM_STRADDLE"]), quoteValues, quoteStrikes, "TF_UNDERLYING", "TF_OQM_R3_PT7", false)
+assert 1, typestr(rOQM_pt7) != "VOID"

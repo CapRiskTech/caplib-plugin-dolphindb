@@ -122,19 +122,17 @@ for (i in 0..(size(compLabels)-1)) {
     try { caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", compLabels[i], ["1D","3Y"], "TF_AYC", "TF_AYC", false); } catch(ex) { okCompAYC = false; }
 }
 assert 1, okCompAYC
-// 用例目的：遍历 dayCountConvention 已确认被接受的合法取值，逐一调用验证均被接受（不区分大小写）
-@testing:case="createAssetYieldCurve supports dayCountConvention enums"
+// 用例目的：遍历 dayCountConvention 已确认被接受的合法取值子集，逐一调用验证均被接受（不区分大小写；其余文档取值 round-3 已逐值单独覆盖）
+@testing:case="createAssetYieldCurve supports accepted dayCountConvention subset"
 dccLabels = ["ACT_360", "ACTUAL_360", "ACT_365_FIXED", "ACTUAL_365_FIXED", "THIRTY_360", "BOND_BASIS", "ACT_ACT_ISDA"]
 okDccAYC = true;
 for (i in 0..(size(dccLabels)-1)) {
     try { caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", dccLabels[i], "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC", false); } catch(ex) { okDccAYC = false; }
 }
 assert 1, okDccAYC
-// 用例目的：dayCountConvention 传入非法字符串，实测插件是否宽松回退——记录实际行为（不断言抛异常）
-@testing:case="createAssetYieldCurve dayCountConvention invalid label records behavior"
-rDcc = null;
-try { rDcc = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "NOT_A_VALID_DCC", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCCBAD", false); } catch(ex) { }
-assert 1, true
+// 用例目的：dayCountConvention 传入非法字符串，实测拒绝（预期：抛异常）
+@testing:case="createAssetYieldCurve rejects invalid enum for dayCountConvention", exception=1
+caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "NOT_A_VALID_DCC", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCCBAD", false)
 // 用例目的：pillarValues 传入零值，验证数值边界（预期：正常接受）
 @testing:case="createAssetYieldCurve zero pillarValues"
 rZero = caplib::createAssetYieldCurve(asOfDate, curveDates, [0.0, 0.0], "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_ZERO", false)
@@ -147,3 +145,93 @@ assert 1, typestr(rZero) != "VOID"
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createAssetYieldCurve rejects wrong type for handle", exception=1
 caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", 123, false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: pillarValues/pillarNames 自身校验 + pillarDates 日期行为 + dayCountConvention 逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：单独改变 pillarValues 长度使其与 pillarDates 不匹配（pillarNames 保持等长），验证长度一致性校验（实测抛异常）
+@testing:case="createAssetYieldCurve rejects pillarValues length mismatch", exception=1
+caplib::createAssetYieldCurve(asOfDate, curveDates, [0.02], "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_PVLEN", false)
+
+// 用例目的：向量参数 pillarValues 传入错误类型（STRING 向量），验证元素类型校验（实测抛异常）
+@testing:case="createAssetYieldCurve rejects wrong type for pillarValues", exception=1
+caplib::createAssetYieldCurve(asOfDate, curveDates, ["0.02","0.03"], "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_PVT", false)
+
+// 用例目的：向量参数 pillarValues 传入部分空值的向量 —— 实测插件不校验空元素、宽松接受，记录实际行为
+@testing:case="createAssetYieldCurve accepts partially-null vector pillarValues (no validation)"
+rAycPv = caplib::createAssetYieldCurve(asOfDate, curveDates, [0.02, double()], "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_PVN", false)
+assert 1, typestr(rAycPv) != "VOID"
+
+// 用例目的：向量参数 pillarValues 传入全部空值的向量 —— 实测插件不校验空元素、宽松接受，记录实际行为
+@testing:case="createAssetYieldCurve accepts all-null vector pillarValues (no validation)"
+rAycAv = caplib::createAssetYieldCurve(asOfDate, curveDates, [double(), double()], "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_AVN", false)
+assert 1, typestr(rAycAv) != "VOID"
+
+// 用例目的：向量参数 pillarNames 传入部分空值的向量（与节点数组等长），验证空元素校验（实测抛异常）
+@testing:case="createAssetYieldCurve rejects partially-null vector pillarNames", exception=1
+caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", string()], "TF_AYC", "TF_AYC_PNN", false)
+
+// 用例目的：向量参数 pillarNames 传入错误类型（INT 向量），验证元素类型校验（实测抛异常）
+@testing:case="createAssetYieldCurve rejects wrong type for pillarNames", exception=1
+caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", [1, 2], "TF_AYC", "TF_AYC_PNT", false)
+
+// 用例目的：pillarDates 传入非递增（倒序）日期 —— 实测插件不校验排序、宽松接受，记录实际行为
+@testing:case="createAssetYieldCurve accepts non-increasing pillarDates (no validation)"
+rAycNi = caplib::createAssetYieldCurve(asOfDate, [2022.07.22, 2021.07.26], curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_NI", false)
+assert 1, typestr(rAycNi) != "VOID"
+
+// 用例目的：pillarDates 传入重复日期 —— 实测插件不校验重复、宽松接受，记录实际行为
+@testing:case="createAssetYieldCurve accepts duplicate pillarDates (no validation)"
+rAycDp = caplib::createAssetYieldCurve(asOfDate, [2021.07.26, 2021.07.26], curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DP", false)
+assert 1, typestr(rAycDp) != "VOID"
+
+// 用例目的：pillarDates 全部早于 asOfDate —— 实测插件不校验日期先后、宽松接受，记录实际行为
+@testing:case="createAssetYieldCurve accepts pillarDates before asOfDate (no validation)"
+rAycBa = caplib::createAssetYieldCurve(asOfDate, [2021.01.01, 2021.02.01], curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_BA", false)
+assert 1, typestr(rAycBa) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT/360，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention ACT/360"
+rAycD1 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT/360", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD1) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT_365，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention ACT_365"
+rAycD2 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD2) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT/365，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention ACT/365"
+rAycD3 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT/365", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD3) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT_ACT，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention ACT_ACT"
+rAycD4 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_ACT", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD4) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACTUAL_ACTUAL_ISDA，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention ACTUAL_ACTUAL_ISDA"
+rAycD5 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACTUAL_ACTUAL_ISDA", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD5) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACT_ACT_ICMA，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention ACT_ACT_ICMA"
+rAycD6 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_ACT_ICMA", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD6) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 ACTUAL_ACTUAL_ICMA，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention ACTUAL_ACTUAL_ICMA"
+rAycD7 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "ACTUAL_ACTUAL_ICMA", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD7) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 30_360，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention 30_360"
+rAycD8 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "30_360", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD8) != "VOID"
+
+// 用例目的：dayCountConvention 传入文档取值 30/360，逐值验证被接受
+@testing:case="createAssetYieldCurve supports dayCountConvention 30/360"
+rAycD9 = caplib::createAssetYieldCurve(asOfDate, curveDates, curveValues, "LINEAR_INTERP", "FLAT_EXTRAP", "30/360", "CONTINUOUS_COMPOUNDING", ["1D","3Y"], "TF_AYC", "TF_AYC_DCC", false)
+assert 1, typestr(rAycD9) != "VOID"

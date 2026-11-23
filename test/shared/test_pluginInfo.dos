@@ -31,7 +31,7 @@ assert 1, info.pluginName == "caplib"
 assert 2, info.openSource == true
 assert 3, info.isFree == true
 assert 4, info.isFreeForCommercial == true
-assert 5, info.pluginVersion == "3.00.5.1"
+assert 5, info.pluginVersion == "3.00.5.2"
 assert 6, info.serverVersion == "3.00.5"
 assert 7, info.architecture == "x86"
 assert 8, info.platform == "Linux"

@@ -163,9 +163,10 @@ caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTempla
 caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, -1.0, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
 
 // ----------------------------------------------------------------------------
-// 用例目的：遍历参数 dayCountConvention 的全部文档枚举取值，逐一调用验证均被接受
-// 注：标签 `INVALID_DAY_COUNT_CONVENTION`, `ONE_ONE`, `BUSINESS_252`, `INVALID` 在本上下文中被插件拒绝，未纳入遍历（实测为准）
-@testing:case="buildPmYieldCurve supports all dayCountConvention enums"
+// 用例目的：遍历参数 dayCountConvention 在本构建上下文被服务端接受的取值子集，逐一调用验证均被接受
+// 注：标签 `INVALID_DAY_COUNT_CONVENTION`, `ONE_ONE`, `BUSINESS_252`, `INVALID` 在本上下文中被插件拒绝，
+// 未纳入遍历（实测为准，另见下方 round-3 逐值预期异常用例）
+@testing:case="buildPmYieldCurve supports accepted dayCountConvention subset"
 labelEnum = ["ACT_360", "ACTUAL_360", "ACT_365_FIXED", "ACTUAL_365_FIXED", "ACT_ACT_ICMA", "ACTUAL_ACTUAL_ICMA", "ACT_ACT_ISMA", "ACTUAL_ACTUAL_ISMA", "ACT_ACT_ISDA", "ACTUAL_ACTUAL_ISDA", "THIRTY_360", "BOND_BASIS", "THIRTY_E_360", "EUROBOND_BASIS", "THIRTY_E_360_ISDA", "THIRTY_U_360", "THIRTY_U_360_EOM", "THIRTY_360_PSA", "THIRTY_E_360_PLUS", "THIRTY_360_IT", "ACT_ACT_AFB", "ACTUAL_ACTUAL_AFB", "ACT_364", "ACTUAL_364", "ACT_365_25", "ACTUAL_365_25", "ACT_365_ACT", "ACTUAL_365_ACTUAL", "ACT_365_L", "ACTUAL_365_LONG", "ACT_365_NL", "ACTUAL_365_NO_LEAP", "ACT_ACT_YEAR", "ACTUAL_ACTUAL_YEAR"]
 okEnum = true;
 for (i in 0..(size(labelEnum)-1)) {
@@ -184,8 +185,8 @@ caplib::buildPmYieldCurve([2021.07.22], pmParRateCurve, usdDepoCurve, pmCashTemp
 // ----------------------------------------------------------------------------
 
 // 用例目的：遍历 interpMethod 在本次 yield 曲线构建下被接受的合法取值，逐一调用验证均被接受
-// 注：SABR/SVI/LOG_MONEYNESS/SABR_NORMAL_INTERP 为文档列出的标签，但在本构建上下文被 dqlib 拒绝（实测），故不纳入遍历
-@testing:case="buildPmYieldCurve supports all interpMethod enums"
+// 注：SABR/SVI/LOG_MONEYNESS/SABR_NORMAL_INTERP 为文档列出的标签，但在本构建上下文被 dqlib 拒绝（实测），故不纳入遍历（另见下方 round-3 逐值预期异常用例）
+@testing:case="buildPmYieldCurve supports accepted interpMethod subset"
 interpLabels = ["LINEAR_INTERP", "CUBIC_SPLINE_INTERP", "LEFT_CONTINUOUS_FLAT_INTERP", "QUADRATIC_POLYNOMIAL_INTERP", "CUBIC_POLYNOMIAL_INTERP", "CUBIC_HERMITE_SPLINE_INTERP"]
 okInterp = true;
 for (i in 0..(size(interpLabels)-1)) {
@@ -194,7 +195,7 @@ for (i in 0..(size(interpLabels)-1)) {
 assert 1, okInterp
 
 // 用例目的：遍历 extrapMethod 在本次构建下被接受的合法取值，逐一调用验证均被接受（NATURAL_EXTRAP 被 dqlib 拒绝，不纳入）
-@testing:case="buildPmYieldCurve supports all extrapMethod enums"
+@testing:case="buildPmYieldCurve supports accepted extrapMethod subset"
 extrapLabels = ["FLAT_EXTRAP", "LINEAR_EXTRAP", "ADJ_FLAT_EXTRAP"]
 okExtrap = true;
 for (i in 0..(size(extrapLabels)-1)) {
@@ -203,7 +204,7 @@ for (i in 0..(size(extrapLabels)-1)) {
 assert 1, okExtrap
 
 // 用例目的：遍历 curveType 在本次构建下被接受的合法取值，逐一调用验证均被接受（FORWARD_RATE 被 dqlib 拒绝，不纳入）
-@testing:case="buildPmYieldCurve supports all curveType enums"
+@testing:case="buildPmYieldCurve supports accepted curveType subset"
 curveTypeLabels = ["ZERO_RATE", "LOG_DISCOUNT"]
 okCurveType = true;
 for (i in 0..(size(curveTypeLabels)-1)) {
@@ -248,3 +249,67 @@ caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTempla
 // 用例目的：句柄参数 parCurveHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildPmYieldCurve rejects wrong object type for parCurveHandle", exception=1
 caplib::buildPmYieldCurve(2019.09.04, usdDepoCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate 与曲线日期关系 + 枚举逐值预期异常
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate（2019.09.05）与 parCurveHandle / discountCurveHandle 所引用曲线的
+// 参考日期（2019.09.04）不一致 —— 实测服务层不校验该日期关系、正常完成构建
+//（宽松行为，记录实际行为，不抛异常）
+@testing:case="buildPmYieldCurve accepts asOfDate inconsistent with curve as-of dates (no service-level validation)"
+rMismatch = caplib::buildPmYieldCurve(2019.09.05, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_MISMATCH", false)
+assert 1, typestr(rMismatch) != "VOID" && rMismatch == "TF_XAU_YIELD_MISMATCH"
+
+// 用例目的：asOfDate（2022.01.01）晚于 parCurveHandle 所引用 par 曲线的最晚期限（2Y，约 2021.09）
+// —— 实测服务层不校验该日期关系、正常完成构建（宽松行为，记录实际行为，不抛异常）
+@testing:case="buildPmYieldCurve accepts asOfDate after par curve term dates (no service-level validation)"
+rLate = caplib::buildPmYieldCurve(2022.01.01, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_LATE", false)
+assert 1, typestr(rLate) != "VOID" && rLate == "TF_XAU_YIELD_LATE"
+
+// 用例目的：asOfDate（2050.01.01）晚于 discountCurveHandle 所引用贴现曲线的
+// 最晚期限日期（2049.09.06）—— 实测服务层不校验该日期关系、正常完成构建
+//（宽松行为，记录实际行为，不抛异常）
+@testing:case="buildPmYieldCurve accepts asOfDate after discount curve term dates (no service-level validation)"
+rLateDiscount = caplib::buildPmYieldCurve(2050.01.01, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD_LATE_DISCOUNT", false)
+assert 1, typestr(rLateDiscount) != "VOID" && rLateDiscount == "TF_XAU_YIELD_LATE_DISCOUNT"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档标签 ONE_ONE（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum ONE_ONE for dayCountConvention", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ONE_ONE", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// 用例目的：枚举参数 dayCountConvention 传入文档标签 BUSINESS_252（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum BUSINESS_252 for dayCountConvention", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "BUSINESS_252", "LINEAR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// 用例目的：枚举参数 interpMethod 传入文档标签 SABR_INTERP（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum SABR_INTERP for interpMethod", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "SABR_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// 用例目的：枚举参数 interpMethod 传入文档标签 SVI_INTERP（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum SVI_INTERP for interpMethod", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "SVI_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// 用例目的：枚举参数 interpMethod 传入文档标签 LOG_MONEYNESS_CUBIC_SPLINE_INTERP（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum LOG_MONEYNESS_CUBIC_SPLINE_INTERP for interpMethod", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LOG_MONEYNESS_CUBIC_SPLINE_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// 用例目的：枚举参数 interpMethod 传入文档标签 SABR_NORMAL_INTERP（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum SABR_NORMAL_INTERP for interpMethod", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "SABR_NORMAL_INTERP", "FLAT_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// 用例目的：枚举参数 extrapMethod 传入文档标签 NATURAL_EXTRAP（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum NATURAL_EXTRAP for extrapMethod", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "NATURAL_EXTRAP", "ZERO_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)
+
+// 用例目的：枚举参数 curveType 传入文档标签 FORWARD_RATE（在本构建上下文被服务端拒绝），
+// 逐值验证预期拒绝行为（预期：抛异常）
+@testing:case="buildPmYieldCurve rejects enum FORWARD_RATE for curveType", exception=1
+caplib::buildPmYieldCurve(2019.09.04, pmParRateCurve, usdDepoCurve, pmCashTemplate, 1544.06, 0, "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "FORWARD_RATE", "XAU_XAUUSD", 1.0e-4, "CENTRAL_DIFFERENCE_METHOD", "SINGLE_THREADING_MODE", "TF_XAU_YIELD", false)

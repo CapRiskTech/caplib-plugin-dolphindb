@@ -71,8 +71,8 @@ caplib::createVolatilitySmile("X", 2024.01.01, take(double, 0), [0.02], "X", "X"
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createVolatilitySmile rejects keyword arguments", syntaxError=1
 caplib::createVolatilitySmile(volSmileType="X", asOfDate=2024.01.01, strikes=[0.02], vols=[0.02], smileMethod="X", extrapMethod="X", term=0.02, modelParams=[0.02], auxiliaryParams=[0.02], lower=0.02, upper=0.02, handle="TF_createVolatilitySmile_H", returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createVolatilitySmile accepts all-null vector strikes", exception=1
+// 用例目的：向量参数 strikes 传入全部空值的向量，实测插件抛异常（预期：抛异常）
+@testing:case="createVolatilitySmile rejects all-null vector strikes", exception=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [double(), double(), double()], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
 // 用例目的：枚举参数 extrapMethod 传入非法取值，验证枚举校验（预期：抛异常）
@@ -95,12 +95,12 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createVolatilitySmile accepts zero term", exception=1
+// 用例目的：参数 term 传入 0，验证正数边界校验（预期：抛异常）
+@testing:case="createVolatilitySmile rejects zero term", exception=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 0.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createVolatilitySmile accepts negative term", exception=1
+// 用例目的：参数 term 传入负值，验证正数边界校验（预期：抛异常）
+@testing:case="createVolatilitySmile rejects negative term", exception=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", -1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
 // ----------------------------------------------------------------------------
@@ -108,11 +108,11 @@ caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0]
 // ----------------------------------------------------------------------------
 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createVolatilitySmile rejects zero vols (lenient validation, does not raise)"
+@testing:case="createVolatilitySmile accepts zero vols (no validation)"
 result = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.0, 0.0, 0.0], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 assert 1, typestr(result) != "VOID"
 
-// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+// 用例目的：vols 传入负值，验证非负边界校验（预期：抛异常）
 @testing:case="createVolatilitySmile rejects negative vols", exception=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [-1.0, -1.0, -1.0], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
 
@@ -136,3 +136,81 @@ caplib::createVolatilitySmile("NOT_A_REAL_ENUM", asOfDate, [90.0, 100.0, 110.0],
 // 用例目的：枚举参数 smileMethod 传入非法值，验证枚举校验（预期：抛异常）
 @testing:case="createVolatilitySmile rejects invalid enum for smileMethod", exception=1
 caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "NOT_A_REAL_ENUM", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: lower/upper boundary-relationship behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：lower == upper —— 实测插件严格校验 lower < upper 并抛异常（预期：抛异常）
+@testing:case="createVolatilitySmile rejects lower equal to upper", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 100.0, 100.0, "TF_SMILE_R3_LEQ", false)
+
+// 用例目的：lower > upper（倒置）—— 实测插件严格校验 lower < upper 并抛异常（预期：抛异常）
+@testing:case="createVolatilitySmile rejects lower greater than upper", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 110.0, 90.0, "TF_SMILE_R3_LREV", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: smileMethod per-value enum coverage (8 documented values)
+// ----------------------------------------------------------------------------
+
+// 用例目的：smileMethod 逐值验证：SVI（预期：被接受或按实际行为拒绝）
+@testing:case="createVolatilitySmile accepts smileMethod SVI"
+rVS_m1 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "SVI", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M1", false)
+assert 1, typestr(rVS_m1) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：SVI_SMILE_METHOD（预期：被接受或按实际行为拒绝）
+@testing:case="createVolatilitySmile accepts smileMethod SVI_SMILE_METHOD"
+rVS_m2 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "SVI_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M2", false)
+assert 1, typestr(rVS_m2) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：SABR（预期：被接受或按实际行为拒绝）
+@testing:case="createVolatilitySmile accepts smileMethod SABR"
+rVS_m3 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "SABR", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M3", false)
+assert 1, typestr(rVS_m3) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：SABR_SMILE_METHOD（预期：被接受或按实际行为拒绝）
+@testing:case="createVolatilitySmile accepts smileMethod SABR_SMILE_METHOD"
+rVS_m4 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "SABR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M4", false)
+assert 1, typestr(rVS_m4) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：LINEAR（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySmile accepts smileMethod LINEAR"
+rVS_m5 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M5", false)
+assert 1, typestr(rVS_m5) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：LINEAR_SMILE_METHOD（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySmile accepts smileMethod LINEAR_SMILE_METHOD"
+rVS_m6 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M6", false)
+assert 1, typestr(rVS_m6) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：CUBIC_SPLINE（预期：被接受或按实际行为拒绝）
+@testing:case="createVolatilitySmile accepts smileMethod CUBIC_SPLINE"
+rVS_m7 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "CUBIC_SPLINE", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M7", false)
+assert 1, typestr(rVS_m7) != "VOID"
+
+// 用例目的：smileMethod 逐值验证：CUBIC_SPLINE_SMILE_METHOD（预期：被接受或按实际行为拒绝）
+@testing:case="createVolatilitySmile accepts smileMethod CUBIC_SPLINE_SMILE_METHOD"
+rVS_m8 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "CUBIC_SPLINE_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_M8", false)
+assert 1, typestr(rVS_m8) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: extrapMethod per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：extrapMethod 逐值验证：FLAT_EXTRAP（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySmile accepts extrapMethod FLAT_EXTRAP"
+rVS_x1 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_X1", false)
+assert 1, typestr(rVS_x1) != "VOID"
+
+// 用例目的：extrapMethod 逐值验证：LINEAR_EXTRAP（预期：被接受，返回非空句柄）
+@testing:case="createVolatilitySmile accepts extrapMethod LINEAR_EXTRAP"
+rVS_x2 = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "LINEAR_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_X2", false)
+assert 1, typestr(rVS_x2) != "VOID"
+
+// 用例目的：extrapMethod 逐值验证：NATURAL_EXTRAP —— 实测插件不识别该标签并抛异常（预期：抛异常）
+@testing:case="createVolatilitySmile rejects extrapMethod NATURAL_EXTRAP", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "NATURAL_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_X3", false)
+
+// 用例目的：extrapMethod 逐值验证：ADJ_FLAT_EXTRAP —— 实测插件不识别该标签并抛异常（预期：抛异常）
+@testing:case="createVolatilitySmile rejects extrapMethod ADJ_FLAT_EXTRAP", exception=1
+caplib::createVolatilitySmile("STRIKE_VOL_SMILE", asOfDate, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "ADJ_FLAT_EXTRAP", 1.0, array(DOUBLE,0), array(DOUBLE,0), 90.0, 110.0, "TF_SMILE_R3_X4", false)

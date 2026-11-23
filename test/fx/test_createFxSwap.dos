@@ -80,3 +80,100 @@ caplib::createFxSwap("EUR", -1.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD
 rSwp_rj = caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", "bad")
 assert 1, typestr(rSwp_rj) != "VOID"
 
+// ----------------------------------------------------------------------------
+// Review round-3: 近/远端日期先后关系 + 远端各参数及四个日期、tag 的自身异常/边界校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：近端 expiryDate 晚于近端 deliveryDate —— 实测插件拒绝（预期：抛异常）
+@testing:case="createFxSwap rejects near expiry date after near delivery date", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.04.02, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：远端 expiryDate 晚于远端 deliveryDate —— 实测插件拒绝（预期：抛异常）
+@testing:case="createFxSwap rejects far expiry date after far delivery date", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.07.02, "TF_FXSWP", false)
+
+// 用例目的：近端 deliveryDate（2021.06.30）晚于远端 deliveryDate（2021.03.31），验证近远端交割日期关系（预期：抛异常）
+@testing:case="createFxSwap rejects near delivery date after far delivery date", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.07.01, 2021.06.30, "USD", 1000000.0, "EUR", 1176100.0, 2021.04.01, 2021.03.31, "TF_FXSWP", false)
+
+// 用例目的：参数 farBuyCurrency 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for farBuyCurrency", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, 1, 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farBuyAmount 传入错误类型（该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for farBuyAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", "bad", "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farBuyAmount 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxSwap rejects null farBuyAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", double(), "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farBuyAmount 传入0，验证数值边界校验（预期：抛异常）
+@testing:case="createFxSwap rejects zero farBuyAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 0.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farBuyAmount 传入负值，验证数值边界校验（预期：抛异常）
+@testing:case="createFxSwap rejects negative farBuyAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", -1.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farSellCurrency 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for farSellCurrency", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, 1, 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farSellAmount 传入错误类型（该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for farSellAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", "bad", 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farSellAmount 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxSwap rejects null farSellAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", double(), 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farSellAmount 传入 0，验证正数边界校验（预期：抛异常）
+@testing:case="createFxSwap rejects zero farSellAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 0.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farSellAmount 传入负值，验证正数边界校验（预期：抛异常）
+@testing:case="createFxSwap rejects negative farSellAmount", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", -1.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 nearDeliveryDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for nearDeliveryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, "bad", 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 nearExpiryDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for nearExpiryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, "bad", "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farDeliveryDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for farDeliveryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, "bad", 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farExpiryDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for farExpiryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, "bad", "TF_FXSWP", false)
+
+// 用例目的：参数 nearDeliveryDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxSwap rejects null nearDeliveryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, date(), 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 nearExpiryDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxSwap rejects null nearExpiryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, date(), "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farDeliveryDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxSwap rejects null farDeliveryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, date(), 2021.06.30, "TF_FXSWP", false)
+
+// 用例目的：参数 farExpiryDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxSwap rejects null farExpiryDate", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, date(), "TF_FXSWP", false)
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxSwap rejects wrong type for tag", exception=1
+caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, 123, false)
+
+// 用例目的：参数 tag 传入空字符串 null —— 实测插件宽松接受、返回空字符串句柄 ""（记录实际行为）
+@testing:case="createFxSwap accepts null tag (no validation, returns empty-string handle)"
+rSwp_nullTag = caplib::createFxSwap("EUR", 1000000.0, "USD", 1176100.0, 2021.04.01, 2021.03.31, "USD", 1000000.0, "EUR", 1176100.0, 2021.07.01, 2021.06.30, string(), false)
+assert 1, typestr(rSwp_nullTag) == "STRING" && rSwp_nullTag == ""
+

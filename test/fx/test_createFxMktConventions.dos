@@ -150,3 +150,16 @@ for (i in 0..(size(labelEnum)-1)) {
     try { caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "SIMPLE_DELTA", "RR_CALL_PUT", labelEnum[i], "TF_FXMC", false); } catch(ex) { okEnum = false; }
 }
 assert 1, okEnum
+
+// ----------------------------------------------------------------------------
+// Review round-3: tag 自身异常校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxMktConventions rejects wrong type for tag", exception=1
+caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", 123, false)
+
+// 用例目的：参数 tag 传入空字符串 null —— 实测插件宽松接受、返回空字符串句柄 ""（记录实际行为）
+@testing:case="createFxMktConventions accepts null tag (no validation, returns empty-string handle)"
+rMc_nullTag = caplib::createFxMktConventions("EURUSD", "ATM_DNS_PIPS", "PIPS_SPOT_DELTA", "PIPS_FORWARD_DELTA", "1Y", "RR_CALL_PUT", "BUTTERFLY_QUOTE", string(), false)
+assert 1, typestr(rMc_nullTag) == "STRING" && rMc_nullTag == ""

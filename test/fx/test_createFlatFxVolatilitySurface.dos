@@ -79,3 +79,16 @@ caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", -1.0, "TF_FLATFV", fal
 rT_returnJson = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.06, "TF_FLATFV", "bad")
 assert 1, typestr(rT_returnJson) != "VOID"
 
+// ----------------------------------------------------------------------------
+// Review round-3: tag 自身异常校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFlatFxVolatilitySurface rejects wrong type for tag", exception=1
+caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.06, 123, false)
+
+// 用例目的：参数 tag 传入空字符串 null —— 实测插件宽松接受、返回空字符串句柄 ""（记录实际行为）
+@testing:case="createFlatFxVolatilitySurface accepts null tag (no validation, returns empty-string handle)"
+rFv_nullTag = caplib::createFlatFxVolatilitySurface(asOfDate, "USDCNH", 0.06, string(), false)
+assert 1, typestr(rFv_nullTag) == "STRING" && rFv_nullTag == ""
+

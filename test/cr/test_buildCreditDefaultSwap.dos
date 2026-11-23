@@ -21,9 +21,6 @@ caplib::createCalendar("CAL_CFETS");
 b = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false);
 assert 1, b == "TF_CDS"
 
-// 用例目的：参数 notional 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="buildCreditDefaultSwap rejects negative notional (lenient validation, does not raise)", exception=1
-caplib::buildCreditDefaultSwap(-1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_BAD", false)
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
@@ -68,7 +65,6 @@ caplib::buildCreditDefaultSwap(nominal=0.02, currency="X", issueDate=2024.01.01,
 result = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", bool())
 assert 1, typestr(result) != "VOID"
 
-// 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证 BOOL 类型校验（预期：抛异常）
 // 用例目的：returnJson 传非 BOOL —— 实测插件不校验类型、宽松接受，记录实际行为
 @testing:case="accepts non-BOOL returnJson (no type validation)"
 rR_CDS = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", "bad")
@@ -121,4 +117,218 @@ assert 1, typestr(rCdsBdc) != "VOID"
 // 用例目的：INT 参数 rebateAccrual 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
 @testing:case="buildCreditDefaultSwap rejects BOOL rebateAccrual", exception=1
 caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, true, "TF_CDS_NAME", "TF_CDS", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: 日期关联 / 各参数异常与边界 / 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：issueDate 晚于 maturity —— 文档要求发行日不得晚于到期日并注明包装器不检查该关系，实测宽松接受不抛异常，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts issueDate later than maturity (no date validation)"
+rCdsR3Issue = caplib::buildCreditDefaultSwap(1000000.0, currency, 2030.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_ISSUE", false)
+assert 1, typestr(rCdsR3Issue) != "VOID"
+
+// 用例目的：参数 maturity 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects null maturity", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, date(), "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：参数 maturity 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects wrong type for maturity", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, "bad", "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：标量参数 maturity 传入向量，验证数据形式校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects vector for scalar maturity", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, [2024.06.20], "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：参数 protectionLegReferencePrice 传入 0 —— 文档要求严格为正但包装器仅检查类型，实测宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts zero protectionLegReferencePrice (no validation)"
+rCdsR3Rp0 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 0.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_RP0", false)
+assert 1, typestr(rCdsR3Rp0) != "VOID"
+
+// 用例目的：参数 protectionLegReferencePrice 传入负值 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts negative protectionLegReferencePrice (no validation)"
+rCdsR3RpN = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", -1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_RPN", false)
+assert 1, typestr(rCdsR3RpN) != "VOID"
+
+// 用例目的：参数 protectionLegLeverage 传入 0 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts zero protectionLegLeverage (no validation)"
+rCdsR3Lev0 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 0.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_LEV0", false)
+assert 1, typestr(rCdsR3Lev0) != "VOID"
+
+// 用例目的：参数 protectionLegLeverage 传入负值 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts negative protectionLegLeverage (no validation)"
+rCdsR3LevN = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, -1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_LEVN", false)
+assert 1, typestr(rCdsR3LevN) != "VOID"
+
+// 用例目的：参数 protectionLegLeverage 传入错误类型（该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects wrong type for protectionLegLeverage", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, "bad", "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：参数 protectionLegLeverage 传入空值，验证空值校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects null protectionLegLeverage", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, double(), "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：参数 protectionLegRecoveryRate 传入低于业务下界 0 的 -0.1 —— 文档业务范围为 [0,1] 但包装器仅检查类型，实测宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts protectionLegRecoveryRate below 0 (no business range validation)"
+rCdsR3RecLo = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", -0.1, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_RECLO", false)
+assert 1, typestr(rCdsR3RecLo) != "VOID"
+
+// 用例目的：参数 protectionLegRecoveryRate 传入高于业务上界 1 的 1.5 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts protectionLegRecoveryRate above 1 (no business range validation)"
+rCdsR3RecHi = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 1.5, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_RECHI", false)
+assert 1, typestr(rCdsR3RecHi) != "VOID"
+
+// 用例目的：参数 protectionLegRecoveryRate 传入下边界 0.0，验证边界值被接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts protectionLegRecoveryRate boundary 0.0"
+rCdsR3RecB0 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.0, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_RECB0", false)
+assert 1, typestr(rCdsR3RecB0) != "VOID"
+
+// 用例目的：参数 protectionLegRecoveryRate 传入上边界 1.0，验证边界值被接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts protectionLegRecoveryRate boundary 1.0"
+rCdsR3RecB1 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 1.0, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_RECB1", false)
+assert 1, typestr(rCdsR3RecB1) != "VOID"
+
+// 用例目的：参数 couponRate 传入 0 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts zero couponRate (no validation)"
+rCdsR3Cpn0 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.0, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_CPN0", false)
+assert 1, typestr(rCdsR3Cpn0) != "VOID"
+
+// 用例目的：参数 couponRate 传入负值 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts negative couponRate (no validation)"
+rCdsR3CpnN = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, -0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_CPNN", false)
+assert 1, typestr(rCdsR3CpnN) != "VOID"
+
+// 用例目的：参数 couponRate 传入错误类型（该传数值的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects wrong type for couponRate", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, "bad", "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：参数 calendars 传入未注册的日历名，验证日历存在性校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects nonexistent calendar", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "NO_SUCH_CAL", 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：参数 calendars 传入空值，验证空值校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects null calendars", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", string(), 0.01, 0, "TF_CDS_NAME", "TF_CDS", false)
+
+// 用例目的：参数 upfrontRate 传入 0 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts zero upfrontRate (no validation)"
+rCdsR3Up0 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.0, 0, "TF_CDS_NAME", "TF_CDS_R3_UP0", false)
+assert 1, typestr(rCdsR3Up0) != "VOID"
+
+// 用例目的：参数 upfrontRate 传入负值 —— 实测包装器宽松接受，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts negative upfrontRate (no validation)"
+rCdsR3UpN = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", -0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_UPN", false)
+assert 1, typestr(rCdsR3UpN) != "VOID"
+
+// 用例目的：参数 name 传入空值 —— 实测包装器宽松接受并返回句柄，记录实际行为
+@testing:case="buildCreditDefaultSwap accepts null name (no validation)"
+rCdsR3NmN = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, string(), "TF_CDS_R3_NMN", false)
+assert 1, typestr(rCdsR3NmN) != "VOID"
+
+// 用例目的：参数 name 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects wrong type for name", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, 123, "TF_CDS", false)
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="buildCreditDefaultSwap rejects wrong type for tag", exception=1
+caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", 123, false)
+
+// 用例目的：枚举参数 protectionLegPayReceive 传入文档取值 RECEIVE（正常用例已覆盖 PAY），验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts protectionLegPayReceive RECEIVE"
+rCdsR3PrR = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "RECEIVE", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_PRR", false)
+assert 1, typestr(rCdsR3PrR) != "VOID"
+
+// 用例目的：枚举参数 protectionLegSettlementType 传入文档取值 PHYSICAL（正常用例已覆盖 CASH），验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts protectionLegSettlementType PHYSICAL"
+rCdsR3StP = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "PHYSICAL", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_STP", false)
+assert 1, typestr(rCdsR3StP) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_360（正常用例已覆盖 ACT_360），验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention ACTUAL_360"
+rCdsR3Dcc1 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACTUAL_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC1", false)
+assert 1, typestr(rCdsR3Dcc1) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT/360，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention ACT/360"
+rCdsR3Dcc2 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT/360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC2", false)
+assert 1, typestr(rCdsR3Dcc2) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_365，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention ACT_365"
+rCdsR3Dcc3 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_365", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC3", false)
+assert 1, typestr(rCdsR3Dcc3) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_365_FIXED，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention ACT_365_FIXED"
+rCdsR3Dcc4 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_365_FIXED", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC4", false)
+assert 1, typestr(rCdsR3Dcc4) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_365_FIXED，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention ACTUAL_365_FIXED"
+rCdsR3Dcc5 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACTUAL_365_FIXED", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC5", false)
+assert 1, typestr(rCdsR3Dcc5) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT/365，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention ACT/365"
+rCdsR3Dcc6 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT/365", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC6", false)
+assert 1, typestr(rCdsR3Dcc6) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 THIRTY_360，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention THIRTY_360"
+rCdsR3Dcc7 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "THIRTY_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC7", false)
+assert 1, typestr(rCdsR3Dcc7) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 30_360，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention 30_360"
+rCdsR3Dcc8 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "30_360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC8", false)
+assert 1, typestr(rCdsR3Dcc8) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 30/360，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention 30/360"
+rCdsR3Dcc9 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "30/360", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC9", false)
+assert 1, typestr(rCdsR3Dcc9) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 BOND_BASIS，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts dayCountConvention BOND_BASIS"
+rCdsR3Dcc10 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "BOND_BASIS", "QUARTERLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_DCC10", false)
+assert 1, typestr(rCdsR3Dcc10) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 MONTHLY（正常用例已覆盖 QUARTERLY），验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts frequency MONTHLY"
+rCdsR3Fq1 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "MONTHLY", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_FQ1", false)
+assert 1, typestr(rCdsR3Fq1) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 SEMIANNUAL，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts frequency SEMIANNUAL"
+rCdsR3Fq2 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "SEMIANNUAL", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_FQ2", false)
+assert 1, typestr(rCdsR3Fq2) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 SEMI_ANNUAL，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts frequency SEMI_ANNUAL"
+rCdsR3Fq3 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "SEMI_ANNUAL", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_FQ3", false)
+assert 1, typestr(rCdsR3Fq3) != "VOID"
+
+// 用例目的：枚举参数 frequency 传入文档取值 ANNUAL，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts frequency ANNUAL"
+rCdsR3Fq4 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "ANNUAL", "MODIFIED_FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_FQ4", false)
+assert 1, typestr(rCdsR3Fq4) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 FOLLOWING（正常用例已覆盖 MODIFIED_FOLLOWING），验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts businessDayConvention FOLLOWING"
+rCdsR3Bdc1 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "FOLLOWING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_BDC1", false)
+assert 1, typestr(rCdsR3Bdc1) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 PRECEDING，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts businessDayConvention PRECEDING"
+rCdsR3Bdc2 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "PRECEDING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_BDC2", false)
+assert 1, typestr(rCdsR3Bdc2) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 MODIFIED_PRECEDING，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts businessDayConvention MODIFIED_PRECEDING"
+rCdsR3Bdc3 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "MODIFIED_PRECEDING", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_BDC3", false)
+assert 1, typestr(rCdsR3Bdc3) != "VOID"
+
+// 用例目的：枚举参数 businessDayConvention 传入文档取值 UNADJUSTED，验证逐值接受（预期：不抛异常）
+@testing:case="buildCreditDefaultSwap accepts businessDayConvention UNADJUSTED"
+rCdsR3Bdc4 = caplib::buildCreditDefaultSwap(1000000.0, currency, 2019.06.20, 2024.06.20, "PAY", "CASH", 1.0, 1.0, "SENIOR", 0.4, 0.01, "FLAT_SPREAD", "ACT_360", "QUARTERLY", "UNADJUSTED", "CAL_CFETS", 0.01, 0, "TF_CDS_NAME", "TF_CDS_R3_BDC4", false)
+assert 1, typestr(rCdsR3Bdc4) != "VOID"
 

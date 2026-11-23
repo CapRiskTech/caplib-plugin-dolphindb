@@ -273,3 +273,47 @@ assert 1, typestr(rBscsBm) != "VOID"
 // 用例目的：INT 参数 calcJacobian 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
 @testing:case="buildBondCreditSpreadCurve rejects BOOL calcJacobian", exception=1
 caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", true, "TF_FI_SPRD", true)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate 与曲线节点日期关系 / buildingMethod 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate 与所引用平价曲线及贴现曲线的节点日期不一致（晚于曲线基准日 2021.07.22）—— 实测宽松接受不抛异常，记录实际行为
+@testing:case="buildBondCreditSpreadCurve accepts asOfDate inconsistent with curve dates (no date validation)"
+rBscsR3D1 = caplib::buildBondCreditSpreadCurve(2022.01.01, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD_R3_D1", true)
+assert 1, isHandleJson(rBscsR3D1, "TF_FI_SPRD_R3_D1")
+
+// 用例目的：asOfDate 晚于相关期限（晚于全部曲线节点及最长 30Y 期限）—— 实测宽松接受不抛异常，记录实际行为
+@testing:case="buildBondCreditSpreadCurve accepts asOfDate later than maturities (no date validation)"
+rBscsR3D2 = caplib::buildBondCreditSpreadCurve(2060.01.01, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING_METHOD", 0, "TF_FI_SPRD_R3_D2", true)
+assert 1, isHandleJson(rBscsR3D2, "TF_FI_SPRD_R3_D2")
+
+// 用例目的：枚举参数 buildingMethod 传入文档取值 BOOTSTRAP（正常用例已覆盖 BOOTSTRAPPING_METHOD），验证逐值接受（预期：不抛异常）
+@testing:case="buildBondCreditSpreadCurve accepts buildingMethod BOOTSTRAP"
+rBscsR3Bm1 = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAP", 0, "TF_FI_SPRD_R3_BM1", true)
+assert 1, isHandleJson(rBscsR3Bm1, "TF_FI_SPRD_R3_BM1")
+
+// 用例目的：枚举参数 buildingMethod 传入文档取值 BOOTSTRAPPING，验证逐值接受（预期：不抛异常）
+@testing:case="buildBondCreditSpreadCurve accepts buildingMethod BOOTSTRAPPING"
+rBscsR3Bm2 = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "BOOTSTRAPPING", 0, "TF_FI_SPRD_R3_BM2", true)
+assert 1, isHandleJson(rBscsR3Bm2, "TF_FI_SPRD_R3_BM2")
+
+// 用例目的：枚举参数 buildingMethod 传入文档取值 GLOBAL_OPTIMIZATION，验证逐值接受（预期：不抛异常）
+@testing:case="buildBondCreditSpreadCurve accepts buildingMethod GLOBAL_OPTIMIZATION"
+rBscsR3Bm3 = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "GLOBAL_OPTIMIZATION", 0, "TF_FI_SPRD_R3_BM3", true)
+assert 1, isHandleJson(rBscsR3Bm3, "TF_FI_SPRD_R3_BM3")
+
+// 用例目的：枚举参数 buildingMethod 传入文档取值 GLOBAL_OPTIMIZATION_METHOD，验证逐值接受（预期：不抛异常）
+@testing:case="buildBondCreditSpreadCurve accepts buildingMethod GLOBAL_OPTIMIZATION_METHOD"
+rBscsR3Bm4 = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "GLOBAL_OPTIMIZATION_METHOD", 0, "TF_FI_SPRD_R3_BM4", true)
+assert 1, isHandleJson(rBscsR3Bm4, "TF_FI_SPRD_R3_BM4")
+
+// 用例目的：枚举参数 buildingMethod 传入文档取值 HYBRID，验证逐值接受（预期：不抛异常）
+@testing:case="buildBondCreditSpreadCurve accepts buildingMethod HYBRID"
+rBscsR3Bm5 = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "HYBRID", 0, "TF_FI_SPRD_R3_BM5", true)
+assert 1, isHandleJson(rBscsR3Bm5, "TF_FI_SPRD_R3_BM5")
+
+// 用例目的：枚举参数 buildingMethod 传入文档取值 HYBRID_METHOD，验证逐值接受（预期：不抛异常）
+@testing:case="buildBondCreditSpreadCurve accepts buildingMethod HYBRID_METHOD"
+rBscsR3Bm6 = caplib::buildBondCreditSpreadCurve(asOfDate, "TF_FI_SPRD_NAME", parCnyMtnAaaSprdStdCfets[0], cnyTreasStdCfets[0], "", "HYBRID_METHOD", 0, "TF_FI_SPRD_R3_BM6", true)
+assert 1, isHandleJson(rBscsR3Bm6, "TF_FI_SPRD_R3_BM6")

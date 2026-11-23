@@ -76,8 +76,8 @@ caplib::createDoubleSharkFinOption(0.02, 0.02, 2024.01.01, 2024.01.01, 0.02, 0.0
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createDoubleSharkFinOption rejects keyword arguments", syntaxError=1
 caplib::createDoubleSharkFinOption(lowerStrike=0.02, upperStrike=0.02, expiry=2024.01.01, delivery=2024.01.01, lowerParticipation=0.02, upperParticipation=0.02, performanceType="X", lowerBarrier=0.02, upperBarrier=0.02, barrierObsType="X", paymentType="X", lowerCashRebate=0.02, lowerAssetRebate=0.02, upperCashRebate=0.02, upperAssetRebate=0.02, settlementDays=1, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createDoubleSharkFinOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createDoubleSharkFinOption accepts all-null vector fixingDates", exception=1
+// 用例目的：fixingDates 传入全空值向量，验证向量空值校验（预期：抛异常；第三轮 review 修正用例名与预期一致）
+@testing:case="createDoubleSharkFinOption rejects all-null vector fixingDates", exception=1
 caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createDoubleSharkFinOption optional returnJson null uses default"
@@ -123,4 +123,95 @@ caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19,
 // 用例目的：参数 settlementDays 传 BOOL 值 true（该传 INT），验证类型严格校验（预期：抛异常）
 @testing:case="createDoubleSharkFinOption rejects BOOL settlementDays", exception=1
 caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_bool_sd", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / 行权价与障碍价关联 / fixing 向量长度 / 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createDoubleSharkFinOption delivery before expiry (no validation)"
+result = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.18, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_dbe", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：lowerStrike 高于 upperStrike，验证行权价关联校验（实测记录行为）
+@testing:case="createDoubleSharkFinOption lowerStrike above upperStrike (no validation)"
+result = caplib::createDoubleSharkFinOption(underlyingPrice*1.05, underlyingPrice*0.95, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_ls_gt_us", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：lowerBarrier 高于 upperBarrier，验证障碍价关联校验（实测记录行为）
+@testing:case="createDoubleSharkFinOption lowerBarrier above upperBarrier (no validation)"
+result = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*1.05, underlyingPrice*0.95, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_lb_gt_ub", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：仅缩短 fixingDates，fixingValues/fixingWeights 保持原长且一致，验证配对长度校验（预期：抛异常）
+@testing:case="createDoubleSharkFinOption rejects fixingDates length mismatch", exception=1
+caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS", dailyObsDates[0:(size(dailyObsDates)-1)], dailyObsValues, dailyObsWeights, false)
+
+// 用例目的：单独改变 fixingValues 长度（比 fixingDates 少一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createDoubleSharkFinOption rejects fixingValues length mismatch", exception=1
+caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS", dailyObsDates, dailyObsValues[0:(size(dailyObsValues)-1)], dailyObsWeights, false)
+
+// 用例目的：单独改变 fixingWeights 长度（比 fixingDates 多一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createDoubleSharkFinOption rejects fixingWeights length mismatch", exception=1
+caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS", dailyObsDates, dailyObsValues, join(dailyObsWeights, 1.0), false)
+
+// 用例目的：performanceType 枚举取值 RELATIVE 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports performanceType value RELATIVE"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "RELATIVE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pt_rel", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：performanceType 枚举取值 RELATIVE_PERFORM_TYPE 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports performanceType value RELATIVE_PERFORM_TYPE"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "RELATIVE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pt_rpt", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：performanceType 枚举取值 ABSOLUTE 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports performanceType value ABSOLUTE"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pt_abs", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：performanceType 枚举取值空串逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports performanceType value empty string"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pt_empty", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：barrierObsType 枚举取值 CONTINUOUS 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports barrierObsType value CONTINUOUS"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "CONTINUOUS", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_bot_c", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：barrierObsType 枚举取值 CONTINUOUS_OBSERVATION_TYPE 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports barrierObsType value CONTINUOUS_OBSERVATION_TYPE"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_bot_cot", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：barrierObsType 枚举取值 DISCRETE 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports barrierObsType value DISCRETE"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_bot_d", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：barrierObsType 枚举取值空串逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports barrierObsType value empty string"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_bot_empty", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：paymentType 枚举取值 PAY_AT_HIT 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports paymentType value PAY_AT_HIT"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_HIT", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pmt_pah", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：paymentType 枚举取值 PAH 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports paymentType value PAH"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAH", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pmt_pah2", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：paymentType 枚举取值 PAM 逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports paymentType value PAM"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAM", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pmt_pam", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：paymentType 枚举取值空串逐值验证（文档合法值，预期接受）
+@testing:case="createDoubleSharkFinOption supports paymentType value empty string"
+r = caplib::createDoubleSharkFinOption(underlyingPrice, underlyingPrice, 2020.08.19, 2020.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", underlyingPrice*0.95, underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_DS_pmt_empty", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(r) != "VOID"
 

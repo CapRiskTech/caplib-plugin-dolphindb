@@ -97,11 +97,10 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
-// 用例目的：startDelay 传负 INT，文档要求非负但拿不准插件是否校验负数——用普通用例记录实际行为（不断言抛异常）
-@testing:case="createIrVanillaSwapTemplate negative INT startDelay behavior"
-negDelayAccepted = true;
-try { caplib::createIrVanillaSwapTemplate("TF_SWTPL", -1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", false); } catch(ex) { negDelayAccepted = false; }
-assert 1, true
+// 用例目的：startDelay 传负 INT，实测包装器不校验非负范围，记录接受行为
+@testing:case="createIrVanillaSwapTemplate accepts negative INT startDelay (no range validation)"
+negDelayResult = caplib::createIrVanillaSwapTemplate("TF_SWTPL_NEG", -1, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", false)
+assert 1, negDelayResult == "TF_SWTPL_NEG"
 
 // ----------------------------------------------------------------------------
 // Review gap-fill-3: returnJson 非 BOOL + startDelay 零值边界
@@ -115,4 +114,16 @@ caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], irFloatingLeg[
 @testing:case="createIrVanillaSwapTemplate accepts zero startDelay"
 rDelay0 = caplib::createIrVanillaSwapTemplate("TF_SWTPL", 0, irFixedLeg[0], irFloatingLeg[0], "SPOTSTART", false)
 assert 1, typestr(rDelay0) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 3): leg2Definition 自身校验（此前仅覆盖 leg1Definition）
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 leg2Definition 传入错误类型（数值而非字符串），验证类型校验（预期：抛异常）
+@testing:case="createIrVanillaSwapTemplate rejects wrong type for leg2Definition", exception=1
+caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], 1, "SPOTSTART", false)
+
+// 用例目的：参数 leg2Definition 传入不存在的句柄字符串，验证句柄存在性校验（预期：抛异常）
+@testing:case="createIrVanillaSwapTemplate rejects nonexistent handle leg2Definition", exception=1
+caplib::createIrVanillaSwapTemplate("TF_SWTPL", 1, irFixedLeg[0], "TF_NO_SUCH_LEG2_r3", "SPOTSTART", false)
 

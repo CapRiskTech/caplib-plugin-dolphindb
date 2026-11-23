@@ -96,9 +96,11 @@ caplib::createBondParCurve([2024.01.01], "X", ["X"], [0.02], "X", "X", false)
 @testing:case="createBondParCurve rejects scalar for vector instrumentNames", exception=1
 caplib::createBondParCurve(asOfDate, currency, "X", cnyTreasBondQuotes, "YIELD_TO_MATURITY", "TF_FI_PAR", true)
 
-// 用例目的：向量参数 instrumentNames 传入部分空值的向量，验证向量空值校验（预期：抛异常）
-@testing:case="createBondParCurve rejects partially-null vector instrumentNames", exception=1
-caplib::createBondParCurve(2024.01.01, "X", ["X", string()], [0.02], "X", "X", false)
+// 用例目的：向量参数 instrumentNames 传入部分空值的向量（与 quotes 等长，隔离长度干扰）——
+// 实测插件不校验空元素、宽松接受，记录实际行为（round-3 修正：原用例两组向量不等长，异常实由长度不一致触发）
+@testing:case="createBondParCurve accepts partially-null vector instrumentNames (no validation)"
+rBpcPn = caplib::createBondParCurve(asOfDate, currency, ["X", string()], [0.02, 0.03], "YIELD_TO_MATURITY", "TF_FI_PAR_PN", false)
+assert 1, typestr(rBpcPn) != "VOID"
 
 // 用例目的：向量参数 instrumentNames 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createBondParCurve rejects empty vector instrumentNames", exception=1
@@ -107,9 +109,11 @@ caplib::createBondParCurve(2024.01.01, "X", take(string, 0), [0.02], "X", "X", f
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createBondParCurve rejects keyword arguments", syntaxError=1
 caplib::createBondParCurve(asOfDate=2024.01.01, currency="X", instrumentNames=["X"], quotes=[0.02], quoteType="X", curveName="X", returnJson=false)
-// 用例目的：向量参数 instrumentNames 传入全部空值的向量，验证向量空值校验（预期：抛异常）
-@testing:case="createBondParCurve rejects all-null vector instrumentNames", exception=1
-caplib::createBondParCurve(asOfDate, currency, [string(), string(), string()], cnyTreasBondQuotes, "YIELD_TO_MATURITY", "TF_FI_PAR", true)
+// 用例目的：向量参数 instrumentNames 传入全部空值的向量（与 quotes 等长，隔离长度干扰）——
+// 实测插件不校验空元素、宽松接受，记录实际行为（round-3 修正：原用例两组向量不等长，异常实由长度不一致触发）
+@testing:case="createBondParCurve accepts all-null vector instrumentNames (no validation)"
+rBpcAn = caplib::createBondParCurve(asOfDate, currency, [string(), string()], [0.02, 0.03], "YIELD_TO_MATURITY", "TF_FI_PAR_AN", true)
+assert 1, typestr(rBpcAn) != "VOID"
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createBondParCurve optional returnJson null uses default"
 result = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "YIELD_TO_MATURITY", "TF_FI_PAR", bool())
@@ -117,11 +121,72 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：可选参数 returnJson 传入错误类型（该传布尔值的传字符串），验证类型校验（预期：抛异常）
 @testing:case="createBondParCurve rejects wrong type for returnJson", exception=1
 caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "YIELD_TO_MATURITY", "TF_FI_PAR", "bad")
-// 用例目的：遍历 quoteType 已确认被接受的合法取值，逐一调用验证均不被拒绝（标签取本文件成功用例已用者）
-@testing:case="createBondParCurve supports quoteType enums"
+// 用例目的：遍历 quoteType 已确认被接受的合法取值子集，逐一调用验证均不被拒绝（标签取本文件成功用例已用者；其余文档取值 round-3 已逐值单独覆盖）
+@testing:case="createBondParCurve supports accepted quoteType subset"
 quoteTypeLabels = ["YIELD_TO_MATURITY"]
 okQuoteType = true;
 for (i in 0..(size(quoteTypeLabels)-1)) {
     try { caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, quoteTypeLabels[i], "TF_FI_PAR", false); } catch(ex) { okQuoteType = false; }
 }
 assert 1, okQuoteType
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: quotes / curveName 自身校验 + quoteType 文档取值逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：向量参数 quotes 传入错误类型（STRING 向量），验证元素类型校验（预期：抛异常）
+@testing:case="createBondParCurve rejects wrong type for quotes", exception=1
+caplib::createBondParCurve(asOfDate, currency, ["A", "B"], ["0.02", "0.03"], "YIELD_TO_MATURITY", "TF_FI_PAR_QT", false)
+
+// 用例目的：向量参数 quotes 传入部分空值的向量 —— 实测插件不校验空元素、宽松接受，记录实际行为
+@testing:case="createBondParCurve accepts partially-null vector quotes (no validation)"
+rBpcPq = caplib::createBondParCurve(asOfDate, currency, ["A", "B"], [0.02, double()], "YIELD_TO_MATURITY", "TF_FI_PAR_PQ", false)
+assert 1, typestr(rBpcPq) != "VOID"
+
+// 用例目的：向量参数 quotes 传入全部空值的向量 —— 实测插件不校验空元素、宽松接受，记录实际行为
+@testing:case="createBondParCurve accepts all-null vector quotes (no validation)"
+rBpcAq = caplib::createBondParCurve(asOfDate, currency, ["A", "B"], [double(), double()], "YIELD_TO_MATURITY", "TF_FI_PAR_AQ", false)
+assert 1, typestr(rBpcAq) != "VOID"
+
+// 用例目的：向量参数 quotes 传入长度为 0 的空向量（instrumentNames 同为空向量），验证空向量校验（实测抛异常）
+@testing:case="createBondParCurve rejects empty vector quotes", exception=1
+caplib::createBondParCurve(asOfDate, currency, take(string, 0), take(double, 0), "YIELD_TO_MATURITY", "TF_FI_PAR_EQ", false)
+
+// 用例目的：参数 curveName 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createBondParCurve rejects wrong type for curveName", exception=1
+caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "YIELD_TO_MATURITY", 1, false)
+
+// 用例目的：参数 curveName 传入对应类型的空值 —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="createBondParCurve accepts null curveName (no validation)"
+rBpcNc = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "YIELD_TO_MATURITY", string(), false)
+assert 1, typestr(rBpcNc) != "VOID"
+
+// 用例目的：quoteType 传入文档取值 YIELD，逐一验证被接受
+@testing:case="createBondParCurve supports quoteType YIELD"
+rBpcQ1 = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "YIELD", "TF_FI_PAR_R3", false)
+assert 1, typestr(rBpcQ1) != "VOID"
+
+// 用例目的：quoteType 传入文档取值 YTM，逐一验证被接受
+@testing:case="createBondParCurve supports quoteType YTM"
+rBpcQ2 = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "YTM", "TF_FI_PAR_R3", false)
+assert 1, typestr(rBpcQ2) != "VOID"
+
+// 用例目的：quoteType 传入文档取值 CLEAN，逐一验证被接受
+@testing:case="createBondParCurve supports quoteType CLEAN"
+rBpcQ3 = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "CLEAN", "TF_FI_PAR_R3", false)
+assert 1, typestr(rBpcQ3) != "VOID"
+
+// 用例目的：quoteType 传入文档取值 CLEAN_PRICE，逐一验证被接受
+@testing:case="createBondParCurve supports quoteType CLEAN_PRICE"
+rBpcQ4 = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "CLEAN_PRICE", "TF_FI_PAR_R3", false)
+assert 1, typestr(rBpcQ4) != "VOID"
+
+// 用例目的：quoteType 传入文档取值 DIRTY，逐一验证被接受
+@testing:case="createBondParCurve supports quoteType DIRTY"
+rBpcQ5 = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "DIRTY", "TF_FI_PAR_R3", false)
+assert 1, typestr(rBpcQ5) != "VOID"
+
+// 用例目的：quoteType 传入文档取值 DIRTY_PRICE，逐一验证被接受
+@testing:case="createBondParCurve supports quoteType DIRTY_PRICE"
+rBpcQ6 = caplib::createBondParCurve(asOfDate, currency, cnyTreasBondNames, cnyTreasBondQuotes, "DIRTY_PRICE", "TF_FI_PAR_R3", false)
+assert 1, typestr(rBpcQ6) != "VOID"

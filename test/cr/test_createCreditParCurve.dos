@@ -52,9 +52,9 @@ caplib::createCreditParCurve(date(), "X", "X", ["X"], ["X"], ["X"], [0.02], ["X"
 @testing:case="createCreditParCurve rejects vector for scalar asOfDate", exception=1
 caplib::createCreditParCurve([2024.01.01], "X", "X", ["X"], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
 
-// 用例目的：向量参数 instrumentNames 传入部分空值的向量，验证向量空值校验（预期：抛异常）
+// 用例目的：向量参数 instrumentNames 传入部分空值的向量（五组向量长度保持一致，隔离长度不匹配影响），验证向量空值校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects partially-null vector instrumentNames", exception=1
-caplib::createCreditParCurve(2024.01.01, "X", "X", ["X", string()], ["X"], ["X"], [0.02], ["X"], "TF_createCreditParCurve_H", false)
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA", string(), "CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
 
 // 用例目的：向量参数 instrumentNames 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createCreditParCurve rejects empty vector instrumentNames", exception=1
@@ -63,8 +63,8 @@ caplib::createCreditParCurve(2024.01.01, "X", "X", take(string, 0), ["X"], ["X"]
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createCreditParCurve rejects keyword arguments", syntaxError=1
 caplib::createCreditParCurve(asOfDate=2024.01.01, currency="X", curveName="X", instrumentNames=["X"], instrumentTypes=["X"], maturities=["X"], quotes=[0.02], startConventions=["X"], handle="TF_createCreditParCurve_H", returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createCreditParCurve accepts all-null vector instrumentNames", exception=1
+// 用例目的：向量参数 instrumentNames 传入全部空值的向量（五组向量长度一致）—— 实测插件抛异常，记录实际行为（预期：抛异常）
+@testing:case="createCreditParCurve rejects all-null vector instrumentNames", exception=1
 caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", [string(), string(), string()], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createCreditParCurve optional returnJson null uses default"
@@ -97,3 +97,376 @@ assert 1, typestr(rCpcIt) != "VOID"
 @testing:case="createCreditParCurve accepts invalid enum for startConventions (falls back to default)"
 rCpcSc = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","NOT_A_REAL_ENUM","SPOTSTART"], "TF_CPC_FB_SC", false)
 assert 1, typestr(rCpcSc) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: 各向量参数长度关联与独立校验 / 期限格式 / 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：两个成对数组参数长度不一致（maturities 少一个元素），验证参数间关系校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects maturities length mismatch", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
+
+// 用例目的：两个成对数组参数长度不一致（quotes 多一个元素），验证参数间关系校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects quotes length mismatch", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012,0.014], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
+
+// 用例目的：两个成对数组参数长度不一致（startConventions 少一个元素），验证参数间关系校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects startConventions length mismatch", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART"], "TF_CPC", false)
+
+// 用例目的：向量参数 maturities 传入错误类型的向量（INT 向量），验证元素类型校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects wrong type for maturities", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], [1, 3, 5], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
+
+// 用例目的：向量参数 maturities 传入部分空值的向量 —— 实测包装器宽松接受，记录实际行为
+@testing:case="createCreditParCurve accepts partially-null vector maturities (no validation)"
+rCpcR3MatN = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y", string(), "5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_MATN", false)
+assert 1, typestr(rCpcR3MatN) != "VOID"
+
+// 用例目的：向量参数 maturities 传入不符合文档格式的字符串（小数 1.5Y）—— 实测包装器宽松接受，记录实际行为
+@testing:case="createCreditParCurve accepts maturities fractional format 1.5Y (no validation)"
+rCpcR3MatF = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1.5Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_MATF", false)
+assert 1, typestr(rCpcR3MatF) != "VOID"
+
+// 用例目的：向量参数 maturities 传入不符合文档格式的字符串（XYZ）—— 实测包装器宽松接受，记录实际行为
+@testing:case="createCreditParCurve accepts maturities malformed XYZ (no validation)"
+rCpcR3MatX = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["XYZ","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_MATX", false)
+assert 1, typestr(rCpcR3MatX) != "VOID"
+
+// 用例目的：向量参数 quotes 传入错误类型的向量（STRING 向量），验证元素类型校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects wrong type for quotes", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], ["a","b","c"], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC", false)
+
+// 用例目的：向量参数 quotes 传入部分空值的向量 —— 实测包装器宽松接受，记录实际行为
+@testing:case="createCreditParCurve accepts partially-null vector quotes (no validation)"
+rCpcR3Qn = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008, double(), 0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_QN", false)
+assert 1, typestr(rCpcR3Qn) != "VOID"
+
+// 用例目的：向量参数 startConventions 传入错误类型的向量（INT 向量），验证元素类型校验（预期：抛异常）
+@testing:case="createCreditParCurve rejects wrong type for startConventions", exception=1
+caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], [1, 2, 3], "TF_CPC", false)
+
+// 用例目的：向量参数 startConventions 传入部分空值的向量 —— 实测包装器宽松接受，记录实际行为
+@testing:case="createCreditParCurve accepts partially-null vector startConventions (no validation)"
+rCpcR3ScN = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART", string(), "SPOTSTART"], "TF_CPC_R3_SCN", false)
+assert 1, typestr(rCpcR3ScN) != "VOID"
+
+// 用例目的：枚举向量参数 startConventions 传入文档取值 TODAYSTART（正常用例已覆盖 SPOTSTART），验证逐值接受（预期：不抛异常）
+@testing:case="createCreditParCurve accepts startConventions TODAYSTART"
+rCpcR3ScT = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["TODAYSTART","TODAYSTART","TODAYSTART"], "TF_CPC_R3_SCT", false)
+assert 1, typestr(rCpcR3ScT) != "VOID"
+
+// 用例目的：枚举向量参数 startConventions 传入文档取值 TOMORROWSTART，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditParCurve accepts startConventions TOMORROWSTART"
+rCpcR3ScM = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["TOMORROWSTART","TOMORROWSTART","TOMORROWSTART"], "TF_CPC_R3_SCM", false)
+assert 1, typestr(rCpcR3ScM) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 DEPOSIT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes DEPOSIT"
+rCpcR3It01 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["DEPOSIT","DEPOSIT","DEPOSIT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT01", false)
+assert 1, typestr(rCpcR3It01) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FORWARD_RATE_AGREEMENT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FORWARD_RATE_AGREEMENT"
+rCpcR3It02 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FORWARD_RATE_AGREEMENT","FORWARD_RATE_AGREEMENT","FORWARD_RATE_AGREEMENT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT02", false)
+assert 1, typestr(rCpcR3It02) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_VANILLA_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_VANILLA_SWAP"
+rCpcR3It03 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_VANILLA_SWAP","IR_VANILLA_SWAP","IR_VANILLA_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT03", false)
+assert 1, typestr(rCpcR3It03) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 OVERNIGHT_INDEX_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes OVERNIGHT_INDEX_SWAP"
+rCpcR3It04 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["OVERNIGHT_INDEX_SWAP","OVERNIGHT_INDEX_SWAP","OVERNIGHT_INDEX_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT04", false)
+assert 1, typestr(rCpcR3It04) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CROSS_CURRENCY_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CROSS_CURRENCY_SWAP"
+rCpcR3It05 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CROSS_CURRENCY_SWAP","CROSS_CURRENCY_SWAP","CROSS_CURRENCY_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT05", false)
+assert 1, typestr(rCpcR3It05) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 MTM_CROSS_CURRENCY_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes MTM_CROSS_CURRENCY_SWAP"
+rCpcR3It06 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["MTM_CROSS_CURRENCY_SWAP","MTM_CROSS_CURRENCY_SWAP","MTM_CROSS_CURRENCY_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT06", false)
+assert 1, typestr(rCpcR3It06) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 STD_CROSS_CURRENCY_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes STD_CROSS_CURRENCY_SWAP"
+rCpcR3It07 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["STD_CROSS_CURRENCY_SWAP","STD_CROSS_CURRENCY_SWAP","STD_CROSS_CURRENCY_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT07", false)
+assert 1, typestr(rCpcR3It07) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_BOND（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_BOND"
+rCpcR3It08 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_BOND","IR_BOND","IR_BOND"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT08", false)
+assert 1, typestr(rCpcR3It08) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 NON_DELIVERABLE_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes NON_DELIVERABLE_SWAP"
+rCpcR3It09 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["NON_DELIVERABLE_SWAP","NON_DELIVERABLE_SWAP","NON_DELIVERABLE_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT09", false)
+assert 1, typestr(rCpcR3It09) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_EUROPEAN_SWAPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_EUROPEAN_SWAPTION"
+rCpcR3It10 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_EUROPEAN_SWAPTION","IR_EUROPEAN_SWAPTION","IR_EUROPEAN_SWAPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT10", false)
+assert 1, typestr(rCpcR3It10) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_CAP_FLOOR（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_CAP_FLOOR"
+rCpcR3It11 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_CAP_FLOOR","IR_CAP_FLOOR","IR_CAP_FLOOR"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT11", false)
+assert 1, typestr(rCpcR3It11) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_FUTURE（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_FUTURE"
+rCpcR3It12 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_FUTURE","IR_FUTURE","IR_FUTURE"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT12", false)
+assert 1, typestr(rCpcR3It12) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_FUTURE_IMM（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_FUTURE_IMM"
+rCpcR3It13 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_FUTURE_IMM","IR_FUTURE_IMM","IR_FUTURE_IMM"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT13", false)
+assert 1, typestr(rCpcR3It13) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_FUTURE_ASX（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_FUTURE_ASX"
+rCpcR3It14 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_FUTURE_ASX","IR_FUTURE_ASX","IR_FUTURE_ASX"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT14", false)
+assert 1, typestr(rCpcR3It14) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_VANILLA_BOND（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_VANILLA_BOND"
+rCpcR3It15 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_VANILLA_BOND","IR_VANILLA_BOND","IR_VANILLA_BOND"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT15", false)
+assert 1, typestr(rCpcR3It15) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IMM_FORWARD_RATE_AGREEMENT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IMM_FORWARD_RATE_AGREEMENT"
+rCpcR3It16 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IMM_FORWARD_RATE_AGREEMENT","IMM_FORWARD_RATE_AGREEMENT","IMM_FORWARD_RATE_AGREEMENT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT16", false)
+assert 1, typestr(rCpcR3It16) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_BOND_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_BOND_OPTION"
+rCpcR3It17 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_BOND_OPTION","IR_BOND_OPTION","IR_BOND_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT17", false)
+assert 1, typestr(rCpcR3It17) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_RANGEACCRUAL_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_RANGEACCRUAL_SWAP"
+rCpcR3It18 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_RANGEACCRUAL_SWAP","IR_RANGEACCRUAL_SWAP","IR_RANGEACCRUAL_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT18", false)
+assert 1, typestr(rCpcR3It18) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 IR_STRUCTURED_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes IR_STRUCTURED_SWAP"
+rCpcR3It19 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["IR_STRUCTURED_SWAP","IR_STRUCTURED_SWAP","IR_STRUCTURED_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT19", false)
+assert 1, typestr(rCpcR3It19) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_SPOT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_SPOT"
+rCpcR3It20 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_SPOT","FX_SPOT","FX_SPOT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT20", false)
+assert 1, typestr(rCpcR3It20) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_FORWARD（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_FORWARD"
+rCpcR3It21 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_FORWARD","FX_FORWARD","FX_FORWARD"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT21", false)
+assert 1, typestr(rCpcR3It21) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_NON_DELIVERABLE_FORWARD（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_NON_DELIVERABLE_FORWARD"
+rCpcR3It22 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_NON_DELIVERABLE_FORWARD","FX_NON_DELIVERABLE_FORWARD","FX_NON_DELIVERABLE_FORWARD"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT22", false)
+assert 1, typestr(rCpcR3It22) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_SWAP"
+rCpcR3It23 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_SWAP","FX_SWAP","FX_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT23", false)
+assert 1, typestr(rCpcR3It23) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_SWAP_ON（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_SWAP_ON"
+rCpcR3It24 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_SWAP_ON","FX_SWAP_ON","FX_SWAP_ON"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT24", false)
+assert 1, typestr(rCpcR3It24) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_SWAP_TN（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_SWAP_TN"
+rCpcR3It25 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_SWAP_TN","FX_SWAP_TN","FX_SWAP_TN"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT25", false)
+assert 1, typestr(rCpcR3It25) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_EUROPEAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_EUROPEAN_OPTION"
+rCpcR3It26 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_EUROPEAN_OPTION","FX_EUROPEAN_OPTION","FX_EUROPEAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT26", false)
+assert 1, typestr(rCpcR3It26) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_TIME_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_TIME_OPTION"
+rCpcR3It27 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_TIME_OPTION","FX_TIME_OPTION","FX_TIME_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT27", false)
+assert 1, typestr(rCpcR3It27) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_DIGITAL_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_DIGITAL_OPTION"
+rCpcR3It28 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_DIGITAL_OPTION","FX_DIGITAL_OPTION","FX_DIGITAL_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT28", false)
+assert 1, typestr(rCpcR3It28) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_QUANTO_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_QUANTO_OPTION"
+rCpcR3It29 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_QUANTO_OPTION","FX_QUANTO_OPTION","FX_QUANTO_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT29", false)
+assert 1, typestr(rCpcR3It29) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_TOUCH_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_TOUCH_OPTION"
+rCpcR3It30 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_TOUCH_OPTION","FX_TOUCH_OPTION","FX_TOUCH_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT30", false)
+assert 1, typestr(rCpcR3It30) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_BARRIER_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_BARRIER_OPTION"
+rCpcR3It31 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_BARRIER_OPTION","FX_BARRIER_OPTION","FX_BARRIER_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT31", false)
+assert 1, typestr(rCpcR3It31) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_VANILLA_STRATEGY（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_VANILLA_STRATEGY"
+rCpcR3It32 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_VANILLA_STRATEGY","FX_VANILLA_STRATEGY","FX_VANILLA_STRATEGY"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT32", false)
+assert 1, typestr(rCpcR3It32) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_TOUCH_QUANTO_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_TOUCH_QUANTO_OPTION"
+rCpcR3It33 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_TOUCH_QUANTO_OPTION","FX_TOUCH_QUANTO_OPTION","FX_TOUCH_QUANTO_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT33", false)
+assert 1, typestr(rCpcR3It33) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FX_DIGITAL_QUANTO_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FX_DIGITAL_QUANTO_OPTION"
+rCpcR3It34 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FX_DIGITAL_QUANTO_OPTION","FX_DIGITAL_QUANTO_OPTION","FX_DIGITAL_QUANTO_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT34", false)
+assert 1, typestr(rCpcR3It34) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_INDEX_FUTURE（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_INDEX_FUTURE"
+rCpcR3It35 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_INDEX_FUTURE","EQ_INDEX_FUTURE","EQ_INDEX_FUTURE"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT35", false)
+assert 1, typestr(rCpcR3It35) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_EUROPEAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_EUROPEAN_OPTION"
+rCpcR3It36 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_EUROPEAN_OPTION","EQ_EUROPEAN_OPTION","EQ_EUROPEAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT36", false)
+assert 1, typestr(rCpcR3It36) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_AMERICAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_AMERICAN_OPTION"
+rCpcR3It37 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_AMERICAN_OPTION","EQ_AMERICAN_OPTION","EQ_AMERICAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT37", false)
+assert 1, typestr(rCpcR3It37) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_SPOT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_SPOT"
+rCpcR3It38 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_SPOT","EQ_SPOT","EQ_SPOT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT38", false)
+assert 1, typestr(rCpcR3It38) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_VANILLA_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_VANILLA_OPTION"
+rCpcR3It39 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_VANILLA_OPTION","EQ_VANILLA_OPTION","EQ_VANILLA_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT39", false)
+assert 1, typestr(rCpcR3It39) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_DIGITAL_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_DIGITAL_OPTION"
+rCpcR3It40 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_DIGITAL_OPTION","EQ_DIGITAL_OPTION","EQ_DIGITAL_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT40", false)
+assert 1, typestr(rCpcR3It40) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_BARRIER_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_BARRIER_OPTION"
+rCpcR3It41 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_BARRIER_OPTION","EQ_BARRIER_OPTION","EQ_BARRIER_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT41", false)
+assert 1, typestr(rCpcR3It41) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_RANGE_ACCRUAL_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_RANGE_ACCRUAL_OPTION"
+rCpcR3It42 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_RANGE_ACCRUAL_OPTION","EQ_RANGE_ACCRUAL_OPTION","EQ_RANGE_ACCRUAL_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT42", false)
+assert 1, typestr(rCpcR3It42) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_TOUCH_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_TOUCH_OPTION"
+rCpcR3It43 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_TOUCH_OPTION","EQ_TOUCH_OPTION","EQ_TOUCH_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT43", false)
+assert 1, typestr(rCpcR3It43) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EQ_QUANTO_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EQ_QUANTO_OPTION"
+rCpcR3It44 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EQ_QUANTO_OPTION","EQ_QUANTO_OPTION","EQ_QUANTO_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT44", false)
+assert 1, typestr(rCpcR3It44) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_SPOT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_SPOT"
+rCpcR3It45 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_SPOT","CM_SPOT","CM_SPOT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT45", false)
+assert 1, typestr(rCpcR3It45) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_FUTURE（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_FUTURE"
+rCpcR3It46 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_FUTURE","CM_FUTURE","CM_FUTURE"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT46", false)
+assert 1, typestr(rCpcR3It46) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_EUROPEAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_EUROPEAN_OPTION"
+rCpcR3It47 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_EUROPEAN_OPTION","CM_EUROPEAN_OPTION","CM_EUROPEAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT47", false)
+assert 1, typestr(rCpcR3It47) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_AMERICAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_AMERICAN_OPTION"
+rCpcR3It48 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_AMERICAN_OPTION","CM_AMERICAN_OPTION","CM_AMERICAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT48", false)
+assert 1, typestr(rCpcR3It48) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_VANILLA_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_VANILLA_OPTION"
+rCpcR3It49 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_VANILLA_OPTION","CM_VANILLA_OPTION","CM_VANILLA_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT49", false)
+assert 1, typestr(rCpcR3It49) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_ASIAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_ASIAN_OPTION"
+rCpcR3It50 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_ASIAN_OPTION","CM_ASIAN_OPTION","CM_ASIAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT50", false)
+assert 1, typestr(rCpcR3It50) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_DIGITAL_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_DIGITAL_OPTION"
+rCpcR3It51 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_DIGITAL_OPTION","CM_DIGITAL_OPTION","CM_DIGITAL_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT51", false)
+assert 1, typestr(rCpcR3It51) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_SWAP"
+rCpcR3It52 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_SWAP","CM_SWAP","CM_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT52", false)
+assert 1, typestr(rCpcR3It52) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CM_DIGITAL_ASIAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CM_DIGITAL_ASIAN_OPTION"
+rCpcR3It53 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CM_DIGITAL_ASIAN_OPTION","CM_DIGITAL_ASIAN_OPTION","CM_DIGITAL_ASIAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT53", false)
+assert 1, typestr(rCpcR3It53) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 PM_SPOT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes PM_SPOT"
+rCpcR3It54 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["PM_SPOT","PM_SPOT","PM_SPOT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT54", false)
+assert 1, typestr(rCpcR3It54) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 PM_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes PM_SWAP"
+rCpcR3It55 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["PM_SWAP","PM_SWAP","PM_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT55", false)
+assert 1, typestr(rCpcR3It55) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 CREDIT_DEFAULT_SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes CREDIT_DEFAULT_SWAP"
+rCpcR3It56 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP","CREDIT_DEFAULT_SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT56", false)
+assert 1, typestr(rCpcR3It56) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 SPOT（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes SPOT"
+rCpcR3It57 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["SPOT","SPOT","SPOT"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT57", false)
+assert 1, typestr(rCpcR3It57) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FUTURE（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FUTURE"
+rCpcR3It58 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FUTURE","FUTURE","FUTURE"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT58", false)
+assert 1, typestr(rCpcR3It58) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 FORWARD（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes FORWARD"
+rCpcR3It59 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["FORWARD","FORWARD","FORWARD"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT59", false)
+assert 1, typestr(rCpcR3It59) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 SWAP（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes SWAP"
+rCpcR3It60 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["SWAP","SWAP","SWAP"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT60", false)
+assert 1, typestr(rCpcR3It60) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 EUROPEAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes EUROPEAN_OPTION"
+rCpcR3It61 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["EUROPEAN_OPTION","EUROPEAN_OPTION","EUROPEAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT61", false)
+assert 1, typestr(rCpcR3It61) != "VOID"
+
+// 用例目的：枚举向量参数 instrumentTypes 逐值验证文档取值 AMERICAN_OPTION（预期：不抛异常）
+@testing:case="createCreditParCurve accepts instrumentTypes AMERICAN_OPTION"
+rCpcR3It62 = caplib::createCreditParCurve(asOfDate, currency, "BOND_CREDIT", ["CFETS-SHCH-GTJA","CFETS-SHCH-GTJA","CFETS-SHCH-GTJA"], ["AMERICAN_OPTION","AMERICAN_OPTION","AMERICAN_OPTION"], ["1Y","3Y","5Y"], [0.008,0.010,0.012], ["SPOTSTART","SPOTSTART","SPOTSTART"], "TF_CPC_R3_IT62", false)
+assert 1, typestr(rCpcR3It62) != "VOID"

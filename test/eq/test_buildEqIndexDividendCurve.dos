@@ -64,7 +64,7 @@ caplib::buildEqIndexDividendCurve(asOfDate, take(date, 0), array(DOUBLE,0), idxO
 caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, [double(), double(), double()], idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv", false)
 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="buildEqIndexDividendCurve rejects empty vector futurePrices (lenient validation, does not raise)"
+@testing:case="buildEqIndexDividendCurve accepts empty vector futurePrices (no validation)"
 result = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, take(double, 0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv", false)
 assert 1, typestr(result) != "VOID"
 
@@ -106,9 +106,10 @@ caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), id
 caplib::buildEqIndexDividendCurve([2021.07.22], quoteTermDates, array(DOUBLE,0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv", false);
 
 // ----------------------------------------------------------------------------
-// 用例目的：句柄参数 discountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+// 用例目的：句柄参数 discountCurveHandle 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）。
+// 第三轮 review 修正：此前误将不存在的句柄传到第 5 个参数 spot，现改到第 6 个参数 discountCurveHandle。
 @testing:case="buildEqIndexDividendCurve rejects nonexistent handle discountCurveHandle", exception=1
-caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), idxOptionPrices, "TF_NO_SUCH_HANDLE_buildEqIndexDividendCurve", irCurve, "f_idxdiv", false)
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), idxOptionPrices, underlyingPrice, "TF_NO_SUCH_HANDLE_buildEqIndexDividendCurve", "f_idxdiv", false)
 
 // ----------------------------------------------------------------------------
 // 用例目的：两个数组参数长度不一致（termDates 多一个元素），实测插件宽松接受——记录实际行为
@@ -132,3 +133,44 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="buildEqIndexDividendCurve rejects wrong type for handle", exception=1
 caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE, 0), idxOptionPrices, underlyingPrice, irCurve, 123, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：optionPrices 独立校验 / futurePrices 长度关系 / 日期先后关系
+// ----------------------------------------------------------------------------
+
+// 用例目的：optionPrices 传入错误类型（该传表的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildEqIndexDividendCurve rejects wrong type for optionPrices", exception=1
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE,0), "bad", underlyingPrice, irCurve, "f_idxdiv", false)
+
+// 用例目的：optionPrices 传入缺列的表结构（缺 price 列），验证表结构校验（预期：抛异常）
+@testing:case="buildEqIndexDividendCurve rejects optionPrices table missing price column", exception=1
+badOptTable = table([quoteTermDates[0], quoteTermDates[1]] as expiry, [2.9, 2.9] as strike, ["CALL","PUT"] as optionType)
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE,0), badOptTable, underlyingPrice, irCurve, "f_idxdiv", false)
+
+// 用例目的：optionPrices 的 expiry 日期与 termDates 不匹配（日期均不在 termDates 内），实测插件不校验日期匹配——记录实际行为
+@testing:case="buildEqIndexDividendCurve optionPrices expiry dates mismatch with termDates (no validation)"
+result = caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, array(DOUBLE,0), table([2020.03.31, 2020.03.31, 2020.06.30, 2020.06.30] as expiry, [2.9, 2.9, 2.9, 2.9] as strike, ["CALL","PUT","CALL","PUT"] as optionType, [0.02, 0.02, 0.03, 0.03] as price), underlyingPrice, irCurve, "f_idxdiv_odmm", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：futurePrices（非空）长度长于 termDates，验证长度关系校验（预期：抛异常）
+@testing:case="buildEqIndexDividendCurve rejects futurePrices longer than termDates", exception=1
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, [2.9, 2.95, 3.0, 3.05, 3.1], idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv_fpl", false)
+
+// 用例目的：futurePrices（非空）长度短于 termDates，验证长度关系校验（预期：抛异常）
+@testing:case="buildEqIndexDividendCurve rejects futurePrices shorter than termDates", exception=1
+caplib::buildEqIndexDividendCurve(asOfDate, quoteTermDates, [2.9, 2.95, 3.0], idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv_fps", false)
+
+// 用例目的：asOfDate 晚于 termDates 最后期限，验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="buildEqIndexDividendCurve asOfDate after termDates (no validation)"
+result = caplib::buildEqIndexDividendCurve(2020.10.01, quoteTermDates, array(DOUBLE,0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv_ao", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：termDates 非递增（倒序），验证排序校验（文档注明包装器不检查，实测记录行为）
+@testing:case="buildEqIndexDividendCurve non-increasing termDates (no validation)"
+result = caplib::buildEqIndexDividendCurve(asOfDate, [2020.09.23, 2020.06.24, 2020.03.25, 2020.02.26], array(DOUBLE,0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv_ni", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：termDates 含重复日期，验证唯一性校验（文档注明包装器不检查，实测记录行为）
+@testing:case="buildEqIndexDividendCurve duplicate termDates (no validation)"
+result = caplib::buildEqIndexDividendCurve(asOfDate, [2020.02.26, 2020.02.26, 2020.06.24, 2020.09.23], array(DOUBLE,0), idxOptionPrices, underlyingPrice, irCurve, "f_idxdiv_dup", false)
+assert 1, typestr(result) != "VOID"

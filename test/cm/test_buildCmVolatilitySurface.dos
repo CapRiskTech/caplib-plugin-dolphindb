@@ -264,3 +264,13 @@ caplib::buildCmVolatilitySurface(asOfDate, underlying, volSurfDefinition[0], "TF
 // 用例目的：句柄参数 definitionHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildCmVolatilitySurface rejects wrong object type for definitionHandle", exception=1
 caplib::buildCmVolatilitySurface(asOfDate, underlying, cmOptionQuotes[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL", true)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate 晚于报价矩阵期限日期的服务层实际行为
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate（2021.01.01）晚于报价矩阵 termDates 中最晚到期日（2020.09.11）。
+// 中文文档要求参考日期不得晚于相关到期日，且注明包装器不检查该关系；
+// 实测服务层校验该日期关系并抛异常，记录此实际行为（预期：抛异常）。
+@testing:case="buildCmVolatilitySurface rejects asOfDate after quote matrix term dates (service-level)", exception=1
+caplib::buildCmVolatilitySurface(2021.01.01, underlying, volSurfDefinition[0], cmOptionQuotes[0], underlyingPrices, irCurve, fwdCurve, volSurfBuildSettings[0], "TF_CM_VOL_LATE", true)

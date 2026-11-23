@@ -242,8 +242,8 @@ caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, 
 rXCCY_scnN = caplib::priceIrCrossCurrencySwap(xinst, irAsOfDate, xmkt[0], irPricingSettings, irXccyRisk[0], "TF_NO_SUCH_HANDLE_SCN", "", true)
 assert 1, typestr(rXCCY_scnN) != "VOID"
 
-// 用例目的：asOfDate 晚于工具到期/结束日，文档注明包装器不检查此关系，记录实际行为
-@testing:case="priceIrCrossCurrencySwap late asOfDate records behavior"
-latePrice = "skip";
-try { rlp = caplib::priceIrCrossCurrencySwap(xinst, 2024.01.01, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true); latePrice = "accepted"; } catch(ex) { latePrice = "rejected"; }
-assert 1, true
+// 用例目的：asOfDate 晚于工具到期/结束日（2024.01.01 晚于 2023.03.07 到期），文档注明包装器不检查此关系，
+//            定价引擎同样接受该输入，固定断言返回定价结果句柄与 json
+@testing:case="priceIrCrossCurrencySwap accepts late asOfDate (wrapper does not check)"
+rlp = caplib::priceIrCrossCurrencySwap(xinst, 2024.01.01, xmkt[0], irPricingSettings, irXccyRisk[0], "", "", true)
+assert 1, isPricingResultsJson(rlp, "TF_XINST_results")

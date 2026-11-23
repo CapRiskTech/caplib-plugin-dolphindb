@@ -90,7 +90,7 @@ assert 1, typestr(resRateZero) != "VOID" && resRateZero == "TF_FIR_RATE_ZERO"
 resRateNeg = caplib::createFlatIrYieldCurve(irAsOfDate, "CNY", -1.0, "TF_FIR_RATE_NEG", false)
 assert 1, typestr(resRateNeg) != "VOID" && resRateNeg == "TF_FIR_RATE_NEG"
 
-// 用例目的：asOfDate 传晚于到期/结束日的日期（文档：不得晚于相关到期/结束日，但包装器不检查此关系），记录实际行为
-@testing:case="createFlatIrYieldCurve accepts asOfDate after maturity (no check)"
+// 用例目的：asOfDate 传远期日期 —— 平价曲线本身无到期/结束日，包装器不检查该关系，固定断言返回句柄
+@testing:case="createFlatIrYieldCurve accepts asOfDate far in future (flat curve has no maturity)"
 resLate = caplib::createFlatIrYieldCurve(2030.12.31, "CNY", 0.02, "TF_FIR_LATE", false)
-assert 1, true
+assert 1, typestr(resLate) != "VOID" && resLate == "TF_FIR_LATE"

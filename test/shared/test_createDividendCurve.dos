@@ -63,7 +63,7 @@ caplib::createDividendCurve(asOfDate, 2024.01.01, [0.01, 0.01], asOfDate, "CONTI
 
 // 用例目的：向量参数 pillarDates 传入部分空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createDividendCurve rejects partially-null vector pillarDates", exception=1
-caplib::createDividendCurve(2024.01.01, [2024.01.01, date()], [0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
+caplib::createDividendCurve(2024.01.01, [2024.01.01, date()], [0.02, 0.02], 2024.01.01, "X", "X", "X", "X", "X", "TF_createDividendCurve_H", "TF_createDividendCurve_H", false)
 
 // 用例目的：向量参数 pillarDates 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
 @testing:case="createDividendCurve rejects empty vector pillarDates", exception=1
@@ -74,7 +74,7 @@ caplib::createDividendCurve(2024.01.01, take(date, 0), [0.02], 2024.01.01, "X", 
 caplib::createDividendCurve(asOfDate=2024.01.01, pillarDates=[2024.01.01], pillarValues=[0.02], yieldStartDate=2024.01.01, dividendType="X", dayCountConvention="X", interp="X", extrap="X", compounding="X", name="TF_createDividendCurve_H", handle="TF_createDividendCurve_H", returnJson=false)
 // 用例目的：向量参数 pillarDates 传入全部空值的向量，验证向量空值校验（预期：抛异常）
 @testing:case="createDividendCurve rejects all-null vector pillarDates", exception=1
-caplib::createDividendCurve(asOfDate, [date(), date(), date()], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
+caplib::createDividendCurve(asOfDate, [date(), date(), date()], [0.01, 0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createDividendCurve optional returnJson null uses default"
 result = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV", bool())
@@ -121,3 +121,163 @@ caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTI
 // 用例目的：枚举参数 compounding 传入非法值，验证枚举校验（预期：抛异常）
 @testing:case="createDividendCurve rejects invalid enum for compounding", exception=1
 caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "NOT_A_REAL_ENUM", "TF_DIV", "TF_DIV", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: date-relationship behavior (wrapper does not validate)
+// ----------------------------------------------------------------------------
+
+// 用例目的：yieldStartDate 晚于 asOfDate —— 文档声明包装器不检查先后关系，实测宽松接受，记录实际行为
+@testing:case="createDividendCurve accepts yieldStartDate after asOfDate (no validation)"
+rDC_ysd = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], 2025.03.10, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_YSD", false)
+assert 1, typestr(rDC_ysd) != "VOID"
+
+// 用例目的：yieldStartDate 晚于最后一个 pillarDates —— 文档声明包装器不检查先后关系，实测宽松接受，记录实际行为
+@testing:case="createDividendCurve accepts yieldStartDate after pillarDates (no validation)"
+rDC_ysp = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], 2026.01.01, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_YSP", false)
+assert 1, typestr(rDC_ysp) != "VOID"
+
+// 用例目的：asOfDate 晚于全部 pillarDates —— 文档声明包装器不检查先后关系，实测宽松接受，记录实际行为
+@testing:case="createDividendCurve accepts asOfDate after pillarDates (no validation)"
+rDC_aop = caplib::createDividendCurve(2026.01.01, curveDates, [0.01, 0.01], 2026.01.01, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_AOP", false)
+assert 1, typestr(rDC_aop) != "VOID"
+
+// 用例目的：pillarDates 非递增（倒序）—— 实测插件严格校验递增性并抛异常（预期：抛异常）
+@testing:case="createDividendCurve rejects non-increasing pillarDates", exception=1
+caplib::createDividendCurve(asOfDate, [2025.03.10, 2022.03.10], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_NI", false)
+
+// 用例目的：pillarDates 含重复日期 —— 实测插件严格校验递增性并抛异常（预期：抛异常）
+@testing:case="createDividendCurve rejects duplicate pillarDates", exception=1
+caplib::createDividendCurve(asOfDate, [2022.03.10, 2022.03.10], [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_DUP", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: dayCountConvention per-value enum coverage (16 documented values)
+// ----------------------------------------------------------------------------
+
+// 用例目的：dayCountConvention 逐值验证：ACT_360（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT_360"
+rDC_d1 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_360", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D1", false)
+assert 1, typestr(rDC_d1) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_360（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACTUAL_360"
+rDC_d2 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACTUAL_360", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D2", false)
+assert 1, typestr(rDC_d2) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/360（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT/360"
+rDC_d3 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT/360", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D3", false)
+assert 1, typestr(rDC_d3) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT_365"
+rDC_d4 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D4", false)
+assert 1, typestr(rDC_d4) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365_FIXED（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT_365_FIXED"
+rDC_d5 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D5", false)
+assert 1, typestr(rDC_d5) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_365_FIXED（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACTUAL_365_FIXED"
+rDC_d6 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACTUAL_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D6", false)
+assert 1, typestr(rDC_d6) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/365（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT/365"
+rDC_d7 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT/365", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D7", false)
+assert 1, typestr(rDC_d7) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT_ACT"
+rDC_d8 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_ACT", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D8", false)
+assert 1, typestr(rDC_d8) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ISDA（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT_ACT_ISDA"
+rDC_d9 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_ACT_ISDA", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D9", false)
+assert 1, typestr(rDC_d9) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ISDA（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACTUAL_ACTUAL_ISDA"
+rDC_d10 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACTUAL_ACTUAL_ISDA", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D10", false)
+assert 1, typestr(rDC_d10) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ICMA（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACT_ACT_ICMA"
+rDC_d11 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_ACT_ICMA", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D11", false)
+assert 1, typestr(rDC_d11) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ICMA（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention ACTUAL_ACTUAL_ICMA"
+rDC_d12 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACTUAL_ACTUAL_ICMA", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D12", false)
+assert 1, typestr(rDC_d12) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：THIRTY_360（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention THIRTY_360"
+rDC_d13 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "THIRTY_360", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D13", false)
+assert 1, typestr(rDC_d13) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30_360（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention 30_360"
+rDC_d14 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "30_360", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D14", false)
+assert 1, typestr(rDC_d14) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30/360（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention 30/360"
+rDC_d15 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "30/360", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D15", false)
+assert 1, typestr(rDC_d15) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：BOND_BASIS（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts dayCountConvention BOND_BASIS"
+rDC_d16 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "BOND_BASIS", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_D16", false)
+assert 1, typestr(rDC_d16) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: interp / extrap / compounding per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：interp 逐值验证：LINEAR_INTERP（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts interp LINEAR_INTERP"
+rDC_i1 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_I1", false)
+assert 1, typestr(rDC_i1) != "VOID"
+
+// 用例目的：interp 逐值验证：CUBIC_SPLINE_INTERP（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts interp CUBIC_SPLINE_INTERP"
+rDC_i2 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "CUBIC_SPLINE_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_I2", false)
+assert 1, typestr(rDC_i2) != "VOID"
+
+// 用例目的：interp 逐值验证：LEFT_CONTINUOUS_FLAT_INTERP（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts interp LEFT_CONTINUOUS_FLAT_INTERP"
+rDC_i3 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LEFT_CONTINUOUS_FLAT_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_I3", false)
+assert 1, typestr(rDC_i3) != "VOID"
+
+// 用例目的：interp 逐值验证：CUBIC_HERMITE_SPLINE_INTERP（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts interp CUBIC_HERMITE_SPLINE_INTERP"
+rDC_i4 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "CUBIC_HERMITE_SPLINE_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_I4", false)
+assert 1, typestr(rDC_i4) != "VOID"
+
+// 用例目的：extrap 逐值验证：FLAT_EXTRAP（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts extrap FLAT_EXTRAP"
+rDC_e1 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_E1", false)
+assert 1, typestr(rDC_e1) != "VOID"
+
+// 用例目的：extrap 逐值验证：LINEAR_EXTRAP（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts extrap LINEAR_EXTRAP"
+rDC_e2 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "LINEAR_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_E2", false)
+assert 1, typestr(rDC_e2) != "VOID"
+
+// 用例目的：compounding 逐值验证：CONTINUOUS_COMPOUNDING（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts compounding CONTINUOUS_COMPOUNDING"
+rDC_c1 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "TF_DIV", "TF_DIV_R3_C1", false)
+assert 1, typestr(rDC_c1) != "VOID"
+
+// 用例目的：compounding 逐值验证：DISCRETE_COMPOUNDING（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts compounding DISCRETE_COMPOUNDING"
+rDC_c2 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "DISCRETE_COMPOUNDING", "TF_DIV", "TF_DIV_R3_C2", false)
+assert 1, typestr(rDC_c2) != "VOID"
+
+// 用例目的：compounding 逐值验证：SIMPLE_COMPOUNDING（预期：被接受，返回非空句柄）
+@testing:case="createDividendCurve accepts compounding SIMPLE_COMPOUNDING"
+rDC_c3 = caplib::createDividendCurve(asOfDate, curveDates, [0.01, 0.01], asOfDate, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "SIMPLE_COMPOUNDING", "TF_DIV", "TF_DIV_R3_C3", false)
+assert 1, typestr(rDC_c3) != "VOID"

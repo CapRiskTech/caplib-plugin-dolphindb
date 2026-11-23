@@ -123,3 +123,37 @@ caplib::createPricingSettings("CNY", "NOT_A_REAL_ENUM", 0, 0, take(0, 0), "", ""
 // 用例目的：向量参数 specificPricingRequests 传入 BOOL 向量，验证 INT 严格判型（预期：抛异常）
 @testing:case="createPricingSettings rejects BOOL vector for specificPricingRequests", exception=1
 caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, [true, false], "", "", "", "TF_PRICING", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: pricingMethod per-value enum coverage (6 documented values)
+// ----------------------------------------------------------------------------
+
+// 用例目的：pricingMethod 逐值验证：ANALYTICAL（预期：被接受，返回非空句柄）
+@testing:case="createPricingSettings accepts pricingMethod ANALYTICAL"
+rPS_m1 = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "TF_PRICING_R3_M1", false)
+assert 1, typestr(rPS_m1) != "VOID"
+
+// 用例目的：pricingMethod 逐值验证：ANALYTICAL_SMILE_ON（预期：被接受，返回非空句柄）
+@testing:case="createPricingSettings accepts pricingMethod ANALYTICAL_SMILE_ON"
+rPS_m2 = caplib::createPricingSettings("CNY", "ANALYTICAL_SMILE_ON", 0, 0, take(0, 0), "", "", "", "TF_PRICING_R3_M2", false)
+assert 1, typestr(rPS_m2) != "VOID"
+
+// 用例目的：pricingMethod 逐值验证：PDE（预期：被接受，返回非空句柄）
+@testing:case="createPricingSettings accepts pricingMethod PDE"
+rPS_m3 = caplib::createPricingSettings("CNY", "PDE", 0, 0, take(0, 0), "", "", "", "TF_PRICING_R3_M3", false)
+assert 1, typestr(rPS_m3) != "VOID"
+
+// 用例目的：pricingMethod 逐值验证：MONTE_CARLO（预期：被接受，返回非空句柄）
+@testing:case="createPricingSettings accepts pricingMethod MONTE_CARLO"
+rPS_m4 = caplib::createPricingSettings("CNY", "MONTE_CARLO", 0, 0, take(0, 0), "", "", "", "TF_PRICING_R3_M4", false)
+assert 1, typestr(rPS_m4) != "VOID"
+
+// 用例目的：pricingMethod 逐值验证：BINOMIAL_TREE（预期：被接受，返回非空句柄）
+@testing:case="createPricingSettings accepts pricingMethod BINOMIAL_TREE"
+rPS_m5 = caplib::createPricingSettings("CNY", "BINOMIAL_TREE", 0, 0, take(0, 0), "", "", "", "TF_PRICING_R3_M5", false)
+assert 1, typestr(rPS_m5) != "VOID"
+
+// 用例目的：pricingMethod 逐值验证：MOMENT_MATCHING（预期：被接受，返回非空句柄）
+@testing:case="createPricingSettings accepts pricingMethod MOMENT_MATCHING"
+rPS_m6 = caplib::createPricingSettings("CNY", "MOMENT_MATCHING", 0, 0, take(0, 0), "", "", "", "TF_PRICING_R3_M6", false)
+assert 1, typestr(rPS_m6) != "VOID"

@@ -151,3 +151,99 @@ assert 1, typestr(rPD_zmm) != "VOID"
 @testing:case="createPdeSettings rejects BOOL zSize", exception=1
 caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, true, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
 
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: xMin/xMax, yMin/yMax, zMin/zMax boundary-relationship behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：xMin == xMax —— 文档要求严格小于但包装器不检查，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts xMin equal to xMax (no validation)"
+rPD_xeq = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, -0.02, 0.02, 1, 1, -0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_XEQ", false)
+assert 1, typestr(rPD_xeq) != "VOID"
+
+// 用例目的：xMin > xMax（倒置）—— 文档要求严格小于但包装器不检查，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts xMin greater than xMax (no validation)"
+rPD_xrev = caplib::createPdeSettings(1, 1, 0.02, -0.02, 1, 1, -0.02, 0.02, 1, 1, -0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_XREV", false)
+assert 1, typestr(rPD_xrev) != "VOID"
+
+// 用例目的：yMin == yMax —— 文档要求严格小于但包装器不检查，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts yMin equal to yMax (no validation)"
+rPD_yeq = caplib::createPdeSettings(1, 1, -0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, -0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_YEQ", false)
+assert 1, typestr(rPD_yeq) != "VOID"
+
+// 用例目的：yMin > yMax（倒置）—— 文档要求严格小于但包装器不检查，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts yMin greater than yMax (no validation)"
+rPD_yrev = caplib::createPdeSettings(1, 1, -0.02, 0.02, 1, 1, 0.02, -0.02, 1, 1, -0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_YREV", false)
+assert 1, typestr(rPD_yrev) != "VOID"
+
+// 用例目的：zMin == zMax —— 文档要求严格小于但包装器不检查，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts zMin equal to zMax (no validation)"
+rPD_zeq = caplib::createPdeSettings(1, 1, -0.02, 0.02, 1, 1, -0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_ZEQ", false)
+assert 1, typestr(rPD_zeq) != "VOID"
+
+// 用例目的：zMin > zMax（倒置）—— 文档要求严格小于但包装器不检查，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts zMin greater than zMax (no validation)"
+rPD_zrev = caplib::createPdeSettings(1, 1, -0.02, 0.02, 1, 1, -0.02, 0.02, 1, 1, 0.02, -0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_ZREV", false)
+assert 1, typestr(rPD_zrev) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: independent Y/Z dimension type & range validation
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 yMin 传入错误类型，验证类型校验（预期：抛异常）
+@testing:case="createPdeSettings rejects wrong type for yMin", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, "bad", 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 yMax 传入错误类型，验证类型校验（预期：抛异常）
+@testing:case="createPdeSettings rejects wrong type for yMax", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, "bad", 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 zMin 传入错误类型，验证类型校验（预期：抛异常）
+@testing:case="createPdeSettings rejects wrong type for zMin", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, "bad", 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 zMax 传入错误类型，验证类型校验（预期：抛异常）
+@testing:case="createPdeSettings rejects wrong type for zMax", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, "bad", 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 ySize 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createPdeSettings rejects null ySize", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, int(), 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 zSize 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createPdeSettings rejects null zSize", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, int(), 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：yDensity 传 0 —— 文档要求严格为正但包装器通常仅检查类型，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts zero yDensity (no range validation)"
+rPD_ydz = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.0, 0.02, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_YDZ", false)
+assert 1, typestr(rPD_ydz) != "VOID"
+
+// 用例目的：zDensity 传负值 -1 —— 文档要求严格为正但包装器通常仅检查类型，实测宽松接受，记录实际行为
+@testing:case="createPdeSettings accepts negative zDensity (no range validation)"
+rPD_zdn = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, -1.0, 1, 1, 1, 1, 1, 1, "TF_PDE_R3_ZDN", false)
+assert 1, typestr(rPD_zdn) != "VOID"
+
+// 用例目的：参数 yMinMaxType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range yMinMaxType", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 999, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 zMinMaxType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range zMinMaxType", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 999, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 yGridType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range yGridType", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 999, 1, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 zGridType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range zGridType", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 999, 1, 1, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 yInterp 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range yInterp", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 999, 1, "TF_createPdeSettings_H", false)
+
+// 用例目的：参数 zInterp 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
+@testing:case="createPdeSettings rejects out-of-range zInterp", exception=1
+caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 999, "TF_createPdeSettings_H", false)
+

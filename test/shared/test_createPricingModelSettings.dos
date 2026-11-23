@@ -55,15 +55,15 @@ caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, 0.02, "TF_BSM"
 @testing:case="createPricingModelSettings rejects partially-null vector constantParams", exception=1
 caplib::createPricingModelSettings("X", "X", false, [0.02, double()], "TF_createPricingModelSettings_H", false)
 
-// 用例目的：向量参数 constantParams 传入长度为 0 的空向量，验证空向量校验（预期：抛异常）
+// 用例目的：constantParams 传入空向量，其他参数保持合法，实测拒绝空向量（预期：抛异常）
 @testing:case="createPricingModelSettings rejects empty vector constantParams", exception=1
-caplib::createPricingModelSettings("X", "X", false, take(double, 0), "TF_createPricingModelSettings_H", false)
+caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, take(double, 0), "TF_BSM_EMPTY_PARAMS", false)
 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createPricingModelSettings rejects keyword arguments", syntaxError=1
 caplib::createPricingModelSettings(modelName="X", asset="X", calibrated=false, constantParams=[0.02], handle="TF_createPricingModelSettings_H", returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createPricingModelSettings accepts all-null vector constantParams", exception=1
+// 用例目的：向量参数 constantParams 传入全部空值的向量，实测插件抛异常（预期：抛异常）
+@testing:case="createPricingModelSettings rejects all-null vector constantParams", exception=1
 caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [double(), double(), double()], "TF_BSM", false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createPricingModelSettings optional returnJson null uses default"

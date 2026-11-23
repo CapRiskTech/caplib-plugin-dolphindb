@@ -66,8 +66,8 @@ caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 0.0, 0, "TF_CCR", fals
 caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, -1.0, 0, "TF_CCR", false)
 
 // ----------------------------------------------------------------------------
-// 用例目的：标量参数 delta 传入单元素向量，实测插件宽松接受——记录实际行为
-@testing:case="createCreditCurveRiskSettings vector for scalar delta", exception=1
+// 用例目的：标量参数 delta 传入单元素向量，验证数据形式校验（预期：抛异常）
+@testing:case="createCreditCurveRiskSettings rejects vector for scalar delta", exception=1
 caplib::createCreditCurveRiskSettings([true], 1, 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", false);
 
 // ----------------------------------------------------------------------------
@@ -106,3 +106,24 @@ assert 1, typestr(resTwo) != "VOID" && resTwo == "TF_CCR_NZ_TWO"
 @testing:case="createCreditCurveRiskSettings accepts negative nonzero INT flags"
 resNeg = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, -1, -1, 1.0e-4, -1, "TF_CCR_NZ_NEG", false)
 assert 1, typestr(resNeg) != "VOID" && resNeg == "TF_CCR_NZ_NEG"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: gamma 独立异常校验 / threading 类型与空值
+// ----------------------------------------------------------------------------
+
+// 用例目的：标量参数 gamma 传入单元素向量 —— 与 delta 的向量拒绝行为一致，验证 gamma 自身的数据形式校验（预期：抛异常）
+@testing:case="createCreditCurveRiskSettings rejects vector for scalar gamma", exception=1
+caplib::createCreditCurveRiskSettings(1, [true], 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", false)
+
+// 用例目的：参数 gamma 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createCreditCurveRiskSettings rejects null gamma", exception=1
+caplib::createCreditCurveRiskSettings(1, bool(), 1.0e-4, 0, 1, 1.0e-4, 0, "TF_CCR", false)
+
+// 用例目的：INT 参数 threading 传入 STRING —— 插件不支持该类型，验证类型校验（预期：抛异常）
+@testing:case="createCreditCurveRiskSettings rejects wrong type for threading", exception=1
+caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, "bad", "TF_CCR", false)
+
+// 用例目的：INT 参数 threading 传入空值 —— 实测插件宽松接受并返回句柄，记录实际行为
+@testing:case="createCreditCurveRiskSettings accepts null threading (no validation)"
+rCcrR3ThN = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, int(), "TF_CCR_R3_THN", false)
+assert 1, typestr(rCcrR3ThN) != "VOID"

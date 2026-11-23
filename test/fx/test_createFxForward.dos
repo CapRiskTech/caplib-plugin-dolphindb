@@ -59,8 +59,8 @@ caplib::createFxForward(["X"], 0.02, "X", 0.02, 2024.01.01, 2024.01.01, "TF_crea
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createFxForward rejects keyword arguments", syntaxError=1
 caplib::createFxForward(buyCurrency="X", buyAmount=0.02, sellCurrency="X", sellAmount=0.02, deliveryDate=2024.01.01, expiryDate=2024.01.01, tag="TF_createFxForward_H", returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createFxForward accepts expiry date after delivery date", exception=1
+// 用例目的：expiryDate 晚于 deliveryDate —— 实测插件拒绝该日期先后关系（预期：抛异常）
+@testing:case="createFxForward rejects expiry date after delivery date", exception=1
 caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, 2021.06.30, 2021.07.01, "TF_FXFWD", false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createFxForward optional returnJson null uses default"
@@ -82,4 +82,33 @@ caplib::createFxForward("EUR", -1.0, "USD", 1176100.0, 2021.07.01, 2021.06.30, "
 @testing:case="createFxForward accepts non-BOOL returnJson (no validation)"
 rFwd_rj = caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, 2021.07.01, 2021.06.30, "TF_FXFWD", "bad")
 assert 1, typestr(rFwd_rj) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3: deliveryDate / expiryDate / tag 自身异常校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 deliveryDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxForward rejects wrong type for deliveryDate", exception=1
+caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, "bad", 2021.06.30, "TF_FXFWD", false)
+
+// 用例目的：参数 expiryDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="createFxForward rejects wrong type for expiryDate", exception=1
+caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, 2021.07.01, "bad", "TF_FXFWD", false)
+
+// 用例目的：参数 deliveryDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxForward rejects null deliveryDate", exception=1
+caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, date(), 2021.06.30, "TF_FXFWD", false)
+
+// 用例目的：参数 expiryDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createFxForward rejects null expiryDate", exception=1
+caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, 2021.07.01, date(), "TF_FXFWD", false)
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxForward rejects wrong type for tag", exception=1
+caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, 2021.07.01, 2021.06.30, 123, false)
+
+// 用例目的：参数 tag 传入空字符串 null —— 实测插件宽松接受、返回空字符串句柄 ""（记录实际行为）
+@testing:case="createFxForward accepts null tag (no validation, returns empty-string handle)"
+rFwd_nullTag = caplib::createFxForward("EUR", 1000000.0, "USD", 1176100.0, 2021.07.01, 2021.06.30, string(), false)
+assert 1, typestr(rFwd_nullTag) == "STRING" && rFwd_nullTag == ""
 

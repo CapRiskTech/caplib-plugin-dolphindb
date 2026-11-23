@@ -112,3 +112,22 @@ caplib::createVolatilitySurface(smile1, asOfDate, [smile1, smile3], [2022.03.10,
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createVolatilitySurface rejects wrong type for handle", exception=1
 caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", 123, false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate / termDates date-relationship behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate 晚于全部 termDates —— 文档声明包装器不检查先后关系，实测宽松接受，记录实际行为
+@testing:case="createVolatilitySurface accepts asOfDate after termDates (no validation)"
+rVSU_aot = caplib::createVolatilitySurface(vdef, 2026.01.01, [smile1, smile3], [2022.03.10, 2025.03.10], "TF_UNDERLYING", "TF_VS_R3_AOT", false)
+assert 1, typestr(rVSU_aot) != "VOID"
+
+// 用例目的：termDates 非递增（倒序）—— 实测插件宽松接受、不抛异常，记录实际行为
+@testing:case="createVolatilitySurface accepts non-increasing termDates (no validation)"
+rVSU_ni = caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2025.03.10, 2022.03.10], "TF_UNDERLYING", "TF_VS_R3_NI", false)
+assert 1, typestr(rVSU_ni) != "VOID"
+
+// 用例目的：termDates 含重复日期 —— 实测插件宽松接受、不抛异常，记录实际行为
+@testing:case="createVolatilitySurface accepts duplicate termDates (no validation)"
+rVSU_dup = caplib::createVolatilitySurface(vdef, asOfDate, [smile1, smile3], [2022.03.10, 2022.03.10], "TF_UNDERLYING", "TF_VS_R3_DUP", false)
+assert 1, typestr(rVSU_dup) != "VOID"

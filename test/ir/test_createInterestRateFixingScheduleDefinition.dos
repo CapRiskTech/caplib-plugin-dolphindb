@@ -53,10 +53,9 @@ caplib::createInterestRateFixingScheduleDefinition(["X"], "X", 1, "X", 1, "X", "
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createInterestRateFixingScheduleDefinition rejects keyword arguments", syntaxError=1
 caplib::createInterestRateFixingScheduleDefinition(calendars="X", frequency="X", frequencyRatio=1, fixingDayMode="X", fixingDayOffset=1, fixingDayConvention="X", tag="TF_createInterestRateFixingScheduleDefinition_H", returnJson=false)
-// 用例目的：枚举参数 fixingDayMode 传入非法取值，文档实测未识别字符串映射为 INVALID 哨兵、不抛异常——用普通用例记录实际行为
-@testing:case="createInterestRateFixingScheduleDefinition invalid enum for fixingDayMode (unrecognized maps to INVALID, no throw)"
-try { caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "NOT_A_VALID_ENUM_LABEL", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", false); okFFM = true; } catch(ex) { okFFM = false; }
-assert 1, true
+// 用例目的：枚举参数 fixingDayMode 传入非法取值，验证枚举校验（预期：抛异常）
+@testing:case="createInterestRateFixingScheduleDefinition rejects invalid enum for fixingDayMode", exception=1
+caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "NOT_A_VALID_ENUM_LABEL", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createInterestRateFixingScheduleDefinition optional returnJson null uses default"
 result = caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "IN_ARREAR", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", bool())
@@ -70,15 +69,15 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
-// 用例目的：参数 frequencyRatio 传入0，文档注明「包装器通常仅检查类型」、对边界拿不准——用普通用例记录实际行为（INT 字面量保证类型正确）
-@testing:case="createInterestRateFixingScheduleDefinition zero frequencyRatio records (wrapper usually type-checks only)"
-try { caplib::createInterestRateFixingScheduleDefinition("X", "X", 0, "X", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", false); okFZ = true; } catch(ex) { okFZ = false; }
-assert 1, true
+// 用例目的：frequencyRatio 传入 0，实测包装器仅检查 INT 类型，记录接受行为
+@testing:case="createInterestRateFixingScheduleDefinition accepts zero frequencyRatio (no range validation)"
+zeroFrequencyRatio = caplib::createInterestRateFixingScheduleDefinition("X", "X", 0, "IN_ARREAR", 1, "X", "TF_IRFS_ZERO_RATIO", false)
+assert 1, zeroFrequencyRatio == "TF_IRFS_ZERO_RATIO"
 
-// 用例目的：参数 frequencyRatio 传入负值 -1，文档注明「包装器通常仅检查类型」、对边界拿不准——用普通用例记录实际行为（INT 字面量保证类型正确）
-@testing:case="createInterestRateFixingScheduleDefinition negative frequencyRatio records (wrapper usually type-checks only)"
-try { caplib::createInterestRateFixingScheduleDefinition("X", "X", -1, "X", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", false); okFN = true; } catch(ex) { okFN = false; }
-assert 1, true
+// 用例目的：frequencyRatio 传入负值 -1，实测包装器仅检查 INT 类型，记录接受行为
+@testing:case="createInterestRateFixingScheduleDefinition accepts negative frequencyRatio (no range validation)"
+negativeFrequencyRatio = caplib::createInterestRateFixingScheduleDefinition("X", "X", -1, "IN_ARREAR", 1, "X", "TF_IRFS_NEG_RATIO", false)
+assert 1, negativeFrequencyRatio == "TF_IRFS_NEG_RATIO"
 
 // 用例目的：可选参数 returnJson 传入 STRING 而非 BOOL —— 实测插件不校验、宽松接受，记录实际行为
 @testing:case="accepts createInterestRateFixingScheduleDefinition non-BOOL returnJson (no validation)"
@@ -110,4 +109,55 @@ caplib::createInterestRateFixingScheduleDefinition("X", "X", 1, "IN_ARREAR", tru
 // 验证类型校验（预期：抛异常）
 @testing:case="createInterestRateFixingScheduleDefinition rejects BOOL frequencyRatio", exception=1
 caplib::createInterestRateFixingScheduleDefinition("X", "X", true, "IN_ARREAR", 1, "X", "TF_createInterestRateFixingScheduleDefinition_H", false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：tag 异常校验 + frequency / fixingDayConvention 逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 tag 传入 INT 标量，验证类型校验（预期：抛异常）
+@testing:case="createInterestRateFixingScheduleDefinition rejects wrong type for tag", exception=1
+caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "FOLLOWING", 1, false)
+
+// 用例目的：句柄参数 tag 传入向量而非标量，验证形式校验（预期：抛异常）
+@testing:case="createInterestRateFixingScheduleDefinition rejects vector for scalar tag", exception=1
+caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "FOLLOWING", ["TF_IRFS"], false)
+
+// 用例目的：句柄参数 tag 传入空值 string()，实测包装器不校验空值，返回 NULL 字符串句柄
+@testing:case="createInterestRateFixingScheduleDefinition accepts null tag (no validation, returns null handle)"
+rIrfsNullTag = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "FOLLOWING", string(), false)
+assert 1, typestr(rIrfsNullTag) == "STRING" && isNull(rIrfsNullTag)
+
+// 用例目的：frequency 逐值覆盖（MONTHLY/QUARTERLY/SEMIANNUAL/SEMI_ANNUAL/ANNUAL，实测全部接受）
+@testing:case="createInterestRateFixingScheduleDefinition accepts frequency value MONTHLY (fallback accepted)"
+rFreq = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "MONTHLY", 1, "IN_ARREAR", 0, "FOLLOWING", "TF_IRFS", false)
+assert 1, typestr(rFreq) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts frequency value QUARTERLY (fallback accepted)"
+rFreq = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "FOLLOWING", "TF_IRFS", false)
+assert 1, typestr(rFreq) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts frequency value SEMIANNUAL (fallback accepted)"
+rFreq = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "SEMIANNUAL", 1, "IN_ARREAR", 0, "FOLLOWING", "TF_IRFS", false)
+assert 1, typestr(rFreq) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts frequency value SEMI_ANNUAL (fallback accepted)"
+rFreq = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "SEMI_ANNUAL", 1, "IN_ARREAR", 0, "FOLLOWING", "TF_IRFS", false)
+assert 1, typestr(rFreq) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts frequency value ANNUAL (fallback accepted)"
+rFreq = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "ANNUAL", 1, "IN_ARREAR", 0, "FOLLOWING", "TF_IRFS", false)
+assert 1, typestr(rFreq) != "VOID"
+
+// 用例目的：fixingDayConvention 逐值覆盖（FOLLOWING/MODIFIED_FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createInterestRateFixingScheduleDefinition accepts fixingDayConvention value FOLLOWING (fallback accepted)"
+rFdc = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "FOLLOWING", "TF_IRFS", false)
+assert 1, typestr(rFdc) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts fixingDayConvention value MODIFIED_FOLLOWING (fallback accepted)"
+rFdc = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "MODIFIED_FOLLOWING", "TF_IRFS", false)
+assert 1, typestr(rFdc) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts fixingDayConvention value PRECEDING (fallback accepted)"
+rFdc = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "PRECEDING", "TF_IRFS", false)
+assert 1, typestr(rFdc) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts fixingDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rFdc = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "MODIFIED_PRECEDING", "TF_IRFS", false)
+assert 1, typestr(rFdc) != "VOID"
+@testing:case="createInterestRateFixingScheduleDefinition accepts fixingDayConvention value UNADJUSTED (fallback accepted)"
+rFdc = caplib::createInterestRateFixingScheduleDefinition("CAL_CFETS", "QUARTERLY", 1, "IN_ARREAR", 0, "UNADJUSTED", "TF_IRFS", false)
+assert 1, typestr(rFdc) != "VOID"
 

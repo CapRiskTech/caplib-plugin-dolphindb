@@ -106,3 +106,30 @@ caplib::createCdsPricingSettings(currency, 0, true, 0, "TAYLOR", "HALFDAYBIAS", 
 @testing:case="createCdsPricingSettings rejects BOOL includeSettlementFlow", exception=1
 caplib::createCdsPricingSettings(currency, 0, 1, true, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS", "TF_CDSPS", false)
 
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: name/tag 校验 / 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 name 传入空值 —— 实测包装器宽松接受并返回句柄，记录实际行为
+@testing:case="createCdsPricingSettings accepts null name (no validation)"
+rCpsR3NmN = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", string(), "TF_CDSPS_R3_NMN", false)
+assert 1, typestr(rCpsR3NmN) != "VOID"
+
+// 用例目的：参数 name 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCdsPricingSettings rejects wrong type for name", exception=1
+caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", 123, "TF_CDSPS", false)
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCdsPricingSettings rejects wrong type for tag", exception=1
+caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "PIECEWISE", "TF_CDSPS_NAME", 123, false)
+
+// 用例目的：枚举参数 accrualBias 传入文档取值 NOBIAS（正常用例已覆盖 HALFDAYBIAS），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsPricingSettings accepts accrualBias NOBIAS"
+rCpsR3Ab = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "NOBIAS", "PIECEWISE", "TF_CDSPS_NAME", "TF_CDSPS_R3_AB", false)
+assert 1, typestr(rCpsR3Ab) != "VOID"
+
+// 用例目的：枚举参数 fwdsInCpnPeriod 传入文档取值 FLAT（正常用例已覆盖 PIECEWISE），验证逐值接受（预期：不抛异常）
+@testing:case="createCdsPricingSettings accepts fwdsInCpnPeriod FLAT"
+rCpsR3Fw = caplib::createCdsPricingSettings(currency, 0, 1, 0, "TAYLOR", "HALFDAYBIAS", "FLAT", "TF_CDSPS_NAME", "TF_CDSPS_R3_FW", false)
+assert 1, typestr(rCpsR3Fw) != "VOID"
+

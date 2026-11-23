@@ -106,3 +106,107 @@ assert 1, okEnum
 // 用例目的：returnJson 传入非 BOOL（STRING），验证 BOOL 类型校验。（预期：抛异常）
 @testing:case="createDepoTemplate rejects wrong type for returnJson", exception=1
 caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", "bad")
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 3): startDelay/payDayOffset 自身校验 + 枚举逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 startDelay 传入错误类型（字符串而非 INT），验证类型校验（预期：抛异常）
+@testing:case="createDepoTemplate rejects wrong type for startDelay", exception=1
+caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", "1", "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+
+// 用例目的：参数 startDelay 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createDepoTemplate rejects null startDelay", exception=1
+caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", int(), "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+
+// 用例目的：参数 payDayOffset 传入错误类型（字符串而非 INT），验证类型校验（预期：抛异常）
+@testing:case="createDepoTemplate rejects wrong type for payDayOffset", exception=1
+caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", "1", "FOLLOWING", "SPOTSTART", false)
+
+// 用例目的：参数 payDayOffset 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="createDepoTemplate rejects null payDayOffset", exception=1
+caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", int(), "FOLLOWING", "SPOTSTART", false)
+
+// 用例目的：dayCountConvention 枚举逐值验证 —— 文档 15+ 合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createDepoTemplate dayCountConvention=ACT_360 accepted"
+r3_dcc_1 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_1) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACTUAL_360 accepted"
+r3_dcc_2 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACTUAL_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_2) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACT/360 accepted"
+r3_dcc_3 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT/360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_3) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACT_365 accepted"
+r3_dcc_4 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_365", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_4) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACT_365_FIXED accepted"
+r3_dcc_5 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_365_FIXED", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_5) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACTUAL_365_FIXED accepted"
+r3_dcc_6 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACTUAL_365_FIXED", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_6) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACT/365 accepted"
+r3_dcc_7 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT/365", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_7) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACT_ACT accepted"
+r3_dcc_8 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_ACT", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_8) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACT_ACT_ISDA accepted"
+r3_dcc_9 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_ACT_ISDA", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_9) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACTUAL_ACTUAL_ISDA accepted"
+r3_dcc_10 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACTUAL_ACTUAL_ISDA", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_10) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACT_ACT_ICMA accepted"
+r3_dcc_11 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_ACT_ICMA", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_11) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=ACTUAL_ACTUAL_ICMA accepted"
+r3_dcc_12 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACTUAL_ACTUAL_ICMA", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_12) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=THIRTY_360 accepted"
+r3_dcc_13 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "THIRTY_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_13) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=30_360 accepted"
+r3_dcc_14 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "30_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_14) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=30/360 accepted"
+r3_dcc_15 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "30/360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_15) != "VOID"
+@testing:case="createDepoTemplate dayCountConvention=BOND_BASIS accepted"
+r3_dcc_16 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "BOND_BASIS", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_dcc_16) != "VOID"
+
+// 用例目的：interestDayConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createDepoTemplate interestDayConvention=FOLLOWING accepted"
+r3_idc_1 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_idc_1) != "VOID"
+@testing:case="createDepoTemplate interestDayConvention=MODIFIED_FOLLOWING accepted"
+r3_idc_2 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_idc_2) != "VOID"
+@testing:case="createDepoTemplate interestDayConvention=PRECEDING accepted"
+r3_idc_3 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "PRECEDING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_idc_3) != "VOID"
+@testing:case="createDepoTemplate interestDayConvention=MODIFIED_PRECEDING accepted"
+r3_idc_4 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_PRECEDING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_idc_4) != "VOID"
+@testing:case="createDepoTemplate interestDayConvention=UNADJUSTED accepted"
+r3_idc_5 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "UNADJUSTED", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_idc_5) != "VOID"
+
+// 用例目的：payDayConvention 枚举逐值验证 —— 文档合法取值逐一调用，均断言非空（预期：接受）
+@testing:case="createDepoTemplate payDayConvention=FOLLOWING accepted"
+r3_pdc_1 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_pdc_1) != "VOID"
+@testing:case="createDepoTemplate payDayConvention=MODIFIED_FOLLOWING accepted"
+r3_pdc_2 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "SPOTSTART", false)
+assert 1, typestr(r3_pdc_2) != "VOID"
+@testing:case="createDepoTemplate payDayConvention=PRECEDING accepted"
+r3_pdc_3 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "PRECEDING", "SPOTSTART", false)
+assert 1, typestr(r3_pdc_3) != "VOID"
+@testing:case="createDepoTemplate payDayConvention=MODIFIED_PRECEDING accepted"
+r3_pdc_4 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "MODIFIED_PRECEDING", "SPOTSTART", false)
+assert 1, typestr(r3_pdc_4) != "VOID"
+@testing:case="createDepoTemplate payDayConvention=UNADJUSTED accepted"
+r3_pdc_5 = caplib::createDepoTemplate("TF_DEPO", "CNY", "CAL_CFETS", 0, "ACT_360", "MODIFIED_FOLLOWING", 0, "UNADJUSTED", "SPOTSTART", false)
+assert 1, typestr(r3_pdc_5) != "VOID"

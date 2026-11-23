@@ -475,3 +475,8 @@ summary {
 .param-table { table-layout: fixed; }
 .param-table td { overflow-wrap: anywhere; }
 .param-table code { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+
+.param-list { margin-top: 0.65rem; }
+.param-item { margin: 0 0 0.85rem; color: #465260; }
+.param-item > code:first-child { color: var(--navy-2); font-weight: 700; }
+.param-item .validity-note { color: var(--muted); }

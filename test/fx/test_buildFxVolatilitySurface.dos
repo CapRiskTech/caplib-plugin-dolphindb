@@ -206,3 +206,52 @@ caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], op
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="buildFxVolatilitySurface rejects wrong type for handle", exception=1
 caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], 123, false)
+
+// ----------------------------------------------------------------------------
+// Review round-3: spotRefDate / spotDate 自身异常校验 + 日期先后关系实测
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 spotRefDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong type for spotRefDate", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, "bad", 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：参数 spotDate 传入错误类型（该传日期的传字符串），验证类型校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects wrong type for spotDate", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, "bad", usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：参数 spotRefDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects null spotRefDate", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, date(), 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：参数 spotDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects null spotDate", exception=1
+caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, date(), usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV", false)
+
+// 用例目的：spotRefDate 早于 asOfDate —— 实测插件不校验先后关系、宽松接受，记录实际行为
+@testing:case="buildFxVolatilitySurface accepts spotRefDate before asOfDate (no validation)"
+rBfv_r3a = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, 2021.03.29, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV_R3A", false)
+assert 1, rBfv_r3a == "TF_BUILDFV_R3A"
+
+// 用例目的：spotDate 早于 spotRefDate —— 实测插件不校验先后关系、宽松接受，记录实际行为
+@testing:case="buildFxVolatilitySurface accepts spotDate before spotRefDate (no validation)"
+rBfv_r3b = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, 2021.04.01, 2021.03.31, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV_R3B", false)
+assert 1, rBfv_r3b == "TF_BUILDFV_R3B"
+
+// 用例目的：spotDate 早于 asOfDate —— 实测插件不校验先后关系、宽松接受，记录实际行为
+@testing:case="buildFxVolatilitySurface accepts spotDate before asOfDate (no validation)"
+rBfv_r3c = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.03.29, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV_R3C", false)
+assert 1, rBfv_r3c == "TF_BUILDFV_R3C"
+
+// 用例目的：spotDate 晚于报价矩阵最长期限（10Y，约 2031.03.30）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="buildFxVolatilitySurface accepts spotDate beyond quote matrix longest term (no validation)"
+rBfv_r3d = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2032.01.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV_R3D", false)
+assert 1, rBfv_r3d == "TF_BUILDFV_R3D"
+
+// 用例目的：asOfDate（2032.01.01）晚于报价矩阵最长期限，验证服务层最终行为（预期：抛异常）
+@testing:case="buildFxVolatilitySurface rejects asOfDate after quote matrix longest term (service-level)", exception=1
+caplib::buildFxVolatilitySurface(2032.01.01, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, asOfDate, 2021.04.01, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV_R3E", false)
+
+// 用例目的：spotRefDate 晚于报价矩阵最长期限，spotDate 保持不早于 spotRefDate —— 实测宽松接受，记录实际行为
+@testing:case="buildFxVolatilitySurface accepts spotRefDate beyond quote matrix longest term (no validation)"
+rBfv_r3f = caplib::buildFxVolatilitySurface(asOfDate, "EUR", "USD", fxMktConventions[0], optionQuotes[0], eurusdSpot, 2032.01.01, 2032.01.02, usdCurve, eurCurve, volSurfDefinition[0], volSurfBuildSettings[0], "TF_BUILDFV_R3F", false)
+assert 1, rBfv_r3f == "TF_BUILDFV_R3F"

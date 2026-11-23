@@ -98,3 +98,31 @@ assert 1, typestr(resTwo) != "VOID" && resTwo == "TF_PRICEVOL_RISK_TWO"
 @testing:case="createPriceVolRiskSettings accepts negative nonzero INT flags"
 resNeg = caplib::createPriceVolRiskSettings(false, 0.02, 0.02, -1, -1, 0.02, 0.02, -1, "TF_PRICEVOL_RISK_NEG", false)
 assert 1, typestr(resNeg) != "VOID" && resNeg == "TF_PRICEVOL_RISK_NEG"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: priceScaling / volScaling independent exception & boundary validation
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 priceScaling 传入错误类型（字符串），验证类型校验（预期：抛异常）
+@testing:case="createPriceVolRiskSettings rejects wrong type for priceScaling", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, "bad", 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
+
+// 用例目的：参数 volScaling 传入错误类型（字符串），验证类型校验（预期：抛异常）
+@testing:case="createPriceVolRiskSettings rejects wrong type for volScaling", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, "bad", 1, "TF_createPriceVolRiskSettings_H", false)
+
+// 用例目的：参数 priceScaling 传入 0，验证数值边界校验（预期：抛异常）
+@testing:case="createPriceVolRiskSettings rejects zero priceScaling", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.0, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
+
+// 用例目的：参数 priceScaling 传入负值，验证数值边界校验（预期：抛异常）
+@testing:case="createPriceVolRiskSettings rejects negative priceScaling", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, -1.0, 0.02, 1, "TF_createPriceVolRiskSettings_H", false)
+
+// 用例目的：参数 volScaling 传入 0，验证数值边界校验（预期：抛异常）
+@testing:case="createPriceVolRiskSettings rejects zero volScaling", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.0, 1, "TF_createPriceVolRiskSettings_H", false)
+
+// 用例目的：参数 volScaling 传入负值，验证数值边界校验（预期：抛异常）
+@testing:case="createPriceVolRiskSettings rejects negative volScaling", exception=1
+caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, -1.0, 1, "TF_createPriceVolRiskSettings_H", false)

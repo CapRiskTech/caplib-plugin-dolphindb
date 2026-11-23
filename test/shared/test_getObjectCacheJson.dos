@@ -25,6 +25,11 @@ irObj = caplib::createIrYieldCurve(
 result = caplib::getObjectCacheJson("IrYieldCurve", "TF_IR")[0]
 assert 1, result == "TF_IR"
 
+// 用例目的：带 dqproto. 命名空间前缀的类型标签与裸标签等价（IrYieldCurve 别名）
+@testing:case="getObjectCacheJson accepts protobufType value dqproto.IrYieldCurve (alias of IrYieldCurve)"
+rNs = caplib::getObjectCacheJson("dqproto.IrYieldCurve", "TF_IR")
+assert 1, rNs[0] == "TF_IR" && strlen(rNs[1]) > 0
+
 // ----------------------------------------------------------------------------
 // Negative / exception validation (auto-derived from the signature)
 // ----------------------------------------------------------------------------
@@ -60,3 +65,132 @@ caplib::getObjectCacheJson("IrYieldCurve", "TF_NO_SUCH_HANDLE_getObjectCacheJson
 // 用例目的：句柄参数 handle 传入已有但 protobuf 类型不匹配的真实句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="getObjectCacheJson rejects wrong object type for handle", exception=1
 caplib::getObjectCacheJson("VolatilityCurve", "TF_IR")
+
+// ----------------------------------------------------------------------------
+// 第三轮 review：protobufType 42 个合法类型逐值覆盖（各自创建对应对象后读取）
+// ----------------------------------------------------------------------------
+
+// 曲线与波动率对象
+ocAyc = caplib::createAssetYieldCurve(2022.03.09, [2022.03.10, 2025.03.10], [0.02, 0.025], "LINEAR_INTERP", "FLAT_EXTRAP", "ACT_365_FIXED", "CONTINUOUS_COMPOUNDING", ["1D", "3Y"], "OC_AYC", false)
+ocCredit = caplib::createCreditCurve(2022.03.09, [2022.03.10, 2025.03.10], [0.001, 0.002], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "OC_CREDIT", false)
+ocDiv = caplib::createDividendCurve(2022.03.09, [2022.03.10, 2025.03.10], [0.01, 0.01], 2022.03.09, "CONTINUOUS", "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "CONTINUOUS_COMPOUNDING", "OC_DIV", false)
+ocVolCurve = caplib::createVolatilityCurve(2022.03.09, [2022.03.10, 2025.03.10], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "OC_UNDERLYING", "OC_VOL_CURVE", false)
+ocSmile = caplib::createVolatilitySmile("STRIKE_VOL_SMILE", 2022.03.09, [90.0, 100.0, 110.0], [0.22, 0.20, 0.21], "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", 1.0, array(DOUBLE, 0), array(DOUBLE, 0), 90.0, 110.0, "OC_SMILE", false)
+ocVsDef = caplib::createVolatilitySurfaceDefinition("STRIKE_VOL_SMILE", "LINEAR_SMILE_METHOD", "FLAT_EXTRAP", "LINEAR_IN_VOLATILITY", "FLAT_IN_VOLATILITY", "ACT_365_FIXED", "LOG_NORMAL_VOL_TYPE", "ABSOLUTE_STRIKE", 90.0, 110.0, "OC_VSDEF", false)
+ocVolSurf = caplib::createVolatilitySurface(ocVsDef, 2022.03.09, [ocSmile], [2022.03.10], "OC_UNDERLYING", "OC_VS", false)
+ocQuote = caplib::createOptionQuoteMatrix("OQVT_PRICE", "OQTT_ABSOLUTE_TERM", "OQST_ABSOLUTE_STRIKE", "EUROPEAN", "SPOT_UNDERLYING_TYPE", 2022.03.09, [], [2022.03.10], ["CALL"], [1.0], [100.0], "OC_UNDERLYING", "OC_OQ", false)
+ocVsBuild = caplib::createVolSurfBuildSettings(1, 0.02, "OC_VS_BUILD", false)
+ocBsm = caplib::createPricingModelSettings("BLACK_SCHOLES_MERTON", "", 0, [0.0], "OC_BSM", false)
+ocPde = caplib::createPdeSettings(1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, 0.02, 0.02, 0.02, 1, 1, 1, 1, 1, 1, "OC_PDE", false)
+ocMc = caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, "OC_MC", false)
+ocPricing = caplib::createPricingSettings("CNY", "ANALYTICAL", 0, 0, take(0, 0), "", "", "", "OC_PRICING", false)
+ocIrRisk = caplib::createIrCurveRiskSettings(1, 1, 1, 1.0e-4, 5.0e-3, 0, 1, 1.0e-4, 0, "OC_IR_RISK", false)
+ocCrRisk = caplib::createCreditCurveRiskSettings(1, 1, 1.0e-4, 0, 1, 1.0e-4, 0, "OC_CR_RISK", false)
+ocDivRisk = caplib::createDividendCurveRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "OC_DIV_RISK", false)
+ocPriceRisk = caplib::createPriceRiskSettings(false, false, false, 0.02, 0.02, 1, 0.02, 1, "OC_PRICE_RISK", false)
+ocVolRisk = caplib::createVolRiskSettings(false, false, 0.02, 1, 1, 0.02, 1, "OC_VOL_RISK", false)
+ocPvRisk = caplib::createPriceVolRiskSettings(false, 0.02, 0.02, 1, 1, 0.02, 0.02, 1, "OC_PV_RISK", false)
+ocThetaRisk = caplib::createThetaRiskSettings(false, 1, 0.02, "OC_THETA_RISK", false)
+ocScn = caplib::createScnSettings(-0.05, 0.05, 3, 1, "OC_SCN", false)
+ocScna = caplib::createScnAnalysisSettings("PRICE_VOL_SCN_ANALYSIS", ocScn, ocScn, 0, "OC_SCNA", false)
+ocEqRisk = caplib::createEqRiskSettings(1, 1, 1, 1, "OC_EQ_RISK", false)
+ocFxSpot = caplib::createFxSpotRate(1.1761, "EUR", "USD", 2022.03.09, 2022.03.11, "OC_FXSPOT", false)
+ocEqMkt = caplib::createEqMktDataSet(2022.03.09, "OC_UNDERLYING", 100.0, "TF_IR", ocDiv, ocVolSurf, "", "", 0.0, "OC_EQ_MKT", false)
+
+// 权益工具对象
+ocEur = caplib::createEuropeanOption("CALL", 100.0, 2022.08.19, 2022.08.20, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_EUR", false)
+ocAmer = caplib::createAmericanOption("CALL", 100.0, 2022.08.19, 2022.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_AMER", false)
+ocDigi = caplib::createDigitalOption("CALL", 100.0, 2022.08.19, 2022.08.20, 0.0, 1.0, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_DIGI", false)
+ocObsDates = [2022.03.10, 2022.04.10]
+ocObsValues = [0.0, 0.0]
+ocObsWeights = [1.0, 1.0]
+ocAsian = caplib::createAsianOption("CALL", 100.0, 2022.08.19, 2022.08.20, "FIXED_STRIKE", "ARITHMETIC_AVERAGE_METHOD", "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_ASIAN", ocObsDates, ocObsValues, ocObsWeights, false)
+ocOneTouch = caplib::createOneTouchOption(2022.08.19, 2022.08.20, "UP_IN", 105.0, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_ONETOUCH", false)
+ocDoubleTouch = caplib::createDoubleTouchOption(2022.08.19, 2022.08.20, "DOWN_IN", 95.0, "UP_IN", 105.0, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_DOUBLETOUCH", false)
+ocSingleBarrier = caplib::createSingleBarrierOption("CALL", 100.0, 2022.08.19, 2022.08.20, "UP_IN", 105.0, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_SB", false)
+ocDoubleBarrier = caplib::createDoubleBarrierOption("CALL", 100.0, 2022.08.19, 2022.08.20, "DOWN_IN", 95.0, "UP_IN", 105.0, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_DB", false)
+ocCollar = caplib::createCollarOption("CALL", 0.9, 1.1, 90.0, 110.0, 2022.08.19, 2022.08.20, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_COLLAR", false)
+ocSingleShark = caplib::createSingleSharkFinOption("CALL", 100.0, 2022.08.19, 2022.08.20, 1.0, "RELATIVE_PERFORM_TYPE", "UP_OUT", 105.0, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_SSF", ocObsDates, ocObsValues, ocObsWeights, false)
+ocDoubleShark = caplib::createDoubleSharkFinOption(100.0, 100.0, 2022.08.19, 2022.08.20, 1.0, 1.0, "ABSOLUTE_PERFORM_TYPE", 95.0, 105.0, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_DSF", ocObsDates, ocObsValues, ocObsWeights, false)
+ocRangeAccrual = caplib::createRangeAccrualOption(2022.08.19, 2022.08.20, 0.0, 0.01, 95.0, 105.0, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_RA", ocObsDates, ocObsValues, ocObsWeights, false)
+ocAirbag = caplib::createAirbagOption("CALL", 2022.08.19, 2022.08.20, 100.0, 105.0, 1.0, 1.0, 100.0, "DOWN_IN", 80.0, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_AIRBAG", ocObsDates, ocObsValues, ocObsWeights, false)
+ocPingPong = caplib::createPingPongOption(2022.08.19, 2022.08.20, "DOWN_IN", 95.0, "UP_IN", 105.0, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.015, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_PP", ocObsDates, ocObsValues, ocObsWeights, false)
+ocCouponDates = [2022.04.10, 2022.05.10]
+ocCouponValues = [0.0, 0.0]
+ocCouponWeights = [1.0, 1.0]
+ocPhoenix = caplib::createPhoenixAutoCallableNote("CALL", 100.0, 0.12, "ACT_365_FIXED", 2022.03.09, ocCouponDates, "UP_OUT", 110.0, "DOWN_IN", 90.0, "SELL", "PUT", 85.0, 2022.08.19, 2022.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_PH", ocCouponDates, ocCouponValues, ocCouponWeights, ocObsDates, ocObsValues, ocObsWeights, false)
+ocSnowball = caplib::createSnowballAutoCallableNote(0.12, 2022.03.09, ocCouponDates, "ACT_365_FIXED", "UP_OUT", 105.0, "DOWN_IN", 80.0, "SELL", "PUT", 100.0, 1.0, 100.0, 2022.08.19, 2022.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "OC_UNDERLYING", "OC_SN", ocCouponDates, ocCouponValues, ocCouponWeights, ocObsDates, ocObsValues, ocObsWeights, false)
+
+// PricingResults 对象（完整固收定价流程）
+ocBondTemplate = caplib::createVanillaBondTemplate(
+    "CNY_TREAS_CPN_BOND", "FIXED_COUPON_BOND",
+    2020.07.22, 1, 2020.07.22, "5Y",
+    0.03, "CNY", 100.0,
+    "ACT_365_FIXED", "CAL_CFETS", "ANNUAL",
+    "MODIFIED_FOLLOWING", "INITIAL", "LONG",
+    0, "MODIFIED_FOLLOWING", "",
+    "", "INVALID_FREQUENCY", "INVALID_BUSINESS_DAY_CONVENTION",
+    "INVALID_DATE_GENERATION_MODE", -1,
+    "0d", "", "INVALID_BUSINESS_DAY_CONVENTION", false,
+    "CONST_NOTIONAL", 0.0, false)
+ocBond = caplib::buildVanillaBond(1000000.0, ocBondTemplate, "", 2020.07.22, "OC_BOND", false)
+ocFiRisk = caplib::createFiRiskSettings(ocIrRisk, ocCrRisk, ocThetaRisk, "OC_FI_RISK_NAME", "OC_FI_RISK", false)
+ocFiMkt = caplib::createFiMktDataSet(2022.03.09, "TF_IR", ocCredit, "", "", "", "OC_FI_MKT_NAME", "OC_FI_MKT", false)
+ocPricingResults = caplib::priceVanillaBond(ocBond, 2022.03.09, ocFiMkt[0], ocPricing, ocFiRisk[0], "", "", false)
+
+// 逐值用例：每个类型先创建对象，再按类型读取并校验句柄
+ocChecks = [
+    ["IrYieldCurve", "TF_IR"],
+    ["AssetYieldCurve", ocAyc],
+    ["CreditCurve", ocCredit],
+    ["DividendCurve", ocDiv],
+    ["VolatilityCurve", ocVolCurve],
+    ["VolatilitySmile", ocSmile],
+    ["VolatilitySurface", ocVolSurf],
+    ["OptionQuoteMatrix", ocQuote],
+    ["VolatilitySurfaceDefinition", ocVsDef],
+    ["VolatilitySurfaceBuildSettings", ocVsBuild],
+    ["PricingModelSettings", ocBsm],
+    ["PdeSettings", ocPde],
+    ["MonteCarloSettings", ocMc],
+    ["PricingSettings", ocPricing],
+    ["IrCurveRiskSettings", ocIrRisk],
+    ["CreditCurveRiskSettings", ocCrRisk],
+    ["DividendCurveRiskSettings", ocDivRisk],
+    ["PriceRiskSettings", ocPriceRisk],
+    ["VolRiskSettings", ocVolRisk],
+    ["PriceVolRiskSettings", ocPvRisk],
+    ["ThetaRiskSettings", ocThetaRisk],
+    ["ScnSettings", ocScn],
+    ["ScnAnalysisSettings", ocScna],
+    ["EqMktDataSet", ocEqMkt],
+    ["EqRiskSettings", ocEqRisk],
+    ["PricingResults", ocPricingResults],
+    ["FxSpotRate", ocFxSpot],
+    ["EuropeanOption", ocEur],
+    ["AmericanOption", ocAmer],
+    ["DigitalOption", ocDigi],
+    ["AsianOption", ocAsian],
+    ["OneTouchOption", ocOneTouch],
+    ["DoubleTouchOption", ocDoubleTouch],
+    ["SingleBarrierOption", ocSingleBarrier],
+    ["DoubleBarrierOption", ocDoubleBarrier],
+    ["CollarOption", ocCollar],
+    ["SingleSharkFinOption", ocSingleShark],
+    ["DoubleSharkFinOption", ocDoubleShark],
+    ["RangeAccrualOption", ocRangeAccrual],
+    ["AirbagOption", ocAirbag],
+    ["PingPongOption", ocPingPong],
+    ["PhoenixAutoCallableNote", ocPhoenix],
+    ["SnowballAutoCallableNote", ocSnowball]
+]
+for (i in 0..(size(ocChecks)-1)) {
+    ocType = ocChecks[i][0]
+    ocHandle = ocChecks[i][1]
+    ocResult = caplib::getObjectCacheJson(ocType, ocHandle)
+    assert 1, ocResult[0] == ocHandle && strlen(ocResult[1]) > 0
+}
+
+// 用例目的：Curve 标签是合法的注册类型，但对 IrYieldCurve 对象查询时 protobuf 类型不匹配（预期：抛异常）
+@testing:case="getObjectCacheJson rejects Curve type mismatch for IrYieldCurve object (type is registered but object type differs)", exception=1
+caplib::getObjectCacheJson("Curve", "TF_IR")

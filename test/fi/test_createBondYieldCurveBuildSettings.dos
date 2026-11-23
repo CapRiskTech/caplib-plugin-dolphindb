@@ -83,20 +83,68 @@ assert 1, typestr(rBYCS_interp) != "VOID"
 @testing:case="accepts createBondYieldCurveBuildSettings invalid enum for extrapMethod (no validation)"
 rBYCS_extrap = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "NOT_A_VALID_EXTRAP_METHOD", "TF_FI_BBS", false)
 assert 1, typestr(rBYCS_extrap) != "VOID"
-// 用例目的：遍历 interpMethod 已确认被接受的合法取值，逐一调用验证均被接受
-// 注：SABR/SVI/LOG_MONEYNESS/SABR_NORMAL 为文档列出的标签，但在构建上下文被 dqlib 拒绝（实测），不纳入遍历
-@testing:case="createBondYieldCurveBuildSettings supports interpMethod enums"
+// 用例目的：遍历 interpMethod 已确认被接受的合法取值子集，逐一调用验证均被接受
+// 注：该用例仅覆盖 round-1 确认的子集；其余文档标签（SABR/SVI 等）在 round-3 已逐值单独覆盖（见文件末尾）
+@testing:case="createBondYieldCurveBuildSettings supports accepted interpMethod subset"
 interpLabels = ["LINEAR_INTERP", "CUBIC_SPLINE_INTERP", "LEFT_CONTINUOUS_FLAT_INTERP"]
 okInterpBS = true;
 for (i in 0..(size(interpLabels)-1)) {
     try { caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", interpLabels[i], "FLAT_EXTRAP", "TF_FI_BBS", false); } catch(ex) { okInterpBS = false; }
 }
 assert 1, okInterpBS
-// 用例目的：遍历 extrapMethod 已确认被接受的合法取值，逐一调用验证均被接受（NATURAL_EXTRAP 被 dqlib 拒绝，不纳入）
-@testing:case="createBondYieldCurveBuildSettings supports extrapMethod enums"
+// 用例目的：遍历 extrapMethod 已确认被接受的合法取值子集，逐一调用验证均被接受（NATURAL_EXTRAP 已在 round-3 单独覆盖）
+@testing:case="createBondYieldCurveBuildSettings supports accepted extrapMethod subset"
 extrapLabelsBS = ["FLAT_EXTRAP", "LINEAR_EXTRAP", "ADJ_FLAT_EXTRAP"]
 okExtrapBS = true;
 for (i in 0..(size(extrapLabelsBS)-1)) {
     try { caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", extrapLabelsBS[i], "TF_FI_BBS", false); } catch(ex) { okExtrapBS = false; }
 }
 assert 1, okExtrapBS
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: tag 类型校验 / interpMethod / extrapMethod 文档取值逐值覆盖
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createBondYieldCurveBuildSettings rejects wrong type for tag", exception=1
+caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "FLAT_EXTRAP", 123, false)
+
+// 用例目的：interpMethod 传入文档取值 SABR_INTERP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod SABR_INTERP"
+rR3I1 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "SABR_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3I1) != "VOID"
+
+// 用例目的：interpMethod 传入文档取值 SVI_INTERP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod SVI_INTERP"
+rR3I2 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "SVI_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3I2) != "VOID"
+
+// 用例目的：interpMethod 传入文档取值 LOG_MONEYNESS_CUBIC_SPLINE_INTERP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod LOG_MONEYNESS_CUBIC_SPLINE_INTERP"
+rR3I3 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LOG_MONEYNESS_CUBIC_SPLINE_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3I3) != "VOID"
+
+// 用例目的：interpMethod 传入文档取值 SABR_NORMAL_INTERP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod SABR_NORMAL_INTERP"
+rR3I4 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "SABR_NORMAL_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3I4) != "VOID"
+
+// 用例目的：interpMethod 传入文档取值 QUADRATIC_POLYNOMIAL_INTERP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod QUADRATIC_POLYNOMIAL_INTERP"
+rR3I5 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "QUADRATIC_POLYNOMIAL_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3I5) != "VOID"
+
+// 用例目的：interpMethod 传入文档取值 CUBIC_POLYNOMIAL_INTERP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod CUBIC_POLYNOMIAL_INTERP"
+rR3I6 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "CUBIC_POLYNOMIAL_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3I6) != "VOID"
+
+// 用例目的：interpMethod 传入文档取值 CUBIC_HERMITE_SPLINE_INTERP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports interpMethod CUBIC_HERMITE_SPLINE_INTERP"
+rR3I7 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "CUBIC_HERMITE_SPLINE_INTERP", "FLAT_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3I7) != "VOID"
+
+// 用例目的：extrapMethod 传入文档取值 NATURAL_EXTRAP —— 实测创建构建设置时被接受，验证逐值行为
+@testing:case="createBondYieldCurveBuildSettings supports extrapMethod NATURAL_EXTRAP"
+rR3E1 = caplib::createBondYieldCurveBuildSettings("TF_FI_CURVE", "ZERO_RATE", "LINEAR_INTERP", "NATURAL_EXTRAP", "TF_FI_BBS_R3", false)
+assert 1, typestr(rR3E1) != "VOID"

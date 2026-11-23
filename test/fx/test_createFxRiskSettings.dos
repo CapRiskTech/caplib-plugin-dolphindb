@@ -122,3 +122,25 @@ caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, pric
 @testing:case="accepts createFxRiskSettings non-BOOL returnJson (no validation)"
 rRS_RJ = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", "TF_FXR", "yes")
 assert 1, typestr(rRS_RJ) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3: name / tag 自身异常校验
+// ----------------------------------------------------------------------------
+
+// 用例目的：参数 name 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects wrong type for name", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, 123, "TF_FXR", false)
+
+// 用例目的：参数 name 传入空字符串 null —— 实测插件宽松接受、仍返回句柄（记录实际行为）
+@testing:case="createFxRiskSettings accepts null name (no validation)"
+rRS_nullName = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, string(), "TF_FXR", false)
+assert 1, typestr(rRS_nullName) != "VOID"
+
+// 用例目的：参数 tag 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createFxRiskSettings rejects wrong type for tag", exception=1
+caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", 123, false)
+
+// 用例目的：参数 tag 传入空字符串 null —— 实测插件宽松接受、返回空字符串句柄 ""（记录实际行为）
+@testing:case="createFxRiskSettings accepts null tag (no validation, returns empty-string handle)"
+rRS_nullTag = caplib::createFxRiskSettings(irCurveRisk, priceRisk, volRisk, priceVolRisk, thetaRisk, "", string(), false)
+assert 1, typestr(rRS_nullTag) == "STRING" && rRS_nullTag == ""

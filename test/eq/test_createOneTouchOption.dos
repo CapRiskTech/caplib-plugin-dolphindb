@@ -119,7 +119,7 @@ barTypesArr = ["DOWN_IN", "UAI", "DOWN_AND_IN", "UP_IN", "DAO", "UP_AND_IN", "DO
 for (btVal in barTypesArr) {
     tmpH = caplib::createOneTouchOption(2020.08.19, 2020.08.20, btVal, underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "fOT_" + btVal, false);
 }
-assert 1, true
+assert 1, typestr(tmpH) != "VOID"
 
 // 用例目的：遍历 paymentType 全部合法非空枚举值，验证均被接受
 @testing:case="createOneTouchOption accepts all legal paymentType values"
@@ -127,14 +127,14 @@ payTypesArr = ["PAY_AT_HIT", "PAH", "PAY_AT_MATURITY", "PAM"]
 for (ptVal in payTypesArr) {
     tmpH = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", ptVal, 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "fOTpay_" + ptVal, false);
 }
-assert 1, true
+assert 1, typestr(tmpH) != "VOID"
 
 // 用例目的：遍历 underlyingType 全部合法枚举值，验证均被接受
 @testing:case="createOneTouchOption accepts all legal underlyingType values"
 for (utVal in ["SPOT", "FUTURE", "FORWARD"]) {
     tmpH = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", utVal, "CNY", "50ETF.SSE", "fOTut_" + utVal, false);
 }
-assert 1, true
+assert 1, typestr(tmpH) != "VOID"
 
 // 用例目的：参数 nominal 传入0，验证数值边界校验（预期：抛异常）
 @testing:case="createOneTouchOption rejects zero nominal", exception=1
@@ -151,3 +151,44 @@ caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.
 // 用例目的：参数 settlementDays 传 BOOL 值 true（该传 INT），验证类型严格校验（预期：抛异常）
 @testing:case="createOneTouchOption rejects BOOL settlementDays", exception=1
 caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_bool_sd", false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / fixing 向量长度 / barrierObsType 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createOneTouchOption delivery before expiry (no validation)"
+result = caplib::createOneTouchOption(2020.08.19, 2020.08.18, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_dbe", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：长形式下仅缩短 fixingDates，fixingValues/fixingWeights 保持原长且一致，验证配对长度校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects fixingDates length mismatch", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT", [2020.08.10, 2020.08.11], [underlyingPrice, underlyingPrice, underlyingPrice], [1.0, 1.0, 1.0], false)
+
+// 用例目的：长形式下单独改变 fixingValues 长度（与 fixingDates 不一致），验证配对长度校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects fixingValues length mismatch", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT", [2020.08.10, 2020.08.11, 2020.08.12], [underlyingPrice, underlyingPrice], [1.0, 1.0, 1.0], false)
+
+// 用例目的：长形式下单独改变 fixingWeights 长度（与 fixingDates 不一致），验证配对长度校验（预期：抛异常）
+@testing:case="createOneTouchOption rejects fixingWeights length mismatch", exception=1
+caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT", [2020.08.10, 2020.08.11, 2020.08.12], [underlyingPrice, underlyingPrice, underlyingPrice], [1.0, 1.0, 1.0, 1.0], false)
+
+// 用例目的：barrierObsType 枚举取值 CONTINUOUS 逐值验证（文档合法值，预期接受）
+@testing:case="createOneTouchOption supports barrierObsType value CONTINUOUS"
+r = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_bot_c", false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：barrierObsType 枚举取值 DISCRETE 逐值验证（文档合法值，预期接受）
+@testing:case="createOneTouchOption supports barrierObsType value DISCRETE"
+r = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "DISCRETE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_bot_d", false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：barrierObsType 枚举取值 DISCRETE_OBSERVATION_TYPE 逐值验证（文档合法值，预期接受）
+@testing:case="createOneTouchOption supports barrierObsType value DISCRETE_OBSERVATION_TYPE"
+r = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "DISCRETE_OBSERVATION_TYPE", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_bot_dot", false)
+assert 1, typestr(r) != "VOID"
+
+// 用例目的：barrierObsType 枚举取值空串逐值验证（文档合法值，预期接受）
+@testing:case="createOneTouchOption supports barrierObsType value empty string"
+r = caplib::createOneTouchOption(2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "", "PAY_AT_MATURITY", 1.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_OT_bot_empty", false)
+assert 1, typestr(r) != "VOID"

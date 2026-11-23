@@ -40,7 +40,6 @@
 
       <section class="panel">
         <h2>Overview</h2>
-        <p>The complete Chinese guide following the standard documentation template is available at <a href="../DQLIB_DOCUMENTATION.md"><code>docs/DQLIB_DOCUMENTATION.md</code></a>.</p>
         <p>Caplib exposes 184 DolphinDB functions backed by the CapRiskTech `dqlibc` calculation library.</p>
         <div class="domain-grid">
           <a class="domain-tile" href="fixed-income.html"><span>Fixed Income, IR, and Credit</span><strong>56</strong><em>Curves, bonds, swaps, CDS, market data, and risk settings.</em></a>
@@ -74,7 +73,7 @@ listRemotePlugins()
 installPlugin("caplib")
 loadPlugin("caplib")</code></pre>
         <h3>Prebuilt package</h3>
-        <p>Version 0.0.15 is built from the upstream <code>release-caplib</code> branch, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.15">0.0.15 release</a>. See the <a href="../GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and the release notes. Note: <code>createPricingSettings</code> requires <code>specificPricingRequests</code> since 0.0.13.</p>
+        <p>Version 0.0.15 is built from the upstream <code>release-caplib</code> branch, with GCC 8.4 / ABI0. Download the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/releases/tag/0.0.15">0.0.15 release</a>. See the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/blob/main/docs/GCC8_OFFICIAL_IMAGE.md">compatibility and upgrade notes</a> and the release notes. Note: <code>createPricingSettings</code> requires <code>specificPricingRequests</code> since 0.0.13.</p>
         <p>If `caplib` is not listed remotely, place `libPluginCaplib.so`, the generated `PluginCaplib.txt`, `libdqlibc.so`, and `dqlibc.lic` together under the server's `plugins/caplib/` directory, with `calendars.bin` in the `data/` subdirectory, then load:</p>
         <pre><code>loadPlugin("caplib")</code></pre>
         <p>Stop the server before replacing both native libraries, retain the valid license and calendar data, then restart and load the plugin. Updating mounted files does not reload an already loaded library.</p>
@@ -121,7 +120,7 @@ zeroRate = caplib::getZeroRate(curve, 2026.07.02)
 print(zeroRate)</code></pre>
       </section>
 
-      
+
       <section id="error-behavior" class="panel">
         <h2>Error behavior</h2>
         <p>Every interface throws a DolphinDB <code>RuntimeException</code> on failure and never returns a fallback scalar or partial object:</p>
@@ -137,7 +136,7 @@ print(zeroRate)</code></pre>
       <section id="appendix" class="panel">
         <h2>Appendix</h2>
         <h3>Docker and source build</h3>
-        <p>See <a href="../../docker/README.md">`docker/README.md`</a> for deployment and <a href="../../BUILD_REQUIREMENTS.md">`BUILD_REQUIREMENTS.md`</a> for build dependencies, ABI constraints, and commands.</p>
+        <p>See the <a href="https://github.com/CapRiskTech/caplib-plugin-dolphindb/blob/main/docker/README.md">Docker deployment guide</a>. Source build dependencies and commands are provided with the source repository.</p>
         <h3>License</h3>
         <p>Place `dqlibc.lic` in `~/.dqlib/dqlibc.lic`, `/etc/dqlib/dqlibc.lic`, or beside `libdqlibc.so`. Request a license from <a href="https://caprisktech.com">caprisktech.com</a>.</p>
         <h3>FAQ</h3>

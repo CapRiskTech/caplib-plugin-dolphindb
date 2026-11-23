@@ -75,15 +75,15 @@ caplib::createRangeAccrualOption(2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02,
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createRangeAccrualOption rejects keyword arguments", syntaxError=1
 caplib::createRangeAccrualOption(expiry=2024.01.01, delivery=2024.01.01, asset=0.02, cash=0.02, lowerBarrier=0.02, upperBarrier=0.02, nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createRangeAccrualOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
-// 用例目的：向量 fixingDates 传入全空值，验证向量空值校验（预期：抛异常）
-@testing:case="createRangeAccrualOption accepts all-null vector fixingDates", exception=1
+// 用例目的：向量 fixingDates 传入全空值，验证向量空值校验（预期：抛异常；第三轮 review 修正用例名与预期一致）
+@testing:case="createRangeAccrualOption rejects all-null vector fixingDates", exception=1
 caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createRangeAccrualOption optional returnJson null uses default"
 result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：参数 asset 传入0，验证数值边界校验（预期：抛异常）
-@testing:case="createRangeAccrualOption rejects zero asset (lenient validation, does not raise)"
+// 用例目的：参数 asset 传入 0，实测允许零值、正常创建期权（预期：不抛异常）
+@testing:case="createRangeAccrualOption accepts zero asset"
 result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 assert 1, typestr(result) != "VOID"
 
@@ -92,8 +92,8 @@ assert 1, typestr(result) != "VOID"
 caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, -1, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 
 // ----------------------------------------------------------------------------
-// 用例目的：两个数组参数长度不一致（fixingDates 多一个元素），实测插件宽松接受——记录实际行为
-@testing:case="createRangeAccrualOption fixingDates length mismatch", exception=1
+// 用例目的：fixingDates 比配对数组多一个元素，验证长度关系校验（预期：抛异常）
+@testing:case="createRangeAccrualOption rejects fixingDates length mismatch", exception=1
 caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", join(dailyObsDates, dailyObsDates[0]), dailyObsValues, dailyObsWeights, false);
 
 // 用例目的：可选参数 returnJson 传入字符串 "true"，验证 BOOL 类型校验收紧（预期：抛异常）
@@ -109,10 +109,10 @@ caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPr
 i = 0
 for (v in ["SPOT", "FUTURE", "FORWARD"]) {
     h = "f_RA_UT_" + i
-    caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", v, "CNY", "50ETF.SSE", h, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+    r = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", v, "CNY", "50ETF.SSE", h, dailyObsDates, dailyObsValues, dailyObsWeights, false)
     i += 1
 }
-assert 1, true
+assert 1, r == h
 
 // 用例目的：参数 nominal 传入 0，验证边界校验（实测插件校验并抛 IllegalArgumentException）
 @testing:case="createRangeAccrualOption rejects zero nominal", exception=1
@@ -137,3 +137,25 @@ caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, 0.0, underly
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createRangeAccrualOption rejects wrong type for handle", exception=1
 caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / 障碍价关联 / fixing 向量长度
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createRangeAccrualOption delivery before expiry (no validation)"
+result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.18, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_dbe", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：lowerBarrier 高于 upperBarrier，验证障碍价关联校验（实测记录行为）
+@testing:case="createRangeAccrualOption lowerBarrier above upperBarrier (no validation)"
+result = caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*1.05, underlyingPrice*0.95, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA_lb_gt_ub", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：单独改变 fixingValues 长度（比 fixingDates 少一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createRangeAccrualOption rejects fixingValues length mismatch", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues[0:(size(dailyObsValues)-1)], dailyObsWeights, false)
+
+// 用例目的：单独改变 fixingWeights 长度（比 fixingDates 多一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createRangeAccrualOption rejects fixingWeights length mismatch", exception=1
+caplib::createRangeAccrualOption(2020.08.19, 2020.08.20, 0.0, 0.01, underlyingPrice*0.95, underlyingPrice*1.05, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_RA", dailyObsDates, dailyObsValues, join(dailyObsWeights, 1.0), false)

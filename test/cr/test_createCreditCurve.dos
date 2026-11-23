@@ -110,3 +110,132 @@ caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDate
 // 用例目的：枚举参数 extrap 传入非法值 —— 文档：仅接受所示精确拼写，验证枚举校验（预期：抛异常）
 @testing:case="createCreditCurve rejects invalid enum for extrap", exception=1
 caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "NOT_A_REAL_ENUM", "TF_CC", "TF_CC", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: spreads/name 校验 / 日期关系与排序 / 枚举逐值
+// ----------------------------------------------------------------------------
+
+// 用例目的：向量参数 spreads 传入错误类型的向量（STRING 向量），验证元素类型校验（预期：抛异常）
+@testing:case="createCreditCurve rejects wrong type for spreads", exception=1
+caplib::createCreditCurve(asOfDate, discountDates, take("a", size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC", "TF_CC", false)
+
+// 用例目的：向量参数 spreads 传入部分空值的向量，验证向量空值校验（预期：抛异常）
+@testing:case="createCreditCurve rejects partially-null vector spreads", exception=1
+caplib::createCreditCurve(asOfDate, discountDates, join([0.002, double()], take(0.002, size(discountDates) - 2)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC", "TF_CC", false)
+
+// 用例目的：参数 name 传入空值 —— 实测包装器宽松接受并返回句柄，记录实际行为
+@testing:case="createCreditCurve accepts null name (no validation)"
+rCcR3NmN = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", string(), "TF_CC_R3_NMN", false)
+assert 1, typestr(rCcR3NmN) != "VOID"
+
+// 用例目的：参数 name 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
+@testing:case="createCreditCurve rejects wrong type for name", exception=1
+caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", 123, "TF_CC", false)
+
+// 用例目的：asOfDate 晚于全部节点日期 —— 文档注明包装器不检查日期先后关系，实测宽松接受不抛异常，记录实际行为
+@testing:case="createCreditCurve accepts asOfDate later than pillar dates (no date validation)"
+rCcR3D1 = caplib::createCreditCurve(2031.01.01, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_D1", false)
+assert 1, typestr(rCcR3D1) != "VOID"
+
+// 用例目的：pillarDates 非递增（倒序）—— 文档注明包装器不检查排序，当前共享构造器在包装层校验并抛异常，记录实际行为（预期：抛异常）
+@testing:case="createCreditCurve rejects non-increasing pillarDates", exception=1
+caplib::createCreditCurve(asOfDate, reverse(discountDates), take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC", "TF_CC", false)
+
+// 用例目的：pillarDates 含重复节点（非严格递增）—— 当前共享构造器在包装层校验并抛异常，记录实际行为（预期：抛异常）
+@testing:case="createCreditCurve rejects duplicate pillarDates", exception=1
+caplib::createCreditCurve(asOfDate, [2020.03.22, 2020.03.22, 2020.05.21, 2020.08.22, 2021.02.21, 2022.02.21, 2023.02.21, 2024.02.21, 2025.02.21, 2027.02.21], take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC", "TF_CC", false)
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_360（正常用例已覆盖 ACT_365_FIXED），验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACT_360"
+rCcR3Dcc1 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC1", false)
+assert 1, typestr(rCcR3Dcc1) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_360，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACTUAL_360"
+rCcR3Dcc2 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACTUAL_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC2", false)
+assert 1, typestr(rCcR3Dcc2) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT/360，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACT/360"
+rCcR3Dcc3 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT/360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC3", false)
+assert 1, typestr(rCcR3Dcc3) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_365，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACT_365"
+rCcR3Dcc4 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC4", false)
+assert 1, typestr(rCcR3Dcc4) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_365_FIXED，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACTUAL_365_FIXED"
+rCcR3Dcc5 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACTUAL_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC5", false)
+assert 1, typestr(rCcR3Dcc5) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT/365，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACT/365"
+rCcR3Dcc6 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT/365", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC6", false)
+assert 1, typestr(rCcR3Dcc6) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_ACT，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACT_ACT"
+rCcR3Dcc7 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_ACT", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC7", false)
+assert 1, typestr(rCcR3Dcc7) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_ACT_ISDA，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACT_ACT_ISDA"
+rCcR3Dcc8 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_ACT_ISDA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC8", false)
+assert 1, typestr(rCcR3Dcc8) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_ACTUAL_ISDA，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACTUAL_ACTUAL_ISDA"
+rCcR3Dcc9 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACTUAL_ACTUAL_ISDA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC9", false)
+assert 1, typestr(rCcR3Dcc9) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACT_ACT_ICMA，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACT_ACT_ICMA"
+rCcR3Dcc10 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_ACT_ICMA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC10", false)
+assert 1, typestr(rCcR3Dcc10) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 ACTUAL_ACTUAL_ICMA，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention ACTUAL_ACTUAL_ICMA"
+rCcR3Dcc11 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACTUAL_ACTUAL_ICMA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC11", false)
+assert 1, typestr(rCcR3Dcc11) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 THIRTY_360，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention THIRTY_360"
+rCcR3Dcc12 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "THIRTY_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC12", false)
+assert 1, typestr(rCcR3Dcc12) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 30_360，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention 30_360"
+rCcR3Dcc13 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "30_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC13", false)
+assert 1, typestr(rCcR3Dcc13) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 30/360，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention 30/360"
+rCcR3Dcc14 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "30/360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC14", false)
+assert 1, typestr(rCcR3Dcc14) != "VOID"
+
+// 用例目的：枚举参数 dayCountConvention 传入文档取值 BOND_BASIS，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts dayCountConvention BOND_BASIS"
+rCcR3Dcc15 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "BOND_BASIS", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_DCC15", false)
+assert 1, typestr(rCcR3Dcc15) != "VOID"
+
+// 用例目的：枚举参数 interp 传入文档取值 CUBIC_SPLINE_INTERP（正常用例已覆盖 LINEAR_INTERP），验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts interp CUBIC_SPLINE_INTERP"
+rCcR3Int1 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "CUBIC_SPLINE_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_INT1", false)
+assert 1, typestr(rCcR3Int1) != "VOID"
+
+// 用例目的：枚举参数 interp 传入文档取值 LEFT_CONTINUOUS_FLAT_INTERP，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts interp LEFT_CONTINUOUS_FLAT_INTERP"
+rCcR3Int2 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "LEFT_CONTINUOUS_FLAT_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_INT2", false)
+assert 1, typestr(rCcR3Int2) != "VOID"
+
+// 用例目的：枚举参数 interp 传入文档取值 CUBIC_HERMITE_SPLINE_INTERP，验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts interp CUBIC_HERMITE_SPLINE_INTERP"
+rCcR3Int3 = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "CUBIC_HERMITE_SPLINE_INTERP", "FLAT_EXTRAP", "TF_CC_NAME", "TF_CC_R3_INT3", false)
+assert 1, typestr(rCcR3Int3) != "VOID"
+
+// 用例目的：枚举参数 extrap 传入文档取值 LINEAR_EXTRAP（正常用例已覆盖 FLAT_EXTRAP），验证逐值接受（预期：不抛异常）
+@testing:case="createCreditCurve accepts extrap LINEAR_EXTRAP"
+rCcR3Ext = caplib::createCreditCurve(asOfDate, discountDates, take(0.002, size(discountDates)), "ACT_365_FIXED", "LINEAR_INTERP", "LINEAR_EXTRAP", "TF_CC_NAME", "TF_CC_R3_EXT", false)
+assert 1, typestr(rCcR3Ext) != "VOID"

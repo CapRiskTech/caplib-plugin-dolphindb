@@ -14,11 +14,13 @@
     <main class="content">
       <header class="page-header">
         <p class="kicker">DolphinDB caplib plugin</p>
-        <h1>Common</h1>
-        <p class="lede">Cross-asset utilities, pricing settings, risk settings, scenario settings, and shared protobuf tooling.</p>
+        <h1>Market Risk</h1>
+        <p class="lede">Historical-simulation scenario generation, Value at Risk (VaR), and Expected Shortfall (ES).</p>
       </header>
       <section id="user-guide" class="panel"><p class="validity-guide">📘 Full standard documentation (parameter values, error behavior) is in the Markdown version <a href="../DQLIB_DOCUMENTATION.md">DQLIB_DOCUMENTATION.md</a>.</p><h2>User Guide</h2><p>Market Risk: historical-simulation scenario generators (FX spot, FX volatility) and VaR / Expected Shortfall measures. This page contains 4 functions.</p><p>Every function that stores an object in ObjectCache accepts an optional final <code>returnJson BOOL</code> argument. Pass <code>true</code> to return <code>[handle, protobufJson]</code>.</p><p class="validity-guide"><strong>Error behavior:</strong>Every function throws a DolphinDB <code>RuntimeException</code> on failure instead of returning a fallback scalar or partial object. Service calls returning <code>success=false</code> surface the service <code>err_msg</code>; validation, cache-class/handle, parsing, and serialization failures throw as well.</p></section><section class="panel example"><h2>Example</h2><pre><code>loadPlugin(&quot;caplib&quot;)
-vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
+samples = [-100.0, -50.0, 0.0, 50.0, 100.0]
+vaR = caplib::calcVaR(samples, 0.95, false)
+print(vaR.value_at_risk)</code></pre></section><div id="api-reference" class="filter-box"><input id="filter" type="search" placeholder="Filter functions on this page"><span id="count"></span></div>
 <section class="api-group"><h2>Market Risk</h2>
 
 
@@ -28,19 +30,27 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="buildhistsimfxspotrate"></a>
       <h3><code>buildHistSimFxSpotRate</code></h3>
       <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::buildHistSimFxSpotRate(simDate DATE, referenceSpot STRING, histStart STRING, histEnd STRING, useTemplate BOOL, fxSpotTemplate STRING, handle STRING[, returnJson BOOL])</code></p>
+      <p class="full-signature"><code>caplib::buildHistSimFxSpotRate(simDate, referenceSpot, histStart, histEnd, useTemplate, fxSpotTemplate, handle[, returnJson])</code></p>
       <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Build an FX spot-rate scenario by historical simulation (service HIST_SIM_FX_SPOT_RATE_SCN_GENERATOR). Optionally applies an FxSpotTemplate.</p>
+      <p class="api-description">Build an FX spot-rate scenario by historical simulation . Optionally applies an FxSpotTemplate.</p>
     </div>
-    <span class="return-pill">FxSpotRate handle</span>
+
   </div>
   <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> FxSpotRate handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <p class="return-description">ObjectCache handle of the created FxSpotRate object, STRING scalar; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
   <details open>
     <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>Simulation reference date.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar.</span></td></tr><tr><td><code>referenceSpot</code></td><td>STRING</td><td>Handle of the reference FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></td></tr><tr><td><code>histStart</code></td><td>STRING</td><td>Handle of the historical-start FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></td></tr><tr><td><code>histEnd</code></td><td>STRING</td><td>Handle of the historical-end FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></td></tr><tr><td><code>useTemplate</code></td><td>BOOL</td><td>Whether to apply an FX spot template; if true, fxSpotTemplate is required.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar. When true, <code>fxSpotTemplate</code> must be a valid FxSpotTemplate handle; when false, pass an empty string.</span></td></tr><tr><td><code>fxSpotTemplate</code></td><td>STRING</td><td>Handle of the FxSpotTemplate; empty when useTemplate is false.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotTemplate object when <code>useTemplate</code> is true; an empty string otherwise.</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key for the result FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key.</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns <code>[handle, protobufJson]</code>.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>simDate</code> DATE type. Simulation reference date.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar.</span></p>
+<p class="param-item"><code>referenceSpot</code> STRING type. Handle of the reference FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></p>
+<p class="param-item"><code>histStart</code> STRING type. Handle of the historical-start FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></p>
+<p class="param-item"><code>histEnd</code> STRING type. Handle of the historical-end FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></p>
+<p class="param-item"><code>useTemplate</code> BOOL type. Whether to apply an FX spot template; if true, fxSpotTemplate is required.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar. When true, <code>fxSpotTemplate</code> must be a valid FxSpotTemplate handle; when false, pass an empty string.</span></p>
+<p class="param-item"><code>fxSpotTemplate</code> STRING type. Handle of the FxSpotTemplate; empty when useTemplate is false.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotTemplate object when <code>useTemplate</code> is true; an empty string otherwise.</span></p>
+<p class="param-item"><code>handle</code> STRING type. ObjectCache key for the result FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key.</span></p>
+<p class="param-item"><code>returnJson</code> BOOL type. Optional. If omitted or false, returns only the ObjectCache handle; if true, returns <code>[handle, protobufJson]</code>.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></p></div>
   </details>
 
+<div class="api-example"><h4>Example</h4><p>See the <a href="index.html#example">complete executable example</a> on the documentation home page.</p></div>
 </article>
 <article class="api-card" data-search="build an fx volatility-surface historical simulation scenario generator. simdate referencesurface histstart histend dates strikes spot domcurve forcurve settings handle">
   <div class="api-card-head">
@@ -48,19 +58,29 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="buildhistsimfxvolsurface"></a>
       <h3><code>buildHistSimFxVolSurface</code></h3>
       <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::buildHistSimFxVolSurface(simDate DATE, referenceVolSurf STRING, histStart STRING, histEnd STRING, volSurfaceDates DATE vector, volSurfaceStrikes ANY, spot STRING, domCurve STRING, forCurve STRING, settings STRING, handle STRING[, returnJson BOOL])</code></p>
+      <p class="full-signature"><code>caplib::buildHistSimFxVolSurface(simDate, referenceVolSurf, histStart, histEnd, volSurfaceDates DATE vector, volSurfaceStrikes, spot, domCurve, forCurve, settings, handle[, returnJson])</code></p>
       <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Build an FX volatility-surface scenario by historical simulation (service HIST_SIM_FX_VOL_SURFACE_SCN_GENERATOR) from reference and historical surfaces, a strike/target-date grid, spot rate, and domestic/foreign discount curves.</p>
+      <p class="api-description">Build an FX volatility-surface scenario by historical simulation  from reference and historical surfaces, a strike/target-date grid, spot rate, and domestic/foreign discount curves.</p>
     </div>
-    <span class="return-pill">FxVolatilitySurface handle</span>
+
   </div>
   <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> FxVolatilitySurface handle as stored in ObjectCache; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
+  <p class="return-description">ObjectCache handle of the created FxVolatilitySurface object, STRING scalar; with returnJson=true a <code>[handle, protobufJson]</code> pair is returned.</p>
   <details open>
     <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>simDate</code></td><td>DATE</td><td>Simulation reference date.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar.</span></td></tr><tr><td><code>referenceVolSurf / histStart / histEnd</code></td><td>STRING</td><td>Handles of the reference, historical-start and historical-end FxVolatilitySurface.<br><span class="validity-note"><strong>Validity:</strong> Each must be a non-empty ObjectCache key of an existing FxVolatilitySurface object.</span></td></tr><tr><td><code>volSurfaceDates</code></td><td>DATE vector</td><td>Target surface dates; at least two.<br><span class="validity-note"><strong>Validity:</strong> Must be a DATE vector without nulls, containing at least two dates; its length must match the number of strike sets in <code>volSurfaceStrikes</code>.</span></td></tr><tr><td><code>volSurfaceStrikes</code></td><td>ANY</td><td>Per-date strike sets (a vector of DOUBLE vector); shape must match the date count.<br><span class="validity-note"><strong>Validity:</strong> Must be a vector of DOUBLE vectors without nulls; its length must equal the number of dates in <code>volSurfaceDates</code>.</span></td></tr><tr><td><code>spot</code></td><td>STRING</td><td>Handle of the FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></td></tr><tr><td><code>domCurve</code></td><td>STRING</td><td>Handle of the domestic IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing IrYieldCurve object.</span></td></tr><tr><td><code>forCurve</code></td><td>STRING</td><td>Handle of the foreign IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing IrYieldCurve object.</span></td></tr><tr><td><code>settings</code></td><td>STRING</td><td>Handle of VolatilitySurfaceBuildSettings; may be empty.<br><span class="validity-note"><strong>Validity:</strong> Must be an ObjectCache key of an existing VolatilitySurfaceBuildSettings object, or an empty string.</span></td></tr><tr><td><code>handle</code></td><td>STRING</td><td>ObjectCache key for the result FxVolatilitySurface.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key.</span></td></tr><tr><td><code>returnJson</code></td><td>BOOL</td><td>Optional. If omitted or false, returns only the ObjectCache handle; if true, returns <code>[handle, protobufJson]</code>.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>simDate</code> DATE type. Simulation reference date.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-null DolphinDB DATE scalar.</span></p>
+<p class="param-item"><code>referenceVolSurf / histStart / histEnd</code> STRING type. Handles of the reference, historical-start and historical-end FxVolatilitySurface.<br><span class="validity-note"><strong>Validity:</strong> Each must be a non-empty ObjectCache key of an existing FxVolatilitySurface object.</span></p>
+<p class="param-item"><code>volSurfaceDates</code> DATE vector type. Target surface dates; at least two.<br><span class="validity-note"><strong>Validity:</strong> Must be a DATE vector without nulls, containing at least two dates; its length must match the number of strike sets in <code>volSurfaceStrikes</code>.</span></p>
+<p class="param-item"><code>volSurfaceStrikes</code> ANY type. Per-date strike sets (a vector of DOUBLE vector); shape must match the date count.<br><span class="validity-note"><strong>Validity:</strong> Must be a vector of DOUBLE vectors without nulls; its length must equal the number of dates in <code>volSurfaceDates</code>.</span></p>
+<p class="param-item"><code>spot</code> STRING type. Handle of the FxSpotRate.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing FxSpotRate object.</span></p>
+<p class="param-item"><code>domCurve</code> STRING type. Handle of the domestic IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing IrYieldCurve object.</span></p>
+<p class="param-item"><code>forCurve</code> STRING type. Handle of the foreign IrYieldCurve.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key of an existing IrYieldCurve object.</span></p>
+<p class="param-item"><code>settings</code> STRING type. Handle of VolatilitySurfaceBuildSettings; may be empty.<br><span class="validity-note"><strong>Validity:</strong> Must be an ObjectCache key of an existing VolatilitySurfaceBuildSettings object, or an empty string.</span></p>
+<p class="param-item"><code>handle</code> STRING type. ObjectCache key for the result FxVolatilitySurface.<br><span class="validity-note"><strong>Validity:</strong> Must be a non-empty ObjectCache key.</span></p>
+<p class="param-item"><code>returnJson</code> BOOL type. Optional. If omitted or false, returns only the ObjectCache handle; if true, returns <code>[handle, protobufJson]</code>.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></p></div>
   </details>
 
+<div class="api-example"><h4>Example</h4><p>See the <a href="index.html#example">complete executable example</a> on the documentation home page.</p></div>
 </article>
 <article class="api-card" data-search="compute the value-at-risk var of a profit-and-loss sample series. profitlosssamples probability antithetic">
   <div class="api-card-head">
@@ -68,19 +88,22 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="calcvar"></a>
       <h3><code>calcVaR</code></h3>
       <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::calcVaR(profitLossSamples DOUBLE vector, probability DOUBLE, antithetic BOOL)</code></p>
+      <p class="full-signature"><code>caplib::calcVaR(profitLossSamples DOUBLE vector, probability, antithetic)</code></p>
       <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Compute the Value-at-Risk of a profit-and-loss sample series (service CALCULATE_VALUE_AT_RISK).</p>
+      <p class="api-description">Compute the Value-at-Risk of a profit-and-loss sample series .</p>
     </div>
-    <span class="return-pill">DICTIONARY</span>
+
   </div>
   <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> a dictionary with keys <code>value_at_risk</code> (VaR) and <code>value_at_risk_mirrored</code> (mirror VaR of the antithetic sample); both values are DOUBLE scalars.</p>
+  <p class="return-description">a dictionary with keys <code>value_at_risk</code> (VaR) and <code>value_at_risk_mirrored</code> (mirror VaR of the antithetic sample); both values are DOUBLE scalars.</p>
   <details open>
     <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE vector</td><td>Profit/loss sample series.<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE vector without nulls and must not be empty.</span></td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>Confidence level, strictly in (0,1).<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE scalar strictly in (0, 1).</span></td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>Whether to also compute the mirror (antithetic) VaR.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>profitLossSamples</code> DOUBLE vector type. Profit/loss sample series.<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE vector without nulls and must not be empty.</span></p>
+<p class="param-item"><code>probability</code> DOUBLE type. Confidence level, strictly in (0,1).<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE scalar strictly in (0, 1).</span></p>
+<p class="param-item"><code>antithetic</code> BOOL type. Whether to also compute the mirror (antithetic) VaR.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></p></div>
   </details>
 
+<div class="api-example"><h4>Example</h4><p>See the <a href="index.html#example">complete executable example</a> on the documentation home page.</p></div>
 </article>
 <article class="api-card" data-search="compute the expected shortfall es of a profit-and-loss sample series. profitlosssamples probability antithetic">
   <div class="api-card-head">
@@ -88,19 +111,22 @@ vaR = caplib::calcVaR([-100.0, -50.0, 0.0, 50.0, 100.0], 0.95, false);</code></p
       <a id="calcexpectedshortfall"></a>
       <h3><code>calcExpectedShortfall</code></h3>
       <h4 class="api-subheading">Syntax</h4>
-      <p class="full-signature"><code>caplib::calcExpectedShortfall(profitLossSamples DOUBLE vector, probability DOUBLE, antithetic BOOL)</code></p>
+      <p class="full-signature"><code>caplib::calcExpectedShortfall(profitLossSamples DOUBLE vector, probability, antithetic)</code></p>
       <h4 class="api-subheading">Details</h4>
-      <p class="api-description">Compute the Expected Shortfall of a profit-and-loss sample series (service CALCULATE_EXPECTED_SHORT_FALL).</p>
+      <p class="api-description">Compute the Expected Shortfall of a profit-and-loss sample series .</p>
     </div>
-    <span class="return-pill">DICTIONARY</span>
+
   </div>
   <h4 class="api-subheading">Return value</h4>
-  <p class="return-description"><strong>Returns:</strong> a dictionary with keys <code>expected_shortfall</code> (ES) and <code>expected_shortfall_mirrored</code> (mirror ES of the antithetic sample); both values are DOUBLE scalars.</p>
+  <p class="return-description">a dictionary with keys <code>expected_shortfall</code> (ES) and <code>expected_shortfall_mirrored</code> (mirror ES of the antithetic sample); both values are DOUBLE scalars.</p>
   <details open>
     <summary>Parameters</summary>
-    <table class="param-table"><thead><tr><th>Parameter</th><th>Type / Shape</th><th>Description</th></tr></thead><tbody><tr><td><code>profitLossSamples</code></td><td>DOUBLE vector</td><td>Profit/loss sample series.<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE vector without nulls and must not be empty.</span></td></tr><tr><td><code>probability</code></td><td>DOUBLE</td><td>Confidence level, strictly in (0,1).<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE scalar strictly in (0, 1).</span></td></tr><tr><td><code>antithetic</code></td><td>BOOL</td><td>Whether to also compute the mirror (antithetic) Expected Shortfall.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></td></tr></tbody></table>
+    <div class="param-list"><p class="param-item"><code>profitLossSamples</code> DOUBLE vector type. Profit/loss sample series.<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE vector without nulls and must not be empty.</span></p>
+<p class="param-item"><code>probability</code> DOUBLE type. Confidence level, strictly in (0,1).<br><span class="validity-note"><strong>Validity:</strong> Must be a DOUBLE scalar strictly in (0, 1).</span></p>
+<p class="param-item"><code>antithetic</code> BOOL type. Whether to also compute the mirror (antithetic) Expected Shortfall.<br><span class="validity-note"><strong>Validity:</strong> Must be a BOOL scalar.</span></p></div>
   </details>
 
+<div class="api-example"><h4>Example</h4><p>See the <a href="index.html#example">complete executable example</a> on the documentation home page.</p></div>
 </article>
 </section>
 <script>

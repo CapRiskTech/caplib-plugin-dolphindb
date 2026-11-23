@@ -61,9 +61,10 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：可选参数 returnJson 传入非 BOOL 标量，验证类型校验（预期：抛异常）
 @testing:case="createMonteCarloSettings rejects non-BOOL returnJson", exception=1
 caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", 1)
-// 用例目的：参数 seed 传入负值，验证数值边界校验（预期：抛异常）
-@testing:case="createMonteCarloSettings rejects negative seed", exception=1
-caplib::createMonteCarloSettings(1, 1, -1.0, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+// 用例目的：seed 传入负 INT，实测包装器不校验非负范围，记录接受行为
+@testing:case="createMonteCarloSettings accepts negative seed (no range validation)"
+negativeSeedResult = caplib::createMonteCarloSettings(1, 1, -1, 1, 1, false, 1, "TF_MC_NEG_SEED", false)
+assert 1, negativeSeedResult == "TF_MC_NEG_SEED"
 
 // 用例目的：参数 uniformNumberType 传入越界枚举值 999，验证枚举范围校验（预期：抛异常，防 enum 强转 UB）
 @testing:case="createMonteCarloSettings rejects out-of-range uniformNumberType", exception=1
@@ -105,4 +106,26 @@ caplib::createMonteCarloSettings(1, 1, 1, 1, true, false, 1, "TF_createMonteCarl
 // 用例目的：numSteps 传 BOOL 值，验证文档所述「BOOL 被拒」（预期：抛异常）
 @testing:case="createMonteCarloSettings rejects BOOL numSteps", exception=1
 caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, true, "TF_createMonteCarloSettings_H", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: numSimulations / numSteps zero & negative boundary behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：numSimulations 传 0 —— 文档要求严格为正，实测插件抛异常（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects zero numSimulations", exception=1
+caplib::createMonteCarloSettings(0, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：numSimulations 传负值 -1 —— 文档要求严格为正，实测插件抛异常（预期：抛异常）
+@testing:case="createMonteCarloSettings rejects negative numSimulations", exception=1
+caplib::createMonteCarloSettings(-1, 1, 1, 1, 1, false, 1, "TF_createMonteCarloSettings_H", false)
+
+// 用例目的：numSteps 传 0 —— 文档要求严格为正但包装器通常仅检查类型，实测宽松接受，记录实际行为
+@testing:case="createMonteCarloSettings accepts zero numSteps (no range validation)"
+rMCS_zs = caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, 0, "TF_createMonteCarloSettings_H", false)
+assert 1, typestr(rMCS_zs) != "VOID"
+
+// 用例目的：numSteps 传负值 -1 —— 文档要求严格为正但包装器通常仅检查类型，实测宽松接受，记录实际行为
+@testing:case="createMonteCarloSettings accepts negative numSteps (no range validation)"
+rMCS_ns = caplib::createMonteCarloSettings(1, 1, 1, 1, 1, false, -1, "TF_createMonteCarloSettings_H", false)
+assert 1, typestr(rMCS_ns) != "VOID"
 

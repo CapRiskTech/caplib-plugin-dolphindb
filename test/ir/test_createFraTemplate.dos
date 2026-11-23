@@ -18,6 +18,8 @@ def isHandleJson(result, expectedHandle) {
 // Setup: fixtures (plain script, executed before the test cases)
 
 currency = "CNY";
+calendarCreated = caplib::createCalendar("CAL_CFETS");
+assert 1, calendarCreated;
 
 iborIndex = caplib::createIborIndex(
     "CNY_SHIBOR_3M", "3M", "CNY", ["CAL_CFETS"], 1,
@@ -152,3 +154,111 @@ caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFET
 // 验证类型校验（预期：抛异常）
 @testing:case="createFraTemplate rejects BOOL fixingDayOffset", exception=1
 caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", true, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：freq / dayCountConvention / interestDayConvention /
+// payDayConvention / fixingDayConvention 逐值覆盖（实测回退默认、全部接受）
+// ----------------------------------------------------------------------------
+
+// 用例目的：freq 逐值覆盖（MONTHLY/SEMIANNUAL/SEMI_ANNUAL/ANNUAL，实测全部接受）
+@testing:case="createFraTemplate accepts freq value MONTHLY (fallback accepted)"
+rFraFreq = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "MONTHLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraFreq) != "VOID"
+@testing:case="createFraTemplate accepts freq value SEMIANNUAL (fallback accepted)"
+rFraFreq = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "SEMIANNUAL", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraFreq) != "VOID"
+@testing:case="createFraTemplate accepts freq value SEMI_ANNUAL (fallback accepted)"
+rFraFreq = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "SEMI_ANNUAL", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraFreq) != "VOID"
+@testing:case="createFraTemplate accepts freq value ANNUAL (fallback accepted)"
+rFraFreq = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "ANNUAL", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraFreq) != "VOID"
+
+// 用例目的：dayCountConvention 逐值覆盖（文档 16 个标签，实测全部接受）
+@testing:case="createFraTemplate accepts dayCountConvention value ACTUAL_360 (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACTUAL_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACT/360 (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT/360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACT_365 (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_365", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACT_365_FIXED (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_365_FIXED", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACTUAL_365_FIXED (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACTUAL_365_FIXED", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACT/365 (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT/365", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACT_ACT (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_ACT", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACT_ACT_ISDA (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_ACT_ISDA", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACTUAL_ACTUAL_ISDA (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACTUAL_ACTUAL_ISDA", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACT_ACT_ICMA (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_ACT_ICMA", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value ACTUAL_ACTUAL_ICMA (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACTUAL_ACTUAL_ICMA", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value THIRTY_360 (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "THIRTY_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value 30_360 (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "30_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value 30/360 (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "30/360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+@testing:case="createFraTemplate accepts dayCountConvention value BOND_BASIS (fallback accepted)"
+rFraDcc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "BOND_BASIS", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraDcc) != "VOID"
+
+// 用例目的：interestDayConvention 逐值覆盖（FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createFraTemplate accepts interestDayConvention value FOLLOWING (fallback accepted)"
+rFraIdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraIdc) != "VOID"
+@testing:case="createFraTemplate accepts interestDayConvention value PRECEDING (fallback accepted)"
+rFraIdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "PRECEDING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraIdc) != "VOID"
+@testing:case="createFraTemplate accepts interestDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rFraIdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_PRECEDING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraIdc) != "VOID"
+@testing:case="createFraTemplate accepts interestDayConvention value UNADJUSTED (fallback accepted)"
+rFraIdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "UNADJUSTED", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraIdc) != "VOID"
+
+// 用例目的：payDayConvention 逐值覆盖（FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createFraTemplate accepts payDayConvention value FOLLOWING (fallback accepted)"
+rFraPdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraPdc) != "VOID"
+@testing:case="createFraTemplate accepts payDayConvention value PRECEDING (fallback accepted)"
+rFraPdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "PRECEDING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraPdc) != "VOID"
+@testing:case="createFraTemplate accepts payDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rFraPdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_PRECEDING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraPdc) != "VOID"
+@testing:case="createFraTemplate accepts payDayConvention value UNADJUSTED (fallback accepted)"
+rFraPdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "UNADJUSTED", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraPdc) != "VOID"
+
+// 用例目的：fixingDayConvention 逐值覆盖（FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createFraTemplate accepts fixingDayConvention value FOLLOWING (fallback accepted)"
+rFraFdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "FOLLOWING", -1, false)
+assert 1, typestr(rFraFdc) != "VOID"
+@testing:case="createFraTemplate accepts fixingDayConvention value PRECEDING (fallback accepted)"
+rFraFdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "PRECEDING", -1, false)
+assert 1, typestr(rFraFdc) != "VOID"
+@testing:case="createFraTemplate accepts fixingDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rFraFdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "MODIFIED_PRECEDING", -1, false)
+assert 1, typestr(rFraFdc) != "VOID"
+@testing:case="createFraTemplate accepts fixingDayConvention value UNADJUSTED (fallback accepted)"
+rFraFdc = caplib::createFraTemplate("TF_FRA", iborIndex[0], "CNY", "CAL_CFETS", ["CAL_CFETS"], "QUARTERLY", "ACT_360", "NO_DISCOUNT", "MODIFIED_FOLLOWING", 0, "MODIFIED_FOLLOWING", "UNADJUSTED", -1, false)
+assert 1, typestr(rFraFdc) != "VOID"

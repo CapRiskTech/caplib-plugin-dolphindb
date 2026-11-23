@@ -186,3 +186,57 @@ assert 1, okIbor
 // 用例目的：INT 参数 startDelay 传入 BOOL true —— 源码 requireIntScalar(args[4]) 严格判型拒绝 DT_BOOL（预期：抛异常）
 @testing:case="createIborIndex rejects BOOL startDelay", exception=1
 caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], true, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", true)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：dayCountConvention 11 个标签 / interestDayConvention
+// 5 个标签逐值覆盖（实测回退默认、全部接受）
+// ----------------------------------------------------------------------------
+
+// 用例目的：dayCountConvention 逐值覆盖（文档 11 个标签，实测全部接受）
+@testing:case="createIborIndex accepts dayCountConvention value ACTUAL_360 (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACTUAL_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value ACT/360 (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT/360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value ACT_365 (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_365", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value ACT_365_FIXED (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_365_FIXED", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value ACTUAL_365_FIXED (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACTUAL_365_FIXED", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value ACT/365 (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT/365", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value THIRTY_360 (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "THIRTY_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value 30_360 (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "30_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value 30/360 (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "30/360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+@testing:case="createIborIndex accepts dayCountConvention value BOND_BASIS (fallback accepted)"
+rDcc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "BOND_BASIS", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rDcc) != "VOID"
+
+// 用例目的：interestDayConvention 逐值覆盖（FOLLOWING/MODIFIED_FOLLOWING/PRECEDING/MODIFIED_PRECEDING/UNADJUSTED，实测全部接受）
+@testing:case="createIborIndex accepts interestDayConvention value FOLLOWING (fallback accepted)"
+rIdc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rIdc) != "VOID"
+@testing:case="createIborIndex accepts interestDayConvention value MODIFIED_FOLLOWING (fallback accepted)"
+rIdc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_FOLLOWING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rIdc) != "VOID"
+@testing:case="createIborIndex accepts interestDayConvention value PRECEDING (fallback accepted)"
+rIdc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "PRECEDING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rIdc) != "VOID"
+@testing:case="createIborIndex accepts interestDayConvention value MODIFIED_PRECEDING (fallback accepted)"
+rIdc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "MODIFIED_PRECEDING", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rIdc) != "VOID"
+@testing:case="createIborIndex accepts interestDayConvention value UNADJUSTED (fallback accepted)"
+rIdc = caplib::createIborIndex("TF_IBOR", "3M", "CNY", ["CAL_CFETS"], 1, "ACT_360", "UNADJUSTED", "INVALID_DATE_ROLL_CONVENTION", "STANDARD_IBOR_INDEX", false)
+assert 1, typestr(rIdc) != "VOID"

@@ -162,3 +162,17 @@ assert 1, max(abs(r1 - r2)) > 1.0e-12
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="buildCreditCurve rejects wrong type for handle", exception=1
 caplib::buildCreditCurve(asOfDate, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", 123, true)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate 与曲线节点日期关系
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate 与所引用平价曲线及贴现曲线的节点日期不一致（晚于曲线基准日 2020.02.21、早于首节点）—— 实测宽松接受不抛异常，记录实际行为
+@testing:case="buildCreditCurve accepts asOfDate inconsistent with curve dates (no date validation)"
+rBccR3D1 = caplib::buildCreditCurve(2020.03.01, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT_R3_D1", true)
+assert 1, isHandleJson(rBccR3D1, "TF_CR_BUILT_R3_D1")
+
+// 用例目的：asOfDate 晚于相关期限（晚于全部贴现曲线节点及 5Y 平价期限）—— 实测宽松接受不抛异常，记录实际行为
+@testing:case="buildCreditCurve accepts asOfDate later than maturities (no date validation)"
+rBccR3D2 = caplib::buildCreditCurve(2031.01.01, creditParCurve[0], discountCurve, "BOND_CREDIT", "BOOTSTRAPPING_METHOD", "TF_CR_BUILT_R3_D2", true)
+assert 1, isHandleJson(rBccR3D2, "TF_CR_BUILT_R3_D2")

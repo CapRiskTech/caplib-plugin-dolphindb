@@ -174,3 +174,22 @@ caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStri
 // 用例目的：矩阵参数 volatilities 传入部分空值矩阵，验证矩阵校验（预期：抛异常）
 @testing:case="createFxVolatilitySurface rejects partially-null matrix volatilities", exception=1
 caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30], formStrikesVector, matrix([0.2, double()], [double(), 0.2]), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS", false);
+
+// ----------------------------------------------------------------------------
+// Review round-3: asOfDate 与 termDates 关系 + termDates 非递增/重复的实际行为
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate 晚于 termDates —— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="createFxVolatilitySurface accepts asOfDate after termDates (no validation)"
+rVs_r3a = caplib::createFxVolatilitySurface(2022.06.30, "EUR", "USD", [2021.06.30], formStrikesVector, formVolsVector, linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS_R3A", false)
+assert 1, rVs_r3a == "TF_FXVS_R3A"
+
+// 用例目的：termDates 非递增（2021.09.30 在 2021.06.30 之前）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="createFxVolatilitySurface accepts non-increasing termDates (no validation)"
+rVs_r3b = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.09.30, 2021.06.30], matrix([1.00, 1.00], [1.1761, 1.1761], [1.35, 1.35]), matrix(take(0.06, 2), take(0.06, 2), take(0.06, 2)), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS_R3B", false)
+assert 1, rVs_r3b == "TF_FXVS_R3B"
+
+// 用例目的：termDates 含重复日期（两个 2021.06.30）—— 实测插件不校验、宽松接受，记录实际行为
+@testing:case="createFxVolatilitySurface accepts duplicate termDates (no validation)"
+rVs_r3c = caplib::createFxVolatilitySurface(asOfDate, "EUR", "USD", [2021.06.30, 2021.06.30], matrix([1.00, 1.00], [1.1761, 1.1761], [1.35, 1.35]), matrix(take(0.06, 2), take(0.06, 2), take(0.06, 2)), linearVolSurfDefinition[0], fxMktConventions[0], "TF_FXVS_R3C", false)
+assert 1, rVs_r3c == "TF_FXVS_R3C"

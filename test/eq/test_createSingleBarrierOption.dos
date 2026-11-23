@@ -129,41 +129,41 @@ caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.2
 @testing:case="createSingleBarrierOption accepts all payoffType enums"
 payoffTypes = ["CALL", "call", "PUT", "put"]
 for (i in 0:size(payoffTypes)) {
-    caplib::createSingleBarrierOption(payoffTypes[i], underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_payoff_" + string(i), false)
+    r = caplib::createSingleBarrierOption(payoffTypes[i], underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_payoff_" + string(i), false)
+    assert 1, r == "t_SB_enum_payoff_" + string(i)
 }
-assert 1, true
 
 // 用例目的：遍历 barrierType 全部合法值，验证全部被接受
 @testing:case="createSingleBarrierOption accepts all barrierType enums"
 barrierTypes = ["DOWN_IN", "UAI", "DOWN_AND_IN", "UP_IN", "DAO", "UP_AND_IN", "DOWN_OUT", "DAI", "DOWN_AND_OUT", "UP_OUT", "UAO", "UP_AND_OUT"]
 for (i in 0:size(barrierTypes)) {
-    caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, barrierTypes[i], underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_bt_" + string(i), false)
+    r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, barrierTypes[i], underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_bt_" + string(i), false)
+    assert 1, r == "t_SB_enum_bt_" + string(i)
 }
-assert 1, true
 
 // 用例目的：遍历 barrierObsType 全部合法值，验证全部被接受
 @testing:case="createSingleBarrierOption accepts all barrierObsType enums"
 barrierObsTypes = ["", "CONTINUOUS", "CONTINUOUS_OBSERVATION_TYPE", "DISCRETE", "DISCRETE_OBSERVATION_TYPE"]
 for (i in 0:size(barrierObsTypes)) {
-    caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, barrierObsTypes[i], "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_bot_" + string(i), false)
+    r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, barrierObsTypes[i], "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_bot_" + string(i), false)
+    assert 1, r == "t_SB_enum_bot_" + string(i)
 }
-assert 1, true
 
 // 用例目的：遍历 paymentType 全部合法值，验证全部被接受
 @testing:case="createSingleBarrierOption accepts all paymentType enums"
 paymentTypes = ["", "PAY_AT_HIT", "PAH", "PAY_AT_MATURITY", "PAM"]
 for (i in 0:size(paymentTypes)) {
-    caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", paymentTypes[i], 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_pmt_" + string(i), false)
+    r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", paymentTypes[i], 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "t_SB_enum_pmt_" + string(i), false)
+    assert 1, r == "t_SB_enum_pmt_" + string(i)
 }
-assert 1, true
 
 // 用例目的：遍历 underlyingType 全部合法值，验证全部被接受
 @testing:case="createSingleBarrierOption accepts all underlyingType enums"
 underlyingTypes = ["SPOT", "FUTURE", "FORWARD"]
 for (i in 0:size(underlyingTypes)) {
-    caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", underlyingTypes[i], "CNY", "50ETF.SSE", "t_SB_enum_ut_" + string(i), false)
+    r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", underlyingTypes[i], "CNY", "50ETF.SSE", "t_SB_enum_ut_" + string(i), false)
+    assert 1, r == "t_SB_enum_ut_" + string(i)
 }
-assert 1, true
 
 // ----------------------------------------------------------------------------
 // Review round-2 additions: numeric boundary (0 / negative) coverage
@@ -179,8 +179,8 @@ caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.2
 
 // 用例目的：cashRebate 传 0，记录插件实际行为
 @testing:case="createSingleBarrierOption accepts zero cashRebate"
-caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_cr0", false)
-assert 1, true
+r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_cr0", false)
+assert 1, r == "f_SB_cr0"
 
 // 用例目的：参数 cashRebate 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
 @testing:case="createSingleBarrierOption rejects negative cashRebate", exception=1
@@ -188,8 +188,8 @@ caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.2
 
 // 用例目的：assetRebate 传 0，记录插件实际行为
 @testing:case="createSingleBarrierOption accepts zero assetRebate"
-caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_ar0", false)
-assert 1, true
+r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_ar0", false)
+assert 1, r == "f_SB_ar0"
 
 // 用例目的：参数 assetRebate 传入负值，验证边界校验（实测插件校验并抛 IllegalArgumentException）
 @testing:case="createSingleBarrierOption rejects negative assetRebate", exception=1
@@ -197,13 +197,13 @@ caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.2
 
 // 用例目的：settlementDays 传 0，记录插件实际行为
 @testing:case="createSingleBarrierOption accepts zero settlementDays"
-caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_sd0", false)
-assert 1, true
+r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_sd0", false)
+assert 1, r == "f_SB_sd0"
 
 // 用例目的：settlementDays 传负值（INT -1），记录插件实际行为
 @testing:case="createSingleBarrierOption accepts negative settlementDays"
-caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, -1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_sdN", false)
-assert 1, true
+r = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, -1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_sdN", false)
+assert 1, r == "f_SB_sdN"
 
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createSingleBarrierOption rejects wrong type for handle", exception=1
@@ -212,3 +212,24 @@ caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.2
 // 用例目的：INT 参数 settlementDays 传入 BOOL 值，验证类型校验（预期：抛异常）
 @testing:case="createSingleBarrierOption rejects BOOL settlementDays", exception=1
 caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB", false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / fixing 向量长度
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createSingleBarrierOption delivery before expiry (no validation)"
+result = caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.18, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB_dbe", false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：长形式下仅缩短 fixingDates，fixingValues/fixingWeights 保持原长且一致，验证配对长度校验（预期：抛异常）
+@testing:case="createSingleBarrierOption rejects fixingDates length mismatch", exception=1
+caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB", [2020.08.10, 2020.08.11], [underlyingPrice, underlyingPrice, underlyingPrice], [1.0, 1.0, 1.0], false)
+
+// 用例目的：长形式下单独改变 fixingValues 长度（与 fixingDates 不一致），验证配对长度校验（预期：抛异常）
+@testing:case="createSingleBarrierOption rejects fixingValues length mismatch", exception=1
+caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB", [2020.08.10, 2020.08.11, 2020.08.12], [underlyingPrice, underlyingPrice], [1.0, 1.0, 1.0], false)
+
+// 用例目的：长形式下单独改变 fixingWeights 长度（与 fixingDates 不一致），验证配对长度校验（预期：抛异常）
+@testing:case="createSingleBarrierOption rejects fixingWeights length mismatch", exception=1
+caplib::createSingleBarrierOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, "UP_IN", underlyingPrice*1.05, "CONTINUOUS_OBSERVATION_TYPE", "PAY_AT_MATURITY", 0.0, 0.0, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_SB", [2020.08.10, 2020.08.11, 2020.08.12], [underlyingPrice, underlyingPrice, underlyingPrice], [1.0, 1.0, 1.0, 1.0], false)

@@ -160,14 +160,10 @@ kr = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2022.03.30, fvolRef, s
 assert 1, abs(kr - 1.276171122614913) < 1.0e-8
 krp = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -0.25, 2022.03.30, fvolRef, spotRef, domCurveRef, forCurveRef);
 assert 1, abs(krp - 1.11688490479329) < 1.0e-8
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="calcFxDeltaToStrike accepts wrong object type for fxSpotRateHandle (lenient validation, does not raise)"
-result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
-assert 1, typestr(result) != "VOID"
-// labels rejected by the plugin in this context: PIPS_SPOT_DELTA, PERCENTAGE_SPOT_DELTA, PIPS_FORWARD_DELTA, PERCENTAGE_FORWARD_DELTA, SIMPLE_DELTA
 
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="calcFxDeltaToStrike accepts negative delta (lenient validation, does not raise)"
+// 用例目的：验证插件对负 delta 宽松接受、不抛异常（实测行为记录）。
+// fxSpotRateHandle 错型句柄的校验见下方 "rejects wrong object type for fxSpotRateHandle"。
+@testing:case="calcFxDeltaToStrike accepts negative delta (no validation)"
 result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -1.0, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
 assert 1, typestr(result) != "VOID"
 
@@ -175,14 +171,9 @@ assert 1, typestr(result) != "VOID"
 // Review gap-fill: null-vector / boundary / enum / handle-type coverage
 // ----------------------------------------------------------------------------
 
-// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+// 用例目的：delta 传 0 —— 实测插件拒绝（预期：抛异常）
 @testing:case="calcFxDeltaToStrike rejects zero delta", exception=1
 caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.0, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
-
-// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="calcFxDeltaToStrike rejects negative delta (lenient validation, does not raise)"
-result = caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", -1.0, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve)
-assert 1, typestr(result) != "VOID"
 
 // 用例目的：相同输入连续调用两次，验证两次返回结果完全一致（计算确定性）
 @testing:case="calcFxDeltaToStrike deterministic repeat -> identical result"
@@ -236,9 +227,9 @@ caplib::calcFxDeltaToStrike("PIPS_SPOT_DELTA", 0.25, 2021.09.26, builtVolSurface
 @testing:case="calcFxDeltaToStrike supports all deltaType enums"
 labelEnum = ["PIPS_SPOT_DELTA", "PERCENTAGE_SPOT_DELTA", "PIPS_FORWARD_DELTA", "PERCENTAGE_FORWARD_DELTA"]
 for (i in 0..(size(labelEnum)-1)) {
-    caplib::calcFxDeltaToStrike(labelEnum[i], 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+    strike = caplib::calcFxDeltaToStrike(labelEnum[i], 0.25, 2021.09.26, builtVolSurface[0], eurusdSpotRate[0], usdCurve, eurCurve);
+    assert 1, typestr(strike) != "VOID"
 }
-assert 1, true
 
 // 用例目的：deltaType 传 SIMPLE_DELTA —— 实测被下游服务拒绝（std::exception），记录实际行为
 @testing:case="calcFxDeltaToStrike rejects SIMPLE_DELTA (service-level)", exception=1

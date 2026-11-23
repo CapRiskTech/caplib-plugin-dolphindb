@@ -66,12 +66,12 @@ assert 1, typestr(result) != "VOID"
 // 用例目的：参数 settlementDays 传入负值，记录实际行为（文档：settlementDays 非负但包装器通常仅检查类型）
 @testing:case="createAmericanOption settlementDays negative boundary"
 result = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, -1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM_sd_neg", false)
-assert 1, true
+assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 settlementDays 传入0，记录实际行为（文档：settlementDays 非负）
 @testing:case="createAmericanOption settlementDays zero boundary"
 result = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 0, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM_sd0", false)
-assert 1, true
+assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 nominal 传入0，验证数值边界校验（参照同组 createEuropeanOption 先例，预期：抛异常）
 @testing:case="createAmericanOption rejects zero nominal", exception=1
@@ -114,12 +114,12 @@ assert 1, ok
 // 用例目的：参数 strike 传入0，记录实际行为（文档：strike 非负；包装器通常仅检查类型）
 @testing:case="createAmericanOption strike zero boundary"
 result = caplib::createAmericanOption("CALL", 0.0, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM_strike0", false)
-assert 1, true
+assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 strike 传入负值，记录实际行为（文档未明确 wrapper 是否拒绝负值）
 @testing:case="createAmericanOption strike negative boundary"
 result = caplib::createAmericanOption("CALL", -1.0, 2020.08.19, 2020.08.20, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM_strike_neg", false)
-assert 1, true
+assert 1, typestr(result) != "VOID"
 
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createAmericanOption rejects wrong type for handle", exception=1
@@ -128,4 +128,13 @@ caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, 1,
 // 用例目的：参数 settlementDays 传 BOOL 值 true（该传 INT），验证类型严格校验（预期：抛异常）
 @testing:case="createAmericanOption rejects BOOL settlementDays", exception=1
 caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.20, true, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM_bool_sd", false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：delivery 早于 expiry 的日期先后关系
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createAmericanOption delivery before expiry (no validation)"
+result = caplib::createAmericanOption("CALL", underlyingPrice, 2020.08.19, 2020.08.18, 1, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AM_dbe", false)
+assert 1, typestr(result) != "VOID"
 

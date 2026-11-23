@@ -92,8 +92,8 @@ for (i in 0..(size(labelEnum)-1)) {
 }
 assert 1, okEnum
 
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="impliedVolCalculator accepts zero underlyingPrice", exception=1
+// 用例目的：参数 underlyingPrice 传入 0，验证正数边界校验（预期：抛异常）
+@testing:case="impliedVolCalculator rejects zero underlyingPrice", exception=1
 caplib::impliedVolCalculator(asOfDate, 0.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
 
 // 用例目的：参数 underlyingPrice 传入负值，验证数值边界校验（预期：抛异常）
@@ -123,4 +123,70 @@ caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, flatIr, 5.0, "CAL
 // 用例目的：枚举参数 payoffType 传入非法值，验证枚举校验（预期：抛异常）
 @testing:case="impliedVolCalculator rejects invalid enum for payoffType", exception=1
 caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "NOT_A_REAL_ENUM", "EUROPEAN", 2022.09.09, 100.0)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: expiryDate / optionPrice boundary behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：expiryDate 早于 asOfDate（负期限）—— 实测插件抛异常（预期：抛异常）
+@testing:case="impliedVolCalculator rejects expiryDate before asOfDate", exception=1
+caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2021.09.09, 100.0)
+
+// 用例目的：optionPrice 传 0（非正价格）—— 实测插件不校验价格正负、宽松接受，记录实际行为
+@testing:case="impliedVolCalculator accepts zero optionPrice (no validation)"
+rIV_zp = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 0.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_zp) != "VOID"
+
+// 用例目的：optionPrice 传负值（非正价格）—— 实测插件不校验价格正负、宽松接受，记录实际行为
+@testing:case="impliedVolCalculator accepts negative optionPrice (no validation)"
+rIV_np = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, -1.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_np) != "VOID"
+
+// 用例目的：optionPrice 超出无套利上界（ATM CALL 价格高于标的现值折现水平）—— 实测插件不校验定价边界、宽松接受，记录实际行为
+@testing:case="impliedVolCalculator accepts optionPrice above no-arbitrage bound (no validation)"
+rIV_bp = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 150.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_bp) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: payoffType per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：payoffType 逐值验证：CALL（预期：被接受，返回非空 DOUBLE）
+@testing:case="impliedVolCalculator accepts payoffType CALL"
+rIV_p1 = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_p1) != "VOID"
+
+// 用例目的：payoffType 逐值验证：call（小写别名，预期：被接受，返回非空 DOUBLE）
+@testing:case="impliedVolCalculator accepts payoffType call"
+rIV_p2 = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "call", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_p2) != "VOID"
+
+// 用例目的：payoffType 逐值验证：PUT（预期：被接受，返回非空 DOUBLE）
+@testing:case="impliedVolCalculator accepts payoffType PUT"
+rIV_p3 = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "PUT", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_p3) != "VOID"
+
+// 用例目的：payoffType 逐值验证：put（小写别名，预期：被接受，返回非空 DOUBLE）
+@testing:case="impliedVolCalculator accepts payoffType put"
+rIV_p4 = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "put", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_p4) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: exerciseType per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：exerciseType 逐值验证：EUROPEAN（预期：被接受，返回非空 DOUBLE）
+@testing:case="impliedVolCalculator accepts exerciseType EUROPEAN"
+rIV_e1 = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "EUROPEAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_e1) != "VOID"
+
+// 用例目的：exerciseType 逐值验证：AMERICAN（预期：被接受或按实际行为拒绝）
+@testing:case="impliedVolCalculator accepts exerciseType AMERICAN"
+rIV_e2 = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "AMERICAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_e2) != "VOID"
+
+// 用例目的：exerciseType 逐值验证：BERMUDAN（预期：被接受或按实际行为拒绝）
+@testing:case="impliedVolCalculator accepts exerciseType BERMUDAN"
+rIV_e3 = caplib::impliedVolCalculator(asOfDate, 100.0, flatIr, flatDiv, ps, 5.0, "CALL", "BERMUDAN", 2022.09.09, 100.0)
+assert 1, typestr(rIV_e3) != "VOID"
 

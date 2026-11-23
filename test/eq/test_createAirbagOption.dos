@@ -76,8 +76,8 @@ caplib::createAirbagOption("X", 2024.01.01, 2024.01.01, 0.02, 0.02, 0.02, 0.02, 
 // 用例目的：以关键字参数形式调用，验证插件不支持关键字传参（预期：解析期报错）
 @testing:case="createAirbagOption rejects keyword arguments", syntaxError=1
 caplib::createAirbagOption(payoffType="X", expiry=2024.01.01, delivery=2024.01.01, lowerStrike=0.02, upperStrike=0.02, lowerGearing=0.02, upperGearing=0.02, knockInStrike=0.02, barrierType="X", barrierValue=0.02, barrierObsType="X", nominal=0.02, payoffCurrency="X", underlyingType="X", underlyingCurrency="X", underlying="X", handle="TF_createAirbagOption_H", fixingDates=[2024.01.01], fixingValues=[0.02], fixingWeights=[0.02], returnJson=false)
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="createAirbagOption accepts all-null vector fixingDates", exception=1
+// 用例目的：fixingDates 传入全空值向量，验证向量空值校验（预期：抛异常；第三轮 review 修正用例名与预期一致）
+@testing:case="createAirbagOption rejects all-null vector fixingDates", exception=1
 caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", [date(), date(), date()], dailyObsValues, dailyObsWeights, false)
 // 用例目的：可选参数 returnJson 传入空值，验证取默认值（不返回 json）
 @testing:case="createAirbagOption optional returnJson null uses default"
@@ -92,8 +92,8 @@ caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, unde
 caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", -1.0, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, dailyObsWeights, false)
 
 // ----------------------------------------------------------------------------
-// 用例目的：两个数组参数长度不一致（fixingDates 多一个元素），实测插件宽松接受——记录实际行为
-@testing:case="createAirbagOption fixingDates length mismatch", exception=1
+// 用例目的：fixingDates 比配对数组多一个元素，验证长度关系校验（预期：抛异常）
+@testing:case="createAirbagOption rejects fixingDates length mismatch", exception=1
 caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", join(dailyObsDates, dailyObsDates[0]), dailyObsValues, dailyObsWeights, false);
 
 // ----------------------------------------------------------------------------
@@ -124,34 +124,34 @@ caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, unde
 @testing:case="createAirbagOption accepts all valid payoffType values"
 for (pt in ["CALL", "call", "PUT", "put"]) {
     h = caplib::createAirbagOption(pt, 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_pay_" + pt, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：遍历 barrierType 合法值列表，全部应被接受
 @testing:case="createAirbagOption accepts all valid barrierType values"
 for (bt in ["DOWN_IN", "UAI", "DOWN_AND_IN", "UP_IN", "DAO", "UP_AND_IN", "DOWN_OUT", "DAI", "DOWN_AND_OUT", "UP_OUT", "UAO", "UP_AND_OUT"]) {
     h = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, bt, underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_bar_" + bt, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：遍历 barrierObsType 合法值列表（含空串），全部应被接受
 @testing:case="createAirbagOption accepts all valid barrierObsType values"
 for (ot in ["", "CONTINUOUS", "CONTINUOUS_OBSERVATION_TYPE", "DISCRETE", "DISCRETE_OBSERVATION_TYPE"]) {
     h = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, ot, 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_bot_" + ot, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：遍历 underlyingType 合法值列表，全部应被接受
 @testing:case="createAirbagOption accepts all valid underlyingType values"
 for (ut in ["SPOT", "FUTURE", "FORWARD"]) {
     h = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", ut, "CNY", "50ETF.SSE", "f_AB_ut_" + ut, dailyObsDates, dailyObsValues, dailyObsWeights, false);
-    assert 1, true
+    assert 1, typestr(h) != "VOID"
 }
 
 // 用例目的：barrierValue 传入 0，记录实际行为（包装器通常仅检查类型，预期宽松接受）
 @testing:case="createAirbagOption barrierValue zero behavior record"
 h = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", 0.0, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_bv0", dailyObsDates, dailyObsValues, dailyObsWeights, false);
-assert 1, true
+assert 1, typestr(h) != "VOID"
 
 // 用例目的：参数 lowerStrike 传入 0，验证边界校验（实测插件校验并抛 IllegalArgumentException）
 @testing:case="createAirbagOption rejects zero lowerStrike", exception=1
@@ -160,3 +160,35 @@ caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, 0.0, underlyingPrice*
 // 用例目的：参数 handle 传入错误类型（该传字符串的传整数），验证类型校验（预期：抛异常）
 @testing:case="createAirbagOption rejects wrong type for handle", exception=1
 caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", 123, dailyObsDates, dailyObsValues, dailyObsWeights, false)
+
+// ----------------------------------------------------------------------------
+// 第三轮 review gap-fill：日期先后关系 / 行权价关联 / fixing 向量长度与权重行为
+// ----------------------------------------------------------------------------
+
+// 用例目的：delivery（2020.08.18）早于 expiry（2020.08.19），验证日期先后关系（文档注明包装器不检查，实测记录行为）
+@testing:case="createAirbagOption delivery before expiry (no validation)"
+result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.18, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_dbe", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：lowerStrike 高于 upperStrike，验证行权价关联校验（实测记录行为）
+@testing:case="createAirbagOption lowerStrike above upperStrike (no validation)"
+result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice*1.05, underlyingPrice, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_ls_gt_us", dailyObsDates, dailyObsValues, dailyObsWeights, false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：单独改变 fixingValues 长度（比 fixingDates 少一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createAirbagOption rejects fixingValues length mismatch", exception=1
+caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues[0:(size(dailyObsValues)-1)], dailyObsWeights, false)
+
+// 用例目的：单独改变 fixingWeights 长度（比 fixingDates 多一个元素），验证配对长度校验（预期：抛异常）
+@testing:case="createAirbagOption rejects fixingWeights length mismatch", exception=1
+caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB", dailyObsDates, dailyObsValues, join(dailyObsWeights, 1.0), false)
+
+// 用例目的：fixingWeights 全零，验证权重取值行为（实测记录行为）
+@testing:case="createAirbagOption accepts all-zero fixingWeights (no validation)"
+result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_w0", dailyObsDates, dailyObsValues, take(0.0, size(dailyObsDates)), false)
+assert 1, typestr(result) != "VOID"
+
+// 用例目的：fixingWeights 全负值，验证权重取值行为（实测记录行为）
+@testing:case="createAirbagOption accepts negative fixingWeights (no validation)"
+result = caplib::createAirbagOption("CALL", 2020.08.19, 2020.08.20, underlyingPrice, underlyingPrice*1.05, 1.0, 1.0, underlyingPrice, "DOWN_IN", underlyingPrice*0.8, "DISCRETE_OBSERVATION_TYPE", 1e6, "CNY", "SPOT", "CNY", "50ETF.SSE", "f_AB_wneg", dailyObsDates, dailyObsValues, take(-1.0, size(dailyObsDates)), false)
+assert 1, typestr(result) != "VOID"

@@ -94,8 +94,8 @@ caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2023.03.07, 2022.03.07, irSwa
 @testing:case="buildIrVanillaInstrument optional returnJson null uses default"
 result = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", bool())
 assert 1, typestr(result) != "VOID"
-// 用例目的：验证插件对此输入宽松接受、不抛异常（实测行为记录）
-@testing:case="buildIrVanillaInstrument accepts zero nominal", exception=1
+// 用例目的：参数 nominal 传入 0，验证正数边界校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects zero nominal", exception=1
 caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 0.0, "", "TF_IRSWAP", false)
 
 // 用例目的：参数 nominal 传入负值，验证数值边界校验（预期：抛异常）
@@ -113,12 +113,59 @@ rT_returnJson = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2
 assert 1, typestr(rT_returnJson) != "VOID"
 
 // ----------------------------------------------------------------------------
-// 用例目的：遍历参数 payReceive 的全部文档枚举取值，逐一调用验证均被接受
-// 注：标签 `PAYER`, `RECEIVER`, `INVALID` 在本上下文中被插件拒绝，未纳入遍历（与文档标签集不一致，实测为准）
-@testing:case="buildIrVanillaInstrument supports all payReceive enums"
-labelEnum = ["PAY", "RECEIVE"]
-okEnum = true;
-for (i in 0..(size(labelEnum)-1)) {
-    try { caplib::buildIrVanillaInstrument(labelEnum[i], 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false); } catch(ex) { okEnum = false; }
-}
-assert 1, okEnum
+// 用例目的：payReceive 枚举逐值验证 —— 文档四个取值逐一显式断言（实测 3.00.5.1 均接受）
+// 注：标签 `INVALID` 在本上下文中被插件拒绝，未纳入遍历（与文档标签集不一致，实测为准）
+@testing:case="buildIrVanillaInstrument payReceive=PAY accepted"
+r3_pr_1 = caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+assert 1, typestr(r3_pr_1) != "VOID"
+@testing:case="buildIrVanillaInstrument payReceive=RECEIVE accepted"
+r3_pr_2 = caplib::buildIrVanillaInstrument("RECEIVE", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+assert 1, typestr(r3_pr_2) != "VOID"
+// 用例目的：payReceive=PAYER —— 实测 3.00.5.1 插件同样接受（旧注释所记拒绝行为已不成立），固定回归预期为接受
+@testing:case="buildIrVanillaInstrument payReceive=PAYER accepted"
+r3_pr_3 = caplib::buildIrVanillaInstrument("PAYER", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+assert 1, typestr(r3_pr_3) != "VOID"
+// 用例目的：payReceive=RECEIVER —— 实测 3.00.5.1 插件同样接受（旧注释所记拒绝行为已不成立），固定回归预期为接受
+@testing:case="buildIrVanillaInstrument payReceive=RECEIVER accepted"
+r3_pr_4 = caplib::buildIrVanillaInstrument("RECEIVER", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+assert 1, typestr(r3_pr_4) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review gap-fill (round 3): instTemplate/legFixings/tag 自身校验 + 日期参数错误类型
+// ----------------------------------------------------------------------------
+
+// 用例目的：句柄参数 instTemplate 传入不存在的句柄字符串，验证句柄校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects nonexistent handle instTemplate", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, "TF_NO_SUCH_TEMPLATE_r3", 1000000.0, "", "TF_IRSWAP", false)
+
+// 用例目的：句柄参数 instTemplate 传入类型不符的真实句柄（固定腿定义而非工具模板），验证句柄类型校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects wrong object type for instTemplate", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irFixedLeg[0], 1000000.0, "", "TF_IRSWAP", false)
+
+// 用例目的：legFixings 传入不存在的句柄，验证缓存句柄校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects nonexistent handle legFixings", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "TF_NO_SUCH_LEG_FIXINGS_R3", "TF_IRSWAP", false)
+
+// 用例目的：legFixings 传入类型不符的真实句柄（腿定义而非 LegFixings），验证对象类型校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects wrong object type for legFixings", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, irFixedLeg[0], "TF_IRSWAP", false)
+
+// 用例目的：参数 tag 传入错误类型（数值而非字符串），验证类型校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects wrong type for tag", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, 2023.03.07, irSwapTemplate[0], 1000000.0, "", 123, false)
+
+// 用例目的：参数 startDate 传入错误类型（字符串而非日期），验证类型校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects wrong type for startDate", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, "bad", 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+
+// 用例目的：参数 maturityDate 传入错误类型（字符串而非日期），验证类型校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects wrong type for maturityDate", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, "bad", irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+
+// 用例目的：参数 startDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects null startDate", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, date(), 2023.03.07, irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)
+
+// 用例目的：参数 maturityDate 传入对应类型的空值，验证空值校验（预期：抛异常）
+@testing:case="buildIrVanillaInstrument rejects null maturityDate", exception=1
+caplib::buildIrVanillaInstrument("PAY", 0.05, 0.0, 2022.03.07, date(), irSwapTemplate[0], 1000000.0, "", "TF_IRSWAP", false)

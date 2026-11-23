@@ -225,3 +225,14 @@ caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "VDEF_30", "TF_NO_SUCH_HA
 // 用例目的：句柄参数 definitionHandle 传入类型不符的对象句柄，验证句柄类型校验（预期：抛异常）
 @testing:case="buildPmVolatilitySurface rejects wrong object type for definitionHandle", exception=1
 caplib::buildPmVolatilitySurface(2019.09.04, "XAUUSD", "Q_30", "Q_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30", true)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate 晚于 quoteMatrixHandle 所引用报价期限的服务层实际行为
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate（2021.01.01）晚于报价矩阵 Q_30 的最长期限（1Y，约 2020.09.04）。
+// 中文文档要求参考日期不得晚于相关到期日，且注明包装器不检查该关系；
+// 实测服务层也不校验该日期关系、正常完成构建（宽松行为，记录实际行为，不抛异常）。
+@testing:case="buildPmVolatilitySurface accepts asOfDate after quote matrix terms (no service-level validation)"
+rLate = caplib::buildPmVolatilitySurface(2021.01.01, "XAUUSD", "VDEF_30", "Q_30", 1544.06, "DEPO_30", "FWD_30", "BS_30", "MKT_30", "XAUUSD", "VS_30_LATE", true)
+assert 1, isHandleJson(rLate, "VS_30_LATE")

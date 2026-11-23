@@ -98,11 +98,11 @@ assert 1, okEnum
 // ----------------------------------------------------------------------------
 
 // 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
-@testing:case="createVolatilityCurve rejects zero vols (lenient validation, does not raise)"
+@testing:case="createVolatilityCurve accepts zero vols (no validation)"
 result = caplib::createVolatilityCurve(asOfDate, curveDates, [0.0, 0.0], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
 assert 1, typestr(result) != "VOID"
 
-// 用例目的：对照评审要求补齐的边界/空值用例（实测插件宽松接受、不抛异常——记录实际行为）
+// 用例目的：vols 传入负值，验证非负边界校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects negative vols", exception=1
 caplib::createVolatilityCurve(asOfDate, curveDates, [-1.0, -1.0], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE", false)
 
@@ -130,3 +130,120 @@ caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED
 // 用例目的：枚举参数 extrap 传入非法值，验证枚举校验（预期：抛异常）
 @testing:case="createVolatilityCurve rejects invalid enum for extrap", exception=1
 caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "NOT_A_REAL_ENUM", "TF_UNDERLYING", "TF_VOL_CURVE", false)
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: asOfDate / pillarDates date-relationship behavior
+// ----------------------------------------------------------------------------
+
+// 用例目的：asOfDate 晚于全部 pillarDates —— 文档声明包装器不检查先后关系，实测宽松接受，记录实际行为
+@testing:case="createVolatilityCurve accepts asOfDate after pillarDates (no validation)"
+rVC_aop = caplib::createVolatilityCurve(2026.01.01, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_AOP", false)
+assert 1, typestr(rVC_aop) != "VOID"
+
+// 用例目的：pillarDates 非递增（倒序）—— 实测插件宽松接受、不抛异常，记录实际行为
+@testing:case="createVolatilityCurve accepts non-increasing pillarDates (no validation)"
+rVC_ni = caplib::createVolatilityCurve(asOfDate, [2025.03.10, 2022.03.10], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_NI", false)
+assert 1, typestr(rVC_ni) != "VOID"
+
+// 用例目的：pillarDates 含重复日期 —— 实测插件宽松接受、不抛异常，记录实际行为
+@testing:case="createVolatilityCurve accepts duplicate pillarDates (no validation)"
+rVC_dup = caplib::createVolatilityCurve(asOfDate, [2022.03.10, 2022.03.10], [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_DUP", false)
+assert 1, typestr(rVC_dup) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: dayCountConvention per-value enum coverage (16 documented values)
+// ----------------------------------------------------------------------------
+
+// 用例目的：dayCountConvention 逐值验证：ACT_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT_360"
+rVC_d1 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D1", false)
+assert 1, typestr(rVC_d1) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACTUAL_360"
+rVC_d2 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACTUAL_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D2", false)
+assert 1, typestr(rVC_d2) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT/360"
+rVC_d3 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT/360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D3", false)
+assert 1, typestr(rVC_d3) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT_365"
+rVC_d4 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D4", false)
+assert 1, typestr(rVC_d4) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_365_FIXED（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT_365_FIXED"
+rVC_d5 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D5", false)
+assert 1, typestr(rVC_d5) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_365_FIXED（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACTUAL_365_FIXED"
+rVC_d6 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACTUAL_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D6", false)
+assert 1, typestr(rVC_d6) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT/365（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT/365"
+rVC_d7 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT/365", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D7", false)
+assert 1, typestr(rVC_d7) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT_ACT"
+rVC_d8 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_ACT", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D8", false)
+assert 1, typestr(rVC_d8) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ISDA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT_ACT_ISDA"
+rVC_d9 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_ACT_ISDA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D9", false)
+assert 1, typestr(rVC_d9) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ISDA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACTUAL_ACTUAL_ISDA"
+rVC_d10 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACTUAL_ACTUAL_ISDA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D10", false)
+assert 1, typestr(rVC_d10) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACT_ACT_ICMA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACT_ACT_ICMA"
+rVC_d11 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_ACT_ICMA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D11", false)
+assert 1, typestr(rVC_d11) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：ACTUAL_ACTUAL_ICMA（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention ACTUAL_ACTUAL_ICMA"
+rVC_d12 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACTUAL_ACTUAL_ICMA", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D12", false)
+assert 1, typestr(rVC_d12) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：THIRTY_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention THIRTY_360"
+rVC_d13 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "THIRTY_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D13", false)
+assert 1, typestr(rVC_d13) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30_360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention 30_360"
+rVC_d14 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "30_360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D14", false)
+assert 1, typestr(rVC_d14) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：30/360（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention 30/360"
+rVC_d15 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "30/360", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D15", false)
+assert 1, typestr(rVC_d15) != "VOID"
+
+// 用例目的：dayCountConvention 逐值验证：BOND_BASIS（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts dayCountConvention BOND_BASIS"
+rVC_d16 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "BOND_BASIS", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_D16", false)
+assert 1, typestr(rVC_d16) != "VOID"
+
+// ----------------------------------------------------------------------------
+// Review round-3 gap-fill: extrap per-value enum coverage
+// ----------------------------------------------------------------------------
+
+// 用例目的：extrap 逐值验证：FLAT_EXTRAP（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts extrap FLAT_EXTRAP"
+rVC_e1 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "FLAT_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_E1", false)
+assert 1, typestr(rVC_e1) != "VOID"
+
+// 用例目的：extrap 逐值验证：LINEAR_EXTRAP（预期：被接受，返回非空句柄）
+@testing:case="createVolatilityCurve accepts extrap LINEAR_EXTRAP"
+rVC_e2 = caplib::createVolatilityCurve(asOfDate, curveDates, [0.20, 0.21], "ACT_365_FIXED", "LINEAR_INTERP", "LINEAR_EXTRAP", "TF_UNDERLYING", "TF_VOL_CURVE_R3_E2", false)
+assert 1, typestr(rVC_e2) != "VOID"
